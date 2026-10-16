@@ -18,6 +18,8 @@ Each player secretly holds a Values card (Egoist, Rawlsian, Utilitarian, Meritoc
 
 Author: Amirreza Akhavan. Spec: Phase 1 (solo vs. bots, browser, English).
 
+Play it: https://the-veil-mauve.vercel.app
+
 ## Quick start
 
 Requires Node 18 or later (developed on Node 24).
@@ -85,6 +87,6 @@ tests/        Vitest engine tests and Playwright e2e tests
 | M1 to M6: engine, five levels, bots, messaging, beliefs, finale, all UI | Done. All 25 unit tests and 6 e2e tests pass. |
 | M7: simulation balancing | Done. All Section 11 targets met (DECISIONS.md D-16). Level 2 parameters changed (D-15). |
 | M8: visual design, copy, Archives, accessibility | Done, except a Lighthouse audit, which has not been run. Contrast checked by calculation; no horizontal scroll at 360 px in any phase. |
-| M9: deploy | Not done. Waiting on the hosting decision (Open item 2). The build is a static `dist/` folder with relative asset paths, so it works at a domain root or a subpath. |
+| M9: deploy | Live on Vercel at https://the-veil-mauve.vercel.app. Pushes to `main` deploy automatically. Not yet checked on iOS Safari, Android Chrome, or Firefox. |
 
 Open items for the author: the final name, the hosting location, and whether to add opt-in result sharing in Phase 2. The About screen will link to the source repository once there is one.
