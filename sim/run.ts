@@ -1,0 +1,186 @@
+// Headless bot-only simulation CLI (Section 9.6).
+// Usage: npm run sim -- --games 2000 --players 4 --difficulty NORMAL --samples 300 --out sim/out
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { createInitialState, step, totalScore } from '../src/engine/engine';
+import { mean } from '../src/engine/scoring';
+import { bestEffort, type L2Debrief } from '../src/engine/levels/level2';
+import type { L1Debrief } from '../src/engine/levels/level1';
+import type { L3Debrief } from '../src/engine/levels/level3';
+import type { L4Debrief } from '../src/engine/levels/level4';
+import type { L5Debrief } from '../src/engine/levels/level5';
+import type { Difficulty, GameState, ValuesCard } from '../src/engine/types';
+
+function arg(name: string, def: string): string {
+  const i = process.argv.indexOf(`--${name}`);
+  return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : def;
+}
+
+const games = Number(arg('games', '2000'));
+const nPlayers = Number(arg('players', '4')) as 2 | 3 | 4;
+const difficulty = arg('difficulty', 'NORMAL') as Difficulty;
+const samples = Number(arg('samples', '300'));
+const outDir = arg('out', 'sim/out');
+const seedBase = arg('seed', 'sim');
+
+function playOne(seed: string): GameState {
+  const s = createInitialState({
+    mode: 'FULL_RUN',
+    nPlayers,
+    difficulty,
+    seed,
+    allBots: true,
+    botSamples: samples,
+    skipCounterfactual: true,
+  });
+  let guard = 0;
+  while (s.phase.kind !== 'END' && guard++ < 10000) if (!step(s, { type: 'ADVANCE' })) throw new Error(`stuck ${s.phase.kind}`);
+  return s;
+}
+
+const header = [
+  'seed',
+  'l1_votes_P1',
+  'l1_votes_P2',
+  'l1_votes_P3',
+  'l1_votes_P4',
+  'l2_mean_t',
+  'l2_mean_effort_gap',
+  'l3_unraveled_by_r2',
+  'l3_regime',
+  'l3_regime_unanimous',
+  'l4_gap',
+  'l4_policy',
+  'l4_pi_square_final',
+  'l5_amendments',
+  'l5_slope',
+  'winner_cards',
+];
+const rows: string[] = [header.join(',')];
+
+const agg = {
+  votes: { P1: 0, P2: 0, P3: 0, P4: 0 } as Record<string, number>,
+  t: [] as number[],
+  effortGap: [] as number[],
+  effortAbsGap: [] as number[],
+  unravel: 0,
+  unanimous: 0,
+  regimes: {} as Record<string, number>,
+  gaps: [] as number[],
+  gapPositive: 0,
+  policies: {} as Record<string, number>,
+  gapByPolicy: {} as Record<string, number[]>,
+  piSquare: [] as number[][],
+  amend: 0,
+  slopes: [] as number[],
+  wins: { EGOIST: 0, RAWLSIAN: 0, UTILITARIAN: 0, MERITOCRAT: 0 } as Record<ValuesCard, number>,
+  dealt: { EGOIST: 0, RAWLSIAN: 0, UTILITARIAN: 0, MERITOCRAT: 0 } as Record<ValuesCard, number>,
+};
+
+const t0 = Date.now();
+for (let g = 0; g < games; g++) {
+  const seed = `${seedBase}-${g}`;
+  const s = playOne(seed);
+  const d1 = s.levelResults[1] as L1Debrief;
+  const d2 = s.levelResults[2] as L2Debrief;
+  const d3 = s.levelResults[3] as L3Debrief;
+  const d4 = s.levelResults[4] as L4Debrief;
+  const d5 = s.levelResults[5] as L5Debrief;
+  const votes = { P1: 0, P2: 0, P3: 0, P4: 0 } as Record<string, number>;
+  for (const r of d1.rounds) for (const v of Object.values(r.votes)) votes[v]++;
+  for (const k in votes) agg.votes[k] += votes[k];
+  const meanT = mean(d2.rounds.map((r) => r.t));
+  const gaps: number[] = [];
+  const absGaps: number[] = [];
+  d2.rounds.forEach((r) => {
+    for (const id of Object.keys(r.effort)) {
+      const e = bestEffort(r.t, d2.talents[id], s.players.length);
+      gaps.push(r.effort[id] - e);
+      absGaps.push(Math.abs(r.effort[id] - e));
+    }
+  });
+  agg.t.push(meanT);
+  agg.effortGap.push(mean(gaps));
+  agg.effortAbsGap.push(mean(absGaps));
+  const r2 = d3.rounds[1];
+  const unraveled = r2.premium === null || Object.values(r2.choices).every((c) => !c.buy);
+  if (unraveled) agg.unravel++;
+  const rv = Object.values(d3.regimeVotes ?? {});
+  const unanimous = rv.length > 0 && rv.every((v) => v === rv[0]);
+  if (unanimous) agg.unanimous++;
+  agg.regimes[d3.regime] = (agg.regimes[d3.regime] ?? 0) + 1;
+  agg.gaps.push(d4.gap);
+  if (d4.gap > 0) agg.gapPositive++;
+  agg.policies[d4.policy] = (agg.policies[d4.policy] ?? 0) + 1;
+  (agg.gapByPolicy[d4.policy] ??= []).push(mean(d4.meanByGroup.slice(3).map((m) => m.gap)));
+  agg.piSquare.push(d4.piPath.SQUARE);
+  if (d5.amendments.length > 0) agg.amend++;
+  agg.slopes.push(d5.slope);
+  const totals = s.players.map((p) => [p, totalScore(s, p.id)] as const);
+  const best = Math.max(...totals.map((x) => x[1]));
+  const winners = totals.filter((x) => Math.abs(x[1] - best) < 1e-9).map((x) => x[0]);
+  for (const p of s.players) agg.dealt[p.values]++;
+  for (const w of winners) agg.wins[w.values] += 1 / winners.length;
+  rows.push(
+    [
+      seed,
+      votes.P1,
+      votes.P2,
+      votes.P3,
+      votes.P4,
+      meanT.toFixed(3),
+      mean(gaps).toFixed(3),
+      unraveled ? 1 : 0,
+      d3.regime,
+      unanimous ? 1 : 0,
+      d4.gap.toFixed(2),
+      d4.policy,
+      d4.piPath.SQUARE[d4.piPath.SQUARE.length - 1].toFixed(3),
+      d5.amendments.length,
+      d5.slope.toFixed(4),
+      winners.map((w) => w.values).join('|'),
+    ].join(','),
+  );
+  if ((g + 1) % Math.max(1, Math.floor(games / 10)) === 0)
+    process.stderr.write(`  ${g + 1}/${games} games (${((Date.now() - t0) / 1000).toFixed(1)}s)\n`);
+}
+
+mkdirSync(outDir, { recursive: true });
+const csvPath = `${outDir}/runs-${nPlayers}p-${difficulty}.csv`;
+writeFileSync(csvPath, rows.join('\n'));
+
+const totalVotes = Object.values(agg.votes).reduce((a, b) => a + b, 0);
+const pct = (x: number) => `${(100 * x).toFixed(1)}%`;
+const lines: string[] = [];
+lines.push(`THE VEIL simulation: ${games} full runs, ${nPlayers} bots, ${difficulty}, ${samples} MC samples`);
+lines.push('');
+lines.push('L1 principle votes:');
+for (const k of ['P1', 'P2', 'P3', 'P4']) lines.push(`  ${k}: ${pct(agg.votes[k] / totalVotes)}`);
+lines.push(`L2 mean chosen t: ${mean(agg.t).toFixed(3)}   (target 0.2 to 0.5)`);
+lines.push(
+  `L2 mean effort minus e*: ${mean(agg.effortGap).toFixed(3)}, mean abs gap: ${mean(agg.effortAbsGap).toFixed(3)}   (target within 1)`,
+);
+lines.push(`L3 voluntary market unravels by round 2: ${pct(agg.unravel / games)}   (target 50 to 80%)`);
+lines.push(`L3 regime vote unanimous: ${pct(agg.unanimous / games)}   (target at most 30%)`);
+lines.push(`L3 regimes chosen: ${JSON.stringify(agg.regimes)}`);
+lines.push(`L4 mean group gap: ${mean(agg.gaps).toFixed(2)}; gap positive in ${pct(agg.gapPositive / games)}   (target at least 80%)`);
+lines.push(`L4 policies chosen: ${JSON.stringify(agg.policies)}`);
+lines.push(
+  `L4 mean gap in rounds 4-5 by policy: ${JSON.stringify(
+    Object.fromEntries(Object.entries(agg.gapByPolicy).map(([k, v]) => [k, Number(mean(v).toFixed(2))])),
+  )}`,
+);
+const piLen = agg.piSquare[0].length;
+lines.push(
+  `L4 mean pi_Square path: ${Array.from({ length: piLen }, (_, k) => mean(agg.piSquare.map((p) => p[k])).toFixed(3)).join(' -> ')}`,
+);
+lines.push(`L5 at least one amendment proposed: ${pct(agg.amend / games)}   (target at least 90%)`);
+lines.push(`L5 mean slope of delta-t on income rank: ${mean(agg.slopes).toFixed(4)}   (target negative)`);
+lines.push('Win rate by Values card, per seat holding it (ties split; parity is 1/players; target 15% to 35%):');
+for (const c of Object.keys(agg.wins) as ValuesCard[])
+  lines.push(
+    `  ${c}: ${pct(agg.wins[c] / Math.max(1, agg.dealt[c]))}  (share of runs won by a holder: ${pct(agg.wins[c] / games)}; held ${pct(agg.dealt[c] / games / nPlayers)} of seats)`,
+  );
+lines.push(`Time: ${((Date.now() - t0) / 1000).toFixed(1)}s. CSV: ${csvPath}`);
+const summary = lines.join('\n');
+writeFileSync(`${outDir}/summary-${nPlayers}p-${difficulty}.txt`, summary);
+console.log(summary);

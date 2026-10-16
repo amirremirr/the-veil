@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --paper: 246 241 228;
+  --card: 255 253 246;
+  --ink: 27 42 74;
+  --soft: 74 88 120;
+  --line: 214 205 184;
+  --stamp: 179 38 30;
+  --teal: 15 118 110;
+  --amber: 161 75 8;
+  --good: 22 101 52;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --paper: 13 22 40;
+    --card: 21 33 58;
+    --ink: 243 234 211;
+    --soft: 190 183 165;
+    --line: 46 62 96;
+    --stamp: 248 113 105;
+    --teal: 45 212 191;
+    --amber: 251 191 36;
+    --good: 134 239 172;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --paper: 13 22 40;
+  --card: 21 33 58;
+  --ink: 243 234 211;
+  --soft: 190 183 165;
+  --line: 46 62 96;
+  --stamp: 248 113 105;
+  --teal: 45 212 191;
+  --amber: 251 191 36;
+  --good: 134 239 172;
+  color-scheme: dark;
+}
+
+#root {
+  overflow-x: clip;
+}
+
+html[data-size='S'] { font-size: 15px; }
+html[data-size='M'] { font-size: 16px; }
+html[data-size='L'] { font-size: 18px; }
+
+body {
+  background-color: rgb(var(--paper));
+  color: rgb(var(--ink));
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  background-image:
+    linear-gradient(rgb(var(--line) / 0.35) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--line) / 0.35) 1px, transparent 1px);
+  background-size: 28px 28px;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 3px solid rgb(var(--stamp));
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@layer components {
+  .form-card {
+    @apply rounded-md border border-line bg-card shadow-sm;
+  }
+  .form-head {
+    @apply flex items-baseline justify-between gap-2 border-b border-dashed border-line px-4 py-2 font-mono text-xs uppercase tracking-wider text-soft;
+  }
+  .btn {
+    @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-md border-2 px-4 py-2 font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn border-ink bg-ink text-paper hover:bg-ink/90;
+  }
+  .btn-ghost {
+    @apply btn border-line bg-card text-ink hover:border-ink;
+  }
+  .choice {
+    @apply flex min-h-[44px] w-full cursor-pointer items-start gap-3 rounded-md border-2 border-line bg-card p-3 text-start transition-colors hover:border-ink;
+  }
+  .choice[aria-checked='true'],
+  .choice[aria-pressed='true'] {
+    @apply border-ink bg-ink/5;
+  }
+  .label {
+    @apply font-mono text-xs uppercase tracking-wider text-soft;
+  }
+  .h-display {
+    @apply font-display font-bold tracking-tight;
+  }
+  .num {
+    @apply font-mono tabular-nums;
+  }
+  .data-table {
+    @apply w-full border-collapse text-sm;
+  }
+  .data-table th {
+    @apply border-b border-line px-2 py-1 text-start font-mono text-xs font-normal uppercase tracking-wider text-soft;
+  }
+  .data-table td {
+    @apply border-b border-line/60 px-2 py-1.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

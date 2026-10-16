@@ -1,0 +1,146 @@
+// Every numeric constant in the game lives here. Nothing else in the codebase
+// may hardcode a parameter. See DECISIONS.md for any value changed from the spec.
+
+import type { BotKey, ValuesCard } from './types';
+
+export const VALUES_DECK: ValuesCard[] = ['EGOIST', 'EGOIST', 'RAWLSIAN', 'UTILITARIAN', 'MERITOCRAT'];
+export const VALUES_PRIOR: Record<ValuesCard, number> = {
+  EGOIST: 0.4,
+  RAWLSIAN: 0.2,
+  UTILITARIAN: 0.2,
+  MERITOCRAT: 0.2,
+};
+
+export const SCORE = {
+  WEALTH_WEIGHT: 0.5,
+  METRIC_WEIGHT: 0.5,
+  MERITOCRAT_MISMATCH_WEIGHT: 0.5,
+  GUESS_BONUS: 15,
+};
+
+/**
+ * Balancing handicap (DECISIONS.md, D-07): each card's metric is multiplied so that its
+ * simulated average equals average wealth. Without it, min(W) <= W means Rawlsians
+ * almost never win. Calibrated with `npx tsx sim/calibrate.ts`.
+ */
+export const METRIC_SCALE: Record<ValuesCard, number> = {
+  EGOIST: 1,
+  RAWLSIAN: 1.67,
+  UTILITARIAN: 1,
+  MERITOCRAT: 1.22,
+};
+
+export const BOT_PROFILES: Record<BotKey, { name: string; rho: number; lambda: number; honesty: number; sigma: number }> = {
+  chet: { name: 'Chet Bootstraps', rho: 0.5, lambda: 3, honesty: 0.5, sigma: 0.6 },
+  marigold: { name: 'Marigold Fairweather', rho: 2.5, lambda: 2, honesty: 0.9, sigma: 0.2 },
+  ugo: { name: 'Prof. Ugo Utilé', rho: 1.0, lambda: 6, honesty: 0.8, sigma: 0.3 },
+  dot: { name: 'Dot Ledger', rho: 1.5, lambda: 4, honesty: 0.4, sigma: 0.4 },
+};
+export const BOT_ORDER: BotKey[] = ['chet', 'marigold', 'ugo', 'dot'];
+
+export const DIFFICULTY = {
+  EASY: { lambdaMult: 0.5, honestyFloor: 0.8, honestyMult: 1 },
+  NORMAL: { lambdaMult: 1, honestyFloor: 0, honestyMult: 1 },
+  HARD: { lambdaMult: 1.5, honestyFloor: 0, honestyMult: 0.7 },
+};
+
+export const BOT = {
+  UTILITY_SHIFT: 50,
+  UTILITY_MIN_ARG: 1,
+  MC_SAMPLES: 300,
+  BELIEF_MC_SAMPLES: 40,
+  BELIEF_LAMBDA: 3,
+  BELIEF_RHO: 1,
+  BELIEF_FLOOR: 0.01,
+  OTHERS_EGOIST_WEIGHT: 0.5,
+  CLAIM_BELIEF_WEIGHT: 0.5,
+  ACCUSE_BELIEF_WEIGHT: 0.25,
+  MESSAGE_COUNT_WEIGHTS: [0.2, 0.55, 0.25],
+  MESSAGE_SUPPORT_SHARE: 0.7,
+  MESSAGE_ACCUSE_PROB: 0.15,
+  MESSAGE_FLAVOR_PROB: 0.1,
+  // Level 5 vote-prediction noise for the simple "others vote by own wealth" model.
+  VOTE_PREDICT_CONFIDENCE: 0.85,
+};
+
+export const TALK = { MAX_MESSAGES: 2 };
+
+export const L1 = {
+  ROUNDS: 3,
+  INCOME_DECK: [20, 50, 90, 160],
+  KAPPA: 0.4,
+  FLOOR: 40,
+  RANGE_CAP: 100,
+  TAX_GRID_STEP: 0.05,
+  TAX_GRID_MAX: 0.95,
+};
+
+export const L2 = {
+  ROUNDS: 4,
+  TALENT_DECK: [0.8, 1.2, 1.6, 2.0],
+  BASE_INCOME: 20,
+  TALENT_MULT: 4,
+  EFFORT_MAX: 10,
+  EFFORT_COST: 0.4,
+  LUCK_VALUES: [-20, 0, 10, 30, 60],
+  KAPPA: 0.1,
+  TAX_OPTIONS: [0, 0.2, 0.4, 0.6, 0.8],
+  POLL_ROUNDS: 3,
+  BONUS_POT: 100,
+  FAIRNESS_TIE: 0.02,
+};
+
+export const L3 = {
+  ROUNDS: 4,
+  VOLUNTARY_ROUNDS: 2,
+  BASE_INCOME: 100,
+  P_LOW: 0.1,
+  P_HIGH: 0.4,
+  P_HIGH_SHARE: 0.5,
+  P_BAR: 0.25,
+  LOSS: 80,
+  GYM_COST: 6,
+  GYM_FACTOR: 0.5,
+  LOADING: 1.1,
+  COVERAGE_OPTIONS: [0.5, 1.0],
+};
+
+export const L4 = {
+  ROUNDS: 5,
+  BASELINE_ROUNDS: 3,
+  CARE_PROB_SQUARE: 0.7,
+  CARE_PROB_CIRCLE: 0.3,
+  COST_OPTIONS: [10, 20, 30, 40],
+  PASS_IF_SKILLED: 0.8,
+  PASS_IF_UNSKILLED: 0.3,
+  PRIOR_CIRCLE: 0.6,
+  PRIOR_SQUARE: 0.3,
+  THRESHOLD: 0.6,
+  WAGE_SIMPLE: 20,
+  WAGE_GREEDY: 90,
+  WAGE_FLEXIBLE: 55,
+  CHAOS_COST: 40,
+  CHAOS_COST_SUBSIDIZED: 10,
+  UPDATE_WEIGHT: 0.2,
+  // Counterfactual scenarios (Section 4, Level 4 debrief).
+  CF_EQUAL_PRIOR: 0.45,
+  CF_EQUAL_CARE: 0.5,
+  CF_REPLAYS: 24,
+  CF_BOT_SAMPLES: 40,
+};
+
+export const L5 = {
+  TAX_OPTIONS: [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
+  FLOOR_OPTIONS: [0, 25, 40, 55],
+  KAPPA: 0.4,
+  INCOME_DECK: [30, 60, 100, 170],
+  DONATION_MAX: 20,
+  DONATION_OPTIONS_BOT: [0, 5, 10, 20],
+  RECIPROCITY: 0.3,
+  CONSISTENT_BAND: 0.1,
+  STRONG_SHIFT: 0.2,
+  BAND_LOW_MAX: 0.2,
+  BAND_HIGH_MIN: 0.6,
+};
+
+export const EPS = 1e-9;

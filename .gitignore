@@ -1,0 +1,9 @@
+node_modules
+dist
+sim/out
+test-results
+playwright-report
+*.tsbuildinfo
+.vercel
+
+.vercel

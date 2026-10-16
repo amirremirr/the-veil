@@ -1,0 +1,700 @@
+{
+  "app": {
+    "title": "THE VEIL",
+    "subtitle": "A satirical simulator of justice, luck, and who pays for it",
+    "motto": "Everyone gets what they deserve. Details to follow.",
+    "ministry": "Republic of Meritopia · Ministry of Deserving",
+    "begin": "Begin Life",
+    "resume": "Resume Life in Progress",
+    "archives": "The Archives",
+    "settings": "Settings",
+    "about": "About",
+    "back": "Back",
+    "continue": "Continue",
+    "mainMenu": "Main Menu",
+    "liveRegion": "Ministry announcements"
+  },
+  "mode": {
+    "title": "Form 0-A: Selection of Life Format",
+    "fullRun": "Full Run",
+    "fullRunDesc": "All five levels in order. Your Values card and your fellow citizens stay with you. About 30 to 40 minutes.",
+    "single": "Single Level",
+    "singleDesc": "Play one unlocked level with a fresh Values card. 5 to 8 minutes.",
+    "locked": "Locked. Complete Level {prev} first.",
+    "level": "Level {n}"
+  },
+  "setup": {
+    "title": "Form 0-B: Household Registration",
+    "players": "Number of citizens (you plus bots)",
+    "difficulty": "Difficulty",
+    "EASY": "Easy",
+    "NORMAL": "Normal",
+    "HARD": "Hard",
+    "EASYDesc": "Bots are sloppier and more honest.",
+    "NORMALDesc": "Bots as the Ministry intended.",
+    "HARDDesc": "Bots are sharper and lie more.",
+    "seed": "Seed (optional)",
+    "seedHint": "Leave blank for a random life. The seed is shown at the end so any game can be replayed.",
+    "name": "Your name (optional)",
+    "submit": "Submit Form 0-B"
+  },
+  "values": {
+    "formTitle": "Form 1-V: Notice of Assigned Values",
+    "private": "This card is private. Nobody else can see it. Other citizens hold their own cards, which you cannot see.",
+    "scoring": "Each round you score half your own wealth plus half your card's metric.",
+    "deck": "The deck held two Egoists, one Rawlsian, one Utilitarian, and one Meritocrat. At least one card was left in the drawer.",
+    "accept": "I accept my values",
+    "EGOIST": {
+      "name": "Egoist",
+      "title": "The Self-Made Citizen",
+      "metric": "Your metric is your own wealth. Your round score is simply your wealth.",
+      "blurb": "You have been assigned to care about yourself. Many citizens find this role comes naturally."
+    },
+    "RAWLSIAN": {
+      "name": "Rawlsian",
+      "title": "The Worrier About the Worst-Off",
+      "metric": "Your metric is the wealth of the poorest citizen this round. (It is scaled by 1.67 so that it averages about the same as wealth.)",
+      "blurb": "You lose sleep over whoever is at the bottom. Even when it is not you. Especially when it is not you."
+    },
+    "UTILITARIAN": {
+      "name": "Utilitarian",
+      "title": "The Spreadsheet Saint",
+      "metric": "Your metric is the average wealth of all citizens this round.",
+      "blurb": "You want the biggest total pie. Who gets which slice is a detail you will get to later."
+    },
+    "MERITOCRAT": {
+      "name": "Meritocrat",
+      "title": "The Effort Accountant",
+      "metric": "Your metric is average wealth, discounted when wealth shares drift away from effort shares. Where a level has no effort choice, equal shares count as deserved. (Scaled by 1.22 to average about the same as wealth.)",
+      "blurb": "You believe people deserve what they work for, and nothing they were simply dealt."
+    }
+  },
+  "phase": {
+    "VALUES_REVEAL": "Values",
+    "INTRO": "Memo",
+    "BRIEFING": "Briefing",
+    "TALK": "Talk",
+    "DECIDE": "Decide",
+    "REVEAL": "Reveal",
+    "ROUND_SUMMARY": "Round Summary",
+    "LEVEL_DEBRIEF": "Debrief",
+    "GUESS": "Final Guess",
+    "RUN_DEBRIEF": "Run Debrief",
+    "END": "Closed"
+  },
+  "table": {
+    "round": "Round {r} / {n}",
+    "menu": "Menu",
+    "resume": "Resume",
+    "quit": "Quit to Main Menu",
+    "quitConfirm": "Your progress in this life is saved. You can resume it from the title screen.",
+    "you": "You",
+    "wealth": "{w} coins",
+    "transcript": "Ministry Transcript",
+    "openTranscript": "Transcript ({n})",
+    "info": "Info",
+    "noMessages": "Nothing on record yet.",
+    "waiting": "Waiting for your form.",
+    "submitted": "Form received.",
+    "statusInsured": "Insured",
+    "statusGym": "Gym",
+    "statusEvent": "Life Event",
+    "statusCare": "Care card",
+    "statusComplex": "Complex job",
+    "statusSimple": "Simple job"
+  },
+  "talk": {
+    "title": "Ministry Transcript: Open Floor",
+    "intro": "You may send up to {max} messages. Talk is cheap. Everyone knows it.",
+    "remaining": "{n} left",
+    "send": "Send",
+    "done": "Close the floor",
+    "type": "Message type",
+    "SUPPORT": "Support",
+    "OPPOSE": "Oppose",
+    "PROMISE": "Promise",
+    "CLAIM_VALUES": "Claim values",
+    "ACCUSE": "Accuse",
+    "FLAVOR": "Say something",
+    "option": "Option",
+    "target": "Citizen",
+    "card": "Card",
+    "human": {
+      "SUPPORT": "I support {option}.",
+      "OPPOSE": "I oppose {option}.",
+      "CLAIM_VALUES": "My Values card is {cardName}.",
+      "PROMISE": "I promise to {action}.",
+      "ACCUSE": "I think {target} is {cardName}.",
+      "FLAVOR": "Have you considered that I am right?"
+    }
+  },
+  "summary": {
+    "title": "Round {r} Ledger",
+    "citizen": "Citizen",
+    "wealth": "Wealth",
+    "yourScore": "Your round score",
+    "levelScore": "Your level score so far",
+    "scoreNote": "Other citizens' scores are sealed until the debrief. Their scores would give away their cards.",
+    "stampDone": "FILED"
+  },
+  "stamps": {
+    "APPROVED": "APPROVED",
+    "DENIED": "DENIED",
+    "PENDING": "PENDING REVIEW",
+    "LOST": "LOST IN TRANSIT",
+    "CLOSED": "CASE FILE: CLOSED",
+    "PASSED": "PASSED",
+    "FAILED": "FAILED",
+    "ADOPTED": "ADOPTED",
+    "COINFLIP": "COIN FLIPPED"
+  },
+  "newsletter": "The Ministry Newsletter",
+  "levels": {
+    "1": {
+      "name": "Behind the Veil",
+      "question": "Which distribution rule do you choose when you do not know your position?",
+      "memo": "MEMO TO: All newborn citizens. Congratulations on being born. Before we tell you who you are, please choose a theory of justice. Each round the Ministry shuffles four income cards worth 20, 50, 90, and 160 coins. You vote first and learn your card second. The winning principle sets one tax rate for everyone, and the revenue is shared equally. Taxes leak on the way through the Ministry. We call this administrative costs. You may call it whatever you like, quietly.",
+      "how": "Three rounds. Each round everyone votes for one of four principles. The principle with the most votes wins; ties are settled by a coin flip. Then incomes are dealt at random from the deck 20, 50, 90, 160 (one card each). The winning principle picks a tax rate, everyone pays it, and the revenue (minus leakage) is split equally. Your wealth this round is your after-tax income.",
+      "formulas": "After-tax income = y (1 - t) + R / n. Revenue R = t Y (1 - 0.4 t), where Y is total income. Tax rates come from the grid 0, 0.05, ..., 0.95. Safety Net: smallest t giving everyone at least 40. Range Cap: smallest t making richest minus poorest at most 100. Maximin: the t that makes the minimum as large as possible.",
+      "briefing": [
+        "Form 1-A: Declaration of Preferred Justice. You do not know your income. Neither does anyone else. This is the last time that will be true, so enjoy it.",
+        "Form 1-B: Second Declaration. The deck has been reshuffled. Your previous income has been confiscated for statistical purposes.",
+        "Form 1-C: Final Declaration. Last veil of the level. The Ministry thanks you for your continued ignorance."
+      ],
+      "formTitle": "Form 1-A: Declaration of Preferred Justice",
+      "decide": "Choose one principle. Your vote is secret until the reveal.",
+      "submit": "Submit Form 1-A",
+      "deckNote": "Income deck: 20, 50, 90, 160. One card each, dealt after the vote.",
+      "options": {
+        "P1": {
+          "name": "Let Them Eat Average",
+          "rule": "Maximize average income. No tax at all."
+        },
+        "P2": {
+          "name": "The Safety Net",
+          "rule": "Maximize average income, subject to a floor: everyone gets at least 40."
+        },
+        "P3": {
+          "name": "The Range Cap",
+          "rule": "Maximize average income, subject to richest minus poorest being at most 100."
+        },
+        "P4": {
+          "name": "The Maximin",
+          "rule": "Make the poorest citizen as rich as possible, whatever it costs."
+        }
+      },
+      "reveal": {
+        "votes": "Votes",
+        "winner": "Adopted principle",
+        "tax": "Tax rate",
+        "incomes": "Incomes dealt",
+        "after": "After tax"
+      },
+      "info": "Each tax coin loses some value in transit: the leak grows with the tax rate (kappa = 0.4)."
+    },
+    "2": {
+      "name": "Luck vs. Effort",
+      "question": "How do beliefs about luck and effort shape support for redistribution?",
+      "memo": "MEMO TO: All working citizens. The Ministry has discovered that some citizens work hard and some citizens are lucky. It cannot tell which is which. Neither can you. Each round you will vote on a flat tax, then decide how hard to work. Your income depends on your talent, your effort, and a luck draw. Talent is private. Effort is tiring. Luck is luck. Tax revenue, minus administrative leakage, is shared equally.",
+      "how": "Four rounds. You have a private talent card for the whole level. Each round: vote on a tax rate (0%, 20%, 40%, 60%, 80%); the median vote wins. Then, knowing the tax, choose effort from 0 to 10. Income = 20 + 4 x talent x effort + luck. Effort costs 0.4 x effort squared. Everyone sees each other's income and wealth, but not the breakdown. After rounds 1 to 3 you guess how much of the richest citizen's income was luck. After round 4, you split a bonus pot between two citizens.",
+      "formulas": "y = 20 + 4 a e + luck, with luck drawn from {-20, 0, 10, 30, 60}. Wealth = (1 - t) y + R / n - 0.4 e^2, with R = t Y (1 - 0.1 t). The applied t is the median vote (lower median for even n). Selfish best effort: e* = 5 a (1 - t + t (1 - 0.1 t) / n), rounded, at most 10.",
+      "briefing": [
+        "Form 21-A: Declaration of Intended Toil. The Ministry wishes you a productive round. Results not guaranteed. Luck not included.",
+        "Form 21-B: Second Declaration of Toil. Last round's results have been archived under 'Merit, Probably.'",
+        "Form 21-C: Third Declaration of Toil. A reminder that the Ministry cannot see your effort. It can see your income, and it has opinions.",
+        "Form 21-D: Final Declaration of Toil. After this round, a bonus pot will be distributed by someone who is not the Ministry. That someone is you."
+      ],
+      "taxTitle": "Form 21: Median Voter Ballot",
+      "taxDecide": "Vote for a tax rate. By law, the Median Voter Theorem is now enforced by the police.",
+      "taxSubmit": "Submit ballot",
+      "effortTitle": "Form 22: Declaration of Effort",
+      "effortDecide": "The tax rate is {t}%. Choose your effort. Effort costs 0.4 x effort squared coins.",
+      "effortSubmit": "Declare effort",
+      "effortPreview": "If luck is average, your income would be about {y} and your wealth about {w}.",
+      "pollTitle": "Form 23: Attribution Survey (unpaid)",
+      "pollDecide": "{name} earned the most of any other citizen this round: {y} coins. How much of that income was luck?",
+      "pollSubmit": "Submit survey",
+      "pollNote": "This survey does not affect your score. The Ministry is just curious.",
+      "bonusTitle": "Form 24: The Bonus Pot",
+      "bonusDecide": "The Ministry has 100 bonus coins. Split them between these two citizens. Your own wealth is not affected. You see everything about them.",
+      "bonusSubmit": "Distribute the pot",
+      "talent": "Talent",
+      "effort": "Effort",
+      "luck": "Luck",
+      "gross": "Gross income",
+      "yourTalent": "Your talent: {a}",
+      "taxApplied": "Applied tax: {t}%",
+      "options": {
+        "T0": "zero tax",
+        "T20": "a 20% tax",
+        "T40": "a 40% tax",
+        "T60": "a 60% tax",
+        "T80": "an 80% tax"
+      },
+      "reveal": {
+        "taxTitle": "Ballots counted",
+        "incomeTitle": "Incomes posted",
+        "yourBreakdown": "Your breakdown: base 20 + talent x effort {te} + luck {luck} = {y}",
+        "bonusTitle": "Bonus pot distributed"
+      },
+      "info": "Your talent is private. Others see your income, never how you got it."
+    },
+    "3": {
+      "name": "Shocks and Insurance",
+      "question": "Why do voluntary insurance markets unravel, and what does mandatory insurance cost?",
+      "memo": "MEMO TO: All citizens with bodies, homes, or luck. Life Events are now available to everyone. The private sector would like to sell you protection. Each round you earn 100 coins, and a Life Event may cost you 80. Dr. Prognosis has sealed a letter telling you your personal risk. SafeHands Mutual cannot read that letter. It prices from whoever bought last round. Our actuaries are very good. Unfortunately they are always one year late.",
+      "how": "Four rounds. You are privately Low risk (10% chance of a Life Event per round) or High risk (40%). Each round you may buy full insurance at the posted premium, and you may pay 6 coins for the gym, which halves your risk that round. Rounds 1 and 2 use the voluntary market. Then everyone votes: keep the voluntary market, or switch to Mandatory insurance at 50% or 100% coverage for rounds 3 and 4.",
+      "formulas": "Premium: P1 = 1.1 x 80 x 0.25 = 22. Later, P = 1.1 x 80 x (average risk of last round's buyers, after the gym). No buyers means the insurer exits. Mandatory: contribution T = 1.1 x c x 80 x (average risk of everyone, after the gym); a Life Event costs you (1 - c) x 80.",
+      "briefing": [
+        "Form 33: Assessment of Your Personal Doom. SafeHands Mutual is open for business at 22 coins, priced for the average citizen. Nobody is average.",
+        "Form 33-B: Renewal Notice. SafeHands Mutual has reviewed last year's customers and adjusted accordingly.",
+        "Form 33-C: The New Regime. The Republic has voted. The consequences are now available.",
+        "Form 33-D: Final Assessment. One more round of doom, then the Ministry closes the file."
+      ],
+      "choiceTitle": "Form 33-X: Protection Elections",
+      "choiceDecide": "Decide for this round. Both choices are secret until the reveal.",
+      "choiceSubmit": "File elections",
+      "buy": "Buy full insurance for {p} coins",
+      "noInsurer": "SafeHands Mutual has pivoted to cryptocurrency. No insurance is offered.",
+      "mandatoryNote": "Mandatory insurance covers {c}% of any Life Event. Your contribution is set after everyone's gym decisions.",
+      "gym": "Pay 6 coins for the gym (halves your risk this round)",
+      "regimeTitle": "Form 34: Referendum on Protection",
+      "regimeDecide": "Choose the regime for rounds 3 and 4. Plurality wins. Ties go to the coin.",
+      "regimeSubmit": "Cast referendum ballot",
+      "letter": "Sealed letter from Dr. Prognosis",
+      "letterBody": {
+        "LOW": "You are LOW risk: a 10% chance of a Life Event each round. Please do not let this go to your head.",
+        "HIGH": "You are HIGH risk: a 40% chance of a Life Event each round. The Ministry is very sorry and would like to sell you a form."
+      },
+      "regimes": {
+        "VOL": "the Voluntary Market",
+        "M50": "Mandatory Insurance at 50%",
+        "M100": "Mandatory Insurance at 100%"
+      },
+      "regimeDesc": {
+        "VOL": "Keep SafeHands Mutual, if it is still around.",
+        "M50": "Everyone covered for half of any loss. Some reason left to go to the gym.",
+        "M100": "Everyone covered for all of any loss. No reason left to go to the gym."
+      },
+      "promises": {
+        "BUY": "buy insurance",
+        "GYM": "use the gym"
+      },
+      "reveal": {
+        "eventsTitle": "Life Events of Round {r}",
+        "none": "No Life Event. Enjoy it.",
+        "premiumNext": "Next premium: {p} coins",
+        "insurerGone": "SafeHands Mutual has pivoted to cryptocurrency.",
+        "contribution": "Contribution paid by everyone: {T} coins",
+        "regimeTitle": "Referendum results"
+      },
+      "info": "Premium history"
+    },
+    "4": {
+      "name": "The Labor Market",
+      "question": "How can wage gaps arise with no prejudiced person in the room?",
+      "memo": "MEMO TO: All applicants. The Ministry is pleased to announce that discrimination has been abolished. Hiring is now handled by HireBot 3000 (Unbiased Edition), a neutral algorithm that only looks at data. You are a Circle or a Square. Some citizens hold a Care card, allocated according to Tradition. Each round you may pay to become skilled, take a test, and receive a job. HireBot's beliefs are seeded from the records of the Old Regime, which we are told were very accurate.",
+      "how": "Five rounds. Each round you see a private cost (10 to 40) to invest in skill. Investing makes you skilled. Then everyone takes a test: skilled workers pass 80% of the time, unskilled 30%. HireBot combines the result with its belief about your group and gives you a Complex job if it is at least 60% sure you are skilled, otherwise a Simple job (20 coins). Complex workers choose Greedy hours (90) or Flexible hours (55); Care card holders pay a chaos cost of 40 on Greedy hours. After round 3, everyone votes on a hiring policy.",
+      "formulas": "Posterior after Pass: q = 0.8 pi / (0.8 pi + 0.3 (1 - pi)). After Fail: q = 0.2 pi / (0.2 pi + 0.7 (1 - pi)). Complex job if q >= 0.6. After each round, for each group: pi = 0.8 pi + 0.2 x (share of the group that was skilled). Starting beliefs: Circles 0.6, Squares 0.3.",
+      "briefing": [
+        "Form 44: Application for Employment. HireBot 3000 is ready. It does not see shapes. It sees statistics about shapes.",
+        "Form 44-B: Reapplication. HireBot has reviewed last round's performance reviews and updated itself. Slightly.",
+        "Form 44-C: Third Application. After this round, the Republic will vote on how HireBot should behave.",
+        "Form 44-D: Application Under New Policy. The Republic has spoken. HireBot has been patched.",
+        "Form 44-E: Final Application. One more round. HireBot thanks you for your data."
+      ],
+      "investTitle": "Form 44-I: Skill Investment",
+      "investDecide": "Your investment cost this round is {c} coins. Invest to become skilled?",
+      "investYes": "Invest ({c} coins)",
+      "investNo": "Do not invest",
+      "investSubmit": "File Form 44-I",
+      "scheduleTitle": "Form 44-S: Schedule Election",
+      "scheduleDecide": "HireBot has assigned you a Complex job. Choose your hours.",
+      "greedy": "Greedy hours: 90 coins",
+      "greedyCare": "Greedy hours: 90 coins, minus a chaos cost of {chaos} (Someone Has To Pick Up The Kids)",
+      "flex": "Flexible hours: 55 coins",
+      "scheduleSubmit": "File Form 44-S",
+      "policyTitle": "Form 45: Hiring Policy Referendum",
+      "policyDecide": "Choose HireBot's policy for rounds 4 and 5. Plurality wins. Ties go to the coin.",
+      "policySubmit": "Cast policy ballot",
+      "groups": {
+        "CIRCLE": "Circle",
+        "SQUARE": "Square"
+      },
+      "care": "Care card (allocated according to Tradition)",
+      "policies": {
+        "A": {
+          "name": "Status Quo",
+          "desc": "No change. HireBot keeps judging by group beliefs."
+        },
+        "B": {
+          "name": "Blind Hiring",
+          "desc": "HireBot cannot see shapes. It uses one pooled belief for everyone."
+        },
+        "C": {
+          "name": "The Quota",
+          "desc": "If nobody in a group qualifies, the top candidate of that group gets a Complex job anyway."
+        },
+        "D": {
+          "name": "Subsidized Childcare",
+          "desc": "The chaos cost for Care card holders falls from 40 to 10."
+        }
+      },
+      "report": "HireBot Transparency Report",
+      "reportBelief": "Belief that a {g} is skilled",
+      "reportPool": "Pooled belief (blind hiring)",
+      "reportThreshold": "Complex job if confidence is at least 60%",
+      "reveal": {
+        "assignTitle": "HireBot has decided",
+        "pass": "Passed",
+        "fail": "Failed",
+        "confidence": "HireBot confidence: {q}%",
+        "quota": "Quota hire",
+        "payTitle": "Payday and performance reviews",
+        "skilled": "Skilled",
+        "unskilled": "Unskilled",
+        "beliefUpdate": "HireBot now believes {pc}% of Circles and {ps}% of Squares are skilled.",
+        "poolUpdate": "HireBot's pooled belief is now {pp}%.",
+        "policyTitle": "Policy referendum results"
+      },
+      "info": "HireBot Transparency Report"
+    },
+    "5": {
+      "name": "The Constitutional Convention",
+      "question": "Do your principles survive learning your position?",
+      "memo": "MEMO TO: All delegates. Meritopia needs a permanent constitution. First you will write it without knowing who you are. Then we will tell you, and you may amend it. A constitution sets a tax rate and an income floor. Incomes come from the deck 30, 60, 100, and 170. The Ministry will remember what you said behind the veil. The Ministry always remembers. Form 55: Final Answer (Provisional).",
+      "how": "One era in two stages. Stage 1: behind the veil, everyone submits a tax rate (0% to 80%) and a floor (0, 25, 40, or 55). The adopted constitution is the median tax and the median floor. Stage 2: incomes are dealt and revealed. You may donate 0 to 20 coins to one other delegate (it buys nothing enforceable), and propose one amendment or pass. Amendments are voted one at a time and need a two-thirds supermajority.",
+      "formulas": "Revenue R = t Y (1 - 0.4 t). First everyone below the floor F is topped up to F (pro rata if revenue is short). Any remainder is split equally. Wealth = (1 - t) y + top-up + equal share - donations given + donations received. Supermajority: ceil(2n / 3) yes votes.",
+      "briefing": {
+        "VEIL": "Form 55: Final Answer (Provisional). Write the rules of the Republic. You do not yet know what you will earn. Please write as if that matters."
+      },
+      "veilTitle": "Form 55-V: Constitution Behind the Veil",
+      "veilDecide": "Choose a tax rate and an income floor. The median of all submissions becomes the constitution.",
+      "veilSubmit": "Submit Form 55-V",
+      "veilPreview": "Expected outcomes for a random seat under your proposal, before anyone knows their income:",
+      "lobbyTitle": "Form 56: Lobbying and Amendments",
+      "lobbyDecide": "You now know your income. You may make one donation and propose one amendment. Both are secret until the vote.",
+      "donateTo": "Donate to",
+      "nobody": "Nobody",
+      "amount": "Amount (0 to 20 coins)",
+      "propose": "Propose an amendment",
+      "pass": "Pass (keep the current constitution)",
+      "lobbySubmit": "File Form 56",
+      "amendTitle": "Form 57: Amendment Vote {k} of {total}",
+      "amendDecide": "{name} proposes changing the constitution from {from} to {to}. It needs {need} yes votes.",
+      "amendYes": "Vote YES",
+      "amendNo": "Vote NO",
+      "amendEffect": "Your wealth under the current constitution: {cur}. Under the amendment: {new}.",
+      "tax": "Tax rate",
+      "floor": "Income floor",
+      "constitution": "{t}% tax, floor {F}",
+      "current": "Current constitution",
+      "options": {
+        "T_LOW": "low taxes (20% or less)",
+        "T_MID": "moderate taxes (30% to 50%)",
+        "T_HIGH": "high taxes (60% or more)"
+      },
+      "reveal": {
+        "constitutionTitle": "The Constitution, as adopted behind the veil",
+        "incomesTitle": "The Veil Is Lifted",
+        "incomesNote": "Incomes have been dealt. Everyone now knows exactly who they are.",
+        "amendTitle": "The Amendment Record",
+        "noAmendments": "No amendments were proposed.",
+        "final": "Final constitution"
+      },
+      "info": "Constitution"
+    }
+  },
+  "summaryHeadline": "Newsletter",
+  "debrief": {
+    "stamp": "LEVEL {n} CASE FILE: CLOSED",
+    "scoreboard": "Scoreboard",
+    "levelScore": "Level score",
+    "wealthByRound": "Wealth by round",
+    "predicted": "What the theory predicted",
+    "did": "What you did",
+    "chart": "The evidence",
+    "archives": "From the Archives",
+    "openArchives": "Open the Archives",
+    "compare": {
+      "benchmark": "Benchmark",
+      "lab": "Lab evidence",
+      "you": "You",
+      "bots": "Bots"
+    },
+    "next": "Next Level",
+    "toRunDebrief": "Final Ruling",
+    "replaySame": "Replay (same seed)",
+    "replayNew": "Replay (new seed)",
+    "menu": "Main Menu",
+    "trust": "The bots considered you {r}% trustworthy.",
+    "valuesHidden": "Values cards stay sealed until the end of the run.",
+    "seed": "Seed: {seed}",
+    "l1": {
+      "predicted": "A selfish citizen who only cares about expected income should pick Let Them Eat Average, because every tax leaks and lowers the average. A citizen who fears only the worst case should pick The Maximin. In the classic lab experiments, most groups chose neither: they picked a high average with a guaranteed floor, like The Safety Net.",
+      "benchmarkRow": "Expected income maximizer: {b}. Pure worst-case: {r}.",
+      "labRow": "Most groups chose a floor-constrained average (Frohlich, Oppenheimer and Eavey 1987).",
+      "yourVotes": "Your votes: {votes}.",
+      "price": "Price of insurance: by choosing {p} instead of Let Them Eat Average, you gave up {x} coins of expected average income per round, in exchange for a better worst case.",
+      "priceZero": "You chose the principle with the highest expected average. Harsanyi would approve. The poorest citizen would like a word.",
+      "teaseRisk": "You paid for insurance against bad luck. Reasonable. Also exactly what someone who expected bad luck would do.",
+      "teaseEgo": "You voted for the biggest pie, perhaps confident you would get a large slice. The veil was supposed to stop that.",
+      "teaseMix": "You changed your mind between rounds. The Ministry notes that the veil did not change. You did.",
+      "chartTitle": "Expected outcomes per principle (before incomes are dealt)",
+      "chartAvg": "Expected average",
+      "chartMin": "Expected minimum",
+      "chartOwn": "Your expected income",
+      "actualTitle": "What each principle would have produced with the actual draws",
+      "colPrinciple": "Principle",
+      "colTax": "Tax",
+      "colAvg": "Average",
+      "colMin": "Minimum",
+      "colRange": "Range"
+    },
+    "l2": {
+      "predicted": "A selfish citizen works less as taxes rise: best effort falls from 5 x talent at zero tax. Citizens with below-average expected income gain from redistribution, so the median voter decides the tax (Meltzer and Richard). Societies that believe income is mostly luck tend to vote for more redistribution (Alesina and Angeletos).",
+      "predictedT": "Selfish preferences in this game predicted a tax of {t}%. The actual taxes were {actual}.",
+      "variance": "Of all the variation in gross income this level, {te}% came from talent times effort, {lu}% from luck, and {ia}% from how the two moved together.",
+      "poll": "On average you said luck was {belief}% of the top earner's income. The truth for those citizens averaged {truth}%.",
+      "pollNone": "You did not answer the attribution survey.",
+      "effort": "Your effort compared with the selfish best response each round: {pairs}.",
+      "distortion": "Total wealth this level was {real} coins. With zero tax, the same luck draws, and best-response effort, it would have been {cf}. Difference: {diff}.",
+      "fairness": "Your Bonus Pot split classifies you as: {ideal}.",
+      "aaConsistent": "Your tax votes were consistent with your beliefs about luck: {why}",
+      "aaInconsistent": "Your tax votes did not line up with your beliefs about luck: {why}",
+      "aaWhyHighHigh": "you think luck matters a lot and you voted for substantial taxes.",
+      "aaWhyLowLow": "you think effort matters most and you voted for low taxes.",
+      "aaWhyHighLow": "you think luck matters a lot but voted for low taxes.",
+      "aaWhyLowHigh": "you think effort matters most but voted for substantial taxes.",
+      "chartTitle": "Where each citizen's gross income came from (all rounds)",
+      "chartBase": "Base",
+      "chartTE": "Talent x effort",
+      "chartLuck": "Luck",
+      "ideals": {
+        "EGALITARIAN": "Strict egalitarian",
+        "LIBERTARIAN": "Libertarian (rewards everything, including luck)",
+        "MERITOCRATIC": "Productivity meritocrat (rewards talent and effort, not luck)",
+        "LIBERAL_EGALITARIAN": "Liberal egalitarian (rewards effort only)"
+      }
+    },
+    "l3": {
+      "predicted": "Risk-neutral Low types skip both insurance and the gym. High types are indifferent between insurance at 22 and the gym. Insured High types skip the gym (moral hazard), so the pool is riskier and the next premium jumps to 35.2. At that price High types do better uninsured with the gym, and the market unravels. A mandate stops the spiral: at 100% coverage nobody uses the gym; at 50% High types still do.",
+      "path": "Premium path: {path}.",
+      "unraveled": "The voluntary market unraveled: a round passed with no buyers.",
+      "survived": "The voluntary market did not unravel in rounds 1 and 2.",
+      "gym": "Gym use: {ins} of insured choices, {unins} of uninsured choices, {mand} under the mandate.",
+      "yourType": "You were {type} risk. Best regime for your type, at this table's mix of risks: {best}. You voted for {vote}.",
+      "matchType": "Your vote matched your type's interest.",
+      "mismatchType": "Your vote did not match your type's interest. Either you were thinking of others, or of your Values card, or you misread the letter.",
+      "expectedTitle": "Expected wealth per round by type (risk-neutral, this table's mix of risks)",
+      "realWorld": "Most Life Events here are unchosen: illness, disability, accidents. This is one reason most rich countries make some insurance mandatory. The cost is that low-risk people pay more than their own risk, and the benefit is that the market for protection exists at all.",
+      "chartTitle": "Premium path across rounds",
+      "pool": "Buyers: {n}"
+    },
+    "l4": {
+      "predicted": "With HireBot's starting beliefs, a Circle who passes the test gets a Complex job, so investing pays 35 coins on average and Circles invest when the cost is 30 or less. A Square who passes still falls short of 60% confidence, so investing pays nothing and Squares rationally do not invest. Then HireBot sees few skilled Squares and its belief falls further. The stereotype confirms itself (Coate and Loury).",
+      "gap": "Average wealth gap per round (Circles minus Squares): {gap} coins.",
+      "punchline": "No player and no line of HireBot's code ever used group identity as a preference. The gap came from beliefs, incentives, and schedules.",
+      "decompTitle": "Oaxaca-style decomposition by counterfactual simulation",
+      "decompExplain": "We re-ran this level with the same seed and your same decisions where possible, changing one thing at a time: equal starting beliefs (0.45 for both groups), equal Care card odds (50% for both), and both. The bots re-optimized each time. The second column averages {k} alternative histories with fresh luck.",
+      "colChannel": "Channel",
+      "colSame": "This history",
+      "colAvg": "Average of {k} histories",
+      "stereotype": "Stereotype (starting beliefs)",
+      "care": "Care (schedules and childcare)",
+      "interaction": "Interaction",
+      "total": "Total gap explained",
+      "baselineGap": "Simulated baseline gap",
+      "realWorld": "Circles and Squares are abstract here. In the real world, this is one mechanism economists use to explain part of the gender pay gap: unequal caregiving combined with jobs that pay disproportionately for long, inflexible hours (Goldin 2014), together with statistical discrimination (Phelps 1972; Arrow 1973).",
+      "chartTitle": "HireBot's beliefs over the rounds",
+      "chartGapTitle": "Gap explained by each channel (average of alternative histories)",
+      "you": "You were a {g}{care}. You invested in {k} of 5 rounds."
+    },
+    "l5": {
+      "predicted": "Behind the veil, everyone has the same information, so differences in proposals reflect values and risk attitudes. After the reveal, self-interest kicks in: richer delegates should want lower taxes and poorer ones higher taxes. Babcock and Loewenstein found that people sincerely come to see their self-interested position as the fair one.",
+      "you": "Behind the veil you proposed {veil}. After learning you earn {inc} (rank {rank} of {n}), you moved to {rev}. Your shift: {dt} percentage points.",
+      "slope": "Across all delegates, the slope of the shift on income rank was {slope} points per rank step. {sign}",
+      "slopeNeg": "Negative: the richer you turned out, the more you wanted to cut taxes. Self-serving bias, reporting for duty.",
+      "slopePos": "Positive: the richer delegates wanted higher taxes. The Ministry suspects sarcasm.",
+      "slopeZero": "Flat: income did not predict anyone's shift. The Ministry is moved.",
+      "amendments": "Amendments proposed: {n}. Passed: {p}.",
+      "donations": "Donations: {list}.",
+      "noDonations": "Nobody donated. Either principled or broke.",
+      "bought": "{donor} gave {amount} coins to {to}, who then voted {vote} on the donor's amendment.",
+      "chartTitle": "Shift in preferred tax against income rank",
+      "chartX": "Income rank (1 = poorest)",
+      "chartY": "Shift in tax (points)"
+    }
+  },
+  "verdicts": {
+    "consistent": "Consistent. The Ministry finds this suspicious.",
+    "paydayStrong": "Principled until payday.",
+    "paydayMild": "Principled until payday, with a modest payday.",
+    "convenientStrong": "Discovered the merits of redistribution at a convenient moment.",
+    "convenientMild": "Mildly rediscovered solidarity upon learning the price of rent.",
+    "selfTaxingRich": "Rich, and voted to tax yourself more. The Ministry has scheduled a wellness check.",
+    "poorTaxCutter": "Poor, and voted to cut your own taxes. Aspirational."
+  },
+  "guess": {
+    "title": "Form 99: Final Declaration of Suspicions",
+    "intro": "Before the cards are revealed, guess each citizen's Values card. Each correct guess earns 15 run points. The bots are guessing yours too.",
+    "submit": "Submit suspicions"
+  },
+  "run": {
+    "stamp": "LIFE: CLOSED",
+    "title": "Final Ruling of the Ministry of Deserving",
+    "ranking": "Final ranking",
+    "colCitizen": "Citizen",
+    "colCard": "Values card",
+    "colLevels": "Levels",
+    "colGuess": "Guess bonus",
+    "colTotal": "Total",
+    "ideology": "Your Revealed Ideology",
+    "ideologyLine": "You believe in {l1}, {l2}, and {l3}, {tail}.",
+    "filed": "The Ministry has filed you under: {label}.",
+    "botGuesses": "What the bots thought you were",
+    "botGuessLine": "{bot} guessed {guess}",
+    "yourGuesses": "Your guesses",
+    "correct": "correct",
+    "wrong": "wrong",
+    "trust": "Trustworthiness (promises and stated support kept)",
+    "download": "Download game log (JSON)",
+    "seed": "Seed: {seed}",
+    "l1": {
+      "P1": "the free market",
+      "P2": "a safety net",
+      "P3": "a cap on inequality",
+      "P4": "protecting the worst-off at any cost"
+    },
+    "l2": {
+      "EGALITARIAN": "equal shares no matter what",
+      "LIBERTARIAN": "rewarding whatever people end up with",
+      "MERITOCRATIC": "rewarding talent and effort",
+      "LIBERAL_EGALITARIAN": "rewarding effort only",
+      "none": "a vague sense that things should work out"
+    },
+    "l3": {
+      "VOL": "the free market for insurance",
+      "M50": "partial mandatory insurance",
+      "M100": "full mandatory insurance"
+    },
+    "tails": {
+      "consistent": "and you kept believing it after you found out who you were",
+      "paydayStrong": "until you are rich",
+      "paydayMild": "until you are a little rich",
+      "convenientStrong": "especially once you turned out to be poor",
+      "convenientMild": "a bit more once you turned out to be poor",
+      "selfTaxingRich": "even after you turned out rich, which is touching and slightly alarming",
+      "poorTaxCutter": "and you cut taxes on yourself while poor, which the Ministry is still trying to understand",
+      "none": "pending review"
+    },
+    "labels": {
+      "consistent": "Principled, Allegedly",
+      "paydayStrong": "Compassionate, Conditionally",
+      "paydayMild": "Compassionate, Conditionally",
+      "convenientStrong": "Solidarity, Situational",
+      "convenientMild": "Solidarity, Situational",
+      "selfTaxingRich": "Generous, Possibly Confused",
+      "poorTaxCutter": "Libertarian, Aspirational",
+      "none": "Miscellaneous"
+    },
+    "policyLine": "In the labor market you voted for {policy}."
+  },
+  "archives": {
+    "title": "The Ministry Archives (Declassified)",
+    "search": "Search the Archives",
+    "level": "Used in Level {n}",
+    "formula": "Formula",
+    "sources": "Sources",
+    "none": "No records match. The Ministry may have shredded them."
+  },
+  "settings": {
+    "title": "Form S-1: Personal Preferences",
+    "reducedMotion": "Reduced motion",
+    "textSize": "Text size",
+    "sound": "Sound (there is no sound; the Ministry could not afford it)",
+    "theme": "Theme",
+    "themeSystem": "Match device",
+    "themeLight": "Day Shift",
+    "themeDark": "Night Shift at the Ministry",
+    "difficulty": "Default difficulty",
+    "unlockAll": "Unlock all levels (for professors)",
+    "reset": "Erase saved progress",
+    "resetDone": "Progress erased. The Ministry has forgotten you, officially."
+  },
+  "about": {
+    "title": "About This Simulator",
+    "purpose": "The Veil turns five results from political philosophy, public economics, and behavioral economics into playable levels: choosing principles behind a veil of ignorance, luck versus effort and redistribution, adverse selection and moral hazard in insurance, statistical discrimination in labor markets, and self-serving bias in constitutional choice. The theory is never lectured during play. It appears in the debrief, where it explains what you just did.",
+    "author": "Designed by Amirreza Akhavan.",
+    "methodsTitle": "Methods note for professors",
+    "methods": "Bots are logit quantal response maximizers (McKelvey and Palfrey 1995) of their own hidden Values objective. Each bot evaluates every available action by expected CRRA utility of its round score, computed by exact enumeration where small and by Monte Carlo (300 draws from a separate random stream) otherwise, converts expected utility to a certainty equivalent in coins, and chooses with logit precision lambda. Bots model other players with level-1 reasoning: other bots act as risk-neutral Egoists with probability 0.5 and otherwise as their believed Values card. Beliefs over Values cards are updated by Bayes' rule after every public vote and by reliability-weighted messages. Every game is reproducible from its seed and action log. A headless simulator (npm run sim) checks balance across thousands of bot-only games.",
+    "source": "Source code",
+    "noTracking": "No analytics, no tracking, no accounts. Settings and saved games live only in this browser."
+  },
+  "ui": {
+    "memoHead": "Ministry of Deserving · Internal Memo",
+    "skip": "Skip",
+    "howTitle": "How this level works",
+    "formulasTitle": "The exact formulas",
+    "best": "Best: {n}",
+    "file": "FILE {id}",
+    "on": "ON",
+    "off": "OFF",
+    "mainMenu": "Main menu",
+    "citizens": "Citizens",
+    "kept": "kept",
+    "broken": "broken",
+    "wealthShort": "W",
+    "coins": "coins",
+    "pending": "pending",
+    "yes": "YES",
+    "no": "NO",
+    "incomeDeck": "Income deck: {deck}",
+    "l1": {
+      "summary": "{name}: average {avg}, minimum {min}"
+    },
+    "l2": {
+      "grossAvg": "Gross income at average luck",
+      "afterTax": "After tax, before rebate",
+      "effortCost": "Effort cost",
+      "pollAria": "Share of income from luck",
+      "cmpLabel": "Tax",
+      "cmpLab": "More luck belief, more tax",
+      "chartSummary": "{name}: base {base}, talent times effort {te}, luck {luck}"
+    },
+    "l3": {
+      "mandate": "mandate",
+      "mandateMark": "M",
+      "highShare": "High-risk share at this table: {p}",
+      "cmpLabel": "Round 2 premium",
+      "cmpLab": "Unravels",
+      "cmpNone": "no",
+      "premiumSeries": "SafeHands Mutual premium",
+      "p1": "P1 = 22",
+      "typeLOW": "LOW",
+      "typeHIGH": "HIGH"
+    },
+    "l4": {
+      "cmpLabel": "Investment",
+      "cmpBench": "Circles yes, Squares no",
+      "cmpLab": "Coate and Loury",
+      "round": "Round",
+      "gap": "Gap",
+      "start": "Start",
+      "threshold": "A Pass clears 60% at 0.36",
+      "greedy": "Greedy",
+      "flex": "Flexible",
+      "careHolder": " with a Care card",
+      "summary": "Square belief path: {path}",
+      "gapSummary": "Stereotype {s}, care {c}, interaction {i}"
+    },
+    "l5": {
+      "cmpLabel": "Slope",
+      "cmpBench": "below 0",
+      "cmpLab": "Babcock and Loewenstein",
+      "pts": "{x} pts",
+      "ptsRank": "{x} pts per rank",
+      "summary": "{name}: rank {rank}, shift {dt}"
+    }
+  }
+}

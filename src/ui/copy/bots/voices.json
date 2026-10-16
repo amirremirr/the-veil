@@ -1,0 +1,135 @@
+{
+  "chet": {
+    "SUPPORT": [
+      "{option}. Rising tide, boats, you know the rest. I rise at 4am.",
+      "Voting {option}. I did not get here by overthinking. I got here by voting {option}.",
+      "{option} is the move. Agree? Comment below.",
+      "Hot take: {option}. Cold shower take: also {option}."
+    ],
+    "OPPOSE": [
+      "{option}? That is a mindset problem.",
+      "Hard pass on {option}. Winners do not do {option}.",
+      "{option} is how you end up with participation trophies."
+    ],
+    "CLAIM_VALUES": [
+      "Full transparency: {cardName}. Built different.",
+      "My personal brand? {cardName}. It is on my business card.",
+      "{cardName}. I just want everyone to win. Mostly me, but everyone."
+    ],
+    "PROMISE": [
+      "I will {action}. Accountability is my love language.",
+      "Committing publicly: I will {action}. Screenshot this.",
+      "I will {action}, and I will do it before sunrise."
+    ],
+    "ACCUSE": [
+      "{target} is giving {cardName} energy. Just saying.",
+      "Not to call anyone out, but {target}? {cardName}. Big time.",
+      "{target} talks fairness but runs the {cardName} playbook."
+    ],
+    "FLAVOR": [
+      "Have you considered that I am right?",
+      "Grindset check. Who else is up?",
+      "This vote is a growth opportunity.",
+      "I turned my own birth into a startup."
+    ]
+  },
+  "marigold": {
+    "SUPPORT": [
+      "{option}, please. I brought snacks for the vote.",
+      "I think {option} is the kind thing to do. I made a sign.",
+      "Can we all agree on {option}? I printed handouts.",
+      "{option}. I asked my neighbors and they all nodded."
+    ],
+    "OPPOSE": [
+      "I worry {option} leaves people behind. I have a pamphlet about it.",
+      "{option} makes me sad. I am saying that in a calm voice.",
+      "Respectfully, no to {option}. I will still share my snacks."
+    ],
+    "CLAIM_VALUES": [
+      "Speaking from the heart: {cardName}.",
+      "I hold the {cardName} card, and I feel it is important to share that in a safe space.",
+      "{cardName}, and I have a lot of feelings about it."
+    ],
+    "PROMISE": [
+      "I will {action}. I wrote it on my hand so I do not forget.",
+      "Pinky promise: I will {action}.",
+      "I will {action}, and I hope you will too, at your own pace."
+    ],
+    "ACCUSE": [
+      "I do not want to point fingers, but {target} seems like the {cardName} type.",
+      "Gently: {target}, are you the {cardName}? It is okay if you are.",
+      "{target}, I sense {cardName} vibes and I am holding space for that."
+    ],
+    "FLAVOR": [
+      "Everyone is doing great.",
+      "Remember to hydrate during the vote.",
+      "I made a group chat for the vote. It is mostly snacks."
+    ]
+  },
+  "ugo": {
+    "SUPPORT": [
+      "Under expected utility with modest risk aversion, {option} dominates. See footnote 14.",
+      "The equilibrium is {option}. I have a working paper.",
+      "{option}. The proof is left as an exercise for the reader.",
+      "{option}, holding everything else constant, which nobody ever does."
+    ],
+    "OPPOSE": [
+      "{option} fails a basic robustness check. Footnote 9.",
+      "I reject {option} at the 5% level.",
+      "{option} ignores general equilibrium effects. As usual."
+    ],
+    "CLAIM_VALUES": [
+      "My objective function is {cardName}. Assume convexity.",
+      "Formally, I am {cardName}, conditional on the standard assumptions.",
+      "Revealed preference will confirm I am {cardName}. Eventually."
+    ],
+    "PROMISE": [
+      "I commit to {action}. Consider this a credible commitment.",
+      "I will {action}. This is a subgame perfect promise.",
+      "Expect me to {action}. My reputation is a repeated game."
+    ],
+    "ACCUSE": [
+      "The behavior of {target} is consistent with a {cardName} prior. Footnote 22.",
+      "I estimate that {target} is {cardName}, p < 0.05.",
+      "The data suggest {target} is {cardName}. N is small. Still."
+    ],
+    "FLAVOR": [
+      "Have you considered the deadweight loss?",
+      "This is all in my textbook, chapter 7.",
+      "Strictly speaking, none of you are rational. Neither am I."
+    ]
+  },
+  "dot": {
+    "SUPPORT": [
+      "{option} fits on one form. I support anything that fits on one form.",
+      "Please select {option}. It has the fewest boxes.",
+      "{option}. Filing it now. Do not make me refile it.",
+      "{option}. It is already pre-stamped."
+    ],
+    "OPPOSE": [
+      "{option} requires Form 88-C. We are out of Form 88-C.",
+      "{option} is not in my binder.",
+      "No to {option}. It has an appendix."
+    ],
+    "CLAIM_VALUES": [
+      "Card on file: {cardName}. Stamped and initialed.",
+      "For the record, {cardName}. Please keep a copy for your records.",
+      "My declared values are {cardName}. Processing time is six to eight weeks."
+    ],
+    "PROMISE": [
+      "I will {action}. In triplicate.",
+      "Noted. I will {action}. Window 4.",
+      "I will {action} after my break."
+    ],
+    "ACCUSE": [
+      "{target} has been flagged as {cardName}. Pending review.",
+      "Per my records, {target} is {cardName}.",
+      "{target}: {cardName}. Do not quote me. Actually you may, I am on break."
+    ],
+    "FLAVOR": [
+      "Take a number.",
+      "This meeting could have been a memo.",
+      "The coffee machine is also under review."
+    ]
+  }
+}

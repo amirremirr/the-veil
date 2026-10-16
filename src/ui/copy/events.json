@@ -1,0 +1,158 @@
+{
+  "lifeEvents": [
+    "Your back has filed for early retirement.",
+    "A pipe burst. It was load-bearing.",
+    "Chronic illness. The Ministry requires you to prove it is chronic by waiting.",
+    "Workplace accident. The workplace has been notified and is fine.",
+    "Your car was hit while parked. The other driver has submitted Form 27-B: Proof of Innocence, in triplicate.",
+    "A storm took your roof. The Ministry has opened a ticket. Your ticket number is 9.",
+    "A hospital stay. The bill arrived before you did.",
+    "Your knee made a noise. A specialist confirmed the noise for a fee.",
+    "A flood reached the second floor. The flood insurance office is on the first floor.",
+    "A long illness in the family. The leave policy is in a binder nobody can find.",
+    "Your teeth have unionized and are demanding a crown.",
+    "A fire in the kitchen. The smoke detector would like it noted that it tried.",
+    "A sudden diagnosis. The Ministry requests the diagnosis be resubmitted on the correct form.",
+    "Your landlord sold the building to a holding company named after a tree."
+  ],
+  "newsletter": {
+    "l1.P1": [
+      "LET THEM EAT AVERAGE. Citizens with 160 coins describe the result as 'fair, actually.'",
+      "NO TAX ADOPTED. Ministry saves on paperwork, loses on everything else.",
+      "AVERAGE MAXIMIZED. The average citizen is thrilled. The average citizen does not exist.",
+      "MARKET LEFT ALONE. Market thanks citizens, asks to be left alone further."
+    ],
+    "l1.P2": [
+      "SAFETY NET ADOPTED. Floor set at 40 coins. Ministry checks the floor for termites.",
+      "NOBODY BELOW FORTY. Ministry calls it 'a reasonable minimum.' Minimum calls it 'a start.'",
+      "NET DEPLOYED AT {t}% TAX. Citizens debate whether a net counts as a floor.",
+      "SAFETY NET PASSES. Tightrope walkers' union issues cautious statement of support."
+    ],
+    "l1.P3": [
+      "RANGE CAP ADOPTED. Richest citizen now only modestly richer. Richest citizen files complaint.",
+      "INEQUALITY CAPPED AT 100 COINS. Ministry measures it with a ruler.",
+      "GAP SHRUNK BY DECREE. Gap reportedly 'feeling smaller, emotionally.'",
+      "RANGE CAP AT {t}% TAX. Statisticians thrilled. Everyone else asks what a range is."
+    ],
+    "l1.P4": [
+      "MAXIMIN ADOPTED. Everyone equally disappointed. Ministry calls it 'a triumph of solidarity.'",
+      "WORST-OFF CITIZEN NOW SLIGHTLY LESS WORST. Tax rate hits {t}%. Leaky bucket reports record leaks.",
+      "RAWLS WINS. Ministry orders a portrait. Portrait is taxed at {t}%.",
+      "MAXIMIN PASSES. The poorest citizen is the richest poorest citizen in history."
+    ],
+    "l1.tie": [
+      "The Supreme Court has flipped a coin.",
+      "Vote tied. The Supreme Court has flipped a coin. The coin declined to comment.",
+      "Deadlock broken by coin toss. The Ministry calls it 'democracy, in a way.'",
+      "The Supreme Court has flipped a coin. Best of three was ruled unconstitutional."
+    ],
+    "l2.highTax": [
+      "Citizens discover leisure. GDP files missing-person report.",
+      "TAX AT {t}%. Effort spotted leaving the Republic with a small suitcase.",
+      "HIGH TAX ERA BEGINS. Ministry reports record equality and record napping.",
+      "{t}% TAX ADOPTED. Economists predict disaster, then ask for a grant to study it."
+    ],
+    "l2.lucky": [
+      "{name} earns a fortune. Credits hard work. Hard work declines to confirm.",
+      "LUCKIEST CITIZEN THANKS HUSTLE. Hustle was not consulted.",
+      "{name} tops the income table. Luck draw was 'merely a factor,' says {name}.",
+      "{name} strikes it rich. Ministry opens inquiry into whether the dice were self-made."
+    ],
+    "l2.zeroTax": [
+      "ZERO TAX ROUND. Ministry staff paid in compliments.",
+      "NO REDISTRIBUTION. Everyone keeps what they earn and also what they were dealt.",
+      "TAX-FREE REPUBLIC. The richest citizen gives a TED talk about it.",
+      "ZERO PERCENT. Ministry sells a chair to cover lunch."
+    ],
+    "l2.normal": [
+      "TAX SET AT {t}%. Median voter satisfied. Everyone else is the median voter's problem.",
+      "MODERATE TAX ADOPTED. Moderates celebrate moderately.",
+      "{t}% TAX. Ministry calls it 'balanced.' Nobody checked the balance.",
+      "MEDIAN VOTER WINS AGAIN. Median voter asks to remain anonymous."
+    ],
+    "l3.exit": [
+      "SafeHands Mutual exits market, cites 'customers who actually need insurance.'",
+      "INSURER LEAVES. SafeHands Mutual has pivoted to cryptocurrency.",
+      "NO BUYERS. SafeHands Mutual closes its doors and its sympathy.",
+      "MARKET FOR PROTECTION DISSOLVES. Protection unavailable for comment."
+    ],
+    "l3.premiumUp": [
+      "PREMIUM RISES TO {premium} COINS. SafeHands Mutual blames 'the kind of people who buy insurance.'",
+      "SafeHands Mutual raises prices. Actuaries describe this year as 'last year, but worse.'",
+      "COST OF PROTECTION CLIMBS. Healthy citizens decide they feel lucky.",
+      "PREMIUM UP. SafeHands Mutual thanks its remaining customers, whom it now suspects."
+    ],
+    "l3.mandatory": [
+      "MANDATE IN EFFECT. Everyone is covered. Everyone is also billed.",
+      "SOCIAL INSURANCE ROUND. The Ministry reviewed your gym receipts personally.",
+      "COVERAGE FOR ALL. Healthy citizens grumble, then trip over a curb.",
+      "MANDATORY POOL OPERATES. Adverse selection reported missing, presumed fine."
+    ],
+    "l3.manyEvents": [
+      "{events} LIFE EVENTS THIS ROUND. Ministry forms department to process the forms.",
+      "BAD ROUND FOR LUCK. The uninsured learn about deductibles from the other side.",
+      "MISFORTUNE SPREADS. Ministry issues reminder that misfortune is not a lifestyle choice.",
+      "MULTIPLE CLAIMS FILED. Claims department asks for a quieter apocalypse."
+    ],
+    "l3.quiet": [
+      "QUIET ROUND. Nothing bad happened. Insurers call it 'a great year.'",
+      "NO NEWS IS GOOD NEWS. The uninsured feel very smart today.",
+      "CALM ROUND. The gym reports record attendance and record lying.",
+      "UNEVENTFUL. Premium payers wonder what they paid for. That is how it works."
+    ],
+    "l4.squareComplex": [
+      "HireBot 3000 surprised. Updates beliefs by {delta}. Calls it 'a lot.'",
+      "A SQUARE GETS A COMPLEX JOB. HireBot runs diagnostics. Diagnostics say 'fine.'",
+      "STEREOTYPE DENTED. HireBot now believes {pi} of Squares are skilled. Up from somewhat less.",
+      "HIREBOT PROMOTES A SQUARE. HireBot insists it was always open to this."
+    ],
+    "l4.noSquare": [
+      "NO SQUARES IN COMPLEX JOBS. HireBot reminds everyone it does not see color, only data.",
+      "HIREBOT REPORT: Squares remain 'statistically unremarkable.' Squares remain unhired.",
+      "THE ALGORITHM IS NEUTRAL, says the algorithm. Squares note the outcome is not.",
+      "SQUARE SKILL ESTIMATE NOW {pi}. HireBot calls the data 'very convincing.' It wrote the data."
+    ],
+    "l4.policy_B": [
+      "BLIND HIRING IN EFFECT. HireBot wears a blindfold. HireBot peeks only at averages.",
+      "HireBot can no longer see shapes. HireBot reports feeling 'liberated and confused.'",
+      "BLIND HIRING ROUND. Everyone is now judged by the average of everyone.",
+      "SHAPES HIDDEN. HireBot asks if it can at least see the color. It cannot."
+    ],
+    "l4.policy_C": [
+      "QUOTA ROUND. HireBot hires as instructed. HireBot learns nothing, as instructed.",
+      "THE QUOTA HOLDS. Squares get Complex jobs. Investment in skill stays suspiciously low.",
+      "QUOTA FILLED. HireBot files Form 44-Q: Hiring Under Protest.",
+      "QUOTA ENFORCED. Ministry calls it fairness. Economists call it 'a patronizing equilibrium.'"
+    ],
+    "l4.policy_D": [
+      "SUBSIDIZED CHILDCARE ROUND. The office printer has been relieved of parenting duties.",
+      "CHILDCARE FUNDED. Caregivers can now choose long hours without chaos, or at least with less chaos.",
+      "GREEDY JOBS NOW SLIGHTLY LESS GREEDY. Children report fewer printer-based meals.",
+      "CHILDCARE SUBSIDY IN EFFECT. The kids are alright. The budget is fine-ish."
+    ],
+    "l5.passedDonations": [
+      "Constitution amended. Ministry confirms no money changed hands, except the money that changed hands.",
+      "AMENDMENT PASSES AFTER GENEROUS GIFTS. Generosity and timing found to be unrelated, says donor.",
+      "NEW CONSTITUTION ADOPTED: {t}% TAX, FLOOR {F}. Lobbyists describe the process as 'very democratic.'",
+      "REFORM PASSES. Ministry ethics office is reviewing the snacks."
+    ],
+    "l5.passed": [
+      "CONSTITUTION AMENDED. Delegates rediscover their principles now that they know their incomes.",
+      "AMENDMENT PASSES: TAX NOW {t}%, FLOOR {F}. The veil is lifted and so are some eyebrows.",
+      "THE RULES CHANGE. Everyone agrees the new rules are fairer, for them.",
+      "NEW SETTLEMENT REACHED. Rawls could not be reached for comment."
+    ],
+    "l5.failed": [
+      "ALL AMENDMENTS FAIL. The supermajority requirement does its one job.",
+      "CONSTITUTION SURVIVES CONTACT WITH SELF-INTEREST. Barely.",
+      "AMENDMENTS DEFEATED. Delegates who lost blame 'the system.' The system says hi.",
+      "NO CHANGE. The veil constitution stands at {t}% tax, floor {F}. Several delegates look betrayed by their past selves."
+    ],
+    "l5.noAmendments": [
+      "NO AMENDMENTS PROPOSED. Delegates either very principled or very tired.",
+      "THE VEIL CONSTITUTION STANDS. The Ministry suspects a misprint.",
+      "NOBODY AMENDS ANYTHING. Ministry confused, slightly moved.",
+      "CONSTITUTION RATIFIED AS WRITTEN. Historians will call this 'unusual.'"
+    ]
+  }
+}
