@@ -12,7 +12,7 @@
       "{option} is how you end up with participation trophies."
     ],
     "CLAIM_VALUES": [
-      "Full transparency: {cardName}. Built different.",
+      "Honestly? {cardName}. I am not like other players.",
       "My personal brand? {cardName}. It is on my business card.",
       "{cardName}. I just want everyone to win. Mostly me, but everyone."
     ],
@@ -22,13 +22,13 @@
       "I will {action}, and I will do it before sunrise."
     ],
     "ACCUSE": [
-      "{target} is giving {cardName} energy. Just saying.",
+      "{target} acts like the {cardName}. Just saying.",
       "Not to call anyone out, but {target}? {cardName}. Big time.",
       "{target} talks fairness but runs the {cardName} playbook."
     ],
     "FLAVOR": [
       "Have you considered that I am right?",
-      "Grindset check. Who else is up?",
+      "Who else woke up at 4am? Just me?",
       "This vote is a growth opportunity.",
       "I turned my own birth into a startup."
     ]
@@ -68,35 +68,35 @@
   },
   "ugo": {
     "SUPPORT": [
-      "Under expected utility with modest risk aversion, {option} dominates. See footnote 14.",
-      "The equilibrium is {option}. I have a working paper.",
-      "{option}. The proof is left as an exercise for the reader.",
-      "{option}, holding everything else constant, which nobody ever does."
+      "I vote {option}. I did the math. It is in footnote 14.",
+      "{option} is the best choice. I have a paper on it that nobody has read.",
+      "{option}. The proof is left as homework.",
+      "{option}, assuming nothing else changes, which it always does."
     ],
     "OPPOSE": [
-      "{option} fails a basic robustness check. Footnote 9.",
-      "I reject {option} at the 5% level.",
-      "{option} ignores general equilibrium effects. As usual."
+      "I am against {option}. My model says no.",
+      "No to {option}. I am 95% sure it is a mistake.",
+      "{option} is a bad idea. You forgot the side effects. Everyone always does."
     ],
     "CLAIM_VALUES": [
-      "My objective function is {cardName}. Assume convexity.",
-      "Formally, I am {cardName}, conditional on the standard assumptions.",
-      "Revealed preference will confirm I am {cardName}. Eventually."
+      "My card is {cardName}. I can show you the equations.",
+      "I am {cardName}, under the usual assumptions.",
+      "I am {cardName}. Watch how I vote and you will see."
     ],
     "PROMISE": [
-      "I commit to {action}. Consider this a credible commitment.",
-      "I will {action}. This is a subgame perfect promise.",
-      "Expect me to {action}. My reputation is a repeated game."
+      "I promise to {action}. Economists call this a credible promise.",
+      "I will {action}. My reputation depends on it.",
+      "I will {action}. We play again later, so you can trust me."
     ],
     "ACCUSE": [
-      "The behavior of {target} is consistent with a {cardName} prior. Footnote 22.",
-      "I estimate that {target} is {cardName}, p < 0.05.",
-      "The data suggest {target} is {cardName}. N is small. Still."
+      "The way {target} votes looks like a {cardName}. See footnote 22.",
+      "I am 95% sure {target} is the {cardName}.",
+      "My data says {target} is the {cardName}. Small sample, but still."
     ],
     "FLAVOR": [
-      "Have you considered the deadweight loss?",
-      "This is all in my textbook, chapter 7.",
-      "Strictly speaking, none of you are rational. Neither am I."
+      "Have you counted the money lost to taxes?",
+      "This is all in chapter 7 of my textbook.",
+      "To be honest, none of us are fully rational. Me included."
     ]
   },
   "dot": {

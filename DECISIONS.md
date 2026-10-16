@@ -69,3 +69,7 @@ Choices made where the spec (v1.0) was silent, ambiguous, or needed a change to 
 - **D-33 Bot voice banks** live in one file, `src/ui/copy/bots/voices.json`, keyed by bot, with at least three variants per message type per bot.
 - **D-34 Archives citation added.** The Supermajority entry cites Buchanan and Tullock (1962), which is not in Section 13. Like every citation, it should be checked before release.
 - **D-35 E2E browser.** Playwright uses its bundled Chromium by default; set `PW_CHANNEL=msedge` or `PW_CHANNEL=chrome` to use an installed browser.
+
+## Language
+
+- **D-36 Plain-language pass.** Playtesting showed the in-game text was too hard to follow. All player-facing text (`en.json`, news headlines, Life Event cards, the economist bot's lines) was rewritten in plain English: short sentences, everyday words, no form numbers in titles, no theory terms during play. The four Level 1 principles were renamed (No Tax, Safety Net, Limit the Gap, Help the Poorest), and Level 4's "Complex/Simple job" became "good job/basic job". Theory names and citations now appear only in the end-of-level summaries, the Glossary, and the "exact math" sections. The rules on each level's start screen are now a visible numbered list instead of a collapsed section. All string keys and placeholders are unchanged. The Glossary (`archives.json`) and the methods note for professors were deliberately left technical.

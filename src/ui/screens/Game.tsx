@@ -102,16 +102,22 @@ function LevelIntro({ v }: { v: ViewState }) {
           </button>
         )}
       </FormCard>
-      <div className="mt-4">
-        <Collapsible title={t('ui.howTitle')}>
-          <p>{t(`levels.${level}.how`)}</p>
-          <div className="mt-3">
-            <Collapsible title={t('ui.formulasTitle')}>
-              <p className="num text-xs leading-relaxed">{t(`levels.${level}.formulas`)}</p>
-            </Collapsible>
-          </div>
-        </Collapsible>
-      </div>
+      <section className="mt-5" aria-labelledby="how-title">
+        <h2 id="how-title" className="label">{t('ui.howTitle')}</h2>
+        <ol className="mt-2 list-decimal space-y-2 ps-5 leading-relaxed">
+          {t(`levels.${level}.how`)
+            .split('\n')
+            .filter((s) => s.trim())
+            .map((step, i) => (
+              <li key={i}>{step}</li>
+            ))}
+        </ol>
+        <div className="mt-4">
+          <Collapsible title={t('ui.formulasTitle')}>
+            <p className="num text-xs leading-relaxed">{t(`levels.${level}.formulas`)}</p>
+          </Collapsible>
+        </div>
+      </section>
       <ContinueBar />
     </Page>
   );
