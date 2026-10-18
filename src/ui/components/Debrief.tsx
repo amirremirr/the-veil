@@ -28,6 +28,7 @@ export function DebriefShell({
   archiveIds,
   extra,
   cardBest,
+  lessonNote,
 }: {
   v: ViewState;
   /** "Your card's best choice was X. You chose Y." (D-43) */
@@ -38,6 +39,8 @@ export function DebriefShell({
   chart: ReactNode;
   archiveIds: string[];
   extra?: ReactNode;
+  /** One plain sentence under the lesson. */
+  lessonNote?: string;
 }) {
   const { dispatch, replay, go, nextSingleLevel, progress, settings } = useStore();
   const rounds = levelRounds(v);
@@ -66,6 +69,7 @@ export function DebriefShell({
           <section className="rounded-md border-2 border-ink bg-card p-3">
             <h2 className="label">{t('debrief.lesson')}</h2>
             <p className="mt-1 font-semibold leading-snug">{t(`debrief.l${level}.lesson`)}</p>
+            {lessonNote && <p className="mt-1 text-sm leading-snug">{lessonNote}</p>}
           </section>
 
           {row && (
