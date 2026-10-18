@@ -1,7 +1,7 @@
 // Shared helpers for the engine and level definitions. No UI, no browser APIs.
 import { BOT, VALUES_PRIOR } from './params';
 import { roundScore, valuesMetric } from './scoring';
-import { flavorIndex, stream, type Rng } from './rng';
+import { flavorIndex, stream, type Rng, standalone, hashString } from './rng';
 import type {
   GameState,
   Headline,
@@ -214,6 +214,14 @@ export function orderedDraws(deck: readonly number[], k: number): number[][] {
   };
   rec();
   return out;
+}
+
+/**
+ * A private random stream for debrief-only calculations (the card's best choice, D-43). It is seeded
+ * from the game code and never touches the game or bot streams, so it cannot change any later draw.
+ */
+export function debriefRng(s: GameState, key: string): Rng {
+  return standalone(hashString(`${s.seed}|debrief|${key}`));
 }
 
 export function round2(x: number): number {

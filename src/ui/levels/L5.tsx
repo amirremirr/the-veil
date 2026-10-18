@@ -13,6 +13,8 @@ import { ContinueBar, PrimaryBar } from '../components/TableParts';
 import { ChartFrame, Scatter } from '../components/Charts';
 import { DebriefShell } from '../components/Debrief';
 import type { LevelUI } from './types';
+import { floorTopUpParts } from '../../engine/tax';
+import { MoneyBox, MoneyLine, TaxInfo, fmt1, lossLine } from '../components/Money';
 
 type L5View = {
   veil?: Record<string, Constitution>;
@@ -23,8 +25,9 @@ type L5View = {
   lobby?: Record<string, Lobby>;
   order: string[];
   amendments: AmendmentRecord[];
-  revealed?: Record<string, Constitution>;
   W?: Record<string, number>;
+  myFair1?: number;
+  myFair2?: number;
   myIncome?: number;
   debrief?: L5Debrief;
 };
@@ -76,6 +79,12 @@ function VeilForm({ v }: { v: ViewState }) {
   return (
     <FormCard form={t('levels.5.veilTitle')}>
       <p className="mb-3 text-sm">{t('levels.5.veilDecide')}</p>
+      <TaxInfo>
+        <p>{t(n % 2 === 0 ? 'levels.5.medianRule.even' : 'levels.5.medianRule.odd', { n })}</p>
+        <p>{t('levels.5.separate')}</p>
+        <p>{t('taxInfo.moneyL5')}</p>
+        <p className="font-semibold">{lossLine(c.t, L5.KAPPA)}</p>
+      </TaxInfo>
       <ConstitutionPicker value={c} onChange={setC} />
       <div className="mt-4 rounded-md border border-line p-3 text-sm">
         <p className="text-soft">{t('levels.5.veilPreview')}</p>
@@ -201,17 +210,51 @@ function AmendForm({ v }: { v: ViewState }) {
   );
 }
 
+/** The unpaid question (D-40): it never changes anyone's score or the rules. */
+function FairForm({ v }: { v: ViewState }) {
+  const act = useStore((s) => s.act);
+  const [x, setX] = useState<number | null>(null);
+  const after = v.phase.step === 'FAIR_2';
+  return (
+    <FormCard form={t('levels.5.fairTitle')}>
+      <p className="mb-2 font-semibold">{t(after ? 'levels.5.fairAsk2' : 'levels.5.fairAsk1')}</p>
+      <p className="mb-3 rounded-md border-2 border-teal bg-teal/10 px-3 py-2 text-sm">{t('levels.5.fairNote')}</p>
+      <div className="grid grid-cols-3 gap-1" role="group" aria-label={t('levels.5.fairTitle')}>
+        {L5.TAX_OPTIONS.map((o) => (
+          <button key={o} type="button" aria-pressed={x !== null && Math.abs(x - o) < 1e-9} className="choice justify-center px-1 py-2" onClick={() => setX(o)}>
+            <span className="num">{Math.round(o * 100)}%</span>
+          </button>
+        ))}
+      </div>
+      <PrimaryBar>
+        <button type="button" className="btn-primary" disabled={x === null} onClick={() => act(x)}>
+          {t('levels.5.fairSubmit')}
+        </button>
+      </PrimaryBar>
+    </FormCard>
+  );
+}
+
 function AmendmentLog({ v, list }: { v: ViewState; list: AmendmentRecord[] }) {
   return (
     <ol className="mb-4 space-y-2 text-sm">
       {list.map((a, i) => (
         <li key={i} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-line p-2">
-          <span>
-            {nameOf(v, a.proposer)}: {constitutionLabel(a.statusQuo)} → {constitutionLabel(a.proposal)} · {a.yes} yes
-          </span>
-          <Stamp tone={a.passed ? 'good' : 'stamp'} rotate={-3} small>
-            {a.passed ? t('stamps.PASSED') : t('stamps.FAILED')}
-          </Stamp>
+          {a.withdrawn ? (
+            <span>
+              {nameOf(v, a.proposer)}: {constitutionLabel(a.proposal)}. <span className="text-soft">{t('levels.5.reveal.withdrawn')}</span>
+            </span>
+          ) : (
+            <>
+              <span>
+                {nameOf(v, a.proposer)}: {constitutionLabel(a.statusQuo)} → {constitutionLabel(a.proposal)} ·{' '}
+                {t('levels.5.reveal.yesNeed', { yes: a.yes, need: supermajority(v.players.length) })}
+              </span>
+              <Stamp tone={a.passed ? 'good' : 'stamp'} rotate={-3} small>
+                {a.passed ? t('stamps.PASSED') : t('stamps.FAILED')}
+              </Stamp>
+            </>
+          )}
         </li>
       ))}
     </ol>
@@ -221,6 +264,7 @@ function AmendmentLog({ v, list }: { v: ViewState; list: AmendmentRecord[] }) {
 function Decide({ v }: { v: ViewState }) {
   if (v.phase.step === 'VEIL') return <VeilForm v={v} />;
   if (v.phase.step === 'LOBBY') return <LobbyForm v={v} />;
+  if (v.phase.step === 'FAIR_1' || v.phase.step === 'FAIR_2') return <FairForm v={v} />;
   return <AmendForm v={v} />;
 }
 
@@ -297,6 +341,37 @@ function Reveal({ v }: { v: ViewState }) {
       <p className="h-display text-xl">
         {t('levels.5.reveal.final')}: {lv.current && constitutionLabel(lv.current)}
       </p>
+      {lv.incomes && lv.current && lv.lobby && lv.W && (
+        <MoneyBox>
+          {(() => {
+            const ids = v.players.map((p) => p.id);
+            const inc = ids.map((id) => lv.incomes![id]);
+            const parts = floorTopUpParts(inc, lv.current!.t, lv.current!.F, L5.KAPPA);
+            const me = ids.indexOf(HUMAN_ID);
+            const mine = lv.lobby![HUMAN_ID];
+            const given = mine?.donateTo ? mine.amount : 0;
+            const recv = Object.values(lv.lobby!).reduce((a, l) => a + (l.donateTo === HUMAN_ID ? l.amount : 0), 0);
+            return (
+              <>
+                <MoneyLine mine>
+                  {t('summary.money.l5', {
+                    y: inc[me],
+                    tax: fmt1(parts.tax[me]),
+                    top: fmt1(parts.topUp[me]),
+                    share: fmt1(parts.shareEach),
+                    given,
+                    recv,
+                    w: fmt1(lv.W![HUMAN_ID]),
+                  })}
+                </MoneyLine>
+                <p className="text-xs text-soft">
+                  {t('summary.taxWentL5', { c: fmt1(parts.collected), lost: fmt1(parts.lost), top: fmt1(parts.topUpTotal), share: fmt1(parts.shareEach) })}
+                </p>
+              </>
+            );
+          })()}
+        </MoneyBox>
+      )}
       <ContinueBar />
     </FormCard>
   );
@@ -338,6 +413,7 @@ function Debrief({ v }: { v: ViewState }) {
     <DebriefShell
       v={v}
       archiveIds={['self-serving-bias', 'veil', 'supermajority', 'reciprocity']}
+      cardBest={d.cardBest && { best: constitutionLabel(d.cardBest.best), chose: constitutionLabel(d.cardBest.chose) }}
       predicted={<p>{t('debrief.l5.predicted')}</p>}
       compare={[
         {
@@ -351,12 +427,21 @@ function Debrief({ v }: { v: ViewState }) {
       did={
         <>
           <p>
-            {t('debrief.l5.you', {
-              veil: constitutionLabel(d.veil[HUMAN_ID]),
+            {d.proposals[HUMAN_ID]
+              ? t('debrief.l5.paidLine', {
+                  veil: constitutionLabel(d.veil[HUMAN_ID]),
+                  prop: constitutionLabel(d.proposals[HUMAN_ID]!),
+                  dt: signed((d.paidMove[HUMAN_ID] ?? 0) * 100),
+                })
+              : t('debrief.l5.paidLinePass', { veil: constitutionLabel(d.veil[HUMAN_ID]) })}
+          </p>
+          <p className="font-semibold">
+            {t('debrief.l5.fairLine', {
+              f1: `${Math.round(d.fair1[HUMAN_ID] * 100)}%`,
+              f2: `${Math.round(d.fair2[HUMAN_ID] * 100)}%`,
               inc: d.incomes[HUMAN_ID],
               rank: d.rank[HUMAN_ID],
               n,
-              rev: constitutionLabel(d.revealed[HUMAN_ID]),
               dt: signed(dtPts(HUMAN_ID)),
             })}
           </p>

@@ -11,6 +11,8 @@ import { ContinueBar, PrimaryBar } from '../components/TableParts';
 import { ChartFrame, GroupedBars } from '../components/Charts';
 import { DebriefShell } from '../components/Debrief';
 import { briefingFrom, type LevelUI } from './types';
+import { L1 } from '../../engine/params';
+import { MoneyBox, MoneyLine, TaxInfo, fmt1, taxPool } from '../components/Money';
 
 const PS: PrincipleId[] = ['P1', 'P2', 'P3', 'P4'];
 type L1View = { rounds: L1Round[]; debrief?: L1Debrief };
@@ -22,6 +24,11 @@ function Decide({ v }: { v: ViewState }) {
   return (
     <FormCard form={t('levels.1.formTitle')} right={`R${v.round}`}>
       <p className="mb-3 text-sm">{t('levels.1.decide')}</p>
+      <TaxInfo>
+        <p className="font-semibold">{t('levels.1.setAfter')}</p>
+        <p>{t('taxInfo.money')}</p>
+        <p>{t('taxInfo.lossExample')}</p>
+      </TaxInfo>
       <div className="grid gap-2 sm:grid-cols-2" role="group" aria-label={t('levels.1.formTitle')}>
         {PS.map((p) => (
           <button key={p} type="button" aria-pressed={choice === p} className="choice" onClick={() => setChoice(p)}>
@@ -100,6 +107,28 @@ function Reveal({ v }: { v: ViewState }) {
           </li>
         ))}
       </ul>
+      {flipped && (
+        <MoneyBox>
+          {(() => {
+            const pool = taxPool(
+              v.players.map((p) => r.incomes[p.id]),
+              r.t,
+              L1.KAPPA,
+            );
+            const y = r.incomes[HUMAN_ID];
+            return (
+              <>
+                <MoneyLine mine>
+                  {t('summary.money.l1', { y, tax: fmt1(r.t * y), share: fmt1(pool.share), w: fmt1(r.W[HUMAN_ID]) })}
+                </MoneyLine>
+                <p className="text-xs text-soft">
+                  {t('summary.taxWent', { c: fmt1(pool.collected), lost: fmt1(pool.lost), share: fmt1(pool.share) })}
+                </p>
+              </>
+            );
+          })()}
+        </MoneyBox>
+      )}
       <ContinueBar />
     </FormCard>
   );
@@ -181,7 +210,8 @@ function Debrief({ v }: { v: ViewState }) {
   return (
     <DebriefShell
       v={v}
-      archiveIds={['veil', 'maximin', 'expected-utility', 'leaky-bucket']}
+      archiveIds={['veil', 'maximin', 'hardship-line', 'expected-utility', 'leaky-bucket']}
+      cardBest={d.cardBest && { best: pname(d.cardBest.best), chose: d.cardBest.chose.map(pname).join(', ') }}
       predicted={<p>{t('debrief.l1.predicted')}</p>}
       compare={[
         {

@@ -1,7 +1,7 @@
 // LEVEL 5: THE CONSTITUTIONAL CONVENTION. Write the rules blind, then amend them knowing who you are.
 import { BOT, L5 } from '../params';
 import { botParams, botRng, finishRound, gameRng, headline, ids, idx, lowerMedian, orderedDraws, playerOf } from '../core';
-import { equalShares, mean, roundScore } from '../scoring';
+import { equalShares, mean, ownNet, roundScore, valuesMetric } from '../scoring';
 import { floorTopUp } from '../tax';
 import { certaintyEquivalent, crra, logitChoice, logitProbs, argmax } from '../bots/utility';
 import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
@@ -25,6 +25,8 @@ export interface AmendmentRecord {
   votes: Record<PlayerId, boolean>;
   yes: number;
   passed: boolean;
+  /** The proposal already matched the rules in force when its turn came, so it was not voted on. */
+  withdrawn?: boolean;
 }
 
 export type VerdictKey =
@@ -38,9 +40,16 @@ export type VerdictKey =
 
 export interface L5Debrief {
   veil: Record<PlayerId, Constitution>;
-  revealed: Record<PlayerId, Constitution>;
+  /** What each delegate proposed after the reveal (null if they passed). Paid choices. */
+  proposals: Record<PlayerId, Constitution | null>;
+  /** Proposal tax minus veil tax, only for delegates who proposed. */
+  paidMove: Record<PlayerId, number | null>;
+  /** Unpaid answers to the fair-tax question before and after the reveal. */
+  fair1: Record<PlayerId, number>;
+  fair2: Record<PlayerId, number>;
   incomes: Record<PlayerId, number>;
   rank: Record<PlayerId, number>;
+  /** Self-serving shift: fair answer after the reveal minus fair answer before (D-41). */
   deltaT: Record<PlayerId, number>;
   slope: number;
   adopted: Constitution;
@@ -50,6 +59,8 @@ export interface L5Debrief {
   boughtVotes: Array<{ donor: PlayerId; recipient: PlayerId; amount: number; votedYes: boolean; passed: boolean }>;
   verdict?: VerdictKey;
   W: Record<PlayerId, number>;
+  /** The human's paid veil submission vs. their card's best submission (risk neutral, no noise). */
+  cardBest?: { best: Constitution; chose: Constitution };
 }
 
 export interface L5State {
@@ -61,7 +72,8 @@ export interface L5State {
   lobby?: Record<PlayerId, Lobby>;
   order: PlayerId[];
   amendments: AmendmentRecord[];
-  revealed?: Record<PlayerId, Constitution>;
+  fair1?: Record<PlayerId, number>;
+  fair2?: Record<PlayerId, number>;
   W?: Record<PlayerId, number>;
   debrief?: L5Debrief;
 }
@@ -151,7 +163,9 @@ function passProbability(s: GameState, botId: PlayerId, prop: Constitution, targ
   const Wc = constitutionWealth(inc, l.current!);
   const ps = pids.map((id, j) => {
     if (id === botId) return 1;
-    let p = Wa[j] > Wc[j] + 1e-9 ? BOT.VOTE_PREDICT_CONFIDENCE : Wa[j] < Wc[j] - 1e-9 ? 1 - BOT.VOTE_PREDICT_CONFIDENCE : 0.5;
+    const a = ownNet(Wa[j]);
+    const b = ownNet(Wc[j]);
+    let p = a > b + 1e-9 ? BOT.VOTE_PREDICT_CONFIDENCE : a < b - 1e-9 ? 1 - BOT.VOTE_PREDICT_CONFIDENCE : 0.5;
     if (id === target) p = Math.min(1, p + (L5.RECIPROCITY * d) / L5.DONATION_MAX);
     return p;
   });
@@ -199,6 +213,37 @@ function botLobby(s: GameState, botId: PlayerId): Lobby {
   return { donateTo: combos[k].to, amount: combos[k].d, proposal: prop };
 }
 
+/** Tax that maximizes a card's metric alone (no own-wealth half), at a given floor. Risk neutral. */
+function metricBestTax(n: number, card: ValuesCard, F: number, i: number, incomes: number[][]): number {
+  const eq = equalShares(n);
+  const vals = L5.TAX_OPTIONS.map((t) => mean(incomes.map((inc) => valuesMetric(card, constitutionWealth(inc, { t, F }), i, eq))));
+  return L5.TAX_OPTIONS[argmax(vals)];
+}
+
+/**
+ * A bot's unpaid fair-tax answer (D-40). Before the reveal: the tax that maximizes its Values
+ * metric alone, over every possible deal. After the reveal: the same with the real incomes, drifted
+ * by sigma toward the tax that maximizes its own money (the spec 5.7 drift).
+ */
+function botFairAnswer(s: GameState, botId: PlayerId, afterReveal: boolean): number {
+  const l = st(s);
+  const pids = ids(s);
+  const me = playerOf(s, botId);
+  const F = l.current!.F;
+  if (!afterReveal) return metricBestTax(pids.length, me.values, F, 0, orderedDraws(L5.INCOME_DECK, pids.length));
+  const i = idx(s, botId);
+  const inc = pids.map((id) => l.incomes![id]);
+  const tM = metricBestTax(pids.length, me.values, F, i, [inc]);
+  const tW = L5.TAX_OPTIONS[argmax(L5.TAX_OPTIONS.map((t) => constitutionWealth(inc, { t, F })[i]))];
+  const { sigma } = botParams(s, botId);
+  return snap((1 - sigma) * tM + sigma * tW, L5.TAX_OPTIONS);
+}
+
+/** Self-serving shift on unpaid answers: after minus before. Passers count like everyone else. */
+export function fairShift(fair1: number, fair2: number): number {
+  return fair2 - fair1;
+}
+
 function amendIndex(step: string): number {
   return step.startsWith('AMEND_') ? Number(step.slice(6)) : -1;
 }
@@ -214,8 +259,10 @@ export const level5: LevelDefinition = {
       { kind: 'BRIEFING', step: 'VEIL', round: 1 },
       { kind: 'TALK', step: 'VEIL', round: 1 },
       { kind: 'DECIDE', step: 'VEIL', round: 1 },
+      { kind: 'DECIDE', step: 'FAIR_1', round: 1 },
       { kind: 'REVEAL', step: 'CONSTITUTION', round: 1 },
       { kind: 'REVEAL', step: 'INCOMES', round: 1 },
+      { kind: 'DECIDE', step: 'FAIR_2', round: 1 },
       { kind: 'TALK', step: 'STAGE2', round: 1 },
       { kind: 'DECIDE', step: 'LOBBY', round: 1 },
     ];
@@ -228,13 +275,19 @@ export const level5: LevelDefinition = {
   },
   deciders(s, step) {
     const k = amendIndex(step);
-    if (k >= 0) return st(s).order.length > k ? ids(s) : [];
+    if (k >= 0) {
+      const l = st(s);
+      if (l.order.length <= k) return [];
+      // An amendment that already matches the rules in force is withdrawn, not voted on (D-44).
+      return same(l.lobby![l.order[k]].proposal!, l.current!) ? [] : ids(s);
+    }
     return ids(s);
   },
   validate(s, step, pid, d) {
     const okC = (c: unknown): c is Constitution =>
       !!c && L5.TAX_OPTIONS.some((t) => Math.abs(t - (c as Constitution).t) < 1e-9) && L5.FLOOR_OPTIONS.includes((c as Constitution).F);
     if (step === 'VEIL') return okC(d) ? { t: (d as Constitution).t, F: (d as Constitution).F } : null;
+    if (step === 'FAIR_1' || step === 'FAIR_2') return L5.TAX_OPTIONS.some((t) => Math.abs(t - (d as number)) < 1e-9) ? d : null;
     if (step === 'LOBBY') {
       const l = d as Lobby;
       if (!l || typeof l !== 'object') return null;
@@ -257,6 +310,7 @@ export const level5: LevelDefinition = {
       return ALL_CONSTITUTIONS[logitChoice(ce, lambda, rng)];
     }
     if (step === 'LOBBY') return botLobby(s, botId);
+    if (step === 'FAIR_1' || step === 'FAIR_2') return botFairAnswer(s, botId, step === 'FAIR_2');
     const k = amendIndex(step);
     const l = st(s);
     const a = l.lobby![l.order[k]];
@@ -287,9 +341,16 @@ export const level5: LevelDefinition = {
       pids.forEach((id) => (playerOf(s, id).privateInfo.income = l.incomes![id]));
       return;
     }
+    if (step === 'FAIR_1') {
+      l.fair1 = decisions as Record<PlayerId, number>;
+      return;
+    }
+    if (step === 'FAIR_2') {
+      l.fair2 = decisions as Record<PlayerId, number>;
+      return;
+    }
     if (step === 'LOBBY') {
       l.lobby = decisions as Record<PlayerId, Lobby>;
-      l.revealed = Object.fromEntries(pids.map((id) => [id, l.lobby![id].proposal ?? { ...l.current! }]));
       l.order = g.shuffle(pids.filter((id) => l.lobby![id].proposal !== null));
       return;
     }
@@ -301,6 +362,11 @@ export const level5: LevelDefinition = {
       }
       const proposer = l.order[k];
       const proposal = l.lobby![proposer].proposal!;
+      if (same(proposal, l.current!)) {
+        l.amendments.push({ proposer, proposal, statusQuo: { ...l.current! }, votes: {}, yes: 0, passed: false, withdrawn: true });
+        if (k === l.order.length - 1) finalize(s);
+        return;
+      }
       const votes = decisions as Record<PlayerId, boolean>;
       const yes = Object.values(votes).filter(Boolean).length;
       const passed = yes >= supermajority(pids.length);
@@ -349,7 +415,9 @@ export const level5: LevelDefinition = {
     if (!l.W) finalize(s);
     const sorted = pids.slice().sort((a, b) => l.incomes![a] - l.incomes![b]);
     const rank = Object.fromEntries(sorted.map((id, k) => [id, k + 1]));
-    const deltaT = Object.fromEntries(pids.map((id) => [id, l.revealed![id].t - l.veil![id].t]));
+    const deltaT = Object.fromEntries(pids.map((id) => [id, fairShift(l.fair1![id], l.fair2![id])]));
+    const proposals = Object.fromEntries(pids.map((id) => [id, l.lobby![id].proposal]));
+    const paidMove = Object.fromEntries(pids.map((id) => [id, proposals[id] ? proposals[id]!.t - l.veil![id].t : null]));
     const xs = pids.map((id) => rank[id]);
     const ys = pids.map((id) => deltaT[id]);
     const mx = mean(xs);
@@ -359,7 +427,7 @@ export const level5: LevelDefinition = {
     const boughtVotes: L5Debrief['boughtVotes'] = [];
     for (const [donor, lb] of Object.entries(l.lobby!)) {
       if (!lb.donateTo || lb.amount <= 0) continue;
-      const am = l.amendments.find((a) => a.proposer === donor);
+      const am = l.amendments.find((a) => a.proposer === donor && !a.withdrawn);
       boughtVotes.push({
         donor,
         recipient: lb.donateTo,
@@ -381,7 +449,10 @@ export const level5: LevelDefinition = {
     }
     const d: L5Debrief = {
       veil: l.veil!,
-      revealed: l.revealed!,
+      proposals,
+      paidMove,
+      fair1: l.fair1!,
+      fair2: l.fair2!,
       incomes: l.incomes!,
       rank,
       deltaT,
@@ -393,6 +464,9 @@ export const level5: LevelDefinition = {
       boughtVotes,
       verdict,
       W: l.W!,
+      cardBest: human
+        ? { best: ALL_CONSTITUTIONS[argmax(veilCE(pids.length, human.values, 0))], chose: l.veil![human.id] }
+        : undefined,
     };
     l.debrief = d;
     return d;
@@ -409,7 +483,8 @@ export const level5: LevelDefinition = {
       lobby: lobbyDone ? l.lobby : undefined,
       order: l.order,
       amendments: l.amendments,
-      revealed: lobbyDone ? l.revealed : undefined,
+      myFair1: l.fair1?.[viewer],
+      myFair2: l.fair2?.[viewer],
       W: l.W,
       myIncome: l.incomesRevealed ? l.incomes?.[viewer] : undefined,
       debrief: revealPrivate ? l.debrief : undefined,

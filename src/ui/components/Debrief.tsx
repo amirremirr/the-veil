@@ -27,8 +27,11 @@ export function DebriefShell({
   chart,
   archiveIds,
   extra,
+  cardBest,
 }: {
   v: ViewState;
+  /** "Your card's best choice was X. You chose Y." (D-43) */
+  cardBest?: { best: string; chose: string };
   predicted: ReactNode;
   compare?: CompareRow[];
   did: ReactNode;
@@ -85,6 +88,12 @@ export function DebriefShell({
                 ))}
               </dl>
             </section>
+          )}
+
+          {cardBest && (
+            <p className="rounded-md border border-line bg-card px-3 py-2 text-sm leading-snug" data-card-best>
+              {t('debrief.cardBest', cardBest)} <span className="text-soft">{t('debrief.cardBestNote')}</span>
+            </p>
           )}
 
           <section aria-label={t('debrief.scores')}>

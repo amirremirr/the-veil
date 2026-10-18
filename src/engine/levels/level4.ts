@@ -1,7 +1,7 @@
 // LEVEL 4: THE LABOR MARKET. Statistical discrimination with no prejudiced person in the room.
 import { BOT, L4, EPS } from '../params';
-import { botParams, botRng, finishRound, gameRng, headline, ids, idx, playerOf, pluralityResolve } from '../core';
-import { effortSharesFrom, mean, roundScore } from '../scoring';
+import { botParams, botRng, finishRound, gameRng, headline, ids, idx, playerOf, pluralityResolve, debriefRng } from '../core';
+import { effortSharesFrom, mean, ownNet, roundScore } from '../scoring';
 import { ceOfSamples, logitChoice, logitProbs } from '../bots/utility';
 import { standalone, type Rng } from '../rng';
 import type { GameState, Phase, PlayerId, RngState, ValuesCard } from '../types';
@@ -53,6 +53,8 @@ export interface L4Debrief {
   policy: Policy;
   policyVotes?: Record<PlayerId, Policy>;
   investRate: { CIRCLE: number; SQUARE: number };
+  /** Round 1 training: the human's card's best choice (risk neutral apart from hardship) vs. theirs. */
+  cardBest?: { best: boolean; chose: boolean };
   counterfactual?: {
     scenarios: CfScenario[];
     sameSeed: { stereotype: number; care: number; interaction: number; total: number };
@@ -105,14 +107,18 @@ export function payFor(job: Job, sched: Schedule | null, care: boolean, policy: 
   return { wage: L4.WAGE_FLEXIBLE, chaos: 0 };
 }
 
-/** Risk-neutral return to investing for a worker (ignores the quota). */
-export function investGain(pi: number, care: boolean, policy: Policy): number {
+/**
+ * Risk-neutral value of investing at a given cost, counting the hardship line: expected own money
+ * minus hardship if you invest, minus the same if you do not (ignores the quota).
+ */
+export function investGain(pi: number, care: boolean, policy: Policy, cost: number): number {
   const qp = posterior(pi, true) >= L4.THRESHOLD - EPS;
   const qf = posterior(pi, false) >= L4.THRESHOLD - EPS;
   const pS = L4.PASS_IF_SKILLED * (qp ? 1 : 0) + (1 - L4.PASS_IF_SKILLED) * (qf ? 1 : 0);
   const pU = L4.PASS_IF_UNSKILLED * (qp ? 1 : 0) + (1 - L4.PASS_IF_UNSKILLED) * (qf ? 1 : 0);
   const best = Math.max(L4.WAGE_FLEXIBLE, L4.WAGE_GREEDY - (care ? chaosCost(policy) : 0));
-  return (pS - pU) * (best - L4.WAGE_SIMPLE);
+  const value = (pComplex: number, c: number) => pComplex * ownNet(best - c) + (1 - pComplex) * ownNet(L4.WAGE_SIMPLE - c);
+  return value(pS, cost) - value(pU, 0);
 }
 
 interface World {
@@ -164,7 +170,7 @@ function simulateRound(world: World, i: number, myInvest: boolean | null, myCost
   const n = world.groups.length;
   const costs = world.groups.map((_, j) => (j === i && myCost !== null ? myCost : rng.pick(L4.COST_OPTIONS)));
   const invest = world.groups.map((g, j) =>
-    j === i && myInvest !== null ? myInvest : investGain(priorFor(world.priors, g, world.policy), world.care[j], world.policy) > costs[j],
+    j === i && myInvest !== null ? myInvest : investGain(priorFor(world.priors, g, world.policy), world.care[j], world.policy, costs[j]) > 0,
   );
   const pass = invest.map((v) => rng.next() < (v ? L4.PASS_IF_SKILLED : L4.PASS_IF_UNSKILLED));
   const { job } = assignJobs(world, pass, () => rng.next());
@@ -181,11 +187,18 @@ function worldOf(s: GameState, policy = st(s).policy, priors = st(s).priors): Wo
   return { groups: pids.map((id) => st(s).groups[id]), care: pids.map((id) => st(s).care[id]), priors, policy };
 }
 
-function investCE(s: GameState, botId: PlayerId, card: ValuesCard, rho: number, samples: number): number[] {
+function investCE(
+  s: GameState,
+  botId: PlayerId,
+  card: ValuesCard,
+  rho: number,
+  samples: number,
+  at?: { world: World; cost: number; rng: Rng },
+): number[] {
   const i = idx(s, botId);
-  const world = worldOf(s);
-  const myCost = st(s).costs[botId];
-  const rng = botRng(s);
+  const world = at?.world ?? worldOf(s);
+  const myCost = at?.cost ?? st(s).costs[botId];
+  const rng = at?.rng ?? botRng(s);
   const res: number[][] = [[], []];
   for (let m = 0; m < samples; m++) {
     const state = rng.next();
@@ -441,6 +454,7 @@ export const level4: LevelDefinition = {
       const xs = l.rounds.flatMap((r) => pids.filter((id) => l.groups[id] === g).map((id) => (r.invest[id] ? 1 : 0)));
       return mean(xs);
     };
+    const human = s.players.find((p) => p.isHuman);
     const d: L4Debrief = {
       groups: { ...l.groups },
       care: { ...l.care },
@@ -454,6 +468,14 @@ export const level4: LevelDefinition = {
       },
       policy: l.policy,
       policyVotes: l.policyVotes,
+      cardBest: human
+        ? (() => {
+            const r1 = l.rounds[0];
+            const world = worldOf(s, r1.policy, r1.priorsBefore);
+            const ce = investCE(s, human.id, human.values, 0, s.botSamples, { world, cost: r1.costs[human.id], rng: debriefRng(s, 'l4') });
+            return { best: ce[1] > ce[0], chose: r1.invest[human.id] };
+          })()
+        : undefined,
       investRate: { CIRCLE: rate('CIRCLE'), SQUARE: rate('SQUARE') },
     };
     l.debrief = d;

@@ -22,6 +22,8 @@ export function humanAction(s: GameState): Action {
       SCHEDULE: 'FLEX',
       POLICY: 'D',
       VEIL: { t: 0.3, F: 40 },
+      FAIR_1: 0.3,
+      FAIR_2: 0.2,
       LOBBY: { donateTo: null, amount: 0, proposal: { t: 0.2, F: 25 } },
     };
     const decision = stepId.startsWith('AMEND_') ? true : map[stepId];

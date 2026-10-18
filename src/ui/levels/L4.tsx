@@ -123,6 +123,7 @@ function Report({ priors, policy }: { priors: Priors; policy: Policy }) {
         </div>
       )}
       <p className="text-soft">{t('levels.4.reportThreshold')}</p>
+      <p>{t('levels.4.reportNeed', { now: Math.round((policy === 'B' && priors.POOL !== null ? priors.POOL : priors.SQUARE) * 100) })}</p>
       <p>
         {pname(policy)}: <span className="text-soft">{t(`levels.4.policies.${policy}.desc`)}</span>
       </p>
@@ -193,6 +194,34 @@ function Reveal({ v }: { v: ViewState }) {
             : t('levels.4.reveal.beliefUpdate', { pc: Math.round(c.priorsAfter.CIRCLE * 100), ps: Math.round(c.priorsAfter.SQUARE * 100) })}
         </p>
       )}
+      {pay && c.priorsAfter && c.priorsBefore && c.invest && (
+        <div className="num mt-1 space-y-0.5 text-xs text-soft">
+          {lv.policy === 'B' && c.priorsAfter.POOL !== null && c.priorsBefore.POOL !== null ? (
+            <p>
+              {t('levels.4.reveal.updateMathPool', {
+                old: Math.round(c.priorsBefore.POOL * 100),
+                rate: Math.round((v.players.filter((p) => c.invest![p.id]).length / v.players.length) * 100),
+                new: Math.round(c.priorsAfter.POOL * 100),
+              })}
+            </p>
+          ) : (
+            (['CIRCLE', 'SQUARE'] as Group[]).map((g) => {
+              const members = v.players.filter((p) => lv.groups[p.id] === g);
+              if (!members.length) return null;
+              return (
+                <p key={g}>
+                  {t('levels.4.reveal.updateMath', {
+                    g: t(`levels.4.groups.${g}`),
+                    old: Math.round(c.priorsBefore![g] * 100),
+                    rate: Math.round((members.filter((p) => c.invest![p.id]).length / members.length) * 100),
+                    new: Math.round(c.priorsAfter![g] * 100),
+                  })}
+                </p>
+              );
+            })
+          )}
+        </div>
+      )}
       <ContinueBar />
     </FormCard>
   );
@@ -240,6 +269,12 @@ function Debrief({ v }: { v: ViewState }) {
     <DebriefShell
       v={v}
       archiveIds={['statistical-discrimination', 'self-fulfilling-stereotypes', 'greedy-jobs', 'patronizing-equilibrium']}
+      cardBest={
+        d.cardBest && {
+          best: t(d.cardBest.best ? 'debrief.choice.trainYes' : 'debrief.choice.trainNo'),
+          chose: t(d.cardBest.chose ? 'debrief.choice.trainYes' : 'debrief.choice.trainNo'),
+        }
+      }
       predicted={
         <>
           <p>{t('debrief.l4.predicted')}</p>

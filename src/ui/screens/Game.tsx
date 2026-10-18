@@ -1,10 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { LevelId, ValuesCard, ViewState } from '../../engine/types';
 import { VALUES_CARDS } from '../../engine/types';
-import type { L1Debrief } from '../../engine/levels/level1';
 import type { L2Debrief } from '../../engine/levels/level2';
-import type { L3Debrief } from '../../engine/levels/level3';
-import type { L4Debrief } from '../../engine/levels/level4';
 import type { L5Debrief } from '../../engine/levels/level5';
 import { useStore } from '../store';
 import { t } from '../i18n';
@@ -305,27 +302,29 @@ function Guess({ v }: { v: ViewState }) {
   );
 }
 
+/** Built only from answers that never affected the score (D-42): fair-tax answers, Bonus Pot, luck guesses. */
 function ideology(v: ViewState) {
-  const d1 = v.levelResults[1] as L1Debrief | undefined;
   const d2 = v.levelResults[2] as L2Debrief | undefined;
-  const d3 = v.levelResults[3] as L3Debrief | undefined;
-  const d4 = v.levelResults[4] as L4Debrief | undefined;
   const d5 = v.levelResults[5] as L5Debrief | undefined;
-  const votes = d1?.rounds.map((r) => r.votes[HUMAN_ID]) ?? [];
-  const top = (['P1', 'P2', 'P3', 'P4'] as const).map((p) => [p, votes.filter((x) => x === p).length] as const).sort((a, b) => b[1] - a[1])[0][0];
-  const l2 = d2?.bonus?.classification?.[0] ?? 'none';
-  const l3 = d3?.regimeVotes?.[HUMAN_ID] ?? d3?.regime ?? 'VOL';
+  const ideal = d2?.bonus?.classification?.[0] ?? 'none';
   const verdict = d5?.verdict ?? 'none';
-  return {
-    line: t('run.ideologyLine', { l1: t(`run.l1.${top}`), l2: t(`run.l2.${l2}`), l3: t(`run.l3.${l3}`), tail: t(`run.tails.${verdict}`) }),
-    policy: d4?.policyVotes?.[HUMAN_ID] ? t('run.policyLine', { policy: t(`levels.4.policies.${d4.policyVotes[HUMAN_ID]}.name`) }) : '',
-    label: t(`run.labels.${verdict}`),
-  };
+  const lines: string[] = [t('run.ideologyLine2', { ideal: t(`run.l2.${ideal}`), tail: t(`run.tails.${verdict}`) })];
+  if (d5?.fair1?.[HUMAN_ID] !== undefined && d5.fair2?.[HUMAN_ID] !== undefined)
+    lines.push(t('run.fairLine', { f1: `${Math.round(d5.fair1[HUMAN_ID] * 100)}%`, f2: `${Math.round(d5.fair2[HUMAN_ID] * 100)}%` }));
+  if (d2?.bonus?.classification?.length) lines.push(t('run.bonusLine', { ideal: t(`run.l2.${ideal}`) }));
+  if (d2?.polls?.length) {
+    const belief = Math.round((d2.polls.reduce((x, p) => x + p.answer, 0) / d2.polls.length) * 100);
+    const truth = Math.round((d2.polls.reduce((x, p) => x + p.truth, 0) / d2.polls.length) * 100);
+    lines.push(t('run.luckLine', { belief, truth }));
+  }
+  return { lines, label: t(`run.labels.${verdict}`) };
 }
 
 function RunDebrief({ v }: { v: ViewState }) {
   const { go, game, replay } = useStore();
-  const total = (id: string) => (v.scores[id]?.byLevel.reduce((a, b) => a + b, 0) ?? 0) + (v.scores[id]?.guessBonus ?? 0);
+  // Level points (D-45): each level counts the same. Raw scores stay in the level summaries.
+  const points = (id: string) => v.scores[id]?.points?.reduce((a, b) => a + b, 0) ?? 0;
+  const total = (id: string) => points(id) + (v.scores[id]?.guessBonus ?? 0);
   const ranked = v.players.slice().sort((a, b) => total(b.id) - total(a.id));
   const ide = ideology(v);
   const off = useMotionOff();
@@ -379,7 +378,7 @@ function RunDebrief({ v }: { v: ViewState }) {
                         />
                       )}
                     </td>
-                    <td className="num text-end">{coins(v.scores[p.id]?.byLevel.reduce((a, b) => a + b, 0) ?? 0)}</td>
+                    <td className="num text-end">{coins(points(p.id))}</td>
                     <td className="num text-end">{v.scores[p.id]?.guessBonus ?? 0}</td>
                     <td className="num text-end">{coins(total(p.id))}</td>
                   </tr>
@@ -387,10 +386,16 @@ function RunDebrief({ v }: { v: ViewState }) {
               </tbody>
             </table>
           </div>
+          <p className="mt-2 text-xs text-soft">{t('run.pointsNote')}</p>
         </FormCard>
         <FormCard form={t('run.ideology')}>
-          <p className="text-lg leading-snug">{ide.line}</p>
-          {ide.policy && <p className="mt-2 text-sm">{ide.policy}</p>}
+          <p className="text-lg leading-snug">{ide.lines[0]}</p>
+          {ide.lines.slice(1).map((l) => (
+            <p key={l} className="mt-2 text-sm">
+              {l}
+            </p>
+          ))}
+          <p className="mt-2 text-xs text-soft">{t('run.ideologyNote')}</p>
           <p className="h-display mt-4 text-2xl">{t('run.filed', { label: ide.label })}</p>
         </FormCard>
         <FormCard form={t('run.botGuesses')}>

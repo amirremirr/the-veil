@@ -72,6 +72,24 @@ export function solvePrinciple(
  * Level 5 constitution: tax at t, top everyone up to floor F from revenue
  * (pro rata to shortfalls if revenue is short), split any remainder equally.
  */
+/**
+ * The same calculation as floorTopUp, split into its parts for display: what each player keeps
+ * after tax, their top-up, and their equal share of what is left. after + topUp + share = wealth.
+ */
+export function floorTopUpParts(incomes: readonly number[], t: number, F: number, kappa: number) {
+  const n = incomes.length;
+  const Y = sum(incomes);
+  const after = incomes.map((y) => (1 - t) * y);
+  const R = leakyRevenue(t, Y, kappa);
+  const short = after.map((a) => Math.max(0, F - a));
+  const need = sum(short);
+  const enough = need <= R + EPS;
+  const ratio = enough ? 1 : need > 0 ? R / need : 0;
+  const topUp = short.map((x) => x * ratio);
+  const shareEach = enough ? (R - need) / n : 0;
+  return { after, tax: incomes.map((y) => t * y), topUp, shareEach, collected: t * Y, lost: t * Y - R, topUpTotal: sum(topUp) };
+}
+
 export function floorTopUp(incomes: readonly number[], t: number, F: number, kappa: number): number[] {
   const n = incomes.length;
   const after = incomes.map((y) => (1 - t) * y);

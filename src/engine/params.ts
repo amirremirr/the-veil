@@ -15,7 +15,16 @@ export const SCORE = {
   WEALTH_WEIGHT: 0.5,
   METRIC_WEIGHT: 0.5,
   MERITOCRAT_MISMATCH_WEIGHT: 0.5,
-  GUESS_BONUS: 15,
+  /** Run bonus per correct Values guess, in level points (D-46). */
+  GUESS_BONUS: 25,
+  /**
+   * Level points (D-45, D-54): BASE + SPREAD x (your level score - table average) / LEVEL_SD[level].
+   * LEVEL_SD is the typical within-table spread of each level's raw scores, measured by the simulator
+   * (`npm run sim`, line "Level spread SD"). Recalibrate it whenever level rules change.
+   */
+  LEVEL_POINTS_BASE: 100,
+  LEVEL_POINTS_SPREAD: 50,
+  LEVEL_SD: [47.3, 52.2, 41.3, 114.8, 29.3],
 };
 
 /**
@@ -29,6 +38,12 @@ export const METRIC_SCALE: Record<ValuesCard, number> = {
   UTILITARIAN: 1,
   MERITOCRAT: 1.22,
 };
+
+/**
+ * Hardship line (DECISIONS.md D-39): a player's own round score loses POINTS_PER_COIN points
+ * for every coin of their own wealth below LINE. It never changes wealth or anyone's metric.
+ */
+export const HARDSHIP = { LINE: 40, POINTS_PER_COIN: 2 };
 
 export const BOT_PROFILES: Record<BotKey, { name: string; rho: number; lambda: number; honesty: number; sigma: number }> = {
   chet: { name: 'Chet Bootstraps', rho: 0.5, lambda: 3, honesty: 0.5, sigma: 0.6 },
@@ -50,7 +65,13 @@ export const BOT = {
   MC_SAMPLES: 300,
   BELIEF_MC_SAMPLES: 40,
   BELIEF_LAMBDA: 3,
-  BELIEF_RHO: 1,
+  /**
+   * The hardship line already makes losses hurt, so bots' CRRA would count risk twice. Every bot's
+   * rho is multiplied by this, keeping their order (D-51).
+   */
+  RHO_SCALE: 0.25,
+  /** Risk aversion bots assume for others when reading votes: 1 x RHO_SCALE (D-51). */
+  BELIEF_RHO: 0.25,
   BELIEF_FLOOR: 0.01,
   OTHERS_EGOIST_WEIGHT: 0.5,
   CLAIM_BELIEF_WEIGHT: 0.5,
@@ -110,17 +131,18 @@ export const L4 = {
   BASELINE_ROUNDS: 3,
   CARE_PROB_SQUARE: 0.7,
   CARE_PROB_CIRCLE: 0.3,
-  COST_OPTIONS: [10, 20, 30, 40],
+  // All Level 4 money amounts doubled in rules v2 (D-53); thresholds and beliefs unchanged.
+  COST_OPTIONS: [20, 40, 60, 80],
   PASS_IF_SKILLED: 0.8,
   PASS_IF_UNSKILLED: 0.3,
   PRIOR_CIRCLE: 0.6,
   PRIOR_SQUARE: 0.3,
   THRESHOLD: 0.6,
-  WAGE_SIMPLE: 20,
-  WAGE_GREEDY: 90,
-  WAGE_FLEXIBLE: 55,
-  CHAOS_COST: 40,
-  CHAOS_COST_SUBSIDIZED: 10,
+  WAGE_SIMPLE: 40,
+  WAGE_GREEDY: 180,
+  WAGE_FLEXIBLE: 110,
+  CHAOS_COST: 80,
+  CHAOS_COST_SUBSIDIZED: 20,
   UPDATE_WEIGHT: 0.2,
   // Counterfactual scenarios (Section 4, Level 4 debrief).
   CF_EQUAL_PRIOR: 0.45,

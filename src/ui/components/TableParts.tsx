@@ -2,7 +2,8 @@ import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState
 import { AnimatePresence, motion } from 'framer-motion';
 import type { StructuredMessage, ValuesCard, ViewState } from '../../engine/types';
 import { VALUES_CARDS } from '../../engine/types';
-import { TALK } from '../../engine/params';
+import { HARDSHIP, TALK } from '../../engine/params';
+import { hardshipPenalty } from '../../engine/scoring';
 import { useStore } from '../store';
 import { t } from '../i18n';
 import { actionName, cardName, coins, optionName } from '../labels';
@@ -317,11 +318,25 @@ export function SummaryBlock({ v, showMoney = true }: { v: ViewState; showMoney?
   const S = rec.S[HUMAN_ID] ?? 0;
   // The engine's own numbers: S = 0.5 W + 0.5 k M. Rounded so the shown parts add up exactly.
   const egoist = card === 'EGOIST';
-  // Whole numbers: round the total and the money half; the goal half is the remainder, so the
-  // parts always add up exactly.
+  const W = rec.W[HUMAN_ID];
+  // Whole numbers: round the total, the money half, and the hardship penalty; the goal half is the
+  // remainder, so the parts always add up exactly (D-39).
   const sShown = Math.round(S);
-  const wPart = Math.round(0.5 * rec.W[HUMAN_ID]);
-  const gPart = sShown - wPart;
+  const pen = hardshipPenalty(W);
+  // The Egoist loses the whole penalty; other cards lose half, like the rest of their money (D-50).
+  const hShown = Math.round(egoist ? pen : 0.5 * pen);
+  const short = String(Math.round(Math.max(0, HARDSHIP.LINE - W) * 10) / 10);
+  const wPart = Math.round(0.5 * W);
+  const gPart = sShown - wPart + hShown;
+  let line: string;
+  if (egoist)
+    line = pen > 0 ? t('summary.breakdownEgoistHardship', { s: sShown, w: sShown + hShown, h: hShown, c: short }) : t('summary.breakdownEgoist', { s: sShown });
+  else
+    line =
+      pen > 0
+        ? t('summary.breakdownHardship', { s: sShown, w: wPart, g: gPart, h: hShown, c: short })
+        : t('summary.breakdown', { s: sShown, w: wPart, g: gPart });
+  const noWork = card === 'MERITOCRAT' && [1, 3, 5].includes(v.levelIndex);
   return (
     <FormCard form={t('summary.title', { r: v.round })}>
       {showMoney && (
@@ -344,9 +359,10 @@ export function SummaryBlock({ v, showMoney = true }: { v: ViewState; showMoney?
       )}
       <div className={`${showMoney ? 'mt-3 ' : ''}rounded-md border-2 border-ink p-3`} data-score-breakdown>
         <p className="font-semibold leading-snug">
-          {egoist ? t('summary.breakdownEgoist', { s: sShown }) : t('summary.breakdown', { s: sShown, w: wPart, g: gPart })}
+          {line}
         </p>
         {card && <p className="mt-1 text-sm text-soft">{t('summary.goalReminder', { card: t(`values.${card}.short`) })}</p>}
+        {noWork && <p className="mt-1 text-sm text-soft">{t('values.MERITOCRAT.noWork')}</p>}
         <p className="mt-2 flex justify-between text-sm">
           <span>{t('summary.levelScore')}</span>
           <span className="num font-semibold">{coins(humanLevelScore(v))}</span>

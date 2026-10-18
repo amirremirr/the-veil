@@ -70,7 +70,8 @@
       "title": "The Effort Accountant",
       "metric": "You score points when people get money in line with how hard they worked. Luck and talent should not decide who is rich. In levels with no work choice, equal shares count as fair. (These points are multiplied by 1.22 to keep the game balanced.)",
       "blurb": "You think people deserve what they work for, and not what they were born with.",
-      "short": "Meritocrat: money that matches how hard people worked"
+      "short": "Meritocrat: money that matches how hard people worked",
+      "noWork": "In this level nobody chooses how hard to work, so your goal is equal shares."
     }
   },
   "phase": {
@@ -143,7 +144,21 @@
     "stampDone": "DONE",
     "breakdown": "Your score: {s} = {w} from your money + {g} from your goal",
     "breakdownEgoist": "Your score: {s}. You are the Egoist, so all of it comes from your own money.",
-    "goalReminder": "Your card: {card}"
+    "goalReminder": "Your card: {card}",
+    "breakdownHardship": "Your score: {s} = {w} from your money + {g} from your goal - {h} hardship (you ended {c} coins below 40; hardship counts half, like your money)",
+    "breakdownEgoistHardship": "Your score: {s} = {w} from your money - {h} hardship (you ended {c} coins below 40). You are the Egoist, so your goal is your own money.",
+    "money": {
+      "title": "Where your money came from",
+      "l1": "Income {y} - tax {tax} + your share {share} = {w}",
+      "l2": "Income {y} - tax {tax} + your share {share} - work cost {cost} = {w}",
+      "l2other": "Income {y} - tax {tax} + share {share} - work cost (secret) = {w}",
+      "l3vol": "{base} - insurance {p} - gym {gym} - loss {loss} = {w}",
+      "l3covered": "{base} - insurance {p} - gym {gym} - (loss 80 - paid by insurance 80) = {w}",
+      "l3mand": "{base} - contribution {T} - gym {gym} - (loss {loss} - paid by insurance {paid}) = {w}",
+      "l5": "Income {y} - tax {tax} + top-up {top} + your share {share} - coins given {given} + coins received {recv} = {w}"
+    },
+    "taxWent": "Where the tax went: collected {c}. Lost on the way {lost}. Shared: {share} each.",
+    "taxWentL5": "Where the tax went: collected {c}. Lost on the way {lost}. Top-ups paid {top}. Shared: {share} each."
   },
   "stamps": {
     "APPROVED": "APPROVED",
@@ -162,7 +177,7 @@
       "name": "Behind the Veil",
       "question": "Which rule would you pick if you did not know whether you would be rich or poor?",
       "memo": "Welcome to life. First, help pick the rules. Then you find out if you are rich or poor.",
-      "how": "There are 3 rounds.\nEach round, everyone votes for one of four rules for sharing money.\nThen each player gets a random income: 20, 50, 90, or 160 coins. You vote before you know yours.\nThe winning rule sets a tax. Tax money is shared equally between everyone.\nSome tax money gets lost in the system. Higher taxes lose more.",
+      "how": "There are 3 rounds.\nEach round, everyone votes for one of four rules for sharing money.\nThen each player gets a random income: 20, 50, 90, or 160 coins. You vote before you know yours.\nThe winning rule sets a tax. Tax money is shared equally between everyone.\nSome tax money gets lost in the system. Higher taxes lose more.\nBelow 40 coins: each coin you are short counts as 2 more coins lost when your score is worked out. Your real money does not change.",
       "formulas": "Money after tax = y (1 - t) + R / n. Total tax collected R = t Y (1 - 0.4 t), where Y is everyone's income added up. Tax rates go from 0 to 0.95 in steps of 0.05. Safety Net: the smallest tax that gives everyone at least 40. Limit the Gap: the smallest tax that keeps richest minus poorest at 100 or less. Help the Poorest: the tax that gives the poorest player the most.",
       "briefing": [
         "Round 1. Nobody knows their income yet. Vote for the rule you think is best.",
@@ -199,13 +214,14 @@
         "after": "After tax",
         "tieLine": "Tie, decided by a coin flip"
       },
-      "info": "Some tax money gets lost along the way. The higher the tax, the more is lost."
+      "info": "Some tax money gets lost along the way. The higher the tax, the more is lost.",
+      "setAfter": "The tax rate is set after incomes are dealt."
     },
     "2": {
       "name": "Luck vs. Effort",
       "question": "Is being rich about hard work or about luck? Does it change how much tax you want?",
       "memo": "Some people work hard. Some people are lucky. Nobody can see which is which.",
-      "how": "There are 4 rounds.\nYou have a secret talent level. Higher talent means each hour of work earns more.\nEach round, first vote on a tax: 0%, 20%, 40%, 60%, or 80%. The middle vote wins.\nThen choose how hard to work, from 0 to 10. Working more earns more, but it costs you.\nYour income also has a random luck part, good or bad.\nEveryone can see each other's income, but not how much came from luck.\nAfter rounds 1 to 3, guess how much of the top earner's income was luck. After round 4, you share out some bonus money.",
+      "how": "There are 4 rounds.\nYou have a secret talent level. Higher talent means each hour of work earns more.\nEach round, first vote on a tax: 0%, 20%, 40%, 60%, or 80%. The middle vote wins.\nThen choose how hard to work, from 0 to 10. Working more earns more, but it costs you.\nYour income also has a random luck part, good or bad.\nEveryone can see each other's income, but not how much came from luck.\nAfter rounds 1 to 3, guess how much of the top earner's income was luck. After round 4, you share out some bonus money.\nBelow 40 coins: each coin you are short counts as 2 more coins lost when your score is worked out. Your real money does not change.",
       "formulas": "Income y = 20 + 4 x talent x effort + luck, with luck one of -20, 0, 10, 30, 60. Money = (1 - t) y + R / n - 0.4 x effort squared, with R = t Y (1 - 0.1 t). The tax used is the middle vote (with an even number of players, the lower of the two middle votes). Best effort for a selfish player: 5 x talent x (1 - t + t (1 - 0.1 t) / n), rounded, at most 10.",
       "briefing": [
         "Round 1. Vote on the tax, then decide how hard to work.",
@@ -243,19 +259,24 @@
       "reveal": {
         "taxTitle": "Tax vote results",
         "incomeTitle": "Incomes this round",
-        "yourBreakdown": "Your income: base 20 + talent x work {te} + luck {luck} = {y}",
+        "yourBreakdown": "Your income: base 20 + 4 x talent {a} x work {e} = {te} + luck {luck} = {y}",
         "bonusTitle": "Bonus shared"
       },
       "info": "Your talent is secret. Others see your income, but not where it came from.",
       "banner": {
         "tax": "This round's tax is {t}%. Now choose how hard to work."
-      }
+      },
+      "avgLuck": "Average luck is 16.",
+      "moneyAvg": "Your money with average luck: {x}",
+      "moneyAvgNote": "This counts tax, your expected share, and the work cost. Your share assumes the others work as hard as pays for them.",
+      "pretend": "These are pretend coins. They do not change anyone's money or score.",
+      "moneyAvgLabel": "Your money with average luck"
     },
     "3": {
       "name": "Shocks and Insurance",
       "question": "Why does private insurance sometimes collapse, and what happens when everyone must buy it?",
       "memo": "Bad things happen. An insurance company wants to sell you protection. It does not know who is likely to need it. You do.",
-      "how": "There are 4 rounds. Each round you earn 100 coins.\nBad luck (illness, accident, and so on) can cost you 80 coins.\nYou secretly know your risk: Low (10% chance each round) or High (40%).\nEach round you can buy insurance. It pays for the whole 80 if bad luck happens.\nYou can also pay 6 coins for the gym. It cuts your risk in half for that round.\nThe insurance price is set from the people who bought last round. If only risky people buy, the price goes up.\nAfter round 2, everyone votes: keep private insurance, or make insurance compulsory for everyone (covering half or all of the loss).",
+      "how": "There are 4 rounds. Each round you earn 100 coins.\nBad luck (illness, accident, and so on) can cost you 80 coins.\nYou secretly know your risk: Low (10% chance each round) or High (40%).\nEach round you can buy insurance. It pays for the whole 80 if bad luck happens.\nYou can also pay 6 coins for the gym. It cuts your risk in half for that round.\nThe insurance price is set from the people who bought last round. If only risky people buy, the price goes up.\nAfter round 2, everyone votes: keep private insurance, or make insurance compulsory for everyone (covering half or all of the loss).\nBelow 40 coins: each coin you are short counts as 2 more coins lost when your score is worked out. Your real money does not change.",
       "formulas": "First price: 1.1 x 80 x 0.25 = 22. After that: 1.1 x 80 x (average risk of last round's buyers, counting the gym). If nobody buys, the company leaves. Compulsory insurance: everyone pays T = 1.1 x c x 80 x (average risk of all players, counting the gym), and bad luck costs you (1 - c) x 80.",
       "briefing": [
         "Round 1. Insurance costs 22 coins. That price is set for an average person. Nobody is average.",
@@ -298,18 +319,22 @@
         "premiumNext": "Next insurance price: {p} coins",
         "insurerGone": "The insurance company has closed.",
         "contribution": "Everyone paid: {T} coins",
-        "regimeTitle": "Vote results"
+        "regimeTitle": "Vote results",
+        "premiumWhy": "Next price: {p} coins, because last round's buyers had an average risk of {r}%.",
+        "closedWhy": "Nobody bought, so the company closed."
       },
       "info": "Insurance price history",
       "banner": {
         "regime": "The vote is in: {name}."
-      }
+      },
+      "regimeCost": "Estimated cost per round, using the average risk of 25%: full cover about {full}, half cover about {half}. This is before gym choices. The final cost is set after everyone's gym choices.",
+      "regimeKeeps": "The insurer (or the Ministry, under compulsory insurance) keeps the extra 10% as running costs."
     },
     "4": {
       "name": "The Job Market",
       "question": "How can one group end up paid less, even when nobody is prejudiced?",
       "memo": "Good news: jobs are now given out by a computer, HireBot 3000. It is not biased. It just learned from old records.",
-      "how": "There are 5 rounds. Every player is a Circle or a Square.\nSome players have childcare duty. Squares are more likely to have it.\nEach round, you can pay to train. Training makes you skilled.\nEveryone takes a test. Skilled people usually pass (80%). Unskilled people sometimes pass (30%).\nHireBot looks at your test and at what it believes about your group. If it is at least 60% sure you are skilled, you get a good job. If not, you get a basic job paying 20.\nA good job pays 90 for long hours or 55 for flexible hours. Long hours cost 40 extra if you have childcare duty.\nAfter round 3, everyone votes on a new rule for HireBot.",
+      "how": "There are 5 rounds. Every player is a Circle or a Square.\nSome players have childcare duty. Squares are more likely to have it.\nEach round, you can pay to train. Training makes you skilled.\nEveryone takes a test. Skilled people usually pass (80%). Unskilled people sometimes pass (30%).\nHireBot looks at your test and at what it believes about your group. If it is at least 60% sure you are skilled, you get a good job. If not, you get a basic job paying 40.\nA good job pays 180 for long hours or 110 for flexible hours. Long hours cost 80 extra if you have childcare duty.\nAfter round 3, everyone votes on a new rule for HireBot.\nBelow 40 coins: each coin you are short counts as 2 more coins lost when your score is worked out. Your real money does not change.",
       "formulas": "HireBot's confidence after a pass: q = 0.8 b / (0.8 b + 0.3 (1 - b)), where b is its belief about your group. After a fail: q = 0.2 b / (0.2 b + 0.7 (1 - b)). Good job if q is 0.6 or more. After each round, for each group: b = 0.8 b + 0.2 x (share of that group who trained). Starting beliefs: Circles 0.6, Squares 0.3.",
       "briefing": [
         "Round 1. HireBot is ready. It does not see shapes. It sees numbers about shapes.",
@@ -325,9 +350,9 @@
       "investSubmit": "Confirm",
       "scheduleTitle": "Choose your hours",
       "scheduleDecide": "HireBot gave you a good job. Pick your hours.",
-      "greedy": "Long hours: 90 coins",
-      "greedyCare": "Long hours: 90 coins, minus {chaos} for childcare problems",
-      "flex": "Flexible hours: 55 coins",
+      "greedy": "Long hours: 180 coins",
+      "greedyCare": "Long hours: 180 coins, minus {chaos} for childcare problems",
+      "flex": "Flexible hours: 110 coins",
       "scheduleSubmit": "Confirm",
       "policyTitle": "Vote: new rule for HireBot",
       "policyDecide": "This rule is used in rounds 4 and 5. The option with the most votes wins. A tie is settled by a coin flip.",
@@ -352,7 +377,7 @@
         },
         "D": {
           "name": "Cheaper Childcare",
-          "desc": "The extra cost of long hours for people with childcare duty drops from 40 to 10."
+          "desc": "The extra cost of long hours for people with childcare duty drops from 80 to 20."
         }
       },
       "report": "What HireBot believes",
@@ -363,14 +388,16 @@
         "assignTitle": "HireBot's decisions",
         "pass": "Passed",
         "fail": "Failed",
-        "confidence": "HireBot is {q}% sure",
+        "confidence": "HireBot is {q}% sure (needs 60%)",
         "quota": "Quota hire",
         "payTitle": "Pay and training results",
         "skilled": "Trained",
         "unskilled": "Not trained",
         "beliefUpdate": "HireBot now thinks {pc}% of Circles and {ps}% of Squares are skilled.",
         "poolUpdate": "HireBot now thinks {pp}% of everyone is skilled.",
-        "policyTitle": "Vote results"
+        "policyTitle": "Vote results",
+        "updateMath": "{g}: 80% x {old}% + 20% x {rate}% trained = {new}%",
+        "updateMathPool": "Everyone: 80% x {old}% + 20% x {rate}% trained = {new}%"
       },
       "info": "What HireBot believes",
       "banner": {
@@ -383,13 +410,14 @@
         "training": "{n} training",
         "trainingSecret": "training",
         "equals": "= {w}"
-      }
+      },
+      "reportNeed": "A Square who passes needs HireBot's belief to be at least 36%. Now: {now}%."
     },
     "5": {
       "name": "Writing the Constitution",
       "question": "Do your ideas about fairness change once you know if you are rich?",
       "memo": "Write the country's rules before you know your income. Then you find out, and you get a chance to change them. We will remember what you said.",
-      "how": "Stage 1: Nobody knows their income. Everyone picks a tax (0% to 80%) and a minimum income (0, 25, 40, or 55). The middle choices become the rules.\nStage 2: Incomes are given out: 30, 60, 100, or 170.\nNow you can give up to 20 coins to another player. It cannot buy their vote for sure.\nYou can also suggest one change to the rules, or skip.\nEach change needs about two-thirds of the votes to pass.",
+      "how": "Stage 1: Nobody knows their income. Everyone picks a tax (0% to 80%) and a minimum income (0, 25, 40, or 55). The middle choices become the rules.\nStage 2: Incomes are given out: 30, 60, 100, or 170.\nNow you can give up to 20 coins to another player. It cannot buy their vote for sure.\nYou can also suggest one change to the rules, or skip.\nEach change needs about two-thirds of the votes to pass.\nBelow 40 coins: each coin you are short counts as 2 more coins lost when your score is worked out. Your real money does not change.",
       "formulas": "Total tax R = t Y (1 - 0.4 t). First, anyone below the minimum is topped up to it (shared out if there is not enough). What is left is split equally. Money = (1 - t) y + top-up + equal share - coins given + coins received. Votes needed for a change: 2 of 2, 2 of 3, or 3 of 4.",
       "briefing": {
         "VEIL": "Stage 1. Write the rules. You do not know your income yet."
@@ -426,10 +454,22 @@
         "incomesNote": "Everyone now knows exactly how much they earn.",
         "amendTitle": "Votes on changes",
         "noAmendments": "Nobody suggested a change.",
-        "final": "Final rules"
+        "final": "Final rules",
+        "withdrawn": "Withdrawn: this is already the rule.",
+        "yesNeed": "{yes} yes (needs {need})"
       },
       "info": "The rules",
-      "amendDecideYou": "You want to change the rules from {from} to {to}. It needs {need} yes votes."
+      "amendDecideYou": "You want to change the rules from {from} to {to}. It needs {need} yes votes.",
+      "medianRule": {
+        "even": "With {n} players, the lower of the two middle choices wins.",
+        "odd": "With {n} players, the middle choice wins."
+      },
+      "separate": "Tax and minimum income are counted separately, so the final rules can be a mix nobody picked.",
+      "fairTitle": "A question, not a vote",
+      "fairAsk1": "Forget your score. What tax rate do you think is fair?",
+      "fairAsk2": "Now you know your income. Forget your score. What tax rate do you think is fair?",
+      "fairNote": "This does not affect your score or the rules. It is only for the summary.",
+      "fairSubmit": "Answer"
     }
   },
   "summaryHeadline": "News",
@@ -521,7 +561,8 @@
       "realWorld": "Most bad luck here is not chosen: illness, disability, accidents. That is one reason most rich countries make some insurance compulsory. Low-risk people pay more than their own risk, but in return everyone can get protection.",
       "chartTitle": "Insurance price each round",
       "pool": "Buyers: {n}",
-      "lesson": "If only risky people buy insurance, the price climbs until the market collapses. Making it compulsory stops that."
+      "lesson": "If only risky people buy insurance, the price climbs until the market collapses. Making it compulsory stops that.",
+      "realCase": "A real case: in the 1990s Harvard changed how it paid for staff health plans. Healthier staff moved to cheaper plans, the most generous plan's price spiralled, and it was dropped within a few years (Cutler and Reber 1998)."
     },
     "l4": {
       "predicted": "At the start, HireBot believes Circles are usually skilled, so a Circle who passes the test gets a good job. Training pays off for Circles. A Square who passes still does not convince HireBot, so training pays nothing for Squares, and they stop training. HireBot then sees few skilled Squares and believes even less in them. The belief makes itself true (Coate and Loury 1993).",
@@ -544,22 +585,24 @@
       "lesson": "A gap can appear with nobody being prejudiced: old beliefs and childcare duties are enough."
     },
     "l5": {
-      "predicted": "Before incomes are known, everyone is in the same position, so different choices show different values. Once incomes are known, richer players usually want lower taxes and poorer players higher taxes. Research shows people honestly come to believe that whatever helps them is also what is fair (Babcock and Loewenstein 1997).",
-      "you": "Before knowing your income, you picked {veil}. After learning you earn {inc} (number {rank} of {n}, from poorest to richest), you moved to {rev}. Your change: {dt} points.",
-      "slope": "Across all players, each step up in income changed the preferred tax by {slope} points. {sign}",
-      "slopeNeg": "The richer a player turned out, the more they wanted to cut taxes. People like rules that help themselves.",
-      "slopePos": "The richer players wanted higher taxes. The Ministry is surprised.",
-      "slopeZero": "Income did not change anyone's choice. The Ministry is moved.",
+      "predicted": "Before incomes are known, everyone is in the same position. Once incomes are known, the score pays richer players to want lower taxes, so their votes move. That is plain self-interest. The real question is whether their sense of what is fair moves too. Babcock and Loewenstein (1997) found that it does: people honestly come to believe that what helps them is also what is fair. So this level asked everyone twice, without pay, what tax they think is fair.",
+      "slope": "Across all players, each step up in income changed the tax they called fair by {slope} points. {sign}",
+      "slopeNeg": "The richer a player turned out, the lower the tax they called fair. That is the self-serving bias.",
+      "slopePos": "The richer players called higher taxes fair. The Ministry is surprised.",
+      "slopeZero": "Income did not change what anyone called fair. The Ministry is moved.",
       "amendments": "Changes suggested: {n}. Passed: {p}.",
       "donations": "Coins given: {list}.",
       "noDonations": "Nobody gave any coins.",
       "bought": "{donor} gave {amount} coins to {to}, who then voted {vote} on the donor's change.",
-      "chartTitle": "Change in preferred tax by income",
+      "chartTitle": "Change in the tax people called fair, by income",
       "chartX": "Income rank (1 = poorest)",
-      "chartY": "Change in tax (points)",
-      "lesson": "Once people know if they're rich or poor, most change their idea of a fair tax in their own favor.",
+      "chartY": "Change in fair tax (points)",
+      "lesson": "Once people know if they are rich or poor, their sense of a fair tax tends to move in their own favor, not just their vote.",
       "boughtYou": "You gave {amount} coins to {to}, who then voted {vote} on your change.",
-      "boughtToYou": "{donor} gave you {amount} coins, and you then voted {vote} on their change."
+      "boughtToYou": "{donor} gave you {amount} coins, and you then voted {vote} on their change.",
+      "paidLine": "How your paid vote moved: behind the veil you picked {veil}. After learning your income you proposed {prop}. Change: {dt} points.",
+      "paidLinePass": "How your paid vote moved: behind the veil you picked {veil}. After learning your income you did not propose a change.",
+      "fairLine": "How your sense of fairness moved: before you knew your income you said {f1} was fair. After learning you earn {inc} (number {rank} of {n}, from poorest to richest), you said {f2}. Change: {dt} points."
     },
     "lesson": "The lesson",
     "vsTheory": "You vs. the theory",
@@ -568,7 +611,16 @@
     "youDid": "You",
     "scores": "Scores this level",
     "showDetails": "Show details",
-    "perRound": "Money each round"
+    "perRound": "Money each round",
+    "cardBest": "Your card's best choice was {best}. You chose {chose}.",
+    "cardBestNote": "This is what scores best on average for your card, counting the hardship line.",
+    "choice": {
+      "buyYes": "to buy insurance in round 1",
+      "buyNo": "not to buy insurance in round 1",
+      "trainYes": "to train in round 1",
+      "trainNo": "not to train in round 1",
+      "taxR1": "{t} in round 1"
+    }
   },
   "verdicts": {
     "consistent": "You did not change your mind. The Ministry finds this suspicious.",
@@ -590,11 +642,10 @@
     "ranking": "Final ranking",
     "colCitizen": "Player",
     "colCard": "Secret card",
-    "colLevels": "Levels",
+    "colLevels": "Level points",
     "colGuess": "Guess points",
     "colTotal": "Total",
     "ideology": "What your choices say about you",
-    "ideologyLine": "You believe in {l1}, {l2}, and {l3}, {tail}.",
     "filed": "The Ministry labels you: {label}.",
     "botGuesses": "What the computer players thought your card was",
     "botGuessLine": "{bot} guessed {guess}",
@@ -604,23 +655,12 @@
     "trust": "Trustworthiness (how often players kept their word)",
     "download": "Download game record (JSON)",
     "seed": "Game code: {seed}",
-    "l1": {
-      "P1": "no taxes",
-      "P2": "a safety net",
-      "P3": "limiting the gap between rich and poor",
-      "P4": "helping the poorest whatever it costs"
-    },
     "l2": {
       "EGALITARIAN": "equal shares for everyone",
       "LIBERTARIAN": "people keeping whatever they get",
       "MERITOCRATIC": "rewarding talent and work",
       "LIBERAL_EGALITARIAN": "rewarding work only",
       "none": "things working out somehow"
-    },
-    "l3": {
-      "VOL": "private insurance",
-      "M50": "some compulsory insurance",
-      "M100": "full compulsory insurance"
     },
     "tails": {
       "consistent": "and you kept believing it after you found out your income",
@@ -642,7 +682,12 @@
       "poorTaxCutter": "Future Millionaire",
       "none": "Hard to Say"
     },
-    "policyLine": "In the job market you voted for {policy}."
+    "pointsNote": "Each level counts the same: level points = 100 + 50 x (your level score - the table's average) / how widely scores usually spread in that level. A right guess adds 25.",
+    "ideologyNote": "Built only from answers that did not affect your score.",
+    "fairLine": "Asked what tax is fair, you said {f1} before you knew your income and {f2} after.",
+    "bonusLine": "Splitting the bonus pot, you acted like someone who believes in {ideal}.",
+    "luckLine": "You guessed luck made up {belief}% of the top earner's income. It was really {truth}%.",
+    "ideologyLine2": "You believe in {ideal}, {tail}."
   },
   "archives": {
     "title": "Glossary",
@@ -706,7 +751,9 @@
       "pollAria": "Share of income from luck",
       "cmpLabel": "Tax",
       "cmpLab": "Believe in luck, want more tax",
-      "chartSummary": "{name}: base {base}, talent and work {te}, luck {luck}"
+      "chartSummary": "{name}: base {base}, talent and work {te}, luck {luck}",
+      "tax": "Tax",
+      "expectedShare": "Your expected share of tax"
     },
     "l3": {
       "mandate": "compulsory",
@@ -755,5 +802,11 @@
     "results": "This is how much money everyone ended up with. Your score depends on your secret card.",
     "chat": "Other players can say anything. They don't have to tell the truth.",
     "dismiss": "Got it"
+  },
+  "taxInfo": {
+    "money": "Tax money is shared equally. Some is lost on the way: the higher the tax, the bigger the share that is lost.",
+    "moneyL5": "Tax money first tops up anyone below the minimum income, then the rest is shared equally. Some is lost on the way: the higher the tax, the bigger the share that is lost.",
+    "lossAt": "At {t}% tax, {l}% of what is collected is lost.",
+    "lossExample": "For example, at 40% tax, 16% of what is collected is lost."
   }
 }
