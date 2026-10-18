@@ -15,7 +15,12 @@ export const SCORE = {
   WEALTH_WEIGHT: 0.5,
   METRIC_WEIGHT: 0.5,
   MERITOCRAT_MISMATCH_WEIGHT: 0.5,
-  GUESS_BONUS: 15,
+  /** Run bonus per correct Values guess, in level points (D-46). */
+  GUESS_BONUS: 25,
+  /** Level points: 100 x (your level score / the table's average level score) (D-45). */
+  LEVEL_POINTS_BASE: 100,
+  /** Floor on the table average used as the divisor, so a near-zero or negative average cannot blow up. */
+  LEVEL_POINTS_MIN_AVG: 1,
 };
 
 /**
@@ -29,6 +34,12 @@ export const METRIC_SCALE: Record<ValuesCard, number> = {
   UTILITARIAN: 1,
   MERITOCRAT: 1.22,
 };
+
+/**
+ * Hardship line (DECISIONS.md D-39): a player's own round score loses POINTS_PER_COIN points
+ * for every coin of their own wealth below LINE. It never changes wealth or anyone's metric.
+ */
+export const HARDSHIP = { LINE: 40, POINTS_PER_COIN: 2 };
 
 export const BOT_PROFILES: Record<BotKey, { name: string; rho: number; lambda: number; honesty: number; sigma: number }> = {
   chet: { name: 'Chet Bootstraps', rho: 0.5, lambda: 3, honesty: 0.5, sigma: 0.6 },

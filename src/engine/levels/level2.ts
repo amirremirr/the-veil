@@ -1,9 +1,9 @@
 // LEVEL 2: LUCK VS. EFFORT. Vote on a tax, choose effort, guess how much was luck.
 import { BOT, L2 } from '../params';
-import { botParams, botRng, finishRound, gameRng, headline, humanOf, ids, idx, lowerMedian, playerOf } from '../core';
+import { botParams, botRng, finishRound, gameRng, headline, humanOf, ids, idx, lowerMedian, playerOf, debriefRng } from '../core';
 import { effortSharesFrom, mean, roundScore } from '../scoring';
 import { leakyRevenue, sum } from '../tax';
-import { ceOfSamples, logitChoice, logitProbs } from '../bots/utility';
+import { ceOfSamples, logitChoice, logitProbs, argmax } from '../bots/utility';
 import type { Rng } from '../rng';
 import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import type { LevelDefinition } from './types';
@@ -52,6 +52,8 @@ export interface L2Debrief {
   predictedT: number;
   humanMeanLuckBelief?: number;
   humanMeanTaxVote?: number;
+  /** The human's card's best round-1 tax vote (risk neutral apart from the hardship line) vs. their vote. */
+  cardBest?: { best: number; chose: number };
 }
 
 export interface L2State {
@@ -399,6 +401,14 @@ export const level2: LevelDefinition = {
       predictedT: lowerMedian(Object.values(selfishT)),
       humanMeanLuckBelief: polls.length ? mean(polls.map((p) => p.answer)) : undefined,
       humanMeanTaxVote: h ? mean(l.rounds.map((r) => r.tVotes[h.id])) : undefined,
+      cardBest: h
+        ? {
+            best: L2.TAX_OPTIONS[
+              argmax(taxScores(n, idx(s, h.id), l.talents[h.id], h.values, 0, debriefRng(s, 'l2'), s.botSamples))
+            ],
+            chose: l.rounds[0].tVotes[h.id],
+          }
+        : undefined,
     };
     l.debrief = d;
     return d;

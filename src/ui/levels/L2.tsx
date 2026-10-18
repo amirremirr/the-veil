@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import type { L2Bonus, L2Debrief, L2Round, BonusCitizen, FairnessIdeal } from '../../engine/levels/level2';
 import { L2 } from '../../engine/params';
+import { bestEffort } from '../../engine/levels/level2';
+import { MoneyBox, MoneyLine, TaxInfo, fmt1, lossLine, taxPool } from '../components/Money';
 import type { ViewState } from '../../engine/types';
 import { useStore } from '../store';
 import { t } from '../i18n';
@@ -39,6 +41,10 @@ function TaxForm() {
   return (
     <FormCard form={t('levels.2.taxTitle')}>
       <p className="mb-3 text-sm">{t('levels.2.taxDecide')}</p>
+      <TaxInfo>
+        <p>{t('taxInfo.money')}</p>
+        <p className="font-semibold">{lossLine(x ?? 0.4, L2.KAPPA)}</p>
+      </TaxInfo>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-5" role="group" aria-label={t('levels.2.taxTitle')}>
         {L2.TAX_OPTIONS.map((o) => (
           <button key={o} type="button" aria-pressed={x === o} className="choice justify-center" onClick={() => setX(o)}>
@@ -55,8 +61,15 @@ function EffortForm({ v }: { v: ViewState }) {
   const lv = v.levelView as L2View;
   const [e, setE] = useState(5);
   const tax = lv.current.t ?? 0;
+  const n = v.players.length;
   const y = L2.BASE_INCOME + L2.TALENT_MULT * lv.myTalent * e + meanLuck;
   const cost = L2.EFFORT_COST * e * e;
+  // Expected share: the others' talents are secret, so use the average over the talent cards you do
+  // not hold, each working as hard as pays for them, with average luck.
+  const others = L2.TALENT_DECK.filter((a) => a !== lv.myTalent);
+  const otherY = others.reduce((acc, a) => acc + L2.BASE_INCOME + L2.TALENT_MULT * a * bestEffort(tax, a, n) + meanLuck, 0) / others.length;
+  const pool = taxPool([y, ...Array.from({ length: n - 1 }, () => otherY)], tax, L2.KAPPA);
+  const money = (1 - tax) * y + pool.share - cost;
   return (
     <FormCard form={t('levels.2.effortTitle')} right={t('levels.2.yourTalent', { a: lv.myTalent })}>
       <p className="mb-3 text-sm">{t('levels.2.effortDecide', { t: Math.round(tax * 100) })}</p>
@@ -76,14 +89,20 @@ function EffortForm({ v }: { v: ViewState }) {
           <span className="num w-8 text-end text-2xl font-semibold">{e}</span>
         </div>
       </label>
-      <dl className="mt-3 grid grid-cols-2 gap-1 text-sm">
+      <p className="mt-2 text-sm text-soft">{t('levels.2.avgLuck')}</p>
+      <dl className="mt-1 grid grid-cols-2 gap-1 text-sm">
         <dt className="text-soft">{t('ui.l2.grossAvg')}</dt>
-        <dd className="num text-end">{coins(y)}</dd>
-        <dt className="text-soft">{t('ui.l2.afterTax')}</dt>
-        <dd className="num text-end">{coins((1 - tax) * y)}</dd>
+        <dd className="num text-end">{fmt1(y)}</dd>
+        <dt className="text-soft">{t('ui.l2.tax')}</dt>
+        <dd className="num text-end">{tax > 0 ? `-${fmt1(tax * y)}` : 0}</dd>
+        <dt className="text-soft">{t('ui.l2.expectedShare')}</dt>
+        <dd className="num text-end">{pool.share > 0 ? `+${fmt1(pool.share)}` : 0}</dd>
         <dt className="text-soft">{t('ui.l2.effortCost')}</dt>
-        <dd className="num text-end">−{Math.round(cost)}</dd>
+        <dd className="num text-end">-{fmt1(cost)}</dd>
+        <dt className="border-t border-line pt-1 font-semibold">{t('levels.2.moneyAvgLabel')}</dt>
+        <dd className="num border-t border-line pt-1 text-end font-semibold">{fmt1(money)}</dd>
       </dl>
+      <p className="mt-1 text-xs text-soft">{t('levels.2.moneyAvgNote')}</p>
       <Submit label={t('levels.2.effortSubmit')} decision={e} />
     </FormCard>
   );
@@ -130,7 +149,8 @@ function BonusForm({ v }: { v: ViewState }) {
   const [x, setX] = useState(50);
   return (
     <FormCard form={t('levels.2.bonusTitle')}>
-      <p className="mb-3 text-sm">{t('levels.2.bonusDecide')}</p>
+      <p className="mb-1 text-sm">{t('levels.2.bonusDecide')}</p>
+      <p className="mb-3 text-sm font-semibold">{t('levels.2.pretend')}</p>
       <div className="grid gap-3 sm:grid-cols-2">
         <CitizenFile c={b.a} />
         <CitizenFile c={b.b} />
@@ -219,9 +239,43 @@ function Reveal({ v }: { v: ViewState }) {
       </table>
       {myE !== undefined && (
         <p className="mt-3 text-sm">
-          {t('levels.2.reveal.yourBreakdown', { te: coins(L2.TALENT_MULT * lv.myTalent * myE), luck: myLuck, y: coins(r.y[HUMAN_ID]) })}
+          {t('levels.2.reveal.yourBreakdown', {
+            a: lv.myTalent,
+            e: myE,
+            te: fmt1(L2.BASE_INCOME + L2.TALENT_MULT * lv.myTalent * myE),
+            luck: myLuck,
+            y: fmt1(r.y[HUMAN_ID]),
+          })}
         </p>
       )}
+      <MoneyBox>
+        {(() => {
+          const pool = taxPool(
+            v.players.map((p) => r.y[p.id]),
+            r.t,
+            L2.KAPPA,
+          );
+          return (
+            <>
+              {v.players.map((p) => {
+                const mine = p.id === HUMAN_ID;
+                const vars = { y: fmt1(r.y[p.id]), tax: fmt1(r.t * r.y[p.id]), share: fmt1(pool.share), w: fmt1(r.W[p.id]) };
+                return (
+                  <MoneyLine key={p.id} mine={mine}>
+                    {nameOf(v, p.id)}:{' '}
+                    {mine
+                      ? t('summary.money.l2', { ...vars, cost: fmt1(L2.EFFORT_COST * myE * myE) })
+                      : t('summary.money.l2other', vars)}
+                  </MoneyLine>
+                );
+              })}
+              <p className="text-xs text-soft">
+                {t('summary.taxWent', { c: fmt1(pool.collected), lost: fmt1(pool.lost), share: fmt1(pool.share) })}
+              </p>
+            </>
+          );
+        })()}
+      </MoneyBox>
       <ContinueBar />
     </FormCard>
   );
@@ -264,6 +318,12 @@ function Debrief({ v }: { v: ViewState }) {
     <DebriefShell
       v={v}
       archiveIds={['optimal-taxation', 'median-voter', 'luck-effort', 'fairness-ideals']}
+      cardBest={
+        d.cardBest && {
+          best: t('debrief.choice.taxR1', { t: t(`levels.2.options.T${Math.round(d.cardBest.best * 100)}`) }),
+          chose: t('debrief.choice.taxR1', { t: t(`levels.2.options.T${Math.round(d.cardBest.chose * 100)}`) }),
+        }
+      }
       predicted={
         <>
           <p>{t('debrief.l2.predicted')}</p>

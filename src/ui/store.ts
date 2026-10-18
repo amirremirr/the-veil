@@ -45,6 +45,8 @@ function load(): Saved | null {
     const v = JSON.parse(raw) as Saved;
     if (v?.version !== 1) return null;
     if (v.game && v.game.version !== 1) v.game = null;
+    // Games saved before rules v2 have no level points (D-45); they cannot be resumed.
+    if (v.game && Object.values(v.game.scores).some((sc) => !Array.isArray(sc.points))) v.game = null;
     return v;
   } catch {
     return null;

@@ -22,160 +22,278 @@
     "pauly1968": "Pauly, M. (1968). The economics of moral hazard: Comment. American Economic Review, 58(3).",
     "phelps1972": "Phelps, E. (1972). The statistical theory of racism and sexism. American Economic Review, 62(4).",
     "rawls1971": "Rawls, J. (1971). A Theory of Justice. Harvard University Press.",
-    "rothschild1976": "Rothschild, M., and Stiglitz, J. (1976). Equilibrium in competitive insurance markets: An essay on the economics of imperfect information. Quarterly Journal of Economics, 90(4)."
+    "rothschild1976": "Rothschild, M., and Stiglitz, J. (1976). Equilibrium in competitive insurance markets: An essay on the economics of imperfect information. Quarterly Journal of Economics, 90(4).",
+    "kahneman1979": "Kahneman, D., and Tversky, A. (1979). Prospect theory: An analysis of decision under risk. Econometrica, 47(2).",
+    "tversky1992": "Tversky, A., and Kahneman, D. (1992). Advances in prospect theory: Cumulative representation of uncertainty. Journal of Risk and Uncertainty, 5(4).",
+    "cutler1998": "Cutler, D., and Reber, S. (1998). Paying for health insurance: The trade-off between competition and adverse selection. Quarterly Journal of Economics, 113(2)."
   },
   "entries": [
     {
       "id": "veil",
       "title": "Veil of ignorance",
-      "levels": [1, 5],
+      "levels": [
+        1,
+        5
+      ],
       "body": "A thought experiment for choosing rules fairly. You pick the rules of a society before you know which position you will hold in it: rich or poor, talented or not, healthy or sick. Because you cannot tailor the rules to yourself, the idea goes, you will pick rules that are fair to everyone. John Rawls made the device famous, and John Harsanyi used a similar setup earlier to argue for maximizing average welfare. The two men looked behind the same veil and saw different things. Laboratory groups asked to choose under a veil, as in Frohlich, Oppenheimer and Eavey, mostly picked neither extreme. They tended to choose a high average with a guaranteed floor. Level 1 puts you behind the veil. Level 5 lifts it and checks whether you still like what you chose.",
       "formula": "",
-      "refs": ["rawls1971", "harsanyi1955", "frohlich1987", "frohlich1992"]
+      "refs": [
+        "rawls1971",
+        "harsanyi1955",
+        "frohlich1987",
+        "frohlich1992"
+      ]
     },
     {
       "id": "maximin",
       "title": "Maximin",
-      "levels": [1],
+      "levels": [
+        1
+      ],
       "body": "A decision rule: among all options, choose the one whose worst outcome is best. Rawls argued that people behind a veil of ignorance would use maximin to choose principles of justice, so a just society maximizes the position of its worst-off members. Critics, Harsanyi among them, answered that maximin is the choice of someone infinitely afraid of risk, and that it can sacrifice large gains for many people to secure tiny gains for one. In Level 1, The Maximin picks whatever tax rate makes the poorest citizen as rich as possible, even when most of the tax leaks away. It is the benchmark for a player who cares only about the worst case.",
       "formula": "choose a* = argmax over a of ( min over outcomes s of u(a, s) )",
-      "refs": ["rawls1971", "harsanyi1975"]
+      "refs": [
+        "rawls1971",
+        "harsanyi1975"
+      ]
     },
     {
       "id": "expected-utility",
       "title": "Expected utility (Harsanyi)",
-      "levels": [1, 3],
+      "levels": [
+        1,
+        3
+      ],
       "body": "The standard model of choice under risk: weigh each possible outcome by its probability and add up. Harsanyi argued that a rational person behind a veil, with an equal chance of being anyone, would maximize expected utility, which amounts to maximizing average welfare. If utility is linear in money, that means maximizing average income. If utility is concave, so that each extra coin matters less, the person also values insurance against bad draws. Risk aversion is how much curvature there is. The bots in this game use constant relative risk aversion, and their rho parameter sets the curvature. A rho of zero is a pure expected-income maximizer.",
       "formula": "EU(a) = sum over s of p(s) u(x(a, s)); CRRA: u(x) = (x^(1 - rho) - 1) / (1 - rho)",
-      "refs": ["harsanyi1955"]
+      "refs": [
+        "harsanyi1955"
+      ]
+    },
+    {
+      "id": "hardship-line",
+      "title": "Hardship line",
+      "levels": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "body": "People feel a loss more than a gain of the same size. Kahneman and Tversky called this loss aversion, and Tversky and Kahneman later estimated that losses weigh about 2.25 times as much as gains. The game builds a simple version into the score. In any round where your own money ends below 40 coins, you lose 2 points for every coin you are short. Your money does not change, and nobody else's goal changes, only your own score. This gives every player a reason to want protection from the worst outcomes: a safety net in Level 1, insurance in Level 3, a minimum income in Level 5. Without it, a player who only counts coins would never pay for protection that costs more than the expected loss.",
+      "formula": "hardship = 2 x max(0, 40 - your money this round), subtracted from your own round score",
+      "refs": [
+        "kahneman1979",
+        "tversky1992"
+      ]
     },
     {
       "id": "leaky-bucket",
       "title": "Leaky bucket",
-      "levels": [1, 2, 5],
+      "levels": [
+        1,
+        2,
+        5
+      ],
       "body": "Arthur Okun's image of redistribution: moving money from rich to poor is like carrying water in a leaky bucket. Some of it is lost on the way, through administrative costs and through weaker incentives to work and invest. Okun asked readers how much leakage they would accept before giving up on a transfer. In this game the leak is explicit. Revenue from a flat tax t on total income Y is t Y (1 - kappa t), so the share lost grows with the tax rate. The leak is why every positive tax in Level 1 lowers average income, and why choosing a fairer principle has a real price.",
       "formula": "R = t Y (1 - kappa t); lost = kappa t^2 Y",
-      "refs": ["okun1975"]
+      "refs": [
+        "okun1975"
+      ]
     },
     {
       "id": "median-voter",
       "title": "Median voter theorem",
-      "levels": [2],
+      "levels": [
+        2
+      ],
       "body": "When voters choose a single number, such as a tax rate, and each voter has one favorite with support falling off on both sides, the outcome that beats every alternative in pairwise votes is the favorite of the median voter. Meltzer and Richard used this to explain the size of government. If the median voter earns less than the mean, as in most income distributions, the median voter gains from redistribution and votes for a positive tax. The tax stops rising when the disincentive costs outweigh the transfer. Level 2 applies the median of submitted votes directly, so your vote only matters if you are near the middle.",
       "formula": "t applied = median of votes (lower median for an even number of voters)",
-      "refs": ["meltzer1981"]
+      "refs": [
+        "meltzer1981"
+      ]
     },
     {
       "id": "optimal-taxation",
       "title": "Optimal income taxation",
-      "levels": [2],
+      "levels": [
+        2
+      ],
       "body": "James Mirrlees asked how to tax income when the government cannot observe ability, only earnings. Taxing earnings redistributes from the able to the less able, but it also lowers the reward for effort, so people work less. The optimal tax balances the value of equality against this efficiency cost. Level 2 is a small version. Income is a base, plus talent times effort, plus luck. Effort costs 0.4 e^2. A selfish citizen facing tax rate t chooses effort 5 a (1 - t), plus a small correction for their own share of the rebate. Higher taxes mean less effort and a smaller pie, which is the tradeoff Mirrlees formalized.",
       "formula": "y = base + 4 a e + luck; e* = 5 a (1 - t + t (1 - kappa t) / n)",
-      "refs": ["mirrlees1971"]
+      "refs": [
+        "mirrlees1971"
+      ]
     },
     {
       "id": "luck-effort",
       "title": "Luck vs. effort beliefs",
-      "levels": [2],
+      "levels": [
+        2
+      ],
       "body": "Why do similar countries choose very different amounts of redistribution? Alesina and Angeletos argued that beliefs matter. If a society believes incomes mostly reflect effort, high taxes look like punishing work, so it chooses low taxes. If it believes incomes mostly reflect luck, taxing them looks fair, so it chooses high taxes. Both beliefs can be self-sustaining, because tax levels change how much effort people put in, which changes how much of income actually is effort. In Level 2 you guess how much of the richest citizen's income was luck, and the debrief tells you the real answer and checks whether your tax votes matched your beliefs.",
       "formula": "",
-      "refs": ["alesina2005"]
+      "refs": [
+        "alesina2005"
+      ]
     },
     {
       "id": "fairness-ideals",
       "title": "Fairness ideals",
-      "levels": [2],
+      "levels": [
+        2
+      ],
       "body": "People disagree about what a fair split looks like. Cappelen, Hole, Sørensen and Tungodden identified three common ideals in experiments. Strict egalitarians split equally no matter what. Libertarians reward whatever people produced, including luck. Liberal egalitarians reward what people control, such as effort, but not what they do not control, such as talent and luck. A related meritocratic view rewards productivity, meaning talent times effort, but not luck. Konow found similar patterns, with people treating outcomes as fair when they reflect choices people are accountable for. The Bonus Pot in Level 2 sorts you into the ideal closest to your split.",
       "formula": "share to A: egalitarian 0.5; libertarian yA/(yA+yB); meritocratic aA eA/(aA eA + aB eB); liberal egalitarian eA/(eA+eB)",
-      "refs": ["cappelen2007", "konow2000"]
+      "refs": [
+        "cappelen2007",
+        "konow2000"
+      ]
     },
     {
       "id": "adverse-selection",
       "title": "Adverse selection",
-      "levels": [3],
-      "body": "When one side of a market knows more than the other, trade can collapse. George Akerlof's example was used cars. Buyers cannot tell good cars from lemons, so they pay an average price, which drives owners of good cars out of the market, which lowers the average, and so on. Insurance works the same way. If the insurer cannot see who is high risk, it charges an average premium. Low-risk people find that too expensive and leave. The pool gets riskier and the premium rises. Rothschild and Stiglitz showed that competitive insurance markets with hidden types may have no equilibrium at all. Level 3 lets you watch the spiral.",
+      "levels": [
+        3
+      ],
+      "body": "When one side of a market knows more than the other, trade can collapse. George Akerlof's example was used cars. Buyers cannot tell good cars from lemons, so they pay an average price, which drives owners of good cars out of the market, which lowers the average, and so on. Insurance works the same way. If the insurer cannot see who is high risk, it charges an average premium. Low-risk people find that too expensive and leave. The pool gets riskier and the premium rises. Level 3 lets you watch the spiral. Cutler and Reber documented a real case at Harvard, where the most generous staff health plan lost its healthier members and was dropped.",
       "formula": "P(next round) = 1.1 x L x mean(risk of this round's buyers)",
-      "refs": ["akerlof1970", "rothschild1976"]
+      "refs": [
+        "akerlof1970",
+        "cutler1998"
+      ],
+      "related": [
+        "rothschild1976"
+      ],
+      "relatedNote": "Related: what changes if insurers offer several plans with different coverage."
     },
     {
       "id": "moral-hazard",
       "title": "Moral hazard",
-      "levels": [3],
+      "levels": [
+        3
+      ],
       "body": "Insurance changes behavior. Once you are covered, you have less reason to avoid the loss, because someone else pays for it. Kenneth Arrow discussed this problem in medical care, and Mark Pauly argued that much of it is not a moral failing at all but an ordinary response to prices: if a doctor visit is free at the point of use, people use more of it. In Level 3, the gym halves your chance of a Life Event for 6 coins. Uninsured high-risk citizens should use it. Fully insured citizens gain nothing from it, so they skip it, and the insurer's costs rise. Partial coverage restores some of the incentive.",
       "formula": "gym value = (p - p/2) x (share of loss you still pay) x L, compared with the gym fee",
-      "refs": ["arrow1963", "pauly1968"]
+      "refs": [
+        "arrow1963",
+        "pauly1968"
+      ]
     },
     {
       "id": "death-spiral",
       "title": "Death spiral",
-      "levels": [3],
+      "levels": [
+        3
+      ],
       "body": "The insurance version of adverse selection taken to its end. Premiums rise because the pool is risky, which drives out the lowest-risk remaining buyers, which makes the pool riskier, which raises premiums again. In the extreme the market disappears and nobody can buy coverage at any price, even people who would happily pay a fair premium for their own risk. Making insurance mandatory stops the spiral by keeping low-risk people in the pool. The price is that low-risk people pay more than their own expected cost. In Level 3, SafeHands Mutual leaves the market if a round passes with no buyers.",
       "formula": "",
-      "refs": ["akerlof1970", "rothschild1976"]
+      "refs": [
+        "akerlof1970",
+        "cutler1998"
+      ]
     },
     {
       "id": "statistical-discrimination",
       "title": "Statistical discrimination",
-      "levels": [4],
+      "levels": [
+        4
+      ],
       "body": "Employers rarely observe skill directly. They see a noisy signal, such as a test or an interview, and combine it with what they believe about the group the applicant belongs to. Edmund Phelps and Kenneth Arrow showed that this can produce different treatment of equally skilled people from different groups even when the employer has no prejudice at all. Two applicants with the same test result can receive different job offers because the employer starts from different priors. HireBot 3000 does exactly this, using Bayes' rule and a threshold. It never prefers one shape over another. It just believes different things about them.",
       "formula": "posterior after Pass: q = 0.8 pi / (0.8 pi + 0.3 (1 - pi)); hire for Complex if q >= 0.6",
-      "refs": ["phelps1972", "arrow1973"]
+      "refs": [
+        "phelps1972",
+        "arrow1973"
+      ]
     },
     {
       "id": "self-fulfilling-stereotypes",
       "title": "Self-fulfilling stereotypes",
-      "levels": [4],
+      "levels": [
+        4
+      ],
       "body": "Coate and Loury showed that employer beliefs can confirm themselves. If an employer believes a group is unlikely to be skilled, a member of that group who invests in skill may still not be hired for skilled work, because one good signal does not overcome a low prior. So members of that group rationally invest less. Then fewer of them are skilled, and the employer's belief looks correct. Two identical groups can end up in different equilibria purely because of where beliefs started. In Level 4, a Square with the starting prior cannot get a Complex job even after passing the test, so investing has no return until the prior rises to 0.36.",
       "formula": "pi_g (next) = 0.8 pi_g + 0.2 x (observed skill rate in g)",
-      "refs": ["coate1993"]
+      "refs": [
+        "coate1993"
+      ]
     },
     {
       "id": "greedy-jobs",
       "title": "Greedy jobs",
-      "levels": [4],
+      "levels": [
+        4
+      ],
       "body": "Claudia Goldin argued that a large part of the remaining gender gap in pay comes from how some jobs pay for time. In these jobs, working long and inflexible hours earns disproportionately more per hour than working flexible hours. Whoever carries more caregiving responsibility is pushed toward flexible work and lower pay, even with equal skill and no discrimination by the employer. In Level 4, the Greedy schedule pays 90 and the Flexible schedule pays 55, but a Care card holder who chooses Greedy pays a chaos cost of 40. Care cards are dealt more often to Squares. Subsidized childcare lowers the chaos cost.",
       "formula": "Greedy net = 90 - (care ? chaos cost : 0); Flexible = 55",
-      "refs": ["goldin2014"]
+      "refs": [
+        "goldin2014"
+      ]
     },
     {
       "id": "patronizing-equilibrium",
       "title": "Patronizing equilibrium",
-      "levels": [4],
+      "levels": [
+        4
+      ],
       "body": "A warning from Coate and Loury about affirmative action. A quota can break a negative stereotype if it lets members of a group show they are skilled. But if the quota guarantees skilled jobs to a group regardless of performance, it can also lower that group's return to investing in skill, because the job comes anyway. Employers then keep low beliefs, now with more evidence, and the quota has to stay forever. Whether a quota helps or hurts depends on the details. In Level 4, The Quota gives a Complex job to the top candidate of any group with none. Watch what it does to investment.",
       "formula": "",
-      "refs": ["coate1993"]
+      "refs": [
+        "coate1993"
+      ]
     },
     {
       "id": "self-serving-bias",
       "title": "Self-serving bias",
-      "levels": [5],
-      "body": "People tend to judge as fair whatever happens to benefit them, and they do it sincerely. Babcock and Loewenstein found that when bargainers are given the same facts but different roles, each side's view of a fair settlement drifts toward its own interest, and this drift helps explain why negotiations break down. Konow found related patterns in allocation decisions, linking them to cognitive dissonance. Level 5 measures your version. You set a constitution before learning your income, then propose amendments after. The debrief plots how far each delegate's preferred tax moved, against how rich they turned out to be.",
-      "formula": "shift = t (after reveal) - t (behind the veil)",
-      "refs": ["babcock1997", "konow2000"]
+      "levels": [
+        5
+      ],
+      "body": "People tend to judge as fair whatever happens to benefit them, and they do it sincerely. Babcock and Loewenstein found that when bargainers get the same facts but different roles, each side's view of a fair settlement drifts toward its own interest, and this drift helps explain why talks break down. Konow found related patterns in allocation decisions. Level 5 separates this from plain self-interest. Your paid proposal can move simply because the score pays you to want lower or higher taxes. So the game also asks you twice, without pay, what tax you think is fair: once before you know your income and once after. The summary plots how much that unpaid answer moved against how rich you turned out.",
+      "formula": "self-serving shift = fair tax you named after the reveal - fair tax you named before it",
+      "refs": [
+        "babcock1997",
+        "konow2000"
+      ]
     },
     {
       "id": "quantal-response",
       "title": "Quantal response",
-      "levels": [1, 2, 3, 4, 5],
+      "levels": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
       "body": "A model of imperfect but sensible choice. Instead of always picking the best option, a player picks each option with a probability that rises with how good it is. Better options are chosen more often, and costly mistakes are rarer than cheap ones. McKelvey and Palfrey used this logit form to define quantal response equilibrium, which often fits laboratory data better than exact best responses. The bots in this game choose this way. Each one computes the expected value of every option for its own Values card, converts it to a sure-coin equivalent using its risk aversion, and then picks with logit probabilities. Its lambda sets how precise it is.",
       "formula": "P(a_k) = exp(lambda U_k / scale) / sum_j exp(lambda U_j / scale), scale = max(1, max U - min U)",
-      "refs": ["mckelvey1995"]
+      "refs": [
+        "mckelvey1995"
+      ]
     },
     {
       "id": "supermajority",
       "title": "Supermajority rules",
-      "levels": [5],
+      "levels": [
+        5
+      ],
       "body": "Requiring more than a simple majority to change the rules protects minorities and makes rules stable, at the cost of making good changes harder too. Buchanan and Tullock analyzed the choice of voting rules as a constitutional decision in its own right: stricter rules reduce the risk that others impose costs on you, but raise the cost of reaching agreement. Many real constitutions use supermajorities for amendments for exactly this reason. In Level 5, an amendment needs at least two thirds of the delegates, rounded up. With four delegates that is three votes, so a single delegate cannot rewrite the constitution alone, but two together can block anything.",
       "formula": "yes votes needed = ceil(2n / 3)",
-      "refs": ["buchanan1962"]
+      "refs": [
+        "buchanan1962"
+      ]
     },
     {
       "id": "reciprocity",
       "title": "Reciprocity",
-      "levels": [5],
+      "levels": [
+        5
+      ],
       "body": "People tend to repay kindness with kindness and unkindness with punishment, even at a cost to themselves and even when nobody will ever find out. Fehr and Gächter reviewed the experimental evidence and argued that reciprocity shapes how contracts, workplaces, and public goods actually work. In Level 5, donations during lobbying are not binding. They buy nothing enforceable. The bots are built to feel a little obliged anyway: a bot that received d coins from a delegate becomes more likely to vote for that delegate's amendment, by 0.3 times d / 20. The debrief shows whether any votes followed the money.",
       "formula": "P(yes) = min(1, P_logit(yes) + 0.3 d / 20)",
-      "refs": ["fehr2000"]
+      "refs": [
+        "fehr2000"
+      ]
     }
   ]
 }

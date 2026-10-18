@@ -42,7 +42,7 @@ function sandbox(base: GameState, cf: Cf, rng: RngState, botSamples: number): Ga
   s.botSamples = botSamples;
   s.mode = 'SINGLE_LEVEL';
   for (const p of s.players) {
-    s.scores[p.id] = { byLevel: [0, 0, 0, 0, 0], guessBonus: 0 };
+    s.scores[p.id] = { byLevel: [0, 0, 0, 0, 0], points: [0, 0, 0, 0, 0], guessBonus: 0 };
     s.reliability[p.id] = { made: 0, kept: 0 };
   }
   initBeliefs(s);
@@ -56,7 +56,7 @@ function humanDecision(s: GameState, pid: PlayerId, stepId: string, plan: Plan):
   if (stepId === 'INVEST') {
     if (plan && plan.invest[r] !== undefined) return plan.invest[r];
     const prior = l.policy === 'B' && l.priors.POOL !== null ? l.priors.POOL : l.priors[l.groups[pid]];
-    return investGain(prior, l.care[pid], l.policy) > l.costs[pid];
+    return investGain(prior, l.care[pid], l.policy, l.costs[pid]) > 0;
   }
   if (stepId === 'SCHEDULE') return plan?.schedule[r] ?? bestSchedule(l.care[pid], l.policy);
   if (stepId === 'POLICY') return plan?.policy ?? 'A';

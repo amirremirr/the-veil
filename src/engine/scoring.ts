@@ -1,4 +1,4 @@
-import { METRIC_SCALE, SCORE } from './params';
+import { HARDSHIP, METRIC_SCALE, SCORE } from './params';
 import type { ValuesCard } from './types';
 
 /** Share of total wealth per player. Falls back to equal shares if total <= 0. */
@@ -43,7 +43,24 @@ export function valuesMetric(card: ValuesCard, W: readonly number[], i: number, 
   }
 }
 
-/** Round score S = 0.5 W + 0.5 k M, with k the card's balancing scale. Equals W for the Egoist. */
+/** Hardship penalty in points: POINTS_PER_COIN for every coin of own wealth below the line (D-39). */
+export function hardshipPenalty(w: number): number {
+  return HARDSHIP.POINTS_PER_COIN * Math.max(0, HARDSHIP.LINE - w);
+}
+
+/** Own wealth minus the hardship penalty: what a purely selfish player maximizes. */
+export function ownNet(w: number): number {
+  return w - hardshipPenalty(w);
+}
+
+/**
+ * Round score S = 0.5 W + 0.5 k M - hardship, with k the card's balancing scale.
+ * For the Egoist it equals W - hardship.
+ */
 export function roundScore(card: ValuesCard, W: readonly number[], i: number, effortShares: readonly number[]): number {
-  return SCORE.WEALTH_WEIGHT * W[i] + SCORE.METRIC_WEIGHT * METRIC_SCALE[card] * valuesMetric(card, W, i, effortShares);
+  return (
+    SCORE.WEALTH_WEIGHT * W[i] +
+    SCORE.METRIC_WEIGHT * METRIC_SCALE[card] * valuesMetric(card, W, i, effortShares) -
+    hardshipPenalty(W[i])
+  );
 }

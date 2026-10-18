@@ -95,7 +95,7 @@ export function createInitialState(config: SetupConfig): GameState {
   });
   s.players = players;
   for (const p of players) {
-    s.scores[p.id] = { byLevel: [0, 0, 0, 0, 0], guessBonus: 0 };
+    s.scores[p.id] = { byLevel: [0, 0, 0, 0, 0], points: [0, 0, 0, 0, 0], guessBonus: 0 };
     s.reliability[p.id] = { made: 0, kept: 0 };
   }
   initBeliefs(s);
@@ -162,6 +162,7 @@ function enterPhase(s: GameState): void {
     case 'LEVEL_DEBRIEF': {
       // Drop unchecked claims that never met their decision.
       for (const m of s.messages) if (m.level === s.levelIndex && !m.resolved) m.resolved = true;
+      awardLevelPoints(s);
       const result = d.debrief(s) as Record<string, unknown>;
       if (s.levelIndex === 4 && !s.cf && !s.config.skipCounterfactual) result.counterfactual = level4Counterfactual(s);
       s.levelResults[s.levelIndex] = result;
@@ -170,6 +171,22 @@ function enterPhase(s: GameState): void {
     default:
       break;
   }
+}
+
+/**
+ * Level points (D-45): each level counts equally toward the run, whatever its round count or pay scale.
+ * points = 100 x (your level score / the table's average level score for that level).
+ */
+export function levelPoints(scores: number[]): number[] {
+  const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+  const denom = Math.max(SCORE.LEVEL_POINTS_MIN_AVG, avg);
+  return scores.map((x) => (SCORE.LEVEL_POINTS_BASE * x) / denom);
+}
+
+function awardLevelPoints(s: GameState): void {
+  const L = s.levelIndex - 1;
+  const pts = levelPoints(s.players.map((p) => s.scores[p.id].byLevel[L]));
+  s.players.forEach((p, i) => (s.scores[p.id].points[L] = pts[i]));
 }
 
 function resolveDecide(s: GameState): void {
@@ -345,7 +362,7 @@ export function waitingOn(s: GameState): PlayerId[] {
 
 export function totalScore(s: GameState, pid: PlayerId): number {
   const sc = s.scores[pid];
-  return sc.byLevel.reduce((a, b) => a + b, 0) + sc.guessBonus;
+  return sc.points.reduce((a, b) => a + b, 0) + sc.guessBonus;
 }
 
 /** The only thing the UI renders. Hides private information (Section 9.3). */

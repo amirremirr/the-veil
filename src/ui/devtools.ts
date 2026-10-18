@@ -15,6 +15,8 @@ const SCRIPT: Record<string, unknown> = {
   SCHEDULE: 'GREEDY',
   POLICY: 'D',
   VEIL: { t: 0.3, F: 40 },
+  FAIR_1: 0.3,
+  FAIR_2: 0.2,
   LOBBY: { donateTo: null, amount: 0, proposal: { t: 0.1, F: 25 } },
 };
 

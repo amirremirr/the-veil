@@ -11,6 +11,7 @@ import { ContinueBar, PrimaryBar } from '../components/TableParts';
 import { ChartFrame, LineChart } from '../components/Charts';
 import { DebriefShell } from '../components/Debrief';
 import { briefingFrom, type LevelUI } from './types';
+import { MoneyLine, fmt1 } from '../components/Money';
 
 const REGIMES: Regime[] = ['VOL', 'M50', 'M100'];
 type L3View = {
@@ -79,6 +80,15 @@ function RegimeForm() {
   return (
     <FormCard form={t('levels.3.regimeTitle')}>
       <p className="mb-3 text-sm">{t('levels.3.regimeDecide')}</p>
+      <div className="mb-3 space-y-1 rounded-md border border-line bg-paper/60 px-3 py-2 text-sm leading-snug">
+        <p>
+          {t('levels.3.regimeCost', {
+            full: Math.round(L3.LOADING * L3.LOSS * L3.P_BAR),
+            half: Math.round(L3.LOADING * 0.5 * L3.LOSS * L3.P_BAR),
+          })}
+        </p>
+        <p>{t('levels.3.regimeKeeps')}</p>
+      </div>
       <div className="space-y-2" role="group" aria-label={t('levels.3.regimeTitle')}>
         {REGIMES.map((r) => (
           <button key={r} type="button" aria-pressed={x === r} className="choice" onClick={() => setX(r)}>
@@ -138,17 +148,47 @@ function Reveal({ v }: { v: ViewState }) {
               </span>
             </div>
             <p className={`mt-1 ${r.events[p.id] ? 'text-stamp' : 'text-soft'}`}>{r.events[p.id] ? lifeEvent(r.eventCards[p.id]) : t('levels.3.reveal.none')}</p>
+            <MoneyLine mine={p.id === HUMAN_ID}>{moneyText(r, p.id)}</MoneyLine>
           </li>
         ))}
       </ul>
       <div className="mt-3 text-sm">
         {r.regime !== 'VOL' && r.T !== undefined && <p>{t('levels.3.reveal.contribution', { T: Math.round(r.T) })}</p>}
-        {r.regime === 'VOL' && (r.nextPremium !== null ? <p>{t('levels.3.reveal.premiumNext', { p: Math.round(r.nextPremium) })}</p> : <Stamp>{t('stamps.LOST')}</Stamp>)}
-        {r.regime === 'VOL' && r.nextPremium === null && <p className="mt-2">{t('levels.3.reveal.insurerGone')}</p>}
+        {r.regime === 'VOL' && r.nextPremium !== null && (
+          <p>{t('levels.3.reveal.premiumWhy', { p: Math.round(r.nextPremium), r: Math.round((r.nextPremium / (L3.LOADING * L3.LOSS)) * 100) })}</p>
+        )}
+        {r.regime === 'VOL' && r.nextPremium === null && (
+          <>
+            <Stamp>{t('stamps.LOST')}</Stamp>
+            <p className="mt-2">{r.premium !== null ? t('levels.3.reveal.closedWhy') : t('levels.3.reveal.insurerGone')}</p>
+          </>
+        )}
       </div>
       <ContinueBar />
     </FormCard>
   );
+}
+
+/** "100 - insurance 22 - gym 0 - loss 0 = 78". Every part here is public. */
+function moneyText(r: L3Round, id: string): string {
+  const ch = r.choices[id];
+  const gym = ch.gym ? L3.GYM_COST : 0;
+  const ev = r.events[id];
+  const base = L3.BASE_INCOME;
+  if (r.regime === 'VOL') {
+    const prem = ch.buy && r.premium !== null ? r.premium : 0;
+    if (ch.buy && ev) return t('summary.money.l3covered', { base, p: fmt1(prem), gym, w: fmt1(r.W[id]) });
+    return t('summary.money.l3vol', { base, p: fmt1(prem), gym, loss: ev ? L3.LOSS : 0, w: fmt1(r.W[id]) });
+  }
+  const c = r.regime === 'M50' ? 0.5 : 1;
+  return t('summary.money.l3mand', {
+    base,
+    T: fmt1(r.T ?? 0),
+    gym,
+    loss: ev ? L3.LOSS : 0,
+    paid: ev ? fmt1(c * L3.LOSS) : 0,
+    w: fmt1(r.W[id]),
+  });
 }
 
 function Info({ v }: { v: ViewState }) {
@@ -184,11 +224,18 @@ function Debrief({ v }: { v: ViewState }) {
   return (
     <DebriefShell
       v={v}
-      archiveIds={['adverse-selection', 'moral-hazard', 'death-spiral', 'expected-utility']}
+      archiveIds={['adverse-selection', 'moral-hazard', 'death-spiral', 'hardship-line']}
+      cardBest={
+        d.cardBest && {
+          best: t(d.cardBest.best ? 'debrief.choice.buyYes' : 'debrief.choice.buyNo'),
+          chose: t(d.cardBest.chose ? 'debrief.choice.buyYes' : 'debrief.choice.buyNo'),
+        }
+      }
       predicted={
         <>
           <p>{t('debrief.l3.predicted')}</p>
           <p className="text-soft">{t('debrief.l3.realWorld')}</p>
+          <p className="text-soft">{t('debrief.l3.realCase')}</p>
         </>
       }
       compare={[

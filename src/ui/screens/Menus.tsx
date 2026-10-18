@@ -180,6 +180,16 @@ export function Archives() {
                   <li key={r}>{refs[r]}</li>
                 ))}
               </ul>
+              {'related' in e && Array.isArray(e.related) && (
+                <div className="mt-2 text-xs text-soft">
+                  <p>{(e as { relatedNote?: string }).relatedNote}</p>
+                  <ul className="mt-1 space-y-1">
+                    {(e.related as string[]).map((r) => (
+                      <li key={r}>{refs[r]}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
             <p className="mt-2 text-xs">{e.levels.map((n) => t('archives.level', { n })).join(' · ')}</p>
           </FormCard>

@@ -137,7 +137,8 @@ export interface GameState {
   nextMessageId: number;
   reliability: Record<PlayerId, { made: number; kept: number }>;
   botBeliefs: Beliefs;
-  scores: Record<PlayerId, { byLevel: number[]; guessBonus: number }>;
+  /** byLevel: raw level scores. points: level points (D-45). guessBonus: in level points. */
+  scores: Record<PlayerId, { byLevel: number[]; points: number[]; guessBonus: number }>;
   guesses?: { human: Record<PlayerId, ValuesCard>; bots: Record<PlayerId, Record<PlayerId, ValuesCard>> };
   /** Counterfactual overrides (Level 4 decomposition only). */
   cf?: { priorCircle?: number; priorSquare?: number; careCircle?: number; careSquare?: number; fast?: boolean };

@@ -57,6 +57,12 @@ const header = [
 ];
 const rows: string[] = [header.join(',')];
 
+const extra = {
+  egoVotes: { P1: 0, P2: 0, P3: 0, P4: 0 } as Record<string, number>,
+  highBuy: [[0, 0], [0, 0]] as Array<[number, number]>,
+  levelScores: [[], [], [], [], []] as number[][],
+  tableAvg: [[], [], [], [], []] as number[][],
+};
 const agg = {
   votes: { P1: 0, P2: 0, P3: 0, P4: 0 } as Record<string, number>,
   t: [] as number[],
@@ -87,6 +93,18 @@ for (let g = 0; g < games; g++) {
   const d5 = s.levelResults[5] as L5Debrief;
   const votes = { P1: 0, P2: 0, P3: 0, P4: 0 } as Record<string, number>;
   for (const r of d1.rounds) for (const v of Object.values(r.votes)) votes[v]++;
+  for (const r of d1.rounds)
+    for (const [id, v] of Object.entries(r.votes)) if (s.players.find((p) => p.id === id)?.values === 'EGOIST') extra.egoVotes[v]++;
+  d3.rounds.slice(0, 2).forEach((r, k) => {
+    if (r.regime !== 'VOL' || r.premium === null) return;
+    for (const p of s.players)
+      if (d3.types[p.id] === 'HIGH') {
+        extra.highBuy[k][1]++;
+        if (r.choices[p.id].buy) extra.highBuy[k][0]++;
+      }
+  });
+  for (const p of s.players) for (let L = 0; L < 5; L++) extra.levelScores[L].push(s.scores[p.id].byLevel[L]);
+  for (let L = 0; L < 5; L++) extra.tableAvg[L].push(mean(s.players.map((p) => s.scores[p.id].byLevel[L])));
   for (const k in votes) agg.votes[k] += votes[k];
   const meanT = mean(d2.rounds.map((r) => r.t));
   const gaps: number[] = [];
@@ -180,6 +198,18 @@ for (const c of Object.keys(agg.wins) as ValuesCard[])
   lines.push(
     `  ${c}: ${pct(agg.wins[c] / Math.max(1, agg.dealt[c]))}  (share of runs won by a holder: ${pct(agg.wins[c] / games)}; held ${pct(agg.dealt[c] / games / nPlayers)} of seats)`,
   );
+const egoTotal = Object.values(extra.egoVotes).reduce((a, b) => a + b, 0) || 1;
+lines.push(`L1 principle votes by Egoist bots: ${['P1', 'P2', 'P3', 'P4'].map((k) => `${k} ${pct(extra.egoVotes[k] / egoTotal)}`).join(', ')}`);
+lines.push(
+  `L3 High types buying insurance (when offered): round 1 ${pct(extra.highBuy[0][0] / Math.max(1, extra.highBuy[0][1]))}, round 2 ${pct(extra.highBuy[1][0] / Math.max(1, extra.highBuy[1][1]))}`,
+);
+const sd = (xs: number[]) => Math.sqrt(mean(xs.map((x) => (x - mean(xs)) ** 2)));
+lines.push('Raw level scores per player (mean, standard deviation):');
+extra.levelScores.forEach((xs, L) =>
+  lines.push(
+    `  L${L + 1}: mean ${mean(xs).toFixed(1)}, sd ${sd(xs).toFixed(1)}; lowest table average ${Math.min(...extra.tableAvg[L]).toFixed(1)}, tables averaging under 10: ${extra.tableAvg[L].filter((a) => a < 10).length}`,
+  ),
+);
 lines.push(`Time: ${((Date.now() - t0) / 1000).toFixed(1)}s. CSV: ${csvPath}`);
 const summary = lines.join('\n');
 writeFileSync(`${outDir}/summary-${nPlayers}p-${difficulty}.txt`, summary);
