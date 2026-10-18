@@ -6,7 +6,7 @@ import { useStore } from '../store';
 import { t } from '../i18n';
 import { coins, pct } from '../labels';
 import { HUMAN_ID, nameOf } from '../game';
-import { FormCard, Stamp } from '../components/common';
+import { FormCard, ResultBanner, Stamp } from '../components/common';
 import { ContinueBar, PrimaryBar } from '../components/TableParts';
 import { ChartFrame, StackedBars } from '../components/Charts';
 import { DebriefShell } from '../components/Debrief';
@@ -24,10 +24,10 @@ type L2View = {
 const meanLuck = L2.LUCK_VALUES.reduce((a, b) => a + b, 0) / L2.LUCK_VALUES.length;
 
 function Submit({ label, disabled, decision }: { label: string; disabled?: boolean; decision: unknown }) {
-  const dispatch = useStore((s) => s.dispatch);
+  const act = useStore((s) => s.act);
   return (
     <PrimaryBar>
-      <button type="button" className="btn-primary" disabled={disabled} onClick={() => dispatch({ type: 'SUBMIT_DECISION', from: HUMAN_ID, decision })}>
+      <button type="button" className="btn-primary" disabled={disabled} onClick={() => act(decision)}>
         {label}
       </button>
     </PrimaryBar>
@@ -82,7 +82,7 @@ function EffortForm({ v }: { v: ViewState }) {
         <dt className="text-soft">{t('ui.l2.afterTax')}</dt>
         <dd className="num text-end">{coins((1 - tax) * y)}</dd>
         <dt className="text-soft">{t('ui.l2.effortCost')}</dt>
-        <dd className="num text-end">−{cost.toFixed(1)}</dd>
+        <dd className="num text-end">−{Math.round(cost)}</dd>
       </dl>
       <Submit label={t('levels.2.effortSubmit')} decision={e} />
     </FormCard>
@@ -312,4 +312,9 @@ function Debrief({ v }: { v: ViewState }) {
   );
 }
 
-export const L2UI: LevelUI = { Decide, Reveal, Info, Debrief, briefing: (v) => briefingFrom(2, v.round) };
+function Banner({ v }: { v: ViewState; step: string }) {
+  const lv = v.levelView as L2View;
+  return <ResultBanner>{t('levels.2.banner.tax', { t: Math.round((lv.current.t ?? 0) * 100) })}</ResultBanner>;
+}
+
+export const L2UI: LevelUI = { Decide, Reveal, Info, Debrief, Banner, briefing: (v) => briefingFrom(2, v.round) };

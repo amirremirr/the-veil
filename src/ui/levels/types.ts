@@ -8,6 +8,8 @@ export interface LevelUI {
   Info: FC<{ v: ViewState }>;
   Debrief: FC<{ v: ViewState }>;
   briefing(v: ViewState): string;
+  /** One-line result shown on the next decision screen, for reveals that no longer get a screen. */
+  Banner?: FC<{ v: ViewState; step: string }>;
 }
 
 export function briefingFrom(level: number, round: number): string {

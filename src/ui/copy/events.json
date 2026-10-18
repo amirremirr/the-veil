@@ -153,6 +153,12 @@
       "THE ORIGINAL RULES STAND. The Ministry suspects a printing error.",
       "NOBODY CHANGES ANYTHING. The Ministry is confused, and a little moved.",
       "RULES KEPT AS WRITTEN. Historians will call this 'unusual.'"
+    ],
+    "l2.lucky.you": [
+      "YOU EARN A FORTUNE and thank hard work. Luck was not thanked.",
+      "LUCKIEST PLAYER THANKS THEIR HUSTLE. It was you. Your luck says nothing.",
+      "YOU TOP THE INCOME LIST. Luck was 'just a small part,' you say.",
+      "YOU GET RICH. The Ministry is checking whether the dice worked hard too."
     ]
   }
 }

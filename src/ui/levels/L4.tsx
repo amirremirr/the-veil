@@ -6,7 +6,7 @@ import { useStore } from '../store';
 import { t } from '../i18n';
 import { coins, pct, signed } from '../labels';
 import { HUMAN_ID, nameOf } from '../game';
-import { FormCard, Shape, Stamp } from '../components/common';
+import { FormCard, ResultBanner, Shape, Stamp } from '../components/common';
 import { ContinueBar, PrimaryBar } from '../components/TableParts';
 import { ChartFrame, LineChart, StackedBars } from '../components/Charts';
 import { DebriefShell } from '../components/Debrief';
@@ -28,10 +28,10 @@ type L4View = {
 const pname = (p: Policy) => t(`levels.4.policies.${p}.name`);
 
 function Submit({ label, decision, disabled }: { label: string; decision: unknown; disabled?: boolean }) {
-  const dispatch = useStore((s) => s.dispatch);
+  const act = useStore((s) => s.act);
   return (
     <PrimaryBar>
-      <button type="button" className="btn-primary" disabled={disabled} onClick={() => dispatch({ type: 'SUBMIT_DECISION', from: HUMAN_ID, decision })}>
+      <button type="button" className="btn-primary" disabled={disabled} onClick={() => act(decision)}>
         {label}
       </button>
     </PrimaryBar>
@@ -113,13 +113,13 @@ function Report({ priors, policy }: { priors: Priors; policy: Policy }) {
         <div key={g} className="flex items-center gap-2">
           <Shape group={g} />
           <span className="flex-1">{t('levels.4.reportBelief', { g: t(`levels.4.groups.${g}`) })}</span>
-          <span className="num font-semibold">{pct(priors[g], 1)}</span>
+          <span className="num font-semibold">{pct(priors[g])}</span>
         </div>
       ))}
       {policy === 'B' && priors.POOL !== null && (
         <div className="flex items-center justify-between">
           <span>{t('levels.4.reportPool')}</span>
-          <span className="num font-semibold">{pct(priors.POOL, 1)}</span>
+          <span className="num font-semibold">{pct(priors.POOL)}</span>
         </div>
       )}
       <p className="text-soft">{t('levels.4.reportThreshold')}</p>
@@ -181,6 +181,7 @@ function Reveal({ v }: { v: ViewState }) {
                 {pay && c.schedule?.[p.id] && <span>{c.schedule[p.id] === 'GREEDY' ? t('ui.l4.greedy') : t('ui.l4.flex')}</span>}
                 {pay && c.W && <span className="num text-ink">{t('ui.wealthShort')} {coins(c.W[p.id])}</span>}
               </div>
+              {pay && <PayCalc c={c} id={p.id} />}
             </li>
           );
         })}
@@ -188,13 +189,31 @@ function Reveal({ v }: { v: ViewState }) {
       {pay && c.priorsAfter && (
         <p className="mt-3 text-sm">
           {lv.policy === 'B' && c.priorsAfter.POOL !== null
-            ? t('levels.4.reveal.poolUpdate', { pp: (c.priorsAfter.POOL * 100).toFixed(1) })
-            : t('levels.4.reveal.beliefUpdate', { pc: (c.priorsAfter.CIRCLE * 100).toFixed(1), ps: (c.priorsAfter.SQUARE * 100).toFixed(1) })}
+            ? t('levels.4.reveal.poolUpdate', { pp: Math.round(c.priorsAfter.POOL * 100) })
+            : t('levels.4.reveal.beliefUpdate', { pc: Math.round(c.priorsAfter.CIRCLE * 100), ps: Math.round(c.priorsAfter.SQUARE * 100) })}
         </p>
       )}
       <ContinueBar />
     </FormCard>
   );
+}
+
+/**
+ * How a worker's money was worked out, shown when it differs from the plain wage. Training cost is
+ * private, so only your own row shows its amount and the total.
+ */
+function PayCalc({ c, id }: { c: Partial<L4Round>; id: string }) {
+  if (!c.wage || !c.W || !c.chaos) return null;
+  const wage = c.wage[id];
+  const chaos = c.chaos[id];
+  const trained = !!c.invest?.[id];
+  if (!chaos && !trained) return null;
+  const mine = id === HUMAN_ID;
+  const parts = [t('levels.4.calc.pay', { n: wage })];
+  if (chaos) parts.push(t('levels.4.calc.childcare', { n: chaos }));
+  if (trained) parts.push(mine && c.costs?.[id] !== undefined ? t('levels.4.calc.training', { n: c.costs[id] }) : t('levels.4.calc.trainingSecret'));
+  const text = `${parts.join(' - ')}${mine ? ` ${t('levels.4.calc.equals', { w: Math.round(c.W[id]) })}` : ''}`;
+  return <p className="num mt-1 text-xs text-ink">{text}</p>;
 }
 
 function Info({ v }: { v: ViewState }) {
@@ -240,7 +259,7 @@ function Debrief({ v }: { v: ViewState }) {
       did={
         <>
           <p>{t('debrief.l4.you', { g: t(`levels.4.groups.${myGroup}`), care: d.care[HUMAN_ID] ? t('ui.l4.careHolder') : '', k: invested })}</p>
-          <p>{t('debrief.l4.gap', { gap: signed(d.gap, 1) })}</p>
+          <p>{t('debrief.l4.gap', { gap: signed(d.gap) })}</p>
           <table className="data-table">
             <thead>
               <tr>
@@ -254,9 +273,9 @@ function Debrief({ v }: { v: ViewState }) {
               {d.meanByGroup.map((m, i) => (
                 <tr key={i}>
                   <td>R{i + 1}{i >= L4.BASELINE_ROUNDS ? ` (${pname(d.policy)})` : ''}</td>
-                  <td className="num text-end">{m.CIRCLE.toFixed(1)}</td>
-                  <td className="num text-end">{m.SQUARE.toFixed(1)}</td>
-                  <td className="num text-end">{signed(m.gap, 1)}</td>
+                  <td className="num text-end">{Math.round(m.CIRCLE)}</td>
+                  <td className="num text-end">{Math.round(m.SQUARE)}</td>
+                  <td className="num text-end">{signed(m.gap)}</td>
                 </tr>
               ))}
             </tbody>
@@ -294,14 +313,14 @@ function Debrief({ v }: { v: ViewState }) {
                 <tbody>
                   <tr>
                     <td>{t('debrief.l4.baselineGap')}</td>
-                    <td className="num text-end">{signed(scen('BASELINE')?.gap ?? 0, 1)}</td>
-                    <td className="num text-end">{signed(scen('BASELINE')?.avgGap ?? 0, 1)}</td>
+                    <td className="num text-end">{signed(scen('BASELINE')?.gap ?? 0)}</td>
+                    <td className="num text-end">{signed(scen('BASELINE')?.avgGap ?? 0)}</td>
                   </tr>
                   {(['stereotype', 'care', 'interaction', 'total'] as const).map((k) => (
                     <tr key={k} className={k === 'total' ? 'font-semibold' : ''}>
                       <td>{t(`debrief.l4.${k}`)}</td>
-                      <td className="num text-end">{signed(cf.sameSeed[k], 1)}</td>
-                      <td className="num text-end">{signed(cf.average[k], 1)}</td>
+                      <td className="num text-end">{signed(cf.sameSeed[k])}</td>
+                      <td className="num text-end">{signed(cf.average[k])}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -315,7 +334,7 @@ function Debrief({ v }: { v: ViewState }) {
                 <StackedBars
                   rows={(['stereotype', 'care', 'interaction'] as const).map((k) => ({ label: t(`debrief.l4.${k}`), parts: [cf.average[k]] }))}
                   partNames={[t('debrief.l4.colAvg', { k: cf.average.replays })]}
-                  format={(x) => x.toFixed(1)}
+                  format={(x) => String(Math.round(x))}
                 />
               </ChartFrame>
             </div>
@@ -326,4 +345,19 @@ function Debrief({ v }: { v: ViewState }) {
   );
 }
 
-export const L4UI: LevelUI = { Decide, Reveal, Info, Debrief, briefing: (v) => briefingFrom(4, v.round) };
+function Banner({ v, step }: { v: ViewState; step: string }) {
+  const lv = v.levelView as L4View;
+  if (step === 'POLICY')
+    return (
+      <ResultBanner>
+        {t('levels.4.banner.policy', { name: pname(lv.policy) })}
+        {lv.policyTie && <span className="block font-normal text-soft">{t('levels.1.reveal.tieLine')}</span>}
+      </ResultBanner>
+    );
+  const c = lv.current;
+  if (step === 'ASSIGN' && c?.job?.[HUMAN_ID] === 'COMPLEX')
+    return <ResultBanner>{t('levels.4.banner.assign', { q: Math.round((c.q?.[HUMAN_ID] ?? 0) * 100) })}</ResultBanner>;
+  return null;
+}
+
+export const L4UI: LevelUI = { Decide, Reveal, Info, Debrief, Banner, briefing: (v) => briefingFrom(4, v.round) };

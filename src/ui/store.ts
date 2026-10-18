@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { reduce, HUMAN_ID } from '../engine/engine';
-import type { Action, Difficulty, GameState, LevelId, SetupConfig } from '../engine/types';
+import type { Action, Difficulty, GameState, LevelId, SetupConfig, ValuesCard } from '../engine/types';
+import { act as flowAct, settle } from './flow';
 
 export type Screen = 'title' | 'mode' | 'setup' | 'game' | 'archives' | 'settings' | 'about';
 
@@ -23,6 +24,7 @@ interface Saved {
   settings: Settings;
   progress: Progress;
   game: GameState | null;
+  tipsSeen?: string[];
 }
 
 const KEY = 'the-veil:v1';
@@ -69,7 +71,14 @@ interface Store {
   settings: Settings;
   progress: Progress;
   setupFor: { mode: SetupConfig['mode']; level?: LevelId } | null;
+  /** First message id of the current talk phase, so the chat strip shows only this round's talk. */
+  talkFrom: number | null;
+  tipsSeen: string[];
   go(screen: Screen): void;
+  /** One tap of the main button on the current screen (see flow.ts). */
+  act(decision?: unknown, guesses?: Record<string, ValuesCard>): void;
+  dismissTip(id: string): void;
+  resetTips(): void;
   chooseMode(mode: SetupConfig['mode'], level?: LevelId): void;
   start(config: Omit<SetupConfig, 'seed'> & { seed?: string }): void;
   dispatch(action: Action): void;
@@ -84,8 +93,8 @@ const saved = load();
 
 export const useStore = create<Store>((set, get) => {
   const persist = () => {
-    const { settings, progress, game } = get();
-    save({ version: 1, settings, progress, game });
+    const { settings, progress, game, tipsSeen } = get();
+    save({ version: 1, settings, progress, game, tipsSeen });
   };
   const recordProgress = (g: GameState) => {
     // Unlock level k+1 when level k's debrief is reached; remember best level scores.
@@ -100,8 +109,17 @@ export const useStore = create<Store>((set, get) => {
     }
     set({ progress: p });
   };
+  const commit = (prev: GameState, next: GameState) => {
+    if (next === prev) return;
+    const enteredTalk = next.phase.kind === 'TALK' && (next.phaseIdx !== prev.phaseIdx || next.levelIndex !== prev.levelIndex);
+    set({ game: next, ...(enteredTalk ? { talkFrom: prev.nextMessageId } : {}) });
+    recordProgress(next);
+    persist();
+  };
   return {
     screen: 'title',
+    talkFrom: null,
+    tipsSeen: saved?.tipsSeen ?? [],
     game: saved?.game ?? null,
     settings: { ...defaultSettings, ...(saved?.settings ?? {}) },
     progress: saved?.progress ?? { unlocked: 1, best: {} },
@@ -115,8 +133,8 @@ export const useStore = create<Store>((set, get) => {
     },
     start(config) {
       const seed = config.seed?.trim() || randomSeed();
-      const g = reduce(null as unknown as GameState, { type: 'START_RUN', config: { ...config, seed } });
-      set({ game: g, screen: 'game' });
+      const g = settle(reduce(null as unknown as GameState, { type: 'START_RUN', config: { ...config, seed } }));
+      set({ game: g, screen: 'game', talkFrom: null });
       persist();
       if (typeof window !== 'undefined') window.scrollTo({ top: 0 });
     },
@@ -125,8 +143,20 @@ export const useStore = create<Store>((set, get) => {
       if (!g) return;
       const next = reduce(g, action);
       if (next === g) return;
-      set({ game: next });
-      recordProgress(next);
+      commit(g, settle(next));
+    },
+    act(decision, guesses) {
+      const g = get().game;
+      if (!g) return;
+      commit(g, flowAct(g, decision, guesses));
+    },
+    dismissTip(id) {
+      if (get().tipsSeen.includes(id)) return;
+      set({ tipsSeen: [...get().tipsSeen, id] });
+      persist();
+    },
+    resetTips() {
+      set({ tipsSeen: [] });
       persist();
     },
     replay(sameSeed) {

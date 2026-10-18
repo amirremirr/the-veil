@@ -47,6 +47,14 @@
   overflow-x: clip;
 }
 
+/* Phones: the main action bar is fixed to the bottom (TableParts PrimaryBar publishes its height),
+   so pages pad their bottom by that height plus 16px and nothing is ever hidden under it. */
+@media (max-width: 1023px) {
+  main {
+    padding-bottom: calc(var(--bar-h, 0px) + 16px) !important;
+  }
+}
+
 html[data-size='S'] { font-size: 15px; }
 html[data-size='M'] { font-size: 16px; }
 html[data-size='L'] { font-size: 18px; }

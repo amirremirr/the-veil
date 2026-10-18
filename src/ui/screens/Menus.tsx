@@ -190,8 +190,9 @@ export function Archives() {
 }
 
 export function SettingsScreen() {
-  const { go, settings, updateSettings, resetProgress } = useStore();
+  const { go, settings, updateSettings, resetProgress, resetTips } = useStore();
   const [done, setDone] = useState(false);
+  const [tipsDone, setTipsDone] = useState(false);
   const Toggle = ({ k, label }: { k: 'reducedMotion' | 'sound' | 'unlockAll'; label: string }) => (
     <button type="button" aria-pressed={settings[k]} className="choice items-center justify-between" onClick={() => updateSettings({ [k]: !settings[k] })}>
       <span>{label}</span>
@@ -236,6 +237,17 @@ export function SettingsScreen() {
             </div>
           </fieldset>
           <Toggle k="unlockAll" label={t('settings.unlockAll')} />
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={() => {
+              resetTips();
+              setTipsDone(true);
+            }}
+          >
+            {t('settings.showTips')}
+          </button>
+          {tipsDone && <p className="text-sm text-soft" role="status">{t('settings.tipsReset')}</p>}
           <button
             type="button"
             className="btn-ghost"

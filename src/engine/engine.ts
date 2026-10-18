@@ -394,6 +394,7 @@ export function visibleState(s: GameState, viewer: PlayerId): ViewState {
     round: s.round,
     phase: s.phase,
     phaseIdx: s.phaseIdx,
+    queue: structuredClone(s.phaseQueue),
     waitingOn: waitingOn(s),
     hasSubmitted: viewer in s.pending,
     talkSent: s.talkSent[viewer] ?? 0,

@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "typecheck": "tsc -b --noEmit",
     "sim": "tsx sim/run.ts",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "walkthrough": "node scripts/walkthrough.mjs"
   },
   "dependencies": {
     "framer-motion": "^11.11.17",

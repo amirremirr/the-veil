@@ -180,10 +180,7 @@ export function LineChart({
         ))}
         {refLine && (
           <g>
-            <line x1={pad.l} x2={W - pad.r} y1={y(refLine.value)} y2={y(refLine.value)} className="stroke-stamp" strokeWidth="1.5" />
-            <text x={W - pad.r} y={y(refLine.value) - 4} textAnchor="end" className="fill-stamp font-mono text-[13px]">
-              {refLine.label}
-            </text>
+            <line x1={pad.l} x2={W - pad.r} y1={y(refLine.value)} y2={y(refLine.value)} className="stroke-stamp" strokeWidth="1.5" strokeDasharray="5 3" />
           </g>
         )}
         {xLabels.map((l, i) => (
@@ -230,6 +227,12 @@ export function LineChart({
         })}
       </svg>
       <Legend names={series.map((s) => s.name)} kinds={series.map((s) => (s.dashed ? 'dash' : 'line'))} />
+      {refLine && (
+        <p className="mt-1 flex items-center gap-1.5 text-xs text-stamp">
+          <span className="inline-block w-4 border-t-2 border-dashed border-stamp" aria-hidden />
+          {refLine.label}
+        </p>
+      )}
     </>
   );
 }

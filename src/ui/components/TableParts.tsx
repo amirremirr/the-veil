@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { StructuredMessage, ValuesCard, ViewState } from '../../engine/types';
 import { VALUES_CARDS } from '../../engine/types';
@@ -6,14 +6,38 @@ import { TALK } from '../../engine/params';
 import { useStore } from '../store';
 import { t } from '../i18n';
 import { actionName, cardName, coins, optionName } from '../labels';
-import { HUMAN_ID, currentRecord, headlineText, humanLevelScore, nameOf, renderMessage, type VPlayer } from '../game';
-import { Avatar, FormCard, Shape, Stamp, CountUp, useMotionOff } from './common';
+import { HUMAN_ID, currentRecord, headlineText, humanLevelScore, nameOf, renderMessage, shortName, type VPlayer } from '../game';
+import { Avatar, FormCard, Shape, Tip, useMotionOff } from './common';
 
-/** Sticky action bar at the bottom on mobile, inline on desktop. */
+/** True inside a combined results screen: the screen supplies one Continue button for everything. */
+export const ResultsContext = createContext(false);
+
+/**
+ * The main action bar. Fixed to the bottom on phones, inline on desktop. Its height is published
+ * as --bar-h so the page can pad its bottom and nothing ends up hidden under the bar.
+ */
 export function PrimaryBar({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const update = () => root.style.setProperty('--bar-h', `${el.offsetHeight}px`);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      root.style.setProperty('--bar-h', '0px');
+    };
+  }, []);
   return (
-    <div className="sticky bottom-0 z-20 -mx-4 mt-4 border-t border-line bg-paper/95 px-4 py-3 backdrop-blur lg:static lg:mx-0 lg:border-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none">
-      <div className="flex flex-wrap justify-end gap-2">{children}</div>
+    <div
+      ref={ref}
+      data-primary-bar
+      className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-paper/95 px-4 py-3 backdrop-blur lg:static lg:mt-4 lg:border-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none"
+    >
+      <div className="mx-auto flex max-w-page flex-wrap justify-end gap-2">{children}</div>
     </div>
   );
 }
@@ -36,21 +60,22 @@ export function talkMenu(v: ViewState): { support: string[]; oppose: string[]; p
   }
 }
 
-export function TopBar({ v, onMenu }: { v: ViewState; onMenu: () => void }) {
+export function TopBar({ v, onMenu, onChat }: { v: ViewState; onMenu: () => void; onChat: () => void }) {
   const rounds = { 1: 3, 2: 4, 3: 4, 4: 5, 5: 1 }[v.levelIndex];
+  const count = v.messages.filter((m) => m.level === v.levelIndex).length;
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-paper/95 backdrop-blur">
-      <div className="mx-auto flex max-w-page items-center gap-3 px-4 py-2">
+      <div className="mx-auto flex max-w-page items-center gap-2 px-4 py-2">
         <div className="min-w-0 flex-1">
           <div className="label truncate">
             {t('mode.level', { n: v.levelIndex })} · {t(`levels.${v.levelIndex}.name`)}
           </div>
-          <div className="flex flex-wrap items-baseline gap-x-3 text-sm">
-            <span className="num">{t('table.round', { r: Math.max(1, v.round), n: rounds })}</span>
-            <span className="font-semibold">{t(`phase.${v.phase.kind}`)}</span>
-          </div>
+          <div className="num text-sm">{t('table.round', { r: Math.max(1, v.round), n: rounds })}</div>
         </div>
-        <button type="button" className="btn-ghost" onClick={onMenu}>
+        <button type="button" className="btn-ghost px-3 lg:hidden" onClick={onChat}>
+          {t('table.openTranscript', { n: count })}
+        </button>
+        <button type="button" className="btn-ghost px-3" onClick={onMenu}>
           {t('table.menu')}
         </button>
       </div>
@@ -61,51 +86,34 @@ export function TopBar({ v, onMenu }: { v: ViewState; onMenu: () => void }) {
 function statusFor(v: ViewState, p: VPlayer): string[] {
   const lv = v.levelView as Record<string, any>;
   const out: string[] = [];
-  if (v.levelIndex === 3 && lv?.rounds?.length) {
+  if (v.levelIndex === 3 && lv?.rounds?.length && v.phase.kind === 'REVEAL') {
     const r = lv.rounds[lv.rounds.length - 1];
     if (r.choices?.[p.id]?.buy) out.push(t('table.statusInsured'));
     if (r.choices?.[p.id]?.gym) out.push(t('table.statusGym'));
-    if (r.events?.[p.id]) out.push(t('table.statusEvent'));
   }
-  if (v.levelIndex === 4) {
-    if (lv?.care?.[p.id]) out.push(t('table.statusCare'));
-    const job = lv?.current?.job?.[p.id];
-    if (job) out.push(job === 'COMPLEX' ? t('table.statusComplex') : t('table.statusSimple'));
-  }
+  if (v.levelIndex === 4 && lv?.care?.[p.id]) out.push(t('table.statusCareShort'));
   return out;
 }
 
+/** Compact row of players: avatar, short name, and level-specific badges. */
 export function PlayerStrip({ v }: { v: ViewState }) {
-  // Wealth appears once the reveal is over, so the strip never spoils a card flip.
-  const rec = v.phase.kind === 'REVEAL' ? undefined : currentRecord(v);
   const lv = v.levelView as Record<string, any>;
   return (
-    <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4" aria-label={t('ui.citizens')}>
+    <ul className="grid grid-cols-4 gap-1.5" aria-label={t('ui.citizens')}>
       {v.players.map((p) => {
         const me = p.id === HUMAN_ID;
         const group = v.levelIndex === 4 ? (lv?.groups?.[p.id] as 'CIRCLE' | 'SQUARE' | undefined) : undefined;
         const status = statusFor(v, p);
         return (
-          <li key={p.id} className={`form-card flex items-center gap-2 p-2 ${me ? 'ring-2 ring-ink' : ''}`}>
-            <Avatar bot={p.botKey} human={p.isHuman} size={36} />
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1 text-sm font-semibold">
-                <span className="truncate">{me ? `${p.name}` : p.name}</span>
-                {group && <Shape group={group} />}
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {status.map((s) => (
-                  <span key={s} className="rounded bg-ink/10 px-1 font-mono text-[10px] uppercase">
-                    {s}
-                  </span>
-                ))}
-              </div>
-              {rec && (
-                <div className="num text-xs text-soft">
-                  {t('ui.wealthShort')} <CountUp value={rec.W[p.id]} />
-                </div>
-              )}
+          <li key={p.id} className={`form-card flex min-w-0 flex-col items-center gap-0.5 px-1 py-1.5 text-center ${me ? 'ring-2 ring-ink' : ''}`}>
+            <Avatar bot={p.botKey} human={p.isHuman} size={26} />
+            <div className="flex max-w-full items-center gap-1 text-xs font-semibold">
+              <span className="truncate" title={p.name}>
+                {shortName(v, p.id)}
+              </span>
+              {group && <Shape group={group} size={10} />}
             </div>
+            {status.length > 0 && <div className="max-w-full truncate font-mono text-[9px] uppercase text-soft">{status.join(' · ')}</div>}
           </li>
         );
       })}
@@ -134,7 +142,7 @@ export function ChatFeed({ v, onlyCurrent = false }: { v: ViewState; onlyCurrent
             <div className="flex items-center justify-between gap-2">
               <span className="font-semibold">{nameOf(v, m.from)}</span>
               <span className="num text-[10px] text-soft">
-                R{m.round} · #{String(m.id).padStart(3, '0')}
+                R{m.round}
                 {m.resolved && m.kept !== undefined && (
                   <span className={m.kept ? ' text-good' : ' text-stamp'}>{` · ${m.kept ? t('ui.kept') : t('ui.broken')}`}</span>
                 )}
@@ -149,9 +157,41 @@ export function ChatFeed({ v, onlyCurrent = false }: { v: ViewState; onlyCurrent
   );
 }
 
+/** "What others said" strip at the top of a decision form, while the chat is open. */
+export function ChatStrip({ v, onReply }: { v: ViewState; onReply: () => void }) {
+  const talkFrom = useStore((s) => s.talkFrom);
+  const msgs = v.messages.filter((m) => m.level === v.levelIndex && (talkFrom !== null ? m.id >= talkFrom : m.round === v.round));
+  const left = TALK.MAX_MESSAGES - v.talkSent;
+  return (
+    <section className="rounded-md border border-line bg-card px-3 py-2" aria-label={t('flow.othersSaid')}>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="label">{t('flow.othersSaid')}</h2>
+        {left > 0 && (
+          <button type="button" className="btn-ghost min-h-[36px] px-3 py-1 text-sm" onClick={onReply}>
+            {t('flow.reply')}
+          </button>
+        )}
+      </div>
+      {msgs.length ? (
+        <ul className="mt-1 space-y-1 text-sm leading-snug">
+          {msgs.map((m) => (
+            <li key={m.id}>
+              <span className="font-semibold">{nameOf(v, m.from)}:</span> {renderMessage(v, m)}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-1 text-sm text-soft">{t('flow.noTalk')}</p>
+      )}
+      {v.levelIndex === 1 && v.round === 1 && <Tip id="chat" text={t('tips.chat')} />}
+    </section>
+  );
+}
+
 type MsgType = StructuredMessage['type'];
 
-export function TalkComposer({ v }: { v: ViewState }) {
+/** The message composer. Sends only while the chat phase is open; the engine enforces it. */
+export function MessageComposer({ v }: { v: ViewState }) {
   const dispatch = useStore((s) => s.dispatch);
   const menu = talkMenu(v);
   const types: MsgType[] = [];
@@ -177,11 +217,10 @@ export function TalkComposer({ v }: { v: ViewState }) {
     dispatch({ type: 'SEND_MESSAGE', from: HUMAN_ID, msg });
   };
   return (
-    <FormCard form={t('talk.title')} right={t('talk.remaining', { n: left })}>
-      <p className="mb-3 text-sm text-soft">{t('talk.intro', { max: TALK.MAX_MESSAGES })}</p>
-      <div className="mb-4 max-h-72 overflow-y-auto lg:hidden">
-        <ChatFeed v={v} onlyCurrent />
-      </div>
+    <div>
+      <p className="mb-3 text-sm text-soft">
+        {t('talk.intro', { max: TALK.MAX_MESSAGES })} <span className="num">({t('talk.remaining', { n: left })})</span>
+      </p>
       <fieldset disabled={left <= 0} className="space-y-3">
         <legend className="label mb-1">{t('talk.type')}</legend>
         <div className="flex flex-wrap gap-2" role="group" aria-label={t('talk.type')}>
@@ -227,16 +266,33 @@ export function TalkComposer({ v }: { v: ViewState }) {
             </select>
           </label>
         )}
-      </fieldset>
-      <PrimaryBar>
-        <button type="button" className="btn-ghost" disabled={left <= 0} onClick={send}>
+        <button type="button" className="btn-primary w-full" onClick={send}>
           {t('talk.send')}
         </button>
-        <button type="button" className="btn-primary" onClick={() => dispatch({ type: 'ADVANCE' })}>
-          {t('talk.done')}
-        </button>
-      </PrimaryBar>
-    </FormCard>
+      </fieldset>
+    </div>
+  );
+}
+
+/** A full-screen sheet on phones, a centered panel on desktop. */
+export function Sheet({ title, onClose, closeLabel, children }: { title: string; onClose: () => void; closeLabel: string; children: ReactNode }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return (
+    <div className="fixed inset-0 z-40 flex items-stretch justify-center bg-ink/40 lg:items-center lg:p-6" role="dialog" aria-modal="true" aria-label={title}>
+      <div className="flex w-full max-w-lg flex-col bg-paper lg:max-h-[85vh] lg:rounded-md lg:border lg:border-line">
+        <div className="flex items-center justify-between gap-2 border-b border-line px-4 py-2">
+          <span className="label">{title}</span>
+          <button type="button" className="btn-ghost" autoFocus onClick={onClose}>
+            {closeLabel}
+          </button>
+        </div>
+        <div className="flex-1 space-y-4 overflow-y-auto p-4">{children}</div>
+      </div>
+    </div>
   );
 }
 
@@ -250,55 +306,66 @@ export function Newsletter({ text }: { text: string }) {
   );
 }
 
-export function RoundSummary({ v }: { v: ViewState }) {
-  const dispatch = useStore((s) => s.dispatch);
+
+/** Money table, score breakdown, and the news headline for a finished round. */
+export function SummaryBlock({ v, showMoney = true }: { v: ViewState; showMoney?: boolean }) {
   const rec = currentRecord(v);
   if (!rec) return null;
+  const me = v.players.find((p) => p.id === HUMAN_ID);
+  const card = me?.values;
   const rows = v.players.slice().sort((a, b) => rec.W[b.id] - rec.W[a.id]);
+  const S = rec.S[HUMAN_ID] ?? 0;
+  // The engine's own numbers: S = 0.5 W + 0.5 k M. Rounded so the shown parts add up exactly.
+  const egoist = card === 'EGOIST';
+  // Whole numbers: round the total and the money half; the goal half is the remainder, so the
+  // parts always add up exactly.
+  const sShown = Math.round(S);
+  const wPart = Math.round(0.5 * rec.W[HUMAN_ID]);
+  const gPart = sShown - wPart;
   return (
-    <FormCard form={t('summary.title', { r: v.round })} right={<Stamp tone="ink">{t('summary.stampDone')}</Stamp>}>
-      <table className="data-table">
-        <thead>
-          <tr>
-            <th>{t('summary.citizen')}</th>
-            <th className="text-end">{t('summary.wealth')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((p) => (
-            <tr key={p.id} className={p.id === HUMAN_ID ? 'font-semibold' : ''}>
-              <td>{nameOf(v, p.id)}</td>
-              <td className="num text-end">{coins(rec.W[p.id])}</td>
+    <FormCard form={t('summary.title', { r: v.round })}>
+      {showMoney && (
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>{t('summary.citizen')}</th>
+              <th className="text-end">{t('summary.wealth')}</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-      <dl className="mt-4 grid grid-cols-2 gap-2 text-sm">
-        <dt className="label">{t('summary.yourScore')}</dt>
-        <dd className="num text-end text-lg">
-          <CountUp value={rec.S[HUMAN_ID] ?? 0} />
-        </dd>
-        <dt className="label">{t('summary.levelScore')}</dt>
-        <dd className="num text-end text-lg">
-          <CountUp value={humanLevelScore(v)} />
-        </dd>
-      </dl>
+          </thead>
+          <tbody>
+            {rows.map((p) => (
+              <tr key={p.id} className={p.id === HUMAN_ID ? 'font-semibold' : ''}>
+                <td>{nameOf(v, p.id)}</td>
+                <td className="num text-end">{coins(rec.W[p.id])}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      <div className={`${showMoney ? 'mt-3 ' : ''}rounded-md border-2 border-ink p-3`} data-score-breakdown>
+        <p className="font-semibold leading-snug">
+          {egoist ? t('summary.breakdownEgoist', { s: sShown }) : t('summary.breakdown', { s: sShown, w: wPart, g: gPart })}
+        </p>
+        {card && <p className="mt-1 text-sm text-soft">{t('summary.goalReminder', { card: t(`values.${card}.short`) })}</p>}
+        <p className="mt-2 flex justify-between text-sm">
+          <span>{t('summary.levelScore')}</span>
+          <span className="num font-semibold">{coins(humanLevelScore(v))}</span>
+        </p>
+      </div>
       <p className="mt-2 text-xs text-soft">{t('summary.scoreNote')}</p>
-      <Newsletter text={headlineText(rec)} />
-      <PrimaryBar>
-        <button type="button" className="btn-primary" onClick={() => dispatch({ type: 'ADVANCE' })}>
-          {t('app.continue')}
-        </button>
-      </PrimaryBar>
+      <Newsletter text={headlineText(rec, v)} />
+      {v.levelIndex === 1 && v.round === 1 && <Tip id="results" text={t('tips.results')} />}
     </FormCard>
   );
 }
 
 export function ContinueBar({ label }: { label?: string }) {
-  const dispatch = useStore((s) => s.dispatch);
+  const act = useStore((s) => s.act);
+  const inResults = useContext(ResultsContext);
+  if (inResults) return null;
   return (
     <PrimaryBar>
-      <button type="button" className="btn-primary" onClick={() => dispatch({ type: 'ADVANCE' })}>
+      <button type="button" className="btn-primary" onClick={() => act()}>
         {label ?? t('app.continue')}
       </button>
     </PrimaryBar>
