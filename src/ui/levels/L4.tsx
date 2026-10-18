@@ -181,6 +181,7 @@ function Reveal({ v }: { v: ViewState }) {
                 {pay && c.schedule?.[p.id] && <span>{c.schedule[p.id] === 'GREEDY' ? t('ui.l4.greedy') : t('ui.l4.flex')}</span>}
                 {pay && c.W && <span className="num text-ink">{t('ui.wealthShort')} {coins(c.W[p.id])}</span>}
               </div>
+              {pay && <PayCalc c={c} id={p.id} />}
             </li>
           );
         })}
@@ -195,6 +196,24 @@ function Reveal({ v }: { v: ViewState }) {
       <ContinueBar />
     </FormCard>
   );
+}
+
+/**
+ * How a worker's money was worked out, shown when it differs from the plain wage. Training cost is
+ * private, so only your own row shows its amount and the total.
+ */
+function PayCalc({ c, id }: { c: Partial<L4Round>; id: string }) {
+  if (!c.wage || !c.W || !c.chaos) return null;
+  const wage = c.wage[id];
+  const chaos = c.chaos[id];
+  const trained = !!c.invest?.[id];
+  if (!chaos && !trained) return null;
+  const mine = id === HUMAN_ID;
+  const parts = [t('levels.4.calc.pay', { n: wage })];
+  if (chaos) parts.push(t('levels.4.calc.childcare', { n: chaos }));
+  if (trained) parts.push(mine && c.costs?.[id] !== undefined ? t('levels.4.calc.training', { n: c.costs[id] }) : t('levels.4.calc.trainingSecret'));
+  const text = `${parts.join(' - ')}${mine ? ` ${t('levels.4.calc.equals', { w: Math.round(c.W[id]) })}` : ''}`;
+  return <p className="num mt-1 text-xs text-ink">{text}</p>;
 }
 
 function Info({ v }: { v: ViewState }) {

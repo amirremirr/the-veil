@@ -70,7 +70,8 @@ test('Level 1 Round 1 at 375 px: chat strip, unobstructed Vote, score breakdown'
   const breakdown = page.locator('[data-score-breakdown]');
   await expect(breakdown).toBeVisible();
   await expect(breakdown).toContainText('Your score:');
-  await expect(breakdown).toContainText('half your money');
+  // Whole numbers that add up, or the Egoist's single line.
+  await expect(breakdown).toContainText(/= \d+ from your money \+ -?\d+ from your goal|all of it comes from your own money/);
   await noHorizontalScroll(page);
 });
 

@@ -186,7 +186,12 @@ function Debrief({ v }: { v: ViewState }) {
       compare={[
         {
           label: t('levels.1.reveal.winner'),
-          benchmark: `${pname(d.benchmark.harsanyi)} / ${pname(d.benchmark.rawls)}`,
+          benchmark: (
+            <>
+              <span className="block">{t('debrief.l1.theoryAverage', { p: pname(d.benchmark.harsanyi) })}</span>
+              <span className="mt-1 block">{t('debrief.l1.theoryPoorest', { p: pname(d.benchmark.rawls) })}</span>
+            </>
+          ),
           lab: pname(d.benchmark.lab),
           you: main ? pname(main) : '',
           bots: botMain ? pname(botMain) : '',

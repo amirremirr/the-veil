@@ -28,8 +28,13 @@ export function tList(key: string): string[] {
   return Array.isArray(v) ? (v as string[]) : [];
 }
 
-export function newsletter(key: string, variant: number, vars: Vars): string {
-  const bank = (events.newsletter as Record<string, string[]>)[key] ?? [];
+/**
+ * A news headline. When the name slot holds the human player, the second-person bank `<key>.you`
+ * is used if it exists, so headlines never read "You tops the list".
+ */
+export function newsletter(key: string, variant: number, vars: Vars, humanSubject = false): string {
+  const banks = events.newsletter as Record<string, string[]>;
+  const bank = (humanSubject && banks[`${key}.you`]) || banks[key] || [];
   if (!bank.length) return '';
   return fill(bank[variant % bank.length], vars);
 }
@@ -38,8 +43,10 @@ export function lifeEvent(variant: number): string {
   return events.lifeEvents[variant % events.lifeEvents.length];
 }
 
-export function voiceLine(bot: string, type: string, variant: number, vars: Vars): string {
-  const bank = (voices as Record<string, Record<string, string[]>>)[bot]?.[type] ?? [];
+/** A bot's line. When the message is about the human, the `<TYPE>_YOU` bank is used if it exists. */
+export function voiceLine(bot: string, type: string, variant: number, vars: Vars, aboutHuman = false): string {
+  const banks = (voices as Record<string, Record<string, string[]>>)[bot] ?? {};
+  const bank = (aboutHuman && banks[`${type}_YOU`]) || banks[type] || [];
   if (!bank.length) return '';
   return fill(bank[variant % bank.length], vars);
 }

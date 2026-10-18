@@ -36,7 +36,9 @@ export function renderMessage(v: ViewState, m: Message): string {
   if (msg.type === 'PROMISE') vars.action = actionName(level, msg.action);
   if (msg.type === 'CLAIM_VALUES' || msg.type === 'ACCUSE') vars.cardName = cardName(msg.card);
   if (msg.type === 'ACCUSE') vars.target = nameOf(v, msg.target);
-  const text = !from || from.isHuman || !from.botKey ? t(`talk.human.${msg.type}`, vars) : voiceLine(from.botKey, msg.type, m.variant, vars);
+  const aboutHuman = msg.type === 'ACCUSE' && msg.target === HUMAN_ID;
+  const text =
+    !from || from.isHuman || !from.botKey ? t(`talk.human.${msg.type}`, vars) : voiceLine(from.botKey, msg.type, m.variant, vars, aboutHuman);
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
@@ -49,14 +51,17 @@ export function currentRecord(v: ViewState): RoundRecord | undefined {
   return v.history.find((r) => r.level === v.levelIndex && r.round === v.round);
 }
 
-export function headlineText(r: RoundRecord | undefined): string {
+/** The round's news headline. Pass the view so a headline about the human uses second person. */
+export function headlineText(r: RoundRecord | undefined, v?: ViewState): string {
   if (!r?.headline) return '';
   const h = r.headline;
+  const human = v?.players.find((p) => p.isHuman);
+  const you = !!human && h.vars.name === human.name;
   if (h.key.endsWith('_tie')) {
     const base = h.key.replace('_tie', '');
-    return `${newsletter('l1.tie', h.variant, h.vars)} ${newsletter(base, h.variant, h.vars)}`;
+    return `${newsletter('l1.tie', h.variant, h.vars)} ${newsletter(base, h.variant, h.vars, you)}`;
   }
-  return newsletter(h.key, h.variant, h.vars);
+  return newsletter(h.key, h.variant, h.vars, you);
 }
 
 export const ROUNDS: Record<LevelId, number> = { 1: 3, 2: 4, 3: 4, 4: 5, 5: 1 };

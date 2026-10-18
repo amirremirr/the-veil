@@ -210,7 +210,7 @@ function Table({ v }: { v: ViewState }) {
   const [sheet, setSheet] = useState<null | 'chat' | 'reply'>(null);
   const ui = UI[v.levelIndex];
   const canTalk = v.phase.kind === 'TALK';
-  const announce = `${t(`phase.${v.phase.kind}`)}. ${v.phase.kind === 'REVEAL' ? headlineText(currentRecord(v)) : ''}`;
+  const announce = `${t(`phase.${v.phase.kind}`)}. ${v.phase.kind === 'REVEAL' ? headlineText(currentRecord(v), v) : ''}`;
   return (
     <>
       <TopBar v={v} onMenu={() => setMenu(true)} onChat={() => setSheet('chat')} />

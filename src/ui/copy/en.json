@@ -141,8 +141,8 @@
     "levelScore": "Your score in this level so far",
     "scoreNote": "Other players' scores stay hidden until the end of the level, because they would give away their secret cards.",
     "stampDone": "DONE",
-    "breakdown": "Your score: {s} = half your money ({w}) + half your goal ({g})",
-    "breakdownEgoist": "Your score: {s} = half your money ({w}) + half your money ({g}). You are the Egoist, so your goal is your own money.",
+    "breakdown": "Your score: {s} = {w} from your money + {g} from your goal",
+    "breakdownEgoist": "Your score: {s}. You are the Egoist, so all of it comes from your own money.",
     "goalReminder": "Your card: {card}"
   },
   "stamps": {
@@ -376,6 +376,13 @@
       "banner": {
         "policy": "HireBot's new rule: {name}.",
         "assign": "HireBot gave you a good job. It was {q}% sure you are skilled."
+      },
+      "calc": {
+        "pay": "{n} pay",
+        "childcare": "{n} childcare",
+        "training": "{n} training",
+        "trainingSecret": "training",
+        "equals": "= {w}"
       }
     },
     "5": {
@@ -421,7 +428,8 @@
         "noAmendments": "Nobody suggested a change.",
         "final": "Final rules"
       },
-      "info": "The rules"
+      "info": "The rules",
+      "amendDecideYou": "You want to change the rules from {from} to {to}. It needs {need} yes votes."
     }
   },
   "summaryHeadline": "News",
@@ -469,7 +477,9 @@
       "colAvg": "Average",
       "colMin": "Poorest",
       "colRange": "Gap",
-      "lesson": "When you don't know if you'll be rich or poor, most people choose a safety net, not no tax and not maximum equality."
+      "lesson": "When you don't know if you'll be rich or poor, most people choose a safety net, not no tax and not maximum equality.",
+      "theoryAverage": "If you care about the average: {p}",
+      "theoryPoorest": "If you fear ending up poorest: {p}"
     },
     "l2": {
       "predicted": "A selfish player works less when taxes are high, because they keep less of what they earn. Players who expect to earn less than average want higher taxes, so the middle voter decides (Meltzer and Richard 1981). People who believe income is mostly luck usually vote for more sharing (Alesina and Angeletos 2005).",
@@ -547,7 +557,9 @@
       "chartTitle": "Change in preferred tax by income",
       "chartX": "Income rank (1 = poorest)",
       "chartY": "Change in tax (points)",
-      "lesson": "Once people know if they're rich or poor, most change their idea of a fair tax in their own favor."
+      "lesson": "Once people know if they're rich or poor, most change their idea of a fair tax in their own favor.",
+      "boughtYou": "You gave {amount} coins to {to}, who then voted {vote} on your change.",
+      "boughtToYou": "{donor} gave you {amount} coins, and you then voted {vote} on their change."
     },
     "lesson": "The lesson",
     "vsTheory": "You vs. the theory",

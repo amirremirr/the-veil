@@ -31,6 +31,11 @@
       "Who else woke up at 4am? Just me?",
       "This vote is a growth opportunity.",
       "I turned my own birth into a startup."
+    ],
+    "ACCUSE_YOU": [
+      "You act like the {cardName}. Just saying.",
+      "Not to call anyone out, but you? {cardName}. Big time.",
+      "You talk fairness but you run the {cardName} playbook."
     ]
   },
   "marigold": {
@@ -64,6 +69,11 @@
       "Everyone is doing great.",
       "Remember to hydrate during the vote.",
       "I made a group chat for the vote. It is mostly snacks."
+    ],
+    "ACCUSE_YOU": [
+      "I do not want to point fingers, but you seem like the {cardName} type.",
+      "Gently: are you the {cardName}? It is okay if you are.",
+      "I sense {cardName} vibes from you, and I am holding space for that."
     ]
   },
   "ugo": {
@@ -97,6 +107,11 @@
       "Have you counted the money lost to taxes?",
       "This is all in chapter 7 of my textbook.",
       "To be honest, none of us are fully rational. Me included."
+    ],
+    "ACCUSE_YOU": [
+      "The way you vote looks like a {cardName}. See footnote 22.",
+      "I am 95% sure you are the {cardName}.",
+      "My data says you are the {cardName}. Small sample, but still."
     ]
   },
   "dot": {
@@ -130,6 +145,11 @@
       "Take a number.",
       "This meeting could have been a memo.",
       "The coffee machine is also under review."
+    ],
+    "ACCUSE_YOU": [
+      "You have been flagged as {cardName}. Pending review.",
+      "Per my records, you are {cardName}.",
+      "You: {cardName}. Do not quote me. Actually you may, I am on break."
     ]
   }
 }

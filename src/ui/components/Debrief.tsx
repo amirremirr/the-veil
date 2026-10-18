@@ -9,7 +9,7 @@ import { Collapsible, FormCard, Page, Stamp } from './common';
 
 export interface CompareRow {
   label: string;
-  benchmark: string;
+  benchmark: ReactNode;
   lab: string;
   you: string;
   bots: string;
@@ -70,13 +70,15 @@ export function DebriefShell({
               <h2 className="label mb-1">
                 {t('debrief.vsTheory')}: {row.label}
               </h2>
-              <dl className="grid grid-cols-3 gap-1.5 text-sm">
-                {[
-                  [t('debrief.theory'), row.benchmark],
-                  [t('debrief.experiments'), row.lab],
-                  [t('debrief.youDid'), row.you],
-                ].map(([k, val], i) => (
-                  <div key={k} className={`rounded-md border p-2 ${i === 2 ? 'border-ink bg-ink/5' : 'border-line bg-card'}`}>
+              <dl className="grid grid-cols-2 gap-1.5 text-sm">
+                {(
+                  [
+                    [t('debrief.theory'), row.benchmark],
+                    [t('debrief.experiments'), row.lab],
+                    [t('debrief.youDid'), row.you],
+                  ] as Array<[string, ReactNode]>
+                ).map(([k, val], i) => (
+                  <div key={k} className={`rounded-md border p-2 ${i === 0 ? 'col-span-2' : ''} ${i === 2 ? 'border-ink bg-ink/5' : 'border-line bg-card'}`}>
                     <dt className="text-[11px] uppercase tracking-wide text-soft">{k}</dt>
                     <dd className={`leading-snug ${i === 2 ? 'font-semibold' : ''}`}>{val}</dd>
                   </div>

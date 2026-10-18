@@ -306,8 +306,6 @@ export function Newsletter({ text }: { text: string }) {
   );
 }
 
-/** Up to two decimals, trailing zeros dropped (20.25, 20.3, 20). */
-const num2 = (x: number) => String(Math.round(x * 100) / 100);
 
 /** Money table, score breakdown, and the news headline for a finished round. */
 export function SummaryBlock({ v, showMoney = true }: { v: ViewState; showMoney?: boolean }) {
@@ -319,12 +317,11 @@ export function SummaryBlock({ v, showMoney = true }: { v: ViewState; showMoney?
   const S = rec.S[HUMAN_ID] ?? 0;
   // The engine's own numbers: S = 0.5 W + 0.5 k M. Rounded so the shown parts add up exactly.
   const egoist = card === 'EGOIST';
-  const w2 = Math.round(0.5 * rec.W[HUMAN_ID] * 100) / 100;
-  // For the Egoist both halves are the same number; otherwise the goal part is the remainder.
-  const s2 = egoist ? 2 * w2 : Math.round(S * 100) / 100;
-  const sShown = num2(s2);
-  const wPart = num2(w2);
-  const gPart = num2(egoist ? w2 : s2 - w2);
+  // Whole numbers: round the total and the money half; the goal half is the remainder, so the
+  // parts always add up exactly.
+  const sShown = Math.round(S);
+  const wPart = Math.round(0.5 * rec.W[HUMAN_ID]);
+  const gPart = sShown - wPart;
   return (
     <FormCard form={t('summary.title', { r: v.round })}>
       {showMoney && (
@@ -347,7 +344,7 @@ export function SummaryBlock({ v, showMoney = true }: { v: ViewState; showMoney?
       )}
       <div className={`${showMoney ? 'mt-3 ' : ''}rounded-md border-2 border-ink p-3`} data-score-breakdown>
         <p className="font-semibold leading-snug">
-          {egoist ? t('summary.breakdownEgoist', { s: sShown, w: wPart, g: gPart }) : t('summary.breakdown', { s: sShown, w: wPart, g: gPart })}
+          {egoist ? t('summary.breakdownEgoist', { s: sShown }) : t('summary.breakdown', { s: sShown, w: wPart, g: gPart })}
         </p>
         {card && <p className="mt-1 text-sm text-soft">{t('summary.goalReminder', { card: t(`values.${card}.short`) })}</p>}
         <p className="mt-2 flex justify-between text-sm">
@@ -356,7 +353,7 @@ export function SummaryBlock({ v, showMoney = true }: { v: ViewState; showMoney?
         </p>
       </div>
       <p className="mt-2 text-xs text-soft">{t('summary.scoreNote')}</p>
-      <Newsletter text={headlineText(rec)} />
+      <Newsletter text={headlineText(rec, v)} />
       {v.levelIndex === 1 && v.round === 1 && <Tip id="results" text={t('tips.results')} />}
     </FormCard>
   );

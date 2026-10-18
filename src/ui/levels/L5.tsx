@@ -179,7 +179,7 @@ function AmendForm({ v }: { v: ViewState }) {
     <FormCard form={t('levels.5.amendTitle', { k: k + 1, total: lv.order.length })}>
       {lv.amendments.length > 0 && <AmendmentLog v={v} list={lv.amendments} />}
       <p className="mb-2 text-sm">
-        {t('levels.5.amendDecide', {
+        {t(proposer === HUMAN_ID ? 'levels.5.amendDecideYou' : 'levels.5.amendDecide', {
           name: nameOf(v, proposer),
           from: constitutionLabel(cur),
           to: constitutionLabel(prop),
@@ -372,7 +372,12 @@ function Debrief({ v }: { v: ViewState }) {
           </p>
           {d.boughtVotes.map((b, i) => (
             <p key={i} className="text-soft">
-              {t('debrief.l5.bought', { donor: nameOf(v, b.donor), amount: b.amount, to: nameOf(v, b.recipient), vote: b.votedYes ? t('ui.yes') : t('ui.no') })}
+              {t(b.donor === HUMAN_ID ? 'debrief.l5.boughtYou' : b.recipient === HUMAN_ID ? 'debrief.l5.boughtToYou' : 'debrief.l5.bought', {
+                donor: nameOf(v, b.donor),
+                amount: b.amount,
+                to: nameOf(v, b.recipient),
+                vote: b.votedYes ? t('ui.yes') : t('ui.no'),
+              })}
             </p>
           ))}
         </>
