@@ -83,7 +83,7 @@ export function createInitialState(config: SetupConfig): GameState {
       isHuman: false,
       botProfile: {
         key,
-        rho: prof.rho,
+        rho: prof.rho * BOT.RHO_SCALE,
         lambda: prof.lambda * diff.lambdaMult,
         honesty: Math.max(prof.honesty * diff.honestyMult, diff.honestyFloor),
         sigma: prof.sigma,
@@ -174,18 +174,21 @@ function enterPhase(s: GameState): void {
 }
 
 /**
- * Level points (D-45): each level counts equally toward the run, whatever its round count or pay scale.
- * points = 100 x (your level score / the table's average level score for that level).
+ * Level points (D-54): each level counts equally toward the run, whatever its round count or pay scale.
+ * points = 100 + 50 x (your level score - table average) / LEVEL_SD[level]. Negative averages are harmless.
  */
-export function levelPoints(scores: number[]): number[] {
+export function levelPoints(scores: number[], level: LevelId): number[] {
   const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-  const denom = Math.max(SCORE.LEVEL_POINTS_MIN_AVG, avg);
-  return scores.map((x) => (SCORE.LEVEL_POINTS_BASE * x) / denom);
+  const sd = SCORE.LEVEL_SD[level - 1];
+  return scores.map((x) => SCORE.LEVEL_POINTS_BASE + (SCORE.LEVEL_POINTS_SPREAD * (x - avg)) / sd);
 }
 
 function awardLevelPoints(s: GameState): void {
   const L = s.levelIndex - 1;
-  const pts = levelPoints(s.players.map((p) => s.scores[p.id].byLevel[L]));
+  const pts = levelPoints(
+    s.players.map((p) => s.scores[p.id].byLevel[L]),
+    s.levelIndex,
+  );
   s.players.forEach((p, i) => (s.scores[p.id].points[L] = pts[i]));
 }
 

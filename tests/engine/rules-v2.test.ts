@@ -12,14 +12,21 @@ import type { GameState } from '../../src/engine/types';
 const DECK = [20, 50, 90, 160];
 
 describe('Part A: hardship line', () => {
-  it('penalty is 2 points per coin below 40, and only the own score changes', () => {
+  it('penalty is 2 coins of scored money per coin below 40; the Egoist loses all of it, other cards half', () => {
     expect(hardshipPenalty(40)).toBe(0);
     expect(hardshipPenalty(20)).toBe(40);
     expect(hardshipPenalty(9)).toBe(62);
-    // Rawlsian metric is still the plain minimum; the penalty applies to the own score only.
     const W = [20, 50, 90, 160];
-    expect(roundScore('EGOIST', W, 0, [0.25, 0.25, 0.25, 0.25])).toBe(20 - 40);
-    expect(roundScore('EGOIST', W, 1, [0.25, 0.25, 0.25, 0.25])).toBe(50);
+    const eq = [0.25, 0.25, 0.25, 0.25];
+    // Egoist: S = W - penalty.
+    expect(roundScore('EGOIST', W, 0, eq)).toBe(20 - 40);
+    expect(roundScore('EGOIST', W, 1, eq)).toBe(50);
+    // Utilitarian: S = 0.5 (W - penalty) + 0.5 x mean(W). The metric uses plain wealth.
+    expect(roundScore('UTILITARIAN', W, 0, eq)).toBeCloseTo(0.5 * (20 - 40) + 0.5 * 80, 10);
+    // Rawlsian: the metric is still the plain minimum (20), scaled by 1.67.
+    expect(roundScore('RAWLSIAN', W, 0, eq)).toBeCloseTo(0.5 * (20 - 40) + 0.5 * 1.67 * 20, 10);
+    // Without hardship the non-Egoist half is unchanged.
+    expect(roundScore('UTILITARIAN', W, 1, eq)).toBeCloseTo(0.5 * 50 + 0.5 * 80, 10);
   });
 
   it('L1, No Tax, full deck: the player dealt 20 loses 40 points; a random seat expects 10', () => {
@@ -113,12 +120,17 @@ describe('Part E: amendments that match the rules in force are withdrawn', () =>
 });
 
 describe('Part E: level points and guess bonus', () => {
-  it('level points are 100 x score / table average', () => {
-    expect(levelPoints([10, 20, 30])).toEqual([50, 100, 150]);
+  it('level points are 100 + 50 x (score - table average) / level spread', () => {
+    const sd = SCORE.LEVEL_SD[0];
+    const pts = levelPoints([10, 20, 30], 1);
+    expect(pts[1]).toBeCloseTo(100, 10);
+    expect(pts[2] - pts[1]).toBeCloseTo((50 * 10) / sd, 10);
+    expect(pts.reduce((x, y) => x + y, 0) / 3).toBeCloseTo(100, 10);
   });
-  it('a near-zero or negative table average is floored so points stay finite', () => {
-    const pts = levelPoints([-10, 5, 0, 1]);
+  it('a negative table average is harmless', () => {
+    const pts = levelPoints([-110, -20, 30, 40], 4);
     for (const p of pts) expect(Number.isFinite(p)).toBe(true);
+    expect(pts.reduce((x, y) => x + y, 0) / 4).toBeCloseTo(100, 10);
   });
   it('guess bonus is 25 level points', () => expect(SCORE.GUESS_BONUS).toBe(25));
 });

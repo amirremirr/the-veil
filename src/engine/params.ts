@@ -17,10 +17,14 @@ export const SCORE = {
   MERITOCRAT_MISMATCH_WEIGHT: 0.5,
   /** Run bonus per correct Values guess, in level points (D-46). */
   GUESS_BONUS: 25,
-  /** Level points: 100 x (your level score / the table's average level score) (D-45). */
+  /**
+   * Level points (D-45, D-54): BASE + SPREAD x (your level score - table average) / LEVEL_SD[level].
+   * LEVEL_SD is the typical within-table spread of each level's raw scores, measured by the simulator
+   * (`npm run sim`, line "Level spread SD"). Recalibrate it whenever level rules change.
+   */
   LEVEL_POINTS_BASE: 100,
-  /** Floor on the table average used as the divisor, so a near-zero or negative average cannot blow up. */
-  LEVEL_POINTS_MIN_AVG: 1,
+  LEVEL_POINTS_SPREAD: 50,
+  LEVEL_SD: [47.3, 52.2, 41.3, 114.8, 29.3],
 };
 
 /**
@@ -61,7 +65,13 @@ export const BOT = {
   MC_SAMPLES: 300,
   BELIEF_MC_SAMPLES: 40,
   BELIEF_LAMBDA: 3,
-  BELIEF_RHO: 1,
+  /**
+   * The hardship line already makes losses hurt, so bots' CRRA would count risk twice. Every bot's
+   * rho is multiplied by this, keeping their order (D-51).
+   */
+  RHO_SCALE: 0.25,
+  /** Risk aversion bots assume for others when reading votes: 1 x RHO_SCALE (D-51). */
+  BELIEF_RHO: 0.25,
   BELIEF_FLOOR: 0.01,
   OTHERS_EGOIST_WEIGHT: 0.5,
   CLAIM_BELIEF_WEIGHT: 0.5,
@@ -121,17 +131,18 @@ export const L4 = {
   BASELINE_ROUNDS: 3,
   CARE_PROB_SQUARE: 0.7,
   CARE_PROB_CIRCLE: 0.3,
-  COST_OPTIONS: [10, 20, 30, 40],
+  // All Level 4 money amounts doubled in rules v2 (D-53); thresholds and beliefs unchanged.
+  COST_OPTIONS: [20, 40, 60, 80],
   PASS_IF_SKILLED: 0.8,
   PASS_IF_UNSKILLED: 0.3,
   PRIOR_CIRCLE: 0.6,
   PRIOR_SQUARE: 0.3,
   THRESHOLD: 0.6,
-  WAGE_SIMPLE: 20,
-  WAGE_GREEDY: 90,
-  WAGE_FLEXIBLE: 55,
-  CHAOS_COST: 40,
-  CHAOS_COST_SUBSIDIZED: 10,
+  WAGE_SIMPLE: 40,
+  WAGE_GREEDY: 180,
+  WAGE_FLEXIBLE: 110,
+  CHAOS_COST: 80,
+  CHAOS_COST_SUBSIDIZED: 20,
   UPDATE_WEIGHT: 0.2,
   // Counterfactual scenarios (Section 4, Level 4 debrief).
   CF_EQUAL_PRIOR: 0.45,

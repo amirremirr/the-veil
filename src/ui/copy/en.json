@@ -145,7 +145,7 @@
     "breakdown": "Your score: {s} = {w} from your money + {g} from your goal",
     "breakdownEgoist": "Your score: {s}. You are the Egoist, so all of it comes from your own money.",
     "goalReminder": "Your card: {card}",
-    "breakdownHardship": "Your score: {s} = {w} from your money + {g} from your goal - {h} hardship (you ended {c} coins below 40)",
+    "breakdownHardship": "Your score: {s} = {w} from your money + {g} from your goal - {h} hardship (you ended {c} coins below 40; hardship counts half, like your money)",
     "breakdownEgoistHardship": "Your score: {s} = {w} from your money - {h} hardship (you ended {c} coins below 40). You are the Egoist, so your goal is your own money.",
     "money": {
       "title": "Where your money came from",
@@ -177,7 +177,7 @@
       "name": "Behind the Veil",
       "question": "Which rule would you pick if you did not know whether you would be rich or poor?",
       "memo": "Welcome to life. First, help pick the rules. Then you find out if you are rich or poor.",
-      "how": "There are 3 rounds.\nEach round, everyone votes for one of four rules for sharing money.\nThen each player gets a random income: 20, 50, 90, or 160 coins. You vote before you know yours.\nThe winning rule sets a tax. Tax money is shared equally between everyone.\nSome tax money gets lost in the system. Higher taxes lose more.\nBelow 40 coins: -2 points per coin short. Your money stays the same; only your score drops.",
+      "how": "There are 3 rounds.\nEach round, everyone votes for one of four rules for sharing money.\nThen each player gets a random income: 20, 50, 90, or 160 coins. You vote before you know yours.\nThe winning rule sets a tax. Tax money is shared equally between everyone.\nSome tax money gets lost in the system. Higher taxes lose more.\nBelow 40 coins: each coin you are short counts as 2 more coins lost when your score is worked out. Your real money does not change.",
       "formulas": "Money after tax = y (1 - t) + R / n. Total tax collected R = t Y (1 - 0.4 t), where Y is everyone's income added up. Tax rates go from 0 to 0.95 in steps of 0.05. Safety Net: the smallest tax that gives everyone at least 40. Limit the Gap: the smallest tax that keeps richest minus poorest at 100 or less. Help the Poorest: the tax that gives the poorest player the most.",
       "briefing": [
         "Round 1. Nobody knows their income yet. Vote for the rule you think is best.",
@@ -221,7 +221,7 @@
       "name": "Luck vs. Effort",
       "question": "Is being rich about hard work or about luck? Does it change how much tax you want?",
       "memo": "Some people work hard. Some people are lucky. Nobody can see which is which.",
-      "how": "There are 4 rounds.\nYou have a secret talent level. Higher talent means each hour of work earns more.\nEach round, first vote on a tax: 0%, 20%, 40%, 60%, or 80%. The middle vote wins.\nThen choose how hard to work, from 0 to 10. Working more earns more, but it costs you.\nYour income also has a random luck part, good or bad.\nEveryone can see each other's income, but not how much came from luck.\nAfter rounds 1 to 3, guess how much of the top earner's income was luck. After round 4, you share out some bonus money.\nBelow 40 coins: -2 points per coin short. Your money stays the same; only your score drops.",
+      "how": "There are 4 rounds.\nYou have a secret talent level. Higher talent means each hour of work earns more.\nEach round, first vote on a tax: 0%, 20%, 40%, 60%, or 80%. The middle vote wins.\nThen choose how hard to work, from 0 to 10. Working more earns more, but it costs you.\nYour income also has a random luck part, good or bad.\nEveryone can see each other's income, but not how much came from luck.\nAfter rounds 1 to 3, guess how much of the top earner's income was luck. After round 4, you share out some bonus money.\nBelow 40 coins: each coin you are short counts as 2 more coins lost when your score is worked out. Your real money does not change.",
       "formulas": "Income y = 20 + 4 x talent x effort + luck, with luck one of -20, 0, 10, 30, 60. Money = (1 - t) y + R / n - 0.4 x effort squared, with R = t Y (1 - 0.1 t). The tax used is the middle vote (with an even number of players, the lower of the two middle votes). Best effort for a selfish player: 5 x talent x (1 - t + t (1 - 0.1 t) / n), rounded, at most 10.",
       "briefing": [
         "Round 1. Vote on the tax, then decide how hard to work.",
@@ -276,7 +276,7 @@
       "name": "Shocks and Insurance",
       "question": "Why does private insurance sometimes collapse, and what happens when everyone must buy it?",
       "memo": "Bad things happen. An insurance company wants to sell you protection. It does not know who is likely to need it. You do.",
-      "how": "There are 4 rounds. Each round you earn 100 coins.\nBad luck (illness, accident, and so on) can cost you 80 coins.\nYou secretly know your risk: Low (10% chance each round) or High (40%).\nEach round you can buy insurance. It pays for the whole 80 if bad luck happens.\nYou can also pay 6 coins for the gym. It cuts your risk in half for that round.\nThe insurance price is set from the people who bought last round. If only risky people buy, the price goes up.\nAfter round 2, everyone votes: keep private insurance, or make insurance compulsory for everyone (covering half or all of the loss).\nBelow 40 coins: -2 points per coin short. Your money stays the same; only your score drops.",
+      "how": "There are 4 rounds. Each round you earn 100 coins.\nBad luck (illness, accident, and so on) can cost you 80 coins.\nYou secretly know your risk: Low (10% chance each round) or High (40%).\nEach round you can buy insurance. It pays for the whole 80 if bad luck happens.\nYou can also pay 6 coins for the gym. It cuts your risk in half for that round.\nThe insurance price is set from the people who bought last round. If only risky people buy, the price goes up.\nAfter round 2, everyone votes: keep private insurance, or make insurance compulsory for everyone (covering half or all of the loss).\nBelow 40 coins: each coin you are short counts as 2 more coins lost when your score is worked out. Your real money does not change.",
       "formulas": "First price: 1.1 x 80 x 0.25 = 22. After that: 1.1 x 80 x (average risk of last round's buyers, counting the gym). If nobody buys, the company leaves. Compulsory insurance: everyone pays T = 1.1 x c x 80 x (average risk of all players, counting the gym), and bad luck costs you (1 - c) x 80.",
       "briefing": [
         "Round 1. Insurance costs 22 coins. That price is set for an average person. Nobody is average.",
@@ -334,7 +334,7 @@
       "name": "The Job Market",
       "question": "How can one group end up paid less, even when nobody is prejudiced?",
       "memo": "Good news: jobs are now given out by a computer, HireBot 3000. It is not biased. It just learned from old records.",
-      "how": "There are 5 rounds. Every player is a Circle or a Square.\nSome players have childcare duty. Squares are more likely to have it.\nEach round, you can pay to train. Training makes you skilled.\nEveryone takes a test. Skilled people usually pass (80%). Unskilled people sometimes pass (30%).\nHireBot looks at your test and at what it believes about your group. If it is at least 60% sure you are skilled, you get a good job. If not, you get a basic job paying 20.\nA good job pays 90 for long hours or 55 for flexible hours. Long hours cost 40 extra if you have childcare duty.\nAfter round 3, everyone votes on a new rule for HireBot.\nBelow 40 coins: -2 points per coin short. Your money stays the same; only your score drops.",
+      "how": "There are 5 rounds. Every player is a Circle or a Square.\nSome players have childcare duty. Squares are more likely to have it.\nEach round, you can pay to train. Training makes you skilled.\nEveryone takes a test. Skilled people usually pass (80%). Unskilled people sometimes pass (30%).\nHireBot looks at your test and at what it believes about your group. If it is at least 60% sure you are skilled, you get a good job. If not, you get a basic job paying 40.\nA good job pays 180 for long hours or 110 for flexible hours. Long hours cost 80 extra if you have childcare duty.\nAfter round 3, everyone votes on a new rule for HireBot.\nBelow 40 coins: each coin you are short counts as 2 more coins lost when your score is worked out. Your real money does not change.",
       "formulas": "HireBot's confidence after a pass: q = 0.8 b / (0.8 b + 0.3 (1 - b)), where b is its belief about your group. After a fail: q = 0.2 b / (0.2 b + 0.7 (1 - b)). Good job if q is 0.6 or more. After each round, for each group: b = 0.8 b + 0.2 x (share of that group who trained). Starting beliefs: Circles 0.6, Squares 0.3.",
       "briefing": [
         "Round 1. HireBot is ready. It does not see shapes. It sees numbers about shapes.",
@@ -350,9 +350,9 @@
       "investSubmit": "Confirm",
       "scheduleTitle": "Choose your hours",
       "scheduleDecide": "HireBot gave you a good job. Pick your hours.",
-      "greedy": "Long hours: 90 coins",
-      "greedyCare": "Long hours: 90 coins, minus {chaos} for childcare problems",
-      "flex": "Flexible hours: 55 coins",
+      "greedy": "Long hours: 180 coins",
+      "greedyCare": "Long hours: 180 coins, minus {chaos} for childcare problems",
+      "flex": "Flexible hours: 110 coins",
       "scheduleSubmit": "Confirm",
       "policyTitle": "Vote: new rule for HireBot",
       "policyDecide": "This rule is used in rounds 4 and 5. The option with the most votes wins. A tie is settled by a coin flip.",
@@ -377,7 +377,7 @@
         },
         "D": {
           "name": "Cheaper Childcare",
-          "desc": "The extra cost of long hours for people with childcare duty drops from 40 to 10."
+          "desc": "The extra cost of long hours for people with childcare duty drops from 80 to 20."
         }
       },
       "report": "What HireBot believes",
@@ -417,7 +417,7 @@
       "name": "Writing the Constitution",
       "question": "Do your ideas about fairness change once you know if you are rich?",
       "memo": "Write the country's rules before you know your income. Then you find out, and you get a chance to change them. We will remember what you said.",
-      "how": "Stage 1: Nobody knows their income. Everyone picks a tax (0% to 80%) and a minimum income (0, 25, 40, or 55). The middle choices become the rules.\nStage 2: Incomes are given out: 30, 60, 100, or 170.\nNow you can give up to 20 coins to another player. It cannot buy their vote for sure.\nYou can also suggest one change to the rules, or skip.\nEach change needs about two-thirds of the votes to pass.\nBelow 40 coins: -2 points per coin short. Your money stays the same; only your score drops.",
+      "how": "Stage 1: Nobody knows their income. Everyone picks a tax (0% to 80%) and a minimum income (0, 25, 40, or 55). The middle choices become the rules.\nStage 2: Incomes are given out: 30, 60, 100, or 170.\nNow you can give up to 20 coins to another player. It cannot buy their vote for sure.\nYou can also suggest one change to the rules, or skip.\nEach change needs about two-thirds of the votes to pass.\nBelow 40 coins: each coin you are short counts as 2 more coins lost when your score is worked out. Your real money does not change.",
       "formulas": "Total tax R = t Y (1 - 0.4 t). First, anyone below the minimum is topped up to it (shared out if there is not enough). What is left is split equally. Money = (1 - t) y + top-up + equal share - coins given + coins received. Votes needed for a change: 2 of 2, 2 of 3, or 3 of 4.",
       "briefing": {
         "VEIL": "Stage 1. Write the rules. You do not know your income yet."
@@ -682,7 +682,7 @@
       "poorTaxCutter": "Future Millionaire",
       "none": "Hard to Say"
     },
-    "pointsNote": "Each level counts the same: level points = 100 x your level score / the table's average score in that level. A right guess adds 25.",
+    "pointsNote": "Each level counts the same: level points = 100 + 50 x (your level score - the table's average) / how widely scores usually spread in that level. A right guess adds 25.",
     "ideologyNote": "Built only from answers that did not affect your score.",
     "fairLine": "Asked what tax is fair, you said {f1} before you knew your income and {f2} after.",
     "bonusLine": "Splitting the bonus pot, you acted like someone who believes in {ideal}.",

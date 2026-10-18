@@ -54,13 +54,12 @@ export function ownNet(w: number): number {
 }
 
 /**
- * Round score S = 0.5 W + 0.5 k M - hardship, with k the card's balancing scale.
- * For the Egoist it equals W - hardship.
+ * Round score (D-39, D-50): the hardship penalty is weighted like own money.
+ * S = 0.5 x (W - penalty) + 0.5 x k x M. The Egoist's metric is also W - penalty, so the Egoist loses
+ * the full penalty and every other card loses half. Other metrics use plain wealth.
  */
 export function roundScore(card: ValuesCard, W: readonly number[], i: number, effortShares: readonly number[]): number {
-  return (
-    SCORE.WEALTH_WEIGHT * W[i] +
-    SCORE.METRIC_WEIGHT * METRIC_SCALE[card] * valuesMetric(card, W, i, effortShares) -
-    hardshipPenalty(W[i])
-  );
+  const net = W[i] - hardshipPenalty(W[i]);
+  const metric = card === 'EGOIST' ? net : valuesMetric(card, W, i, effortShares);
+  return SCORE.WEALTH_WEIGHT * net + SCORE.METRIC_WEIGHT * METRIC_SCALE[card] * metric;
 }

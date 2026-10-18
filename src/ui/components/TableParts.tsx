@@ -323,7 +323,8 @@ export function SummaryBlock({ v, showMoney = true }: { v: ViewState; showMoney?
   // remainder, so the parts always add up exactly (D-39).
   const sShown = Math.round(S);
   const pen = hardshipPenalty(W);
-  const hShown = Math.round(pen);
+  // The Egoist loses the whole penalty; other cards lose half, like the rest of their money (D-50).
+  const hShown = Math.round(egoist ? pen : 0.5 * pen);
   const short = String(Math.round(Math.max(0, HARDSHIP.LINE - W) * 10) / 10);
   const wPart = Math.round(0.5 * W);
   const gPart = sShown - wPart + hShown;

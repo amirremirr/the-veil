@@ -80,8 +80,8 @@
         4,
         5
       ],
-      "body": "People feel a loss more than a gain of the same size. Kahneman and Tversky called this loss aversion, and Tversky and Kahneman later estimated that losses weigh about 2.25 times as much as gains. The game builds a simple version into the score. In any round where your own money ends below 40 coins, you lose 2 points for every coin you are short. Your money does not change, and nobody else's goal changes, only your own score. This gives every player a reason to want protection from the worst outcomes: a safety net in Level 1, insurance in Level 3, a minimum income in Level 5. Without it, a player who only counts coins would never pay for protection that costs more than the expected loss.",
-      "formula": "hardship = 2 x max(0, 40 - your money this round), subtracted from your own round score",
+      "body": "People feel a loss more than a gain of the same size. Kahneman and Tversky called this loss aversion, and Tversky and Kahneman later estimated that losses weigh about 2.25 times as much as gains. The game builds a simple version into the score. In any round where your own money ends below 40 coins, each coin you are short counts as 2 more coins lost when your score is worked out. Money is half the score for most cards, so for them that is about 1 point per coin short; for the Egoist, whose whole score is money, it is 2. Your real money does not change, and nobody else's goal changes. This gives every player a reason to want protection from the worst outcomes: a safety net in Level 1, insurance in Level 3, a minimum income in Level 5. Without it, a player who only counts coins would never pay for protection that costs more than the expected loss.",
+      "formula": "money counted in your score = your money - 2 x max(0, 40 - your money)",
       "refs": [
         "kahneman1979",
         "tversky1992"
@@ -224,8 +224,8 @@
       "levels": [
         4
       ],
-      "body": "Claudia Goldin argued that a large part of the remaining gender gap in pay comes from how some jobs pay for time. In these jobs, working long and inflexible hours earns disproportionately more per hour than working flexible hours. Whoever carries more caregiving responsibility is pushed toward flexible work and lower pay, even with equal skill and no discrimination by the employer. In Level 4, the Greedy schedule pays 90 and the Flexible schedule pays 55, but a Care card holder who chooses Greedy pays a chaos cost of 40. Care cards are dealt more often to Squares. Subsidized childcare lowers the chaos cost.",
-      "formula": "Greedy net = 90 - (care ? chaos cost : 0); Flexible = 55",
+      "body": "Claudia Goldin argued that a large part of the remaining gender gap in pay comes from how some jobs pay for time. In these jobs, working long and inflexible hours earns disproportionately more per hour than working flexible hours. Whoever carries more caregiving responsibility is pushed toward flexible work and lower pay, even with equal skill and no discrimination by the employer. In Level 4, long hours pay 180 and flexible hours pay 110, but someone with childcare duty who chooses long hours pays an extra 80. Care cards are dealt more often to Squares. Subsidized childcare lowers the chaos cost.",
+      "formula": "Long hours net = 180 - (childcare duty ? 80 : 0); flexible = 110",
       "refs": [
         "goldin2014"
       ]

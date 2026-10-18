@@ -1,9 +1,9 @@
 // LEVEL 3: SHOCKS AND INSURANCE. Adverse selection, moral hazard, and the mandate.
 import { BOT, L3 } from '../params';
-import { botParams, botRng, finishRound, gameRng, headline, ids, idx, playerOf, pluralityResolve, debriefRng } from '../core';
+import { botParams, botRng, finishRound, gameRng, headline, ids, idx, playerOf, pluralityResolve } from '../core';
 import { equalShares, mean, ownNet, roundScore } from '../scoring';
-import { ceOfSamples, logitChoice, logitProbs } from '../bots/utility';
-import { flavorIndex, type Rng } from '../rng';
+import { ceOfLottery, logitChoice, logitProbs } from '../bots/utility';
+import { flavorIndex } from '../rng';
 import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import type { LevelDefinition } from './types';
 
@@ -128,7 +128,11 @@ function optionsFor(regime: Regime, premium: number | null): Choice[] {
   return base;
 }
 
-/** CE of each own option under a regime, with others' types and actions modeled (Section 5.4). */
+/**
+ * CE of each own option under a regime, with others' types and actions modeled (Section 5.4).
+ * Exact enumeration (D-52): every combination of the other players' risk types and every player's
+ * bad-luck outcome, weighted by its probability. No Monte Carlo noise, no random draws.
+ */
 function choiceCE(
   n: number,
   i: number,
@@ -137,27 +141,38 @@ function choiceCE(
   rho: number,
   regime: Regime,
   premium: number | null,
-  rng: Rng,
-  samples: number,
 ): { options: Choice[]; ce: number[] } {
   const options = optionsFor(regime, premium);
-  const scores: number[][] = options.map(() => []);
+  const lotteries: Array<Array<[number, number]>> = options.map(() => []);
   const eq = equalShares(n);
-  for (let m = 0; m < samples; m++) {
-    const types: RiskType[] = [];
-    for (let j = 0; j < n; j++) types.push(j === i && myType ? myType : rng.next() < L3.P_HIGH_SHARE ? 'HIGH' : 'LOW');
-    const u = types.map(() => rng.next());
+  const free = Array.from({ length: n }, (_, j) => j).filter((j) => j !== i || !myType);
+  for (let tm = 0; tm < 1 << free.length; tm++) {
+    const types: RiskType[] = Array.from({ length: n }, () => myType ?? 'LOW');
+    let pTypes = 1;
+    free.forEach((j, k) => {
+      const high = (tm >> k) & 1;
+      types[j] = high ? 'HIGH' : 'LOW';
+      pTypes *= high ? L3.P_HIGH_SHARE : 1 - L3.P_HIGH_SHARE;
+    });
     const others = types.map((t) => rnChoice(t, regime, premium));
     options.forEach((opt, k) => {
       const choices = others.slice();
       choices[i] = opt;
       const pEff = choices.map((c, j) => pEffOf(types[j], c.gym));
-      const events = pEff.map((p, j) => u[j] < p);
-      const { W } = wealthL3(regime, premium, choices, pEff, events);
-      scores[k].push(roundScore(card, W, i, eq));
+      for (let em = 0; em < 1 << n; em++) {
+        let p = pTypes;
+        const events = pEff.map((pe, j) => {
+          const ev = ((em >> j) & 1) === 1;
+          p *= ev ? pe : 1 - pe;
+          return ev;
+        });
+        if (p === 0) continue;
+        const { W } = wealthL3(regime, premium, choices, pEff, events);
+        lotteries[k].push([p, roundScore(card, W, i, eq)]);
+      }
     });
   }
-  return { options, ce: scores.map((sc) => ceOfSamples(sc, rho)) };
+  return { options, ce: lotteries.map((lot) => ceOfLottery(lot, rho)) };
 }
 
 function currentPremium(s: GameState): number | null {
@@ -165,11 +180,11 @@ function currentPremium(s: GameState): number | null {
   return l.regime === 'VOL' && l.insurerActive ? l.nextPremium : null;
 }
 
-function regimeCE(s: GameState, n: number, i: number, myType: RiskType | null, card: ValuesCard, rho: number, rng: Rng, samples: number): number[] {
+function regimeCE(s: GameState, n: number, i: number, myType: RiskType | null, card: ValuesCard, rho: number): number[] {
   const l = st(s);
   return REGIMES.map((r) => {
     const prem = r === 'VOL' && l.insurerActive ? l.nextPremium : null;
-    const { ce } = choiceCE(n, i, myType, card, rho, r, prem, rng, samples);
+    const { ce } = choiceCE(n, i, myType, card, rho, r, prem);
     return Math.max(...ce);
   });
 }
@@ -210,7 +225,7 @@ function cardBestBuy(s: GameState, pid: PlayerId): { best: boolean; chose: boole
   const me = playerOf(s, pid);
   const r1 = l.rounds[0];
   const premium = r1.premium;
-  const { options, ce } = choiceCE(s.players.length, idx(s, pid), l.types[pid], me.values, 0, 'VOL', premium, debriefRng(s, 'l3'), s.botSamples);
+  const { options, ce } = choiceCE(s.players.length, idx(s, pid), l.types[pid], me.values, 0, 'VOL', premium);
   return { best: options[ce.indexOf(Math.max(...ce))].buy, chose: r1.choices[pid].buy };
 }
 
@@ -271,7 +286,7 @@ export const level3: LevelDefinition = {
     const i = idx(s, botId);
     if (step === 'CHOICE') {
       const l = st(s);
-      const { options, ce } = choiceCE(n, i, l.types[botId], me.values, rho, l.regime, currentPremium(s), rng, s.botSamples);
+      const { options, ce } = choiceCE(n, i, l.types[botId], me.values, rho, l.regime, currentPremium(s));
       // Section 5.5: buy is a binary logit (each side valued at its best gym response),
       // then the gym is a binary logit given the purchase decision.
       const best = (buy: boolean) => Math.max(...options.map((o, k) => (o.buy === buy ? ce[k] : -Infinity)));
@@ -281,7 +296,7 @@ export const level3: LevelDefinition = {
       const gym = logitChoice(gymCE, lambda, rng) === 1;
       return { buy, gym };
     }
-    const ce = regimeCE(s, n, i, st(s).types[botId], me.values, rho, rng, Math.max(30, Math.round(s.botSamples / 2)));
+    const ce = regimeCE(s, n, i, st(s).types[botId], me.values, rho);
     return REGIMES[logitChoice(ce, lambda, rng)];
   },
   resolve(s, step, decisions) {
@@ -354,17 +369,15 @@ export const level3: LevelDefinition = {
   botIntent(s, botId, phase) {
     const { rho } = botParams(s, botId);
     const me = playerOf(s, botId);
-    const rng = botRng(s);
     const n = s.players.length;
     const i = idx(s, botId);
-    const samples = Math.max(30, Math.round(s.botSamples / 3));
     if (phase.step === 'REGIME') {
-      const ce = regimeCE(s, n, i, st(s).types[botId], me.values, rho, rng, samples);
+      const ce = regimeCE(s, n, i, st(s).types[botId], me.values, rho);
       const order = REGIMES.map((r, k) => [r, ce[k]] as const).sort((a, b) => b[1] - a[1]);
       return { support: order[0][0], decoy: order[1][0] };
     }
     const l = st(s);
-    const { options, ce } = choiceCE(n, i, l.types[botId], me.values, rho, l.regime, currentPremium(s), rng, samples);
+    const { options, ce } = choiceCE(n, i, l.types[botId], me.values, rho, l.regime, currentPremium(s));
     const best = options[ce.indexOf(Math.max(...ce))];
     const menu = currentPremium(s) !== null ? ['BUY', 'GYM'] : ['GYM'];
     const yes = menu.filter((a) => (a === 'BUY' ? best.buy : best.gym));
@@ -373,10 +386,9 @@ export const level3: LevelDefinition = {
   observable: ['REGIME'],
   likelihood(s, _observer, actor, _step, decision, card) {
     const n = s.players.length;
-    const rng = botRng(s);
     const probs = REGIMES.map(() => 0);
     for (const type of ['LOW', 'HIGH'] as RiskType[]) {
-      const ce = regimeCE(s, n, idx(s, actor), type, card, BOT.BELIEF_RHO, rng, Math.round(BOT.BELIEF_MC_SAMPLES / 2));
+      const ce = regimeCE(s, n, idx(s, actor), type, card, BOT.BELIEF_RHO);
       logitProbs(ce, BOT.BELIEF_LAMBDA).forEach((p, k) => (probs[k] += p / 2));
     }
     return probs[REGIMES.indexOf(decision as Regime)] ?? 0;
