@@ -6,7 +6,7 @@ import { useStore } from '../store';
 import { lifeEvent, t } from '../i18n';
 import { coins, pct } from '../labels';
 import { HUMAN_ID, nameOf } from '../game';
-import { FormCard, Stamp } from '../components/common';
+import { CheckBox, FormCard, ResultBanner, Stamp } from '../components/common';
 import { ContinueBar, PrimaryBar } from '../components/TableParts';
 import { ChartFrame, LineChart } from '../components/Charts';
 import { DebriefShell } from '../components/Debrief';
@@ -38,7 +38,7 @@ function Letter({ type }: { type: RiskType }) {
 
 function ChoiceForm({ v }: { v: ViewState }) {
   const lv = v.levelView as L3View;
-  const dispatch = useStore((s) => s.dispatch);
+  const act = useStore((s) => s.act);
   const [buy, setBuy] = useState(false);
   const [gym, setGym] = useState(false);
   const mandatory = lv.regime !== 'VOL';
@@ -51,8 +51,8 @@ function ChoiceForm({ v }: { v: ViewState }) {
       <div className="space-y-2">
         {canBuy ? (
           <button type="button" aria-pressed={buy} className="choice" onClick={() => setBuy(!buy)}>
-            <span aria-hidden className="num">{buy ? '[x]' : '[ ]'}</span>
-            <span>{t('levels.3.buy', { p: lv.premium!.toFixed(1) })}</span>
+            <CheckBox on={buy} />
+            <span className="leading-snug">{t('levels.3.buy', { p: Math.round(lv.premium!) })}</span>
           </button>
         ) : (
           <p className="rounded-md border border-line p-3 text-sm">
@@ -60,12 +60,12 @@ function ChoiceForm({ v }: { v: ViewState }) {
           </p>
         )}
         <button type="button" aria-pressed={gym} className="choice" onClick={() => setGym(!gym)}>
-          <span aria-hidden className="num">{gym ? '[x]' : '[ ]'}</span>
-          <span>{t('levels.3.gym')}</span>
+          <CheckBox on={gym} />
+          <span className="leading-snug">{t('levels.3.gym')}</span>
         </button>
       </div>
       <PrimaryBar>
-        <button type="button" className="btn-primary" onClick={() => dispatch({ type: 'SUBMIT_DECISION', from: HUMAN_ID, decision })}>
+        <button type="button" className="btn-primary" onClick={() => act(decision)}>
           {t('levels.3.choiceSubmit')}
         </button>
       </PrimaryBar>
@@ -74,7 +74,7 @@ function ChoiceForm({ v }: { v: ViewState }) {
 }
 
 function RegimeForm() {
-  const dispatch = useStore((s) => s.dispatch);
+  const act = useStore((s) => s.act);
   const [x, setX] = useState<Regime | null>(null);
   return (
     <FormCard form={t('levels.3.regimeTitle')}>
@@ -90,7 +90,7 @@ function RegimeForm() {
         ))}
       </div>
       <PrimaryBar>
-        <button type="button" className="btn-primary" disabled={!x} onClick={() => dispatch({ type: 'SUBMIT_DECISION', from: HUMAN_ID, decision: x })}>
+        <button type="button" className="btn-primary" disabled={!x} onClick={() => act(x)}>
           {t('levels.3.regimeSubmit')}
         </button>
       </PrimaryBar>
@@ -142,8 +142,8 @@ function Reveal({ v }: { v: ViewState }) {
         ))}
       </ul>
       <div className="mt-3 text-sm">
-        {r.regime !== 'VOL' && r.T !== undefined && <p>{t('levels.3.reveal.contribution', { T: r.T.toFixed(1) })}</p>}
-        {r.regime === 'VOL' && (r.nextPremium !== null ? <p>{t('levels.3.reveal.premiumNext', { p: r.nextPremium.toFixed(1) })}</p> : <Stamp>{t('stamps.LOST')}</Stamp>)}
+        {r.regime !== 'VOL' && r.T !== undefined && <p>{t('levels.3.reveal.contribution', { T: Math.round(r.T) })}</p>}
+        {r.regime === 'VOL' && (r.nextPremium !== null ? <p>{t('levels.3.reveal.premiumNext', { p: Math.round(r.nextPremium) })}</p> : <Stamp>{t('stamps.LOST')}</Stamp>)}
         {r.regime === 'VOL' && r.nextPremium === null && <p className="mt-2">{t('levels.3.reveal.insurerGone')}</p>}
       </div>
       <ContinueBar />
@@ -158,14 +158,14 @@ function Info({ v }: { v: ViewState }) {
       <Letter type={lv.myType} />
       <p className="first-letter:uppercase">
         {rname(lv.regime)}
-        {lv.regime === 'VOL' && (lv.premium !== null ? ` · ${lv.premium.toFixed(1)}` : '')}
+        {lv.regime === 'VOL' && (lv.premium !== null ? ` · ${Math.round(lv.premium)}` : '')}
       </p>
       <div className="label">{t('levels.3.info')}</div>
       <ol className="num text-xs">
-        <li>R1: 22.0</li>
+        <li>R1: 22</li>
         {lv.rounds.map((r, i) => (
           <li key={i}>
-            R{i + 2}: {r.regime === 'VOL' ? (r.nextPremium !== null ? r.nextPremium.toFixed(1) : '×') : t('ui.l3.mandate')}
+            R{i + 2}: {r.regime === 'VOL' ? (r.nextPremium !== null ? Math.round(r.nextPremium) : '×') : t('ui.l3.mandate')}
           </li>
         ))}
       </ol>
@@ -180,7 +180,7 @@ function Debrief({ v }: { v: ViewState }) {
   const best = d.bestRegimeForType[me];
   const g = d.gym;
   const rate = (x: [number, number]) => (x[1] ? `${x[0]}/${x[1]}` : '0/0');
-  const path = d.premiumPath.map((p, i) => `R${i + 1} ${p === null ? (d.rounds[i].regime === 'VOL' ? '×' : rname(d.rounds[i].regime)) : p.toFixed(1)}`).join(', ');
+  const path = d.premiumPath.map((p, i) => `R${i + 1} ${p === null ? (d.rounds[i].regime === 'VOL' ? '×' : rname(d.rounds[i].regime)) : Math.round(p)}`).join(', ');
   return (
     <DebriefShell
       v={v}
@@ -197,7 +197,7 @@ function Debrief({ v }: { v: ViewState }) {
           benchmark: '35.2',
           lab: t('ui.l3.cmpLab'),
           you: d.rounds[1]?.choices[HUMAN_ID]?.buy ? t('table.statusInsured') : t('ui.l3.cmpNone'),
-          bots: d.premiumPath[1] !== null && d.premiumPath[1] !== undefined ? d.premiumPath[1].toFixed(1) : '×',
+          bots: d.premiumPath[1] !== null && d.premiumPath[1] !== undefined ? String(Math.round(d.premiumPath[1])) : '×',
         },
       ]}
       did={
@@ -230,7 +230,7 @@ function Debrief({ v }: { v: ViewState }) {
                     <td>{t(`ui.l3.type${ty}`)}</td>
                     {REGIMES.map((r) => (
                       <td key={r} className="num text-end">
-                        {d.expectedByType[r][ty].toFixed(1)}
+                        {Math.round(d.expectedByType[r][ty])}
                       </td>
                     ))}
                   </tr>
@@ -249,7 +249,7 @@ function Debrief({ v }: { v: ViewState }) {
             nullLabels={d.rounds.map((r) => (r.regime === 'VOL' ? '×' : t('ui.l3.mandateMark')))}
             yMin={0}
             yMax={L3.LOSS * 0.6}
-            format={(x) => x.toFixed(1)}
+            format={(x) => String(Math.round(x))}
             annotations={d.pools.map((p) => t('debrief.l3.pool', { n: p.buyers.length }))}
             refLine={{ value: L3.LOADING * L3.LOSS * L3.P_BAR, label: t('ui.l3.p1') }}
           />
@@ -259,4 +259,14 @@ function Debrief({ v }: { v: ViewState }) {
   );
 }
 
-export const L3UI: LevelUI = { Decide, Reveal, Info, Debrief, briefing: (v) => briefingFrom(3, v.round) };
+function Banner({ v }: { v: ViewState; step: string }) {
+  const lv = v.levelView as L3View;
+  return (
+    <ResultBanner>
+      {t('levels.3.banner.regime', { name: rname(lv.regime) })}
+      {lv.regimeTie && <span className="block font-normal text-soft">{t('levels.1.reveal.tieLine')}</span>}
+    </ResultBanner>
+  );
+}
+
+export const L3UI: LevelUI = { Decide, Reveal, Info, Debrief, Banner, briefing: (v) => briefingFrom(3, v.round) };

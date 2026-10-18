@@ -162,6 +162,8 @@ export interface ViewState {
   round: number;
   phase: Phase;
   phaseIdx: number;
+  /** The current level's phase list (public structure; lets the UI look ahead). */
+  queue: Phase[];
   waitingOn: PlayerId[];
   hasSubmitted: boolean;
   talkSent: number;

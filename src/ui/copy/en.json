@@ -48,25 +48,29 @@
       "name": "Egoist",
       "title": "The Self-Made Citizen",
       "metric": "You score points for your own money. That is all.",
-      "blurb": "You care about yourself. Many people find this role easy."
+      "blurb": "You care about yourself. Many people find this role easy.",
+      "short": "Egoist: your own money"
     },
     "RAWLSIAN": {
       "name": "Rawlsian",
       "title": "The Worrier About the Worst-Off",
       "metric": "You score points when the poorest player has more money. (These points are multiplied by 1.67 to keep the game balanced.)",
-      "blurb": "You care most about whoever is at the bottom, even when it is not you."
+      "blurb": "You care most about whoever is at the bottom, even when it is not you.",
+      "short": "Rawlsian: the poorest player's money"
     },
     "UTILITARIAN": {
       "name": "Utilitarian",
       "title": "The Spreadsheet Saint",
       "metric": "You score points when the average player has more money.",
-      "blurb": "You want the biggest total. Who gets what matters less to you."
+      "blurb": "You want the biggest total. Who gets what matters less to you.",
+      "short": "Utilitarian: the average player's money"
     },
     "MERITOCRAT": {
       "name": "Meritocrat",
       "title": "The Effort Accountant",
       "metric": "You score points when people get money in line with how hard they worked. Luck and talent should not decide who is rich. In levels with no work choice, equal shares count as fair. (These points are multiplied by 1.22 to keep the game balanced.)",
-      "blurb": "You think people deserve what they work for, and not what they were born with."
+      "blurb": "You think people deserve what they work for, and not what they were born with.",
+      "short": "Meritocrat: money that matches how hard people worked"
     }
   },
   "phase": {
@@ -101,7 +105,8 @@
     "statusEvent": "Bad luck",
     "statusCare": "Childcare duty",
     "statusComplex": "Good job",
-    "statusSimple": "Basic job"
+    "statusSimple": "Basic job",
+    "statusCareShort": "Childcare"
   },
   "talk": {
     "title": "Chat with the other players",
@@ -135,7 +140,10 @@
     "yourScore": "Your score this round",
     "levelScore": "Your score in this level so far",
     "scoreNote": "Other players' scores stay hidden until the end of the level, because they would give away their secret cards.",
-    "stampDone": "DONE"
+    "stampDone": "DONE",
+    "breakdown": "Your score: {s} = half your money ({w}) + half your goal ({g})",
+    "breakdownEgoist": "Your score: {s} = half your money ({w}) + half your money ({g}). You are the Egoist, so your goal is your own money.",
+    "goalReminder": "Your card: {card}"
   },
   "stamps": {
     "APPROVED": "APPROVED",
@@ -188,7 +196,8 @@
         "winner": "Winning rule",
         "tax": "Tax",
         "incomes": "Incomes",
-        "after": "After tax"
+        "after": "After tax",
+        "tieLine": "Tie, decided by a coin flip"
       },
       "info": "Some tax money gets lost along the way. The higher the tax, the more is lost."
     },
@@ -237,7 +246,10 @@
         "yourBreakdown": "Your income: base 20 + talent x work {te} + luck {luck} = {y}",
         "bonusTitle": "Bonus shared"
       },
-      "info": "Your talent is secret. Others see your income, but not where it came from."
+      "info": "Your talent is secret. Others see your income, but not where it came from.",
+      "banner": {
+        "tax": "This round's tax is {t}%. Now choose how hard to work."
+      }
     },
     "3": {
       "name": "Shocks and Insurance",
@@ -288,7 +300,10 @@
         "contribution": "Everyone paid: {T} coins",
         "regimeTitle": "Vote results"
       },
-      "info": "Insurance price history"
+      "info": "Insurance price history",
+      "banner": {
+        "regime": "The vote is in: {name}."
+      }
     },
     "4": {
       "name": "The Job Market",
@@ -357,7 +372,11 @@
         "poolUpdate": "HireBot now thinks {pp}% of everyone is skilled.",
         "policyTitle": "Vote results"
       },
-      "info": "What HireBot believes"
+      "info": "What HireBot believes",
+      "banner": {
+        "policy": "HireBot's new rule: {name}.",
+        "assign": "HireBot gave you a good job. It was {q}% sure you are skilled."
+      }
     },
     "5": {
       "name": "Writing the Constitution",
@@ -449,7 +468,8 @@
       "colTax": "Tax",
       "colAvg": "Average",
       "colMin": "Poorest",
-      "colRange": "Gap"
+      "colRange": "Gap",
+      "lesson": "When you don't know if you'll be rich or poor, most people choose a safety net, not no tax and not maximum equality."
     },
     "l2": {
       "predicted": "A selfish player works less when taxes are high, because they keep less of what they earn. Players who expect to earn less than average want higher taxes, so the middle voter decides (Meltzer and Richard 1981). People who believe income is mostly luck usually vote for more sharing (Alesina and Angeletos 2005).",
@@ -475,7 +495,8 @@
         "LIBERTARIAN": "People keep whatever they got, including luck",
         "MERITOCRATIC": "Reward talent and work, but not luck",
         "LIBERAL_EGALITARIAN": "Reward work only, not talent or luck"
-      }
+      },
+      "lesson": "People who think income is mostly luck vote for more tax, and higher taxes make people work less."
     },
     "l3": {
       "predicted": "Low-risk players should skip insurance, because it costs more than their risk. So mostly high-risk players buy it. Once insured, they stop going to the gym, so they get even riskier. The company raises the price, and then even high-risk players stop buying. The market collapses. Making insurance compulsory stops this. With full cover nobody goes to the gym. With half cover, high-risk players still go.",
@@ -489,7 +510,8 @@
       "expectedTitle": "Expected money per round by risk level",
       "realWorld": "Most bad luck here is not chosen: illness, disability, accidents. That is one reason most rich countries make some insurance compulsory. Low-risk people pay more than their own risk, but in return everyone can get protection.",
       "chartTitle": "Insurance price each round",
-      "pool": "Buyers: {n}"
+      "pool": "Buyers: {n}",
+      "lesson": "If only risky people buy insurance, the price climbs until the market collapses. Making it compulsory stops that."
     },
     "l4": {
       "predicted": "At the start, HireBot believes Circles are usually skilled, so a Circle who passes the test gets a good job. Training pays off for Circles. A Square who passes still does not convince HireBot, so training pays nothing for Squares, and they stop training. HireBot then sees few skilled Squares and believes even less in them. The belief makes itself true (Coate and Loury 1993).",
@@ -508,7 +530,8 @@
       "realWorld": "Circles and Squares are made up. In real life, this is one way economists explain part of the pay gap between men and women: women do more of the caregiving, and some jobs pay much more for long, inflexible hours (Goldin 2014). Employers judging people by group averages adds to it (Phelps 1972; Arrow 1973).",
       "chartTitle": "How HireBot's beliefs changed",
       "chartGapTitle": "How much of the gap each cause explains",
-      "you": "You were a {g}{care}. You trained in {k} of 5 rounds."
+      "you": "You were a {g}{care}. You trained in {k} of 5 rounds.",
+      "lesson": "A gap can appear with nobody being prejudiced: old beliefs and childcare duties are enough."
     },
     "l5": {
       "predicted": "Before incomes are known, everyone is in the same position, so different choices show different values. Once incomes are known, richer players usually want lower taxes and poorer players higher taxes. Research shows people honestly come to believe that whatever helps them is also what is fair (Babcock and Loewenstein 1997).",
@@ -523,8 +546,17 @@
       "bought": "{donor} gave {amount} coins to {to}, who then voted {vote} on the donor's change.",
       "chartTitle": "Change in preferred tax by income",
       "chartX": "Income rank (1 = poorest)",
-      "chartY": "Change in tax (points)"
-    }
+      "chartY": "Change in tax (points)",
+      "lesson": "Once people know if they're rich or poor, most change their idea of a fair tax in their own favor."
+    },
+    "lesson": "The lesson",
+    "vsTheory": "You vs. the theory",
+    "theory": "Theory predicts",
+    "experiments": "Experiments found",
+    "youDid": "You",
+    "scores": "Scores this level",
+    "showDetails": "Show details",
+    "perRound": "Money each round"
   },
   "verdicts": {
     "consistent": "You did not change your mind. The Ministry finds this suspicious.",
@@ -620,7 +652,9 @@
     "difficulty": "Default difficulty",
     "unlockAll": "Unlock all levels",
     "reset": "Delete saved progress",
-    "resetDone": "Progress deleted."
+    "resetDone": "Progress deleted.",
+    "showTips": "Show tips again",
+    "tipsReset": "The tips will show again in your next game."
   },
   "about": {
     "title": "About this game",
@@ -696,5 +730,18 @@
       "ptsRank": "{x} pts per step",
       "summary": "{name}: rank {rank}, change {dt}"
     }
+  },
+  "flow": {
+    "othersSaid": "What others said",
+    "reply": "Reply",
+    "noTalk": "Nobody has said anything yet.",
+    "sheetDone": "Back to my choice",
+    "youSaid": "You"
+  },
+  "tips": {
+    "decide": "Tap a rule, then press Vote. You don't know your income yet.",
+    "results": "This is how much money everyone ended up with. Your score depends on your secret card.",
+    "chat": "Other players can say anything. They don't have to tell the truth.",
+    "dismiss": "Got it"
   }
 }

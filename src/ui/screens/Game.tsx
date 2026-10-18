@@ -11,7 +11,9 @@ import { t } from '../i18n';
 import { cardName, cardTitle, coins, pct } from '../labels';
 import { HUMAN_ID, currentRecord, headlineText, nameOf, useView } from '../game';
 import { Collapsible, FlipCard, FormCard, Page, Stamp, useMotionOff } from '../components/common';
-import { ChatFeed, ContinueBar, PlayerStrip, PrimaryBar, RoundSummary, TalkComposer, TopBar } from '../components/TableParts';
+import { ChatFeed, ChatStrip, ContinueBar, MessageComposer, PlayerStrip, PrimaryBar, ResultsContext, Sheet, SummaryBlock, TopBar } from '../components/TableParts';
+import { isBannerReveal, screenDecisionPhase } from '../flow';
+import type { Phase } from '../../engine/types';
 import { L1UI } from '../levels/L1';
 import { L2UI } from '../levels/L2';
 import { L3UI } from '../levels/L3';
@@ -123,43 +125,103 @@ function LevelIntro({ v }: { v: ViewState }) {
   );
 }
 
-function Center({ v }: { v: ViewState }) {
+/** Banners for the decision screen: the round's briefing line and any short result just before it. */
+function banners(v: ViewState): { briefing?: Phase; reveal?: Phase } {
+  const out: { briefing?: Phase; reveal?: Phase } = {};
+  for (let i = v.phaseIdx - 1; i >= 0; i--) {
+    const p = v.queue[i];
+    if (p.kind === 'TALK') continue;
+    if (p.kind === 'BRIEFING') {
+      out.briefing = p;
+      continue;
+    }
+    if (isBannerReveal(v.levelIndex, p)) {
+      out.reveal = p;
+      continue;
+    }
+    break;
+  }
+  return out;
+}
+
+function DecisionScreen({ v, onReply }: { v: ViewState; onReply: () => void }) {
+  const ui = UI[v.levelIndex];
+  const dp = screenDecisionPhase(v, v.queue);
+  const dv = dp && dp !== v.phase ? { ...v, phase: dp } : v;
+  const { briefing, reveal } = banners(v);
+  const brief = briefing ? ui.briefing({ ...v, phase: briefing }) : '';
+  return (
+    <div className="space-y-3">
+      {brief && <p className="border-s-4 border-ink ps-3 text-sm leading-snug text-soft">{brief}</p>}
+      {reveal && ui.Banner && <ui.Banner v={v} step={reveal.step ?? ''} />}
+      {v.phase.kind === 'TALK' && <ChatStrip v={v} onReply={onReply} />}
+      <ui.Decide v={dv} />
+    </div>
+  );
+}
+
+/** A reveal and the round summary on one screen, with one Continue for both. */
+function ResultsScreen({ v }: { v: ViewState }) {
+  const ui = UI[v.levelIndex];
+  const act = useStore((s) => s.act);
+  const next = v.queue[v.phaseIdx + 1];
+  const poll = next?.kind === 'DECIDE' && next.step === 'POLL';
+  return (
+    <div className="space-y-4">
+      <ResultsContext.Provider value>
+        <ui.Reveal v={v} />
+        {/* Levels 2 to 4 already list everyone's money in the reveal. */}
+        <SummaryBlock v={v} showMoney={![2, 3, 4].includes(v.levelIndex)} />
+        {poll && <ui.Decide v={{ ...v, phase: next }} />}
+      </ResultsContext.Provider>
+      {!poll && (
+        <PrimaryBar>
+          <button type="button" className="btn-primary" onClick={() => act()}>
+            {t('app.continue')}
+          </button>
+        </PrimaryBar>
+      )}
+    </div>
+  );
+}
+
+function Center({ v, onReply }: { v: ViewState; onReply: () => void }) {
   const ui = UI[v.levelIndex];
   const k = v.phase.kind;
-  if (k === 'BRIEFING') {
-    const text = ui.briefing(v);
-    return (
-      <FormCard form={`${t(`levels.${v.levelIndex}.name`)} · R${v.round}`}>
-        <p className="font-mono text-sm leading-relaxed">{text}</p>
-        <ContinueBar />
-      </FormCard>
-    );
+  const next = v.queue[v.phaseIdx + 1];
+  if (k === 'TALK' || k === 'DECIDE') return <DecisionScreen v={v} onReply={onReply} />;
+  if (k === 'REVEAL') {
+    const merged = next?.kind === 'ROUND_SUMMARY' || (next?.kind === 'DECIDE' && next.step === 'POLL');
+    return merged ? <ResultsScreen v={v} /> : <ui.Reveal v={v} />;
   }
-  if (k === 'TALK') return <TalkComposer v={v} />;
-  if (k === 'DECIDE') return <ui.Decide v={v} />;
-  if (k === 'REVEAL') return <ui.Reveal v={v} />;
-  if (k === 'ROUND_SUMMARY') return <RoundSummary v={v} />;
+  if (k === 'ROUND_SUMMARY')
+    return (
+      <>
+        <SummaryBlock v={v} />
+        <ContinueBar />
+      </>
+    );
   return null;
 }
 
 function Table({ v }: { v: ViewState }) {
   const go = useStore((s) => s.go);
   const [menu, setMenu] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
+  const [sheet, setSheet] = useState<null | 'chat' | 'reply'>(null);
   const ui = UI[v.levelIndex];
-  const count = v.messages.filter((m) => m.level === v.levelIndex).length;
-  const announce = `${t(`phase.${v.phase.kind}`)}. ${v.phase.kind === 'ROUND_SUMMARY' ? headlineText(currentRecord(v)) : ''}`;
+  const canTalk = v.phase.kind === 'TALK';
+  const announce = `${t(`phase.${v.phase.kind}`)}. ${v.phase.kind === 'REVEAL' ? headlineText(currentRecord(v)) : ''}`;
   return (
     <>
-      <TopBar v={v} onMenu={() => setMenu(true)} />
+      <TopBar v={v} onMenu={() => setMenu(true)} onChat={() => setSheet('chat')} />
       <div className="sr-only" aria-live="polite">
         {announce}
       </div>
-      <div className="mx-auto grid max-w-page grid-cols-1 gap-4 px-4 py-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="min-w-0 space-y-4">
+      <main className="mx-auto grid max-w-page grid-cols-1 gap-3 px-4 py-3 lg:grid-cols-[minmax(0,1fr)_320px] lg:gap-4 lg:py-4">
+        <div className="min-w-0 space-y-3">
           <PlayerStrip v={v} />
           <div key={v.phaseIdx}>
-            <Center v={v} />
+            <Center v={v} onReply={() => setSheet('reply')} />
           </div>
           <div className="lg:hidden">
             <Collapsible title={t('table.info')}>
@@ -175,31 +237,19 @@ function Table({ v }: { v: ViewState }) {
             <div className="max-h-[50vh] overflow-y-auto pe-1">
               <ChatFeed v={v} />
             </div>
+            {canTalk && (
+              <button type="button" className="btn-ghost mt-3 w-full" onClick={() => setSheet('reply')}>
+                {t('flow.reply')}
+              </button>
+            )}
           </FormCard>
         </aside>
-      </div>
-      {v.phase.kind !== 'TALK' && (
-        <button
-          type="button"
-          className="btn-ghost fixed bottom-20 start-4 z-30 shadow-md lg:hidden"
-          aria-expanded={chatOpen}
-          onClick={() => setChatOpen(true)}
-        >
-          {t('table.openTranscript', { n: count })}
-        </button>
-      )}
-      {chatOpen && (
-        <div className="fixed inset-0 z-40 flex flex-col bg-paper lg:hidden" role="dialog" aria-modal="true" aria-label={t('table.transcript')}>
-          <div className="flex items-center justify-between border-b border-line px-4 py-2">
-            <span className="label">{t('table.transcript')}</span>
-            <button type="button" className="btn-ghost" onClick={() => setChatOpen(false)}>
-              {t('app.back')}
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto p-4">
-            <ChatFeed v={v} />
-          </div>
-        </div>
+      </main>
+      {sheet && (
+        <Sheet title={t('table.transcript')} closeLabel={sheet === 'reply' ? t('flow.sheetDone') : t('app.back')} onClose={() => setSheet(null)}>
+          <ChatFeed v={v} />
+          {canTalk && (sheet === 'reply' || sheet === 'chat') && <MessageComposer v={v} />}
+        </Sheet>
       )}
       {menu && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4" role="dialog" aria-modal="true" aria-label={t('table.menu')}>
@@ -224,7 +274,7 @@ function Table({ v }: { v: ViewState }) {
 }
 
 function Guess({ v }: { v: ViewState }) {
-  const dispatch = useStore((s) => s.dispatch);
+  const act = useStore((s) => s.act);
   const bots = v.players.filter((p) => !p.isHuman);
   const [g, setG] = useState<Record<string, ValuesCard>>(Object.fromEntries(bots.map((b) => [b.id, 'EGOIST' as ValuesCard])));
   return (
@@ -246,7 +296,7 @@ function Guess({ v }: { v: ViewState }) {
           ))}
         </div>
         <PrimaryBar>
-          <button type="button" className="btn-primary" onClick={() => dispatch({ type: 'SUBMIT_GUESSES', guesses: g })}>
+          <button type="button" className="btn-primary" onClick={() => act(undefined, g)}>
             {t('guess.submit')}
           </button>
         </PrimaryBar>

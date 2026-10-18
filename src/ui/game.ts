@@ -21,6 +21,12 @@ export function nameOf(v: ViewState, id: string): string {
   return playerById(v, id)?.name ?? id;
 }
 
+/** First name only ("Marigold"), or "You". Used where space is tight. */
+export function shortName(v: ViewState, id: string): string {
+  if (id === HUMAN_ID) return t('table.you');
+  return (playerById(v, id)?.name ?? id).replace(/^Prof\. /, '').split(' ')[0];
+}
+
 export function renderMessage(v: ViewState, m: Message): string {
   const from = playerById(v, m.from);
   const msg = m.msg;

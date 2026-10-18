@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { useStore } from '../store';
+import { t } from '../i18n';
 import type { BotKey } from '../../engine/types';
 
 export function useMotionOff(): boolean {
@@ -186,4 +187,34 @@ export function Shape({ group, size = 14 }: { group: 'CIRCLE' | 'SQUARE'; size?:
 
 export function Page({ children, narrow = false }: { children: ReactNode; narrow?: boolean }) {
   return <main className={`mx-auto w-full px-4 py-6 ${narrow ? 'max-w-2xl' : 'max-w-page'}`}>{children}</main>;
+}
+
+/** A one-time tip bubble. Dismissal is remembered with the saved game data. */
+export function Tip({ id, text }: { id: string; text: string }) {
+  const seen = useStore((s) => s.tipsSeen.includes(id));
+  const dismiss = useStore((s) => s.dismissTip);
+  if (seen) return null;
+  return (
+    <div role="note" className="mt-2 flex items-start gap-3 rounded-md border-2 border-teal bg-teal/10 px-3 py-2 text-sm" data-tip={id}>
+      <p className="flex-1 leading-snug">{text}</p>
+      <button type="button" className="btn-ghost min-h-[36px] shrink-0 px-3 py-1 text-sm" onClick={() => dismiss(id)}>
+        {t('tips.dismiss')}
+      </button>
+    </div>
+  );
+}
+
+/** A drawn checkbox for toggle cards (the card itself carries aria-pressed). */
+export function CheckBox({ on }: { on: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 22 22" aria-hidden className="mt-0.5 shrink-0">
+      <rect x="1.5" y="1.5" width="19" height="19" rx="4" className={on ? 'fill-ink stroke-ink' : 'fill-card stroke-soft'} strokeWidth="2" />
+      {on && <path d="M6 11.5l3.2 3.2L16 7.8" fill="none" className="stroke-paper" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />}
+    </svg>
+  );
+}
+
+/** A one-line result carried over to the next decision screen. */
+export function ResultBanner({ children }: { children: ReactNode }) {
+  return <p className="rounded-md border-2 border-ink bg-card px-3 py-2 text-sm font-semibold leading-snug" role="status">{children}</p>;
 }

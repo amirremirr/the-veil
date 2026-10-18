@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { AmendmentRecord, Constitution, L5Debrief, Lobby } from '../../engine/levels/level5';
 import { constitutionWealth, supermajority } from '../../engine/levels/level5';
 import { orderedDraws } from '../../engine/core';
@@ -7,8 +7,8 @@ import type { ViewState } from '../../engine/types';
 import { useStore } from '../store';
 import { t } from '../i18n';
 import { coins, constitutionLabel, signed } from '../labels';
-import { HUMAN_ID, nameOf } from '../game';
-import { FlipCard, FormCard, Stamp } from '../components/common';
+import { HUMAN_ID, nameOf, shortName } from '../game';
+import { FlipCard, FormCard, Stamp, useMotionOff } from '../components/common';
 import { ContinueBar, PrimaryBar } from '../components/TableParts';
 import { ChartFrame, Scatter } from '../components/Charts';
 import { DebriefShell } from '../components/Debrief';
@@ -57,7 +57,7 @@ function ConstitutionPicker({ value, onChange }: { value: Constitution; onChange
 }
 
 function VeilForm({ v }: { v: ViewState }) {
-  const dispatch = useStore((s) => s.dispatch);
+  const act = useStore((s) => s.act);
   const [c, setC] = useState<Constitution>({ t: 0.3, F: 25 });
   const n = v.players.length;
   const preview = useMemo(() => {
@@ -82,20 +82,20 @@ function VeilForm({ v }: { v: ViewState }) {
         <dl className="mt-1 grid grid-cols-3 gap-2 text-center">
           <div>
             <dt className="label">{t('debrief.l1.colAvg')}</dt>
-            <dd className="num text-lg">{preview.avg.toFixed(1)}</dd>
+            <dd className="num text-lg">{Math.round(preview.avg)}</dd>
           </div>
           <div>
             <dt className="label">{t('debrief.l1.colMin')}</dt>
-            <dd className="num text-lg">{preview.min.toFixed(1)}</dd>
+            <dd className="num text-lg">{Math.round(preview.min)}</dd>
           </div>
           <div>
             <dt className="label">{t('debrief.l1.chartOwn')}</dt>
-            <dd className="num text-lg">{preview.own.toFixed(1)}</dd>
+            <dd className="num text-lg">{Math.round(preview.own)}</dd>
           </div>
         </dl>
       </div>
       <PrimaryBar>
-        <button type="button" className="btn-primary" onClick={() => dispatch({ type: 'SUBMIT_DECISION', from: HUMAN_ID, decision: c })}>
+        <button type="button" className="btn-primary" onClick={() => act(c)}>
           {t('levels.5.veilSubmit')}
         </button>
       </PrimaryBar>
@@ -105,7 +105,7 @@ function VeilForm({ v }: { v: ViewState }) {
 
 function LobbyForm({ v }: { v: ViewState }) {
   const lv = v.levelView as L5View;
-  const dispatch = useStore((s) => s.dispatch);
+  const act = useStore((s) => s.act);
   const cur = lv.current!;
   const [to, setTo] = useState<string>('');
   const [amount, setAmount] = useState(0);
@@ -157,7 +157,7 @@ function LobbyForm({ v }: { v: ViewState }) {
         </div>
       )}
       <PrimaryBar>
-        <button type="button" className="btn-primary" onClick={() => dispatch({ type: 'SUBMIT_DECISION', from: HUMAN_ID, decision })}>
+        <button type="button" className="btn-primary" onClick={() => act(decision)}>
           {t('levels.5.lobbySubmit')}
         </button>
       </PrimaryBar>
@@ -167,7 +167,7 @@ function LobbyForm({ v }: { v: ViewState }) {
 
 function AmendForm({ v }: { v: ViewState }) {
   const lv = v.levelView as L5View;
-  const dispatch = useStore((s) => s.dispatch);
+  const act = useStore((s) => s.act);
   const k = Number(v.phase.step!.slice(6));
   const proposer = lv.order[k];
   const prop = lv.lobby![proposer].proposal!;
@@ -190,10 +190,10 @@ function AmendForm({ v }: { v: ViewState }) {
         {t('levels.5.amendEffect', { cur: coins(constitutionWealth(inc, cur)[me]), new: coins(constitutionWealth(inc, prop)[me]) })}
       </p>
       <PrimaryBar>
-        <button type="button" className="btn-ghost" onClick={() => dispatch({ type: 'SUBMIT_DECISION', from: HUMAN_ID, decision: false })}>
+        <button type="button" className="btn-ghost" onClick={() => act(false)}>
           {t('levels.5.amendNo')}
         </button>
-        <button type="button" className="btn-primary" onClick={() => dispatch({ type: 'SUBMIT_DECISION', from: HUMAN_ID, decision: true })}>
+        <button type="button" className="btn-primary" onClick={() => act(true)}>
           {t('levels.5.amendYes')}
         </button>
       </PrimaryBar>
@@ -226,7 +226,12 @@ function Decide({ v }: { v: ViewState }) {
 
 function Reveal({ v }: { v: ViewState }) {
   const lv = v.levelView as L5View;
-  const [flipped, setFlipped] = useState(false);
+  const off = useMotionOff();
+  const [flipped, setFlipped] = useState(off);
+  useEffect(() => {
+    const id = setTimeout(() => setFlipped(true), off ? 0 : 450);
+    return () => clearTimeout(id);
+  }, [off]);
   if (v.phase.step === 'CONSTITUTION') {
     return (
       <FormCard form={t('levels.5.reveal.constitutionTitle')}>
@@ -247,36 +252,42 @@ function Reveal({ v }: { v: ViewState }) {
     );
   }
   if (v.phase.step === 'INCOMES') {
+    // The adopted constitution (its own screen was folded into this one) and the income flip.
     return (
-      <FormCard form={t('levels.5.reveal.incomesTitle')}>
-        <p className="mb-3 text-sm">{t('levels.5.reveal.incomesNote')}</p>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <FormCard form={t('levels.5.reveal.constitutionTitle')}>
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="h-display text-2xl">{lv.adopted && constitutionLabel(lv.adopted)}</span>
+          <Stamp>{t('stamps.ADOPTED')}</Stamp>
+        </div>
+        <ul className="mt-2 grid gap-x-4 text-sm sm:grid-cols-2">
+          {v.players.map((p) => (
+            <li key={p.id} className="flex justify-between gap-2 border-b border-line/60 py-0.5">
+              <span>{nameOf(v, p.id)}</span>
+              <span className="num">{lv.veil ? constitutionLabel(lv.veil[p.id]) : ''}</span>
+            </li>
+          ))}
+        </ul>
+        <h3 className="label mt-4">{t('levels.5.reveal.incomesTitle')}</h3>
+        <p className="mb-2 text-sm">{t('levels.5.reveal.incomesNote')}</p>
+        <div className="grid grid-cols-4 gap-2">
           {v.players.map((p) => (
             <div key={p.id}>
               <FlipCard
-                className="h-24"
+                className="h-16"
                 flipped={flipped}
                 back={<div className="flex h-full items-center justify-center rounded-md border-2 border-ink bg-ink text-paper">?</div>}
                 front={
                   <div className="flex h-full flex-col items-center justify-center rounded-md border-2 border-ink bg-card">
-                    <span className="num text-2xl font-semibold">{lv.incomes?.[p.id]}</span>
+                    <span className="num text-xl font-semibold">{lv.incomes?.[p.id]}</span>
                     <span className="label">{t('ui.coins')}</span>
                   </div>
                 }
               />
-              <div className="mt-1 text-center text-xs">{nameOf(v, p.id)}</div>
+              <div className="mt-1 truncate text-center text-xs">{shortName(v, p.id)}</div>
             </div>
           ))}
         </div>
-        {flipped ? (
-          <ContinueBar />
-        ) : (
-          <PrimaryBar>
-            <button type="button" className="btn-primary" onClick={() => setFlipped(true)}>
-              {t('levels.5.reveal.incomesTitle')}
-            </button>
-          </PrimaryBar>
-        )}
+        <ContinueBar />
       </FormCard>
     );
   }
