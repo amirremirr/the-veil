@@ -35,6 +35,10 @@ interface RoomStore {
   talkFrom: number | null;
   error: string | null;
   fatal: string | null;
+  /** When this tab sent an action the server has not answered yet (cleared by the next STATE or ERROR). */
+  pendingSince: number | null;
+  /** A TopBar is on screen, so the "Thinking..." indicator sits there instead of floating. */
+  topBar: boolean;
 }
 
 const initial: RoomStore = {
@@ -56,6 +60,8 @@ const initial: RoomStore = {
   talkFrom: null,
   error: null,
   fatal: null,
+  pendingSince: null,
+  topBar: false,
 };
 
 export const useRoom = create<RoomStore>(() => ({ ...initial }));
@@ -97,6 +103,20 @@ function send(m: object): void {
   if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ v: 1, ...m }));
 }
 
+/** Send a game action and mark it as waiting for the server's answer. Returns false if one is already waiting. */
+function sendAction(m: object): boolean {
+  if (useRoom.getState().pendingSince !== null) return false;
+  useRoom.setState({ pendingSince: Date.now() });
+  send(m);
+  return true;
+}
+
+/** Dev and e2e only: hold every incoming message this long before handling it (a slow server). */
+let devDelayMs = 0;
+export function devDelayMessages(ms: number): void {
+  devDelayMs = ms;
+}
+
 function onMessage(m: ServerMessage): void {
   const r = useRoom.getState();
   switch (m.type) {
@@ -127,6 +147,7 @@ function onMessage(m: ServerMessage): void {
         talkFrom,
         started: true,
         error: null,
+        pendingSince: null,
       });
       return;
     }
@@ -138,7 +159,7 @@ function onMessage(m: ServerMessage): void {
         ws?.close();
         return;
       }
-      useRoom.setState({ error: m.code });
+      useRoom.setState({ error: m.code, pendingSince: null });
       return;
   }
 }
@@ -157,11 +178,15 @@ function open(code: string): void {
     send({ type: 'JOIN', name, ...(token ? { token } : {}) });
   };
   sock.onmessage = (e) => {
-    try {
-      onMessage(JSON.parse(e.data as string) as ServerMessage);
-    } catch {
-      // Ignore anything that is not a protocol message.
-    }
+    const handle = () => {
+      try {
+        onMessage(JSON.parse(e.data as string) as ServerMessage);
+      } catch {
+        // Ignore anything that is not a protocol message.
+      }
+    };
+    if (devDelayMs > 0) setTimeout(handle, devDelayMs);
+    else handle();
   };
   sock.onclose = () => {
     if (ws !== sock) return;
@@ -227,11 +252,11 @@ export function leaveRoom(): void {
 }
 
 export function startRoomGame(settings: { mode: Mode; level?: LevelId; difficulty: Difficulty }): void {
-  send({ type: 'START', mode: settings.mode, difficulty: settings.difficulty, ...(settings.mode === 'SINGLE_LEVEL' ? { level: settings.level ?? 1 } : {}) });
+  sendAction({ type: 'START', mode: settings.mode, difficulty: settings.difficulty, ...(settings.mode === 'SINGLE_LEVEL' ? { level: settings.level ?? 1 } : {}) });
 }
 
 export function sendRoomMessage(msg: StructuredMessage): void {
-  send({ type: 'SEND_MESSAGE', msg });
+  sendAction({ type: 'SEND_MESSAGE', msg });
 }
 
 /** One tap of the main button, online: a decision, guesses, or Ready, depending on the screen. */
@@ -239,13 +264,14 @@ export function roomAct(decision?: unknown, guesses?: Record<string, ValuesCard>
   const r = useRoom.getState();
   const v = r.view;
   if (!v) return;
-  if (v.phase.kind === 'GUESS') return send({ type: 'SUBMIT_GUESSES', guesses: guesses ?? {} });
+  // A tap while an earlier action is still waiting for the server is ignored (no double taps).
+  if (r.pendingSince !== null) return;
+  if (v.phase.kind === 'GUESS') return void sendAction({ type: 'SUBMIT_GUESSES', guesses: guesses ?? {} });
   const dp = screenDecisionPhase(v, v.queue);
   const deciding = v.phase.kind === 'DECIDE' ? v.waitingOn.includes(v.viewer) : !!dp;
-  if (dp && deciding) return send({ type: 'SUBMIT_DECISION', decision });
+  if (dp && deciding) return void sendAction({ type: 'SUBMIT_DECISION', decision });
   if (v.phase.kind === 'DECIDE') return;
-  useRoom.setState({ readyOn: screenKeyOf(v) });
-  send({ type: 'READY' });
+  if (sendAction({ type: 'READY' })) useRoom.setState({ readyOn: screenKeyOf(v) });
 }
 
 /** Dev and e2e only: drop the connection as a network failure would, and stay away for `ms`. */

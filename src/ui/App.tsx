@@ -4,7 +4,7 @@ import { useStore } from './store';
 import { GameScreen } from './screens/Game';
 import { About, Archives, ModeSelect, SettingsScreen, Setup, Title } from './screens/Menus';
 import { Friends, Lobby, savedName } from './screens/Friends';
-import { ConnectionBanner } from './components/Online';
+import { ConnectionBanner, Thinking } from './components/Online';
 import { joinRoom, ROOM_SERVER, savedToken } from './room';
 import { CODE_RE } from '../../server/src/protocol';
 
@@ -47,6 +47,7 @@ export function App() {
       {screen === 'friends' && <Friends />}
       {screen === 'lobby' && <Lobby />}
       <ConnectionBanner />
+      {screen === 'game' && <Thinking />}
     </MotionConfig>
   );
 }
