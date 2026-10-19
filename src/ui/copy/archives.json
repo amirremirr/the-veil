@@ -66,8 +66,8 @@
         1,
         3
       ],
-      "body": "The standard model of choice under risk: weigh each possible outcome by its probability and add up. Harsanyi (1953) argued that a rational person behind a veil, with an equal chance of being anyone, would maximize expected utility, which amounts to maximizing average welfare. He developed the argument further in 1955. If utility is linear in money, that means maximizing average income. If utility is concave, so that each extra coin matters less, the person also values insurance against bad draws. Risk aversion is how much curvature there is. The bots in this game use constant relative risk aversion, and their rho parameter sets the curvature. A rho of zero is a pure expected-income maximizer.",
-      "formula": "EU(a) = sum over s of p(s) u(x(a, s)); CRRA: u(x) = (x^(1 - rho) - 1) / (1 - rho)",
+      "body": "The standard model of choice under risk: weigh each possible outcome by its probability and add up. Harsanyi (1953) argued that a rational person behind a veil, with an equal chance of being anyone, would maximize expected utility, which amounts to maximizing average welfare. He developed the argument further in 1955. If utility is linear in money, that means maximizing average income. If utility is concave, so that each extra coin matters less, the person also values insurance against bad draws. Risk aversion is how much curvature there is. The bots in this game use constant absolute risk aversion over their round score, and their rho parameter sets the curvature. A rho of zero is a pure expected-score maximizer.",
+      "formula": "EU(a) = sum over s of p(s) u(x(a, s)); bots (CARA): u(S) = (1 - exp(-a S)) / a, a = rho / 100",
       "refs": [
         "harsanyi1953",
         "harsanyi1955"
@@ -251,8 +251,8 @@
       "levels": [
         5
       ],
-      "body": "People tend to judge as fair whatever happens to benefit them, and they do it sincerely. Babcock and Loewenstein found that when bargainers get the same facts but different roles, each side's view of a fair settlement drifts toward its own interest, and this drift helps explain why talks break down. Konow found related patterns in allocation decisions. Level 5 separates this from plain self-interest. Your paid proposal can move simply because the score pays you to want lower or higher taxes. So the game also asks you twice, without pay, what tax you think is fair: once before you know your income and once after. The summary plots how much that unpaid answer moved against how rich you turned out.",
-      "formula": "self-serving shift = fair tax you named after the reveal - fair tax you named before it",
+      "body": "People tend to judge as fair whatever happens to benefit them, and they do it sincerely. Babcock and Loewenstein found that when bargainers get the same facts but different roles, each side's view of a fair settlement drifts toward its own interest, and this drift helps explain why talks break down. Konow found related patterns in allocation decisions. Level 5 separates this from plain self-interest. Your paid proposal can move simply because the score pays you to want lower or higher taxes. So the game also asks you twice, without pay, what tax you think is fair: once before you know your income and once after. The summary shows how much your unpaid answer moved. One person's change can have several causes (new information, the votes, the rules adopted), so the game does not diagnose it. With three or more human players it also plots everyone's shift against income; computer players' answers are programmed, so they are left out.",
+      "formula": "fair-tax shift = fair tax you named after the reveal - fair tax you named before it",
       "refs": [
         "babcock1997",
         "konow2000"

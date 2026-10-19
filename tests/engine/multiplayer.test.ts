@@ -205,9 +205,14 @@ describe('hidden information with several humans', () => {
     }
   });
 
-  it('Level 5 verdicts are per human', () => {
+  it('Level 5: per-human card lines, no verdict, and a human-only slope with 4 humans (D-73)', () => {
     const s = seen.find((x) => x.levelIndex === 5 && x.phase.kind === 'LEVEL_DEBRIEF' && x.players.filter((p) => p.isHuman).length === 4)!;
-    for (const id of ['p1', 'p2', 'p3', 'p4']) expect((visibleState(s, id).levelResults[5] as any).verdict).toBeTruthy();
+    for (const id of ['p1', 'p2', 'p3', 'p4']) {
+      const d = visibleState(s, id).levelResults[5] as any;
+      expect(d.cardBest.chose).toEqual(d.veil[id]);
+      expect(d.verdict).toBeUndefined();
+      expect(typeof d.slopes.humans).toBe('number');
+    }
   });
 });
 
@@ -280,10 +285,14 @@ describe('talk with several humans (D-64)', () => {
 });
 
 describe('Level 4 counterfactual with several humans (D-24)', () => {
-  it("replays every human's logged decisions: the same-seed baseline reproduces the real gap", () => {
+  it("replays every human's logged decisions: the same-seed baseline reproduces rounds 1 to 3 exactly (D-79)", () => {
     const { t } = drive(start(3, { mode: 'SINGLE_LEVEL', level: 4, seed: `${SEED}-cf` }), { lateEvery: 2 });
     const d = t.game.levelResults[4] as any;
     const base = d.counterfactual.scenarios.find((x: { key: string }) => x.key === 'BASELINE');
-    expect(base.gap).toBeCloseTo(d.gap, 9);
+    // The replay holds the rule at No Change, so it matches the real game before the referendum takes effect
+    // (and after it too when the table kept No Change).
+    const real = d.meanByGroup.map((m: { gap: number }) => m.gap);
+    for (let r = 0; r < 3; r++) expect(base.roundGaps[r]).toBeCloseTo(real[r], 9);
+    if (d.policy === 'A') expect(base.gap).toBeCloseTo(d.gap, 9);
   });
 });

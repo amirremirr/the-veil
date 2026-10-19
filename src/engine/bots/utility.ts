@@ -1,11 +1,26 @@
 import { BOT } from '../params';
 import type { Rng } from '../rng';
 
-/** CRRA utility over a round score with a +50 shift (Section 5.2). */
-export function crra(S: number, rho: number): number {
-  const x = Math.max(BOT.UTILITY_MIN_ARG, S + BOT.UTILITY_SHIFT);
-  if (Math.abs(rho - 1) < 1e-9) return Math.log(x);
-  return (Math.pow(x, 1 - rho) - 1) / (1 - rho);
+/**
+ * Bot utility over a round score S (D-77): constant absolute risk aversion,
+ * u(S) = (1 - exp(-a S)) / a with a = rho / BOT.RISK_POINTS, and u(S) = S when rho = 0.
+ * It is defined, strictly increasing and (for rho > 0) strictly concave at every score, so losses
+ * keep counting however low a score goes. The CRRA it replaces worked on S + 50 floored at 1, which
+ * made every score at or below -49 worth the same. At S = 50 the two have the same local risk
+ * aversion (rho / 100 per point), so a bot's attitude to ordinary gambles is unchanged.
+ * expm1 and log1p keep it accurate when a is tiny.
+ */
+export function utility(S: number, rho: number): number {
+  const a = rho / BOT.RISK_POINTS;
+  if (a < 1e-12) return S;
+  return -Math.expm1(-a * S) / a;
+}
+
+/** Inverse of `utility`: the sure round score with the same utility (certainty equivalent). */
+export function certaintyEquivalent(EU: number, rho: number): number {
+  const a = rho / BOT.RISK_POINTS;
+  if (a < 1e-12) return EU;
+  return -Math.log1p(-a * EU) / a;
 }
 
 /**
@@ -30,21 +45,10 @@ export function argmax(xs: readonly number[]): number {
   return bi;
 }
 
-/** Inverse of crra: the sure round score with the same utility (certainty equivalent). */
-export function certaintyEquivalent(EU: number, rho: number): number {
-  let x: number;
-  if (Math.abs(rho - 1) < 1e-9) x = Math.exp(EU);
-  else {
-    const base = 1 + (1 - rho) * EU;
-    x = base <= 0 ? BOT.UTILITY_MIN_ARG : Math.pow(base, 1 / (1 - rho));
-  }
-  return x - BOT.UTILITY_SHIFT;
-}
-
-/** Expected CRRA utility of a list of equally likely scores, expressed as a certainty equivalent. */
+/** Expected utility of a list of equally likely scores, expressed as a certainty equivalent. */
 export function ceOfSamples(scores: readonly number[], rho: number): number {
   let eu = 0;
-  for (const s of scores) eu += crra(s, rho);
+  for (const s of scores) eu += utility(s, rho);
   return certaintyEquivalent(eu / scores.length, rho);
 }
 
@@ -53,7 +57,7 @@ export function ceOfLottery(lottery: ReadonlyArray<readonly [number, number]>, r
   let eu = 0;
   let pt = 0;
   for (const [p, s] of lottery) {
-    eu += p * crra(s, rho);
+    eu += p * utility(s, rho);
     pt += p;
   }
   return certaintyEquivalent(eu / (pt || 1), rho);

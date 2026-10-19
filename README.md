@@ -40,12 +40,13 @@ Then open http://localhost:5173.
 | `npm run build` | Typecheck and build the static site into `dist/` |
 | `npm run preview` | Serve the built site |
 | `npm test` | Engine unit tests (Vitest), including every worked example in Section 12 of the spec |
-| `npm run sim -- --games 2000` | Headless bot-only simulation; writes a CSV and a summary to `sim/out/` |
+| `npm run rules-version` | Regenerate `src/engine/rules-hash.ts` after any engine change (the build and a unit test fail if it is stale) |
+| `npm run sim -- --games 2000` | Headless bot-only simulation; writes a CSV and a summary (mean ± bootstrap SE) to `sim/out/`. Bot-only: it checks design targets, not anything about people |
 | `npm run e2e` | Playwright end-to-end tests at 360 px and desktop widths |
 
 `npm run e2e` uses Playwright's bundled Chromium (install it once with `npx playwright install chromium`), or an installed browser via `PW_CHANNEL=msedge` or `PW_CHANNEL=chrome`.
 
-Simulator flags: `--games`, `--players 2|3|4`, `--difficulty EASY|NORMAL|HARD`, `--samples` (Monte Carlo draws per bot decision, default 300), `--seed`, `--out`.
+Simulator flags: `--games`, `--players 2|3|4`, `--difficulty EASY|NORMAL|HARD`, `--samples` (Monte Carlo draws per bot decision, default 300), `--seed`, `--out`, `--boot` (bootstrap resamples for the standard errors, default 400).
 
 ## Architecture
 
@@ -54,7 +55,7 @@ src/engine/   pure TypeScript game engine (no UI or browser dependencies)
   params.ts         every numeric constant
   engine.ts         the reducer: reduce(state, action) and visibleState(state, viewer)
   levels/level1-5   one LevelDefinition per level (phases, rules, bot policies, debrief data)
-  bots/             CRRA utility, logit choice, Bayesian beliefs, messaging
+  bots/             CARA utility, logit choice, beliefs, messaging
   counterfactual.ts Level 4 decomposition by re-simulation
 src/shared/   screen flow used by the solo store and the room server
 src/ui/       React 18 + Zustand + Tailwind + Framer Motion
@@ -65,7 +66,7 @@ tests/        Vitest engine tests and Playwright e2e tests
 ```
 
 - The engine state is one serializable object. The UI only dispatches actions and renders `visibleState(state, 'you')`, which strips other players' Values cards, private information, scores, and secret decisions. The multiplayer room server renders the same view for each seat (see below).
-- Two named random streams (`game` for every outcome, `bots` for all bot reasoning) live inside the state, so a seed plus the action log replays a game exactly. The seed is shown on every debrief, and the run debrief exports the full log as JSON.
+- Two named random streams (`game` for every outcome, `bots` for all bot reasoning) live inside the state, so a seed plus the action log replays a game exactly under the same rules. Each game records its rules version (a hash of `src/engine` and of the parameters, plus the build's commit; see `src/engine/version.ts` and DECISIONS.md D-75). The seed is shown on every debrief, and the run debrief exports the full log, with the rules version, as JSON.
 - Saved games and settings use `localStorage` key `the-veil:v1`, wrapped so the game still works when storage is unavailable.
 
 ## Multiplayer: how it works and how to run it locally
@@ -110,26 +111,30 @@ The room server listens on http://127.0.0.1:8787, and in development the site co
 
 ## Methods
 
-**Scoring.** Each round, a player's score is S = 0.5 x (W - H) + 0.5 x k x M. W is the player's own money, H is the hardship penalty, M is the metric on the player's secret Values card, and k is that card's balancing scale. The four metrics are: Egoist, own money minus hardship; Rawlsian, the poorest player's money; Utilitarian, the average player's money; Meritocrat, average money reduced by how far each player's share of money departs from their share of effort. k is 1.67 for the Rawlsian, 1.22 for the Meritocrat and 1 for the others, set in simulation so that each card's average metric matches average wealth. The hardship line is 40 coins: each coin below it costs 2 more points, weighted like own money. It makes self-interested players risk averse, because a coin lost below the line counts about twice as much as a coin gained, close to the loss aversion of about 2 found in experiments (Tversky and Kahneman 1992).
+**Scoring.** Each round, a player's score is S = 0.5 x (W - H) + 0.5 x k x M. W is the player's own money, H is the hardship penalty, M is the metric on the player's secret Values card, and k is that card's balancing scale. The four metrics are: Egoist, own money minus hardship; Rawlsian, the poorest player's money; Utilitarian, the average player's money; Meritocrat, average money reduced by how far each player's share of money departs from their share of effort. k is 1.66 for the Rawlsian, 1.27 for the Meritocrat and 1 for the others, set in bot-only simulation so that each card's average metric matches average wealth. The hardship line is 40 coins: each coin below it costs 2 more points, weighted like own money. It makes self-interested players risk averse, because a coin lost below the line counts about twice as much as a coin gained, close to the loss aversion of about 2 found in experiments (Tversky and Kahneman 1992).
 
-**Bots.** Bots choose by logit quantal response (McKelvey and Palfrey 1995) over certainty equivalents in coins. The chance of choosing an option is proportional to exp(lambda x CE / 10) (a fixed 10-coin scale). With lambda = 2, a bot makes a 10-coin mistake about 12% of the time and a 30-coin mistake almost never. Each bot has CRRA risk aversion, scaled down by a factor of 4 because the hardship line already supplies curvature. Expected values are computed by exact enumeration where the outcomes are few (Levels 1, 3 and 5) and by Monte Carlo from a separate random stream otherwise, so bot reasoning never changes game outcomes. Bots reason one level deep about others and hold Bayesian beliefs over other players' Values cards, updated after every public vote and by messages weighted by the speaker's record.
+**Bots.** Bots choose by logit quantal response (McKelvey and Palfrey 1995) over certainty equivalents measured in score points (a coin of own money is one point for an Egoist and half a point for the other cards). The chance of choosing an option is proportional to exp(lambda x CE / 10), a fixed 10-point scale. With lambda = 2, a bot makes a 10-point mistake about 12% of the time and a 30-point mistake almost never. Each bot has constant absolute risk aversion over its round score, u(S) = (1 - exp(-a S)) / a with a = rho / 100, which is defined, increasing and concave at every score; rho is scaled down by a factor of 4 because the hardship line already supplies curvature. Expected values are computed by exact enumeration where the outcomes are few (Levels 1, 3 and 5) and by Monte Carlo from a separate random stream otherwise, so bot reasoning never changes game outcomes. Bots reason one level deep about others. They hold beliefs over other players' Values cards, updated by Bayes' rule after every public vote; messages move those beliefs by a fixed weight times the speaker's record of keeping their word, which is a rule of thumb, not a Bayesian update.
 
-**Measurement.** Paid choices measure strategy. Unpaid questions about what is fair measure values. In Level 5, the self-serving shift is measured on the unpaid answers given before and after incomes are revealed, following Babcock and Loewenstein's (1997) distinction between pursuing your interest and sincerely believing that what helps you is fair.
+**Measurement.** Paid choices measure strategy. Unpaid questions about what is fair are asked separately and never change a score. In Level 5 each player sees how their own unpaid fair-tax answer moved after they learned their income, with no diagnosis: one person's change can come from new information, from the other players' votes, or from the rules adopted, as well as from the self-serving bias Babcock and Loewenstein (1997) describe. A slope across players uses human answers only and is shown only when at least 3 humans played. Computer players' fair-tax answers are programmed, so they are never counted as evidence.
 
-**Level points.** Each level is standardized: points = 100 + 50 x (score - table average) / level spread. Each level's spread is the typical within-table standard deviation of scores, measured by simulation.
+**Level points.** Each level is standardized: points = 100 + 50 x (score - table average) / level spread. Each level's spread is the typical within-table standard deviation of scores, measured on bot-only tables.
 
-**Reproducibility.** Every game replays exactly from its seed and action log. `npm run sim` checks the balance targets on thousands of bot-only games. [DECISIONS.md](DECISIONS.md) records every design decision and parameter change.
+**Reproducibility.** A game replays exactly from its seed and action log under the same rules. Every game records a hash of the engine code and of the parameters; saved games, downloaded records and multiplayer rooms refuse to continue under different rules. [DECISIONS.md](DECISIONS.md) records every design decision and parameter change.
 
-**Known limits.** Bots are not humans, and balance is measured only on bot-only tables. The game demonstrates mechanisms. It does not estimate real-world magnitudes.
+**Balance.** `npm run sim` plays thousands of bot-only games and reports each statistic as mean ± bootstrap standard error over games. The balance targets (for example, no Values card winning more than 35% of the time) are design targets chosen for the game. They are checked on the same bot tables the parameters were tuned on, so they show the game is balanced for these bots, not anything about people.
+
+**Known limits.** Bots are not humans. The game demonstrates mechanisms inside its own model; it does not estimate real-world magnitudes. Its summaries describe one game, not evidence about the player.
 
 ## Status
 
 | Milestone | State |
 |---|---|
-| M1 to M6: engine, five levels, bots, messaging, beliefs, finale, all UI | Done. All 25 unit tests and 6 e2e tests pass. |
-| M7: simulation balancing | Done. All Section 11 targets met (DECISIONS.md D-16). Level 2 parameters changed (D-15). |
+| M1 to M6: engine, five levels, bots, messaging, beliefs, finale, all UI | Done. |
+| M7: simulation balancing | Done. Every design target is met on bot-only tables, reported as mean ± SE (DECISIONS.md D-76, D-78). These are design targets, not findings about people. |
 | M8: visual design, copy, Archives, accessibility | Done, except a Lighthouse audit, which has not been run. Contrast checked by calculation; no horizontal scroll at 360 px in any phase. |
 | M9: deploy | Live on Vercel at https://the-veil-mauve.vercel.app. Pushes to `main` deploy automatically. Not yet checked on iOS Safari, Android Chrome, or Firefox. |
-| Multiplayer | On the `multiplayer` branch, not merged. Room server deployed with Wrangler 3 (3.114.17; version 4 is available) at https://the-veil-rooms.theveilgame.workers.dev. Vercel builds read it from `VITE_ROOM_SERVER_URL` (production and preview). 81 unit tests and 9 e2e tests pass, including a three-player test. |
+| Multiplayer | Merged into `main`. Room server deployed with Wrangler 3 (3.114.17; version 4 is available) at https://the-veil-rooms.theveilgame.workers.dev. Vercel builds read it from `VITE_ROOM_SERVER_URL` (production and preview). The room server must be redeployed whenever the engine's rules change; a page and a server with different rules refuse to play together (D-75). |
+| Audit fixes (October 2026) | DECISIONS.md D-72 to D-81. |
+| Tests | 104 unit tests (Vitest) and 9 e2e tests (Playwright, plus 1 skipped by design: the three-player test runs once, on desktop) pass. |
 
 Open items for the author: the final name, the hosting location, and whether to add opt-in result sharing in Phase 2. The About screen will link to the source repository once there is one.

@@ -5,6 +5,7 @@ import { create } from 'zustand';
 import type { Difficulty, LevelId, Mode, StructuredMessage, ValuesCard, ViewState } from '../engine/types';
 import type { LobbySeat, RoomSettings, ServerMessage } from '../../server/src/protocol';
 import { screenDecisionPhase } from '../shared/flow';
+import { compareRules } from '../engine/version';
 
 export const ROOM_SERVER: string | undefined =
   (import.meta.env.VITE_ROOM_SERVER_URL as string | undefined) || (import.meta.env.DEV ? 'http://127.0.0.1:8787' : undefined);
@@ -121,6 +122,13 @@ function onMessage(m: ServerMessage): void {
   const r = useRoom.getState();
   switch (m.type) {
     case 'WELCOME':
+      // The server runs the engine and this page renders its views: both must use the same rules (D-75).
+      if (compareRules(m.rules) === 'different') {
+        leaving = true;
+        useRoom.setState({ fatal: 'VERSION_MISMATCH', status: 'closed' });
+        ws?.close();
+        return;
+      }
       saveToken(m.code, m.token);
       useRoom.setState({ yourSeat: m.yourSeat, code: m.code, error: null });
       return;

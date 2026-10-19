@@ -13,7 +13,8 @@
     "continue": "Continue",
     "mainMenu": "Main menu",
     "liveRegion": "Game announcements",
-    "playFriends": "Play with friends"
+    "playFriends": "Play with friends",
+    "staleSave": "Your saved game was made with an older version of the rules, so it cannot continue the way it started. Start a new one."
   },
   "mode": {
     "title": "How do you want to play?",
@@ -55,7 +56,7 @@
     "RAWLSIAN": {
       "name": "Rawlsian",
       "title": "The Worrier About the Worst-Off",
-      "metric": "You score points when the poorest player has more money. (These points are multiplied by 1.67 to keep the game balanced.)",
+      "metric": "You score points when the poorest player has more money. (These points are multiplied by 1.66 to keep the game balanced.)",
       "blurb": "You care most about whoever is at the bottom, even when it is not you.",
       "short": "Rawlsian: the poorest player's money"
     },
@@ -69,7 +70,7 @@
     "MERITOCRAT": {
       "name": "Meritocrat",
       "title": "The Effort Accountant",
-      "metric": "You score points when people get money in line with how hard they worked. Luck and talent should not decide who is rich. In levels with no work choice, equal shares count as fair. (These points are multiplied by 1.22 to keep the game balanced.)",
+      "metric": "You score points when people get money in line with how hard they worked. Luck and talent should not decide who is rich. In levels with no work choice, equal shares count as fair. (These points are multiplied by 1.27 to keep the game balanced.)",
       "blurb": "You think people deserve what they work for, and not what they were born with.",
       "short": "Meritocrat: money that matches how hard people worked",
       "noWork": "In this level nobody chooses how hard to work, so your goal is equal shares."
@@ -378,7 +379,7 @@
         },
         "D": {
           "name": "Cheaper Childcare",
-          "desc": "The extra cost of long hours for people with childcare duty drops from 80 to 20."
+          "desc": "The extra cost of long hours for people with childcare duty drops from 80 to 20. The other 60 coins are paid from outside the game, not by any player."
         }
       },
       "report": "What HireBot believes",
@@ -398,7 +399,8 @@
         "poolUpdate": "HireBot now thinks {pp}% of everyone is skilled.",
         "policyTitle": "Vote results",
         "updateMath": "{g}: 80% x {old}% + 20% x {rate}% trained = {new}%",
-        "updateMathPool": "Everyone: 80% x {old}% + 20% x {rate}% trained = {new}%"
+        "updateMathPool": "Everyone: 80% x {old}% + 20% x {rate}% trained = {new}%",
+        "subsidyRound": "Paid from outside: {n} coins of childcare help this round. No player paid for it, so it adds to the total money in this level."
       },
       "info": "What HireBot believes",
       "banner": {
@@ -409,7 +411,8 @@
         "pay": "{n} pay",
         "childcare": "{n} childcare",
         "training": "{n} training",
-        "equals": "= {w}"
+        "equals": "= {w}",
+        "subsidy": "(plus {n} childcare help paid from outside)"
       },
       "reportNeed": "A Square who passes needs HireBot's belief to be at least 36%. Now: {now}%."
     },
@@ -524,7 +527,7 @@
     "l2": {
       "predicted": "A selfish player works less when taxes are high, because they keep less of what they earn. Players who expect to earn less than average want higher taxes, so the middle voter decides (Meltzer and Richard 1981). People who believe income is mostly luck usually vote for more sharing (Alesina and Angeletos 2005).",
       "predictedT": "Selfish players in this game would have chosen a {t}% tax. The real taxes were {actual}.",
-      "variance": "Where income differences came from: {te}% from talent and work, {lu}% from luck, and {ia}% from both together.",
+      "variance": "Where income differences came from: {te}% from talent and work, {lu}% from luck.",
       "poll": "On average, you guessed that luck was {belief}% of the top earner's income. The real number was {truth}%.",
       "pollNone": "You did not answer the luck question.",
       "effort": "Your work each round, compared with what a selfish player would choose: {pairs}.",
@@ -557,53 +560,63 @@
       "yourType": "You were {type} risk. The best option for your risk level here: {best}. You voted for {vote}.",
       "matchType": "Your vote matched your own interest.",
       "mismatchType": "Your vote did not match your own interest. Maybe you were thinking of others, or of your secret card.",
-      "expectedTitle": "Expected money per round by risk level",
+      "expectedTitle": "Expected money per round by risk level, averaged over the 4 rounds",
       "realWorld": "Most bad luck here is not chosen: illness, disability, accidents. That is one reason most rich countries make some insurance compulsory. Low-risk people pay more than their own risk, but in return everyone can get protection.",
       "chartTitle": "Insurance price each round",
       "pool": "Buyers: {n}",
       "lesson": "If only risky people buy insurance, the price climbs until the market collapses. Making it compulsory stops that.",
-      "realCase": "A real case: in the 1990s Harvard changed how it paid for staff health plans. Healthier staff moved to cheaper plans, the most generous plan's price spiralled, and it was dropped within a few years (Cutler and Reber 1998)."
+      "realCase": "A real case: in the 1990s Harvard changed how it paid for staff health plans. Healthier staff moved to cheaper plans, the most generous plan's price spiralled, and it was dropped within a few years (Cutler and Reber 1998).",
+      "volPathNote": "Voluntary is valued at the prices the private market would reach with this table's risk levels if everyone chose by expected money: {path}. It is not valued at the opening price of 22, which does not last."
     },
     "l4": {
       "predicted": "At the start, HireBot believes Circles are usually skilled, so a Circle who passes the test gets a good job. At first, training pays off for Circles. A Square who passes still does not convince HireBot, so training pays nothing for Squares, and they stop training. HireBot then sees few skilled Squares and believes even less in them. The belief makes itself true (Coate and Loury 1993).",
       "gap": "Average money gap per round (Circles minus Squares): {gap} coins.",
       "punchline": "No player and no part of HireBot disliked any group. The gap came from old beliefs, incentives, and working hours.",
       "decompTitle": "What caused the gap?",
-      "decompExplain": "We replayed this level, changing one thing at a time: HireBot starting with the same belief about both groups (0.45), both groups having the same chance of childcare duty (50%), and both changes together. The second column averages {k} replays with different luck.",
+      "decompExplain": "We replayed this level with HireBot's rule kept at No Change in every replay, so the vote cannot change the answer, and changed one thing at a time: HireBot starting with the same belief about both groups (0.45), both groups having the same chance of childcare duty (50%), and both changes together. The last column averages {k} replays with different luck; ± is its standard error. The middle column is one example, the replay with your game's luck, so it is noisy.",
       "colChannel": "Cause",
-      "colSame": "Your game",
-      "colAvg": "Average of {k} replays",
+      "colSame": "One example (your game's luck)",
+      "colAvg": "Average of {k} replays (± SE)",
       "stereotype": "HireBot's starting beliefs",
       "care": "Childcare and long hours",
       "interaction": "Both together",
       "total": "Total gap explained",
-      "baselineGap": "Gap in the replay",
+      "baselineGap": "Gap with No Change all level",
       "realWorld": "Circles and Squares are made up. In real life, this is one way economists explain part of the pay gap between men and women: women do more of the caregiving, and some jobs pay much more for long, inflexible hours (Goldin 2014). Employers judging people by group averages adds to it (Phelps 1972; Arrow 1973).",
       "chartTitle": "How HireBot's beliefs changed",
       "chartGapTitle": "How much of the gap each cause explains",
       "you": "You were a {g}{care}. You trained in {k} of 5 rounds.",
       "lesson": "A gap can appear with nobody being prejudiced: old beliefs and childcare duties are enough.",
-      "lessonNote": "Training is risky when failing leaves you in hardship, so fewer people train, and HireBot's belief falls for both groups. It falls faster for Squares, so the gap stays."
+      "lessonNote": "Training is risky when failing leaves you in hardship, so fewer people train, and HireBot's belief falls for both groups. It falls faster for Squares, so the gap stays.",
+      "thisGame": "The gap in your game was {gap} coins per round{policyNote}.",
+      "thisGamePolicy": ", with the rule your table voted for in rounds 4 and 5",
+      "decompNote": "With 4 players, one history is mostly luck: a single replay's numbers often differ from the average by 20 coins or more.",
+      "subsidyTotal": "Cheaper Childcare cost {n} coins over the level, paid from outside the game. In real life someone pays for such a rule, so comparing it with the free rules is not like for like."
     },
     "l5": {
-      "predicted": "Before incomes are known, everyone is in the same position. Once incomes are known, the score pays richer players to want lower taxes, so their votes move. That is plain self-interest. The real question is whether their sense of what is fair moves too. Babcock and Loewenstein (1997) found that it does: people honestly come to believe that what helps them is also what is fair. So this level asked everyone twice, without pay, what tax they think is fair.",
-      "slope": "Across all players, each step up in income changed the tax they called fair by {slope} points. {sign}",
-      "slopeNeg": "The richer a player turned out, the lower the tax they called fair. That is the self-serving bias.",
-      "slopePos": "The richer players called higher taxes fair. The Ministry is surprised.",
-      "slopeZero": "Income did not change what anyone called fair. The Ministry is moved.",
+      "predicted": "Before incomes are known, everyone is in the same position. Once incomes are known, the score pays richer players to want lower taxes, so their votes move. That is plain self-interest. A different question is whether their sense of what is fair moves too. In bargaining experiments, Babcock and Loewenstein (1997) found that it often does: people honestly come to believe that what helps them is also what is fair. So this level asked everyone twice, without pay, what tax they think is fair.",
       "amendments": "Changes suggested: {n}. Passed: {p}.",
       "donations": "Coins given: {list}.",
       "noDonations": "Nobody gave any coins.",
       "bought": "{donor} gave {amount} coins to {to}, who then voted {vote} on the donor's change.",
-      "chartTitle": "Change in the tax people called fair, by income",
       "chartX": "Income rank (1 = poorest)",
       "chartY": "Change in fair tax (points)",
-      "lesson": "Once people know if they are rich or poor, their sense of a fair tax tends to move in their own favor, not just their vote.",
+      "lesson": "Research finds that once people know where they stand, their sense of a fair tax can drift toward their own interest. One game cannot show whether that happened to you.",
       "boughtYou": "You gave {amount} coins to {to}, who then voted {vote} on your change.",
       "boughtToYou": "{donor} gave you {amount} coins, and you then voted {vote} on their change.",
       "paidLine": "How your paid vote moved: behind the veil you picked {veil}. After learning your income you proposed {prop}. Change: {dt} points.",
       "paidLinePass": "How your paid vote moved: behind the veil you picked {veil}. After learning your income you did not propose a change.",
-      "fairLine": "How your sense of fairness moved: before you knew your income you said {f1} was fair. After learning you earn {inc} (number {rank} of {n}, from poorest to richest), you said {f2}. Change: {dt} points."
+      "fairLine": "Before you knew your income you said {f1} was fair. After learning you earn {inc} (number {rank} of {n}, from poorest to richest), you said {f2}.",
+      "ownShift": "Your idea of a fair tax moved by {dt} points after you learned your income.",
+      "ownShiftZero": "Your idea of a fair tax did not move after you learned your income.",
+      "ownShiftNote": "One person's change can have several causes: what you learned about your income, how the others voted, and the rules that were adopted. One game cannot tell which.",
+      "humanSlope": "Across the {k} people at this table, each step up in income went with a change of {slope} points in the tax they called fair. This describes this table only; it is far too small to show a bias.",
+      "botsProgrammed": "The computer players' fair-tax answers are programmed, not measured, so they are left out here. An Egoist computer player's \"fair\" tax is simply the one that pays it most; the other cards' answers drift toward their own money by a fixed amount.",
+      "chartTitleHumans": "Change in the tax people called fair, by income (people only)",
+      "chartTitleYou": "The tax you called fair, before and after learning your income",
+      "chartYouSummary": "Before: {f1}%. After: {f2}%.",
+      "chartBefore": "Before",
+      "chartAfter": "After"
     },
     "lesson": "The lesson",
     "vsTheory": "You vs. the theory",
@@ -622,15 +635,6 @@
       "trainNo": "not to train in round 1",
       "taxR1": "{t} in round 1"
     }
-  },
-  "verdicts": {
-    "consistent": "You did not change your mind. The Ministry finds this suspicious.",
-    "paydayStrong": "Fair-minded until you got rich.",
-    "paydayMild": "Fair-minded until you got a little rich.",
-    "convenientStrong": "Started loving taxes the moment you turned out poor.",
-    "convenientMild": "Liked taxes a bit more once you turned out poor.",
-    "selfTaxingRich": "Rich, and you voted to tax yourself more. Very generous. Slightly worrying.",
-    "poorTaxCutter": "Poor, and you voted to cut your own taxes. Optimistic."
   },
   "guess": {
     "title": "Who had which card?",
@@ -663,32 +667,18 @@
       "LIBERAL_EGALITARIAN": "rewarding work only",
       "none": "things working out somehow"
     },
-    "tails": {
-      "consistent": "and you kept believing it after you found out your income",
-      "paydayStrong": "until you got rich",
-      "paydayMild": "until you got a little rich",
-      "convenientStrong": "especially after you turned out poor",
-      "convenientMild": "a bit more after you turned out poor",
-      "selfTaxingRich": "even after you turned out rich, which is kind and a little alarming",
-      "poorTaxCutter": "and you cut your own taxes while poor, which the Ministry still does not understand",
-      "none": "probably"
-    },
     "labels": {
-      "consistent": "Principled (So Far)",
-      "paydayStrong": "Kind, With Conditions",
-      "paydayMild": "Kind, With Conditions",
-      "convenientStrong": "Team Player When It Pays",
-      "convenientMild": "Team Player When It Pays",
-      "selfTaxingRich": "Generous, Possibly Confused",
-      "poorTaxCutter": "Future Millionaire",
+      "EGALITARIAN": "Equal Shares Enthusiast",
+      "LIBERTARIAN": "Finders Keepers",
+      "MERITOCRATIC": "Talent-and-Work Fan",
+      "LIBERAL_EGALITARIAN": "Effort Over Everything",
       "none": "Hard to Say"
     },
     "pointsNote": "Each level counts the same: level points = 100 + 50 x (your level score - the table's average) / how widely scores usually spread in that level. A right guess adds 25.",
     "ideologyNote": "Built only from answers that did not affect your score.",
     "fairLine": "Asked what tax is fair, you said {f1} before you knew your income and {f2} after.",
     "bonusLine": "Splitting the bonus pot, you acted like someone who believes in {ideal}.",
-    "luckLine": "You guessed luck made up {belief}% of the top earner's income. It was really {truth}%.",
-    "ideologyLine2": "You believe in {ideal}, {tail}."
+    "luckLine": "You guessed luck made up {belief}% of the top earner's income. It was really {truth}%."
   },
   "archives": {
     "title": "Glossary",
@@ -719,7 +709,7 @@
     "purpose": "The Veil turns five ideas from economics and philosophy into short levels: choosing rules before you know your place, luck versus hard work, why insurance markets can collapse, how pay gaps can appear without prejudice, and how people's sense of fairness shifts once they know they are rich or poor. The game does not explain the theory while you play. It explains it after each level, using what you just did.",
     "author": "Designed by Amirreza Akhavan.",
     "methodsTitle": "Notes for economists",
-    "methods": "Scoring. Each round, a player's score is S = 0.5 x (W - H) + 0.5 x k x M. W is the player's own money, H is the hardship penalty, M is the metric on the player's secret Values card, and k is that card's balancing scale. The four metrics are: Egoist, own money minus hardship; Rawlsian, the poorest player's money; Utilitarian, the average player's money; Meritocrat, average money reduced by how far each player's share of money departs from their share of effort. k is 1.67 for the Rawlsian, 1.22 for the Meritocrat and 1 for the others, set in simulation so that each card's average metric matches average wealth. The hardship line is 40 coins: each coin below it costs 2 more points, weighted like own money. It makes self-interested players risk averse, because a coin lost below the line counts about twice as much as a coin gained, close to the loss aversion of about 2 found in experiments (Tversky and Kahneman 1992).\n\nBots. Bots choose by logit quantal response (McKelvey and Palfrey 1995) over certainty equivalents in coins. The chance of choosing an option is proportional to exp(lambda x CE / 10) (a fixed 10-coin scale). With lambda = 2, a bot makes a 10-coin mistake about 12% of the time and a 30-coin mistake almost never. Each bot has CRRA risk aversion, scaled down by a factor of 4 because the hardship line already supplies curvature. Expected values are computed by exact enumeration where the outcomes are few (Levels 1, 3 and 5) and by Monte Carlo from a separate random stream otherwise, so bot reasoning never changes game outcomes. Bots reason one level deep about others and hold Bayesian beliefs over other players' Values cards, updated after every public vote and by messages weighted by the speaker's record.\n\nMeasurement. Paid choices measure strategy. Unpaid questions about what is fair measure values. In Level 5, the self-serving shift is measured on the unpaid answers given before and after incomes are revealed, following Babcock and Loewenstein's (1997) distinction between pursuing your interest and sincerely believing that what helps you is fair.\n\nLevel points. Each level is standardized: points = 100 + 50 x (score - table average) / level spread. Each level's spread is the typical within-table standard deviation of scores, measured by simulation.\n\nReproducibility. Every game replays exactly from its seed and action log. npm run sim checks the balance targets on thousands of bot-only games. DECISIONS.md records every design decision and parameter change.\n\nKnown limits. Bots are not humans, and balance is measured only on bot-only tables. The game demonstrates mechanisms. It does not estimate real-world magnitudes.",
+    "methods": "Scoring. Each round, a player's score is S = 0.5 x (W - H) + 0.5 x k x M. W is the player's own money, H is the hardship penalty, M is the metric on the player's secret Values card, and k is that card's balancing scale. The four metrics are: Egoist, own money minus hardship; Rawlsian, the poorest player's money; Utilitarian, the average player's money; Meritocrat, average money reduced by how far each player's share of money departs from their share of effort. k is 1.66 for the Rawlsian, 1.27 for the Meritocrat and 1 for the others, set in bot-only simulation so that each card's average metric matches average wealth. The hardship line is 40 coins: each coin below it costs 2 more points, weighted like own money. It makes self-interested players risk averse, because a coin lost below the line counts about twice as much as a coin gained, close to the loss aversion of about 2 found in experiments (Tversky and Kahneman 1992).\n\nBots. Bots choose by logit quantal response (McKelvey and Palfrey 1995) over certainty equivalents measured in score points (a coin of own money is one point for an Egoist and half a point for the other cards). The chance of choosing an option is proportional to exp(lambda x CE / 10), a fixed 10-point scale. With lambda = 2, a bot makes a 10-point mistake about 12% of the time and a 30-point mistake almost never. Each bot has constant absolute risk aversion over its round score, u(S) = (1 - exp(-a S)) / a with a = rho / 100, which is defined, increasing and concave at every score; rho is scaled down by a factor of 4 because the hardship line already supplies curvature. Expected values are computed by exact enumeration where the outcomes are few (Levels 1, 3 and 5) and by Monte Carlo from a separate random stream otherwise, so bot reasoning never changes game outcomes. Bots reason one level deep about others. They hold beliefs over other players' Values cards, updated by Bayes' rule after every public vote; messages move those beliefs by a fixed weight times the speaker's record of keeping their word, which is a rule of thumb, not a Bayesian update.\n\nMeasurement. Paid choices measure strategy. Unpaid questions about what is fair are asked separately and never change a score. In Level 5 each player sees how their own unpaid fair-tax answer moved after they learned their income, with no diagnosis: one person's change can come from new information, from the other players' votes, or from the rules adopted, as well as from the self-serving bias Babcock and Loewenstein (1997) describe. A slope across players uses human answers only and is shown only when at least 3 humans played. Computer players' fair-tax answers are programmed, so they are never counted as evidence.\n\nLevel points. Each level is standardized: points = 100 + 50 x (score - table average) / level spread. Each level's spread is the typical within-table standard deviation of scores, measured on bot-only tables.\n\nReproducibility. A game replays exactly from its seed and action log under the same rules. Every game records a hash of the engine code and of the parameters; saved games, downloaded records and multiplayer rooms refuse to continue under different rules. DECISIONS.md records every design decision and parameter change.\n\nBalance. npm run sim plays thousands of bot-only games and reports each statistic as mean ± bootstrap standard error over games. The balance targets (for example, no Values card winning more than 35% of the time) are design targets chosen for the game. They are checked on the same bot tables the parameters were tuned on, so they show the game is balanced for these bots, not anything about people.\n\nKnown limits. Bots are not humans. The game demonstrates mechanisms inside its own model; it does not estimate real-world magnitudes. Its summaries describe one game, not evidence about the player.",
     "source": "Source code",
     "noTracking": "No tracking and no accounts. Your settings and saved games stay in this browser.",
     "rooms": "Multiplayer rooms keep game data on Cloudflare for 24 hours after the last move, with no accounts and no tracking."
@@ -781,15 +771,16 @@
       "flex": "Flexible",
       "careHolder": " with childcare duty",
       "summary": "HireBot's belief about Squares: {path}",
-      "gapSummary": "Beliefs {s}, childcare {c}, both {i}"
+      "gapSummary": "Beliefs {s} ± {ss}, childcare {c} ± {cs}, both {i} ± {is}"
     },
     "l5": {
-      "cmpLabel": "Rich want less tax?",
-      "cmpBench": "yes (below 0)",
+      "cmpLabel": "Did your fair tax move after learning your income?",
+      "cmpBench": "It can drift toward what helps you (research finding, not something this game measures)",
       "cmpLab": "Babcock and Loewenstein",
       "pts": "{x} pts",
-      "ptsRank": "{x} pts per step",
-      "summary": "{name}: rank {rank}, change {dt}"
+      "summary": "{name}: rank {rank}, change {dt}",
+      "botsProgrammed": "programmed, left out",
+      "noBots": "none at this table"
     }
   },
   "flow": {
@@ -869,7 +860,8 @@
       "BAD_TOKEN": "Your seat in this room could not be found.",
       "ROOM_CLOSED": "This room has closed. Rooms close 24 hours after the last move.",
       "badCode": "A room code is four letters.",
-      "badName": "Enter a name of 1 to 20 characters."
+      "badName": "Enter a name of 1 to 20 characters.",
+      "VERSION_MISMATCH": "The room server runs a different version of the game rules than this page, so you cannot play together. Reload the page, or try again after both are updated."
     },
     "thinking": "Thinking..."
   }

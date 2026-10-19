@@ -126,8 +126,20 @@ export interface RngState {
 
 export type Beliefs = Record<PlayerId, Record<PlayerId, Record<ValuesCard, number>>>;
 
+/** Which rules a game was played under (D-75); see src/engine/version.ts. */
+export interface RulesVersion {
+  /** SHA-256 prefix of every engine source file. */
+  rules: string;
+  /** Hash of every parameter value at the moment the game started. */
+  params: string;
+  /** Git commit of the build, or 'unknown'. Informational: a different commit with the same hashes replays the same. */
+  commit: string;
+}
+
 export interface GameState {
   version: 1;
+  /** Rules and parameters the game was started under (D-75). Missing in games saved before it. */
+  rules?: RulesVersion;
   seed: string;
   rng: RngState;
   mode: Mode;
@@ -158,7 +170,15 @@ export interface GameState {
     bots: Record<PlayerId, Record<PlayerId, ValuesCard>>;
   };
   /** Counterfactual overrides (Level 4 decomposition only). */
-  cf?: { priorCircle?: number; priorSquare?: number; careCircle?: number; careSquare?: number; fast?: boolean };
+  cf?: {
+    priorCircle?: number;
+    priorSquare?: number;
+    careCircle?: number;
+    careSquare?: number;
+    fast?: boolean;
+    /** The rule HireBot uses after the referendum, whatever the vote (D-79: the decomposition holds the rule at No Change). */
+    fixedPolicy?: 'A' | 'B' | 'C' | 'D';
+  };
   botSamples: number;
   /** Debrief data of each finished level (used by the run debrief). */
   levelResults: Partial<Record<LevelId, unknown>>;

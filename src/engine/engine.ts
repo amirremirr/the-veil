@@ -15,6 +15,7 @@ import { argmaxCard, updateFromDecisions, updateFromMessage } from './bots/belie
 import { botMessages } from './bots/messaging';
 import { LEVELS } from './levels';
 import { level4Counterfactual } from './counterfactual';
+import { assertSameRules, currentRules } from './version';
 import { VALUES_CARDS } from './types';
 import type {
   Action,
@@ -44,6 +45,7 @@ export function createInitialState(config: SetupConfig): GameState {
   const seed = config.seed || 'meritopia';
   const s: GameState = {
     version: 1,
+    rules: currentRules(),
     seed,
     rng: initRng(seed),
     mode: config.mode,
@@ -378,8 +380,12 @@ export function reduce(state: GameState, action: Action): GameState {
   return s;
 }
 
-/** Replay a log from scratch. */
-export function replay(log: GameState['log']): GameState {
+/**
+ * Replay a log from scratch. Exact only under the rules the log was made with (D-75): pass the recorded
+ * rules to refuse a log from other rules (throws RulesMismatchError) instead of silently replaying it.
+ */
+export function replay(log: GameState['log'], recorded?: { rules?: GameState['rules'] }): GameState {
+  if (recorded) assertSameRules(recorded);
   let s: GameState | null = null;
   for (const { action } of log) {
     if (action.type === 'START_RUN') s = reduce(null as unknown as GameState, action);
@@ -402,7 +408,7 @@ export function totalScore(s: GameState, pid: PlayerId): number {
 
 /**
  * Debrief data that differs per human (the card's best choice, Level 2 luck answers, the Level 5
- * verdict) is stored under `byHuman`. A viewer gets only their own entry, merged into the result,
+ * card's-best line) is stored under `byHuman`. A viewer gets only their own entry, merged into the result,
  * so the UI reads the same fields as in solo play and never sees another human's entry.
  */
 export function personalize<T>(result: T, viewer: PlayerId): T {

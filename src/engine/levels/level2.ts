@@ -48,7 +48,8 @@ export interface L2Bonus {
 export interface L2Debrief {
   talents: Record<PlayerId, number>;
   rounds: L2Round[];
-  variance: { talentEffort: number; luck: number; interaction: number };
+  /** Shares of income differences from talent and work vs. luck; each in [0, 1], summing to 1 (D-72). */
+  variance: { talentEffort: number; luck: number };
   eStar: Array<Record<PlayerId, number>>;
   polls: Array<{ round: number; target: PlayerId; answer: number; truth: number }>;
   distortion: { realizedW: number; counterfactualW: number; realizedGross: number; counterfactualGross: number };
@@ -206,6 +207,20 @@ function drawBonusPair(s: GameState, hid: PlayerId): L2Bonus {
 function variance(xs: number[]): number {
   const m = mean(xs);
   return mean(xs.map((x) => (x - m) ** 2));
+}
+
+/**
+ * Where income differences came from (D-72). Gross income is base + talent-and-work + luck, and luck is
+ * drawn independently after effort is chosen, so the two parts have zero covariance by construction; the
+ * sample covariance is only noise and is left out. Each share is that part's variance over the sum of the
+ * two, so both lie in [0, 1] and add to 1. With no variation at all the split is even.
+ */
+export function varianceShares(talentWork: readonly number[], luck: readonly number[]): { talentEffort: number; luck: number } {
+  const vx = variance(talentWork.slice());
+  const ve = variance(luck.slice());
+  const total = vx + ve;
+  if (total <= 0) return { talentEffort: 0.5, luck: 0.5 };
+  return { talentEffort: vx / total, luck: ve / total };
 }
 
 /** A round as one human sees it: their own poll target and answer, nobody else's. */
@@ -377,16 +392,11 @@ export const level2: LevelDefinition = {
     const n = pids.length;
     const X: number[] = [];
     const E: number[] = [];
-    const Y: number[] = [];
     for (const r of l.rounds)
       for (const id of pids) {
         X.push(L2.TALENT_MULT * l.talents[id] * r.effort[id]);
         E.push(r.eps[id]);
-        Y.push(r.y[id]);
       }
-    const vy = variance(Y);
-    const te = vy > 0 ? variance(X) / vy : 0;
-    const lu = vy > 0 ? variance(E) / vy : 0;
     const eStar = l.rounds.map((r) => Object.fromEntries(pids.map((id) => [id, bestEffort(r.t, l.talents[id], n)])));
     let realizedW = 0;
     let cfW = 0;
@@ -422,7 +432,7 @@ export const level2: LevelDefinition = {
     const d: L2Debrief = {
       talents: { ...l.talents },
       rounds: l.rounds,
-      variance: { talentEffort: te, luck: lu, interaction: 1 - te - lu },
+      variance: varianceShares(X, E),
       eStar,
       polls: [],
       distortion: { realizedW, counterfactualW: cfW, realizedGross, counterfactualGross: cfGross },

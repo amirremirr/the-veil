@@ -32,15 +32,33 @@ export interface L4Round {
   schedule: Record<PlayerId, Schedule | null>;
   wage: Record<PlayerId, number>;
   chaos: Record<PlayerId, number>;
+  /**
+   * Under Cheaper Childcare, the part of the long-hours childcare cost paid from outside the game
+   * (CHAOS_COST - CHAOS_COST_SUBSIDIZED per worker with childcare duty on long hours). It is not taken
+   * from any player; the screens show it so the rule's cost is visible (D-81). Display only.
+   */
+  subsidy: Record<PlayerId, number>;
   W: Record<PlayerId, number>;
   skillRevealed: boolean;
 }
 
 export interface CfScenario {
   key: 'BASELINE' | 'EQUAL_PRIORS' | 'EQUAL_CARE' | 'BOTH';
+  /** One example: the replay with this game's random draws. */
   gap: number;
+  /** The same replay's gap round by round. */
+  roundGaps: number[];
+  /** Average over the replays with fresh luck, and its standard error. */
   avgGap: number;
+  avgGapSe: number;
   piSquare: number[];
+}
+
+export interface Decomposition {
+  stereotype: number;
+  care: number;
+  interaction: number;
+  total: number;
 }
 
 export interface L4Debrief {
@@ -53,14 +71,19 @@ export interface L4Debrief {
   policy: Policy;
   policyVotes?: Record<PlayerId, Policy>;
   investRate: { CIRCLE: number; SQUARE: number };
+  /** Coins paid from outside the game for Cheaper Childcare over the whole level (D-81). */
+  subsidyTotal: number;
   /** Round 1 training: the human's card's best choice (risk neutral apart from hardship) vs. theirs. */
   cardBest?: { best: boolean; chose: boolean };
   /** Per human (D-43, D-62). visibleState merges the viewer's entry into the fields above. */
   byHuman?: Record<PlayerId, { cardBest: { best: boolean; chose: boolean } }>;
   counterfactual?: {
     scenarios: CfScenario[];
-    sameSeed: { stereotype: number; care: number; interaction: number; total: number };
-    average: { stereotype: number; care: number; interaction: number; total: number; replays: number };
+    /** Every replay holds HireBot's rule at No Change (D-79). */
+    policy: 'A';
+    sameSeed: Decomposition;
+    /** Mean over the replays; `se` is the standard error of each mean (paired differences, D-79). */
+    average: Decomposition & { replays: number; se: Decomposition };
   };
 }
 
@@ -93,6 +116,11 @@ export function updatePrior(pi: number, rate: number): number {
 
 export function chaosCost(policy: Policy): number {
   return policy === 'D' ? L4.CHAOS_COST_SUBSIDIZED : L4.CHAOS_COST;
+}
+
+/** The outside payment for one worker under Cheaper Childcare (D-81): the cost they would otherwise bear. */
+export function subsidyFor(job: Job, sched: Schedule | null, care: boolean, policy: Policy): number {
+  return policy === 'D' && job === 'COMPLEX' && sched === 'GREEDY' && care ? L4.CHAOS_COST - L4.CHAOS_COST_SUBSIDIZED : 0;
 }
 
 function priorFor(priors: Priors, group: Group, policy: Policy): number {
@@ -139,13 +167,16 @@ export function assignJobs(
   const q = pass.map((p, i) => posterior(priorFor(world.priors, world.groups[i], world.policy), p));
   const job: Job[] = q.map((x) => (x >= L4.THRESHOLD - EPS ? 'COMPLEX' : 'SIMPLE'));
   const quota: number[] = [];
+  // One tie-break draw per group every round, used or not (D-79), so runs under different rules or
+  // beliefs stay on the same random stream.
+  const u = { CIRCLE: tieBreak(), SQUARE: tieBreak() };
   if (world.policy === 'C') {
     for (const g of ['CIRCLE', 'SQUARE'] as Group[]) {
       const members = world.groups.map((x, i) => (x === g ? i : -1)).filter((i) => i >= 0);
       if (!members.length || members.some((i) => job[i] === 'COMPLEX')) continue;
       const maxQ = Math.max(...members.map((i) => q[i]));
       const top = members.filter((i) => Math.abs(q[i] - maxQ) < 1e-12);
-      const pick = top.length === 1 ? top[0] : top[Math.floor(tieBreak() * top.length)];
+      const pick = top[Math.floor(u[g] * top.length)];
       job[pick] = 'COMPLEX';
       quota.push(pick);
     }
@@ -374,7 +405,7 @@ export const level4: LevelDefinition = {
       l.policyVotes = decisions as Record<PlayerId, Policy>;
       l.policyCounts = counts;
       l.policyTie = tie;
-      l.policy = POLICIES[winner];
+      l.policy = s.cf?.fixedPolicy ?? POLICIES[winner];
       if (l.policy === 'B') l.priors.POOL = pooledPrior(s, l.priors);
       return;
     }
@@ -408,6 +439,7 @@ export const level4: LevelDefinition = {
       schedule: rec(schedule),
       wage: rec(pay.map((p) => p.wage)),
       chaos: rec(pay.map((p) => p.chaos)),
+      subsidy: rec(pids.map((id, i) => subsidyFor(c.job![id], schedule[i], l.care[id], l.policy))),
       W: rec(W),
       priorsAfter: { ...l.priors },
       skillRevealed: true,
@@ -479,6 +511,7 @@ export const level4: LevelDefinition = {
       policyVotes: l.policyVotes,
       byHuman,
       investRate: { CIRCLE: rate('CIRCLE'), SQUARE: rate('SQUARE') },
+      subsidyTotal: l.rounds.reduce((a, r) => a + Object.values(r.subsidy).reduce((x, y) => x + y, 0), 0),
     };
     l.debrief = d;
     return d;

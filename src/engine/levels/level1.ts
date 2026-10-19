@@ -14,7 +14,7 @@ import {
 } from '../core';
 import { afterTaxEqualRebate, PRINCIPLES, solvePrinciple, taxGrid, type PrincipleId } from '../tax';
 import { equalShares, mean, roundScore } from '../scoring';
-import { certaintyEquivalent, crra, logitChoice, logitProbs, argmax } from '../bots/utility';
+import { certaintyEquivalent, utility, logitChoice, logitProbs, argmax } from '../bots/utility';
 import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import type { LevelDefinition } from './types';
 
@@ -70,7 +70,7 @@ export function principleOutcome(p: PrincipleId, incomes: readonly number[]): L1
 
 const evCache = new Map<string, number>();
 
-/** Expected CRRA utility of round score for seat 0 under principle p, by full enumeration of draws. */
+/** Expected utility of round score for seat 0 under principle p, by full enumeration of draws. */
 export function principleEU(n: number, card: ValuesCard, rho: number, p: PrincipleId): number {
   const key = `${n}|${card}|${rho}|${p}`;
   const hit = evCache.get(key);
@@ -80,7 +80,7 @@ export function principleEU(n: number, card: ValuesCard, rho: number, p: Princip
   let eu = 0;
   for (const inc of draws) {
     const { W } = principleOutcome(p, inc);
-    eu += crra(roundScore(card, W, 0, eq), rho);
+    eu += utility(roundScore(card, W, 0, eq), rho);
   }
   eu /= draws.length;
   evCache.set(key, eu);

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { reduce, HUMAN_ID } from '../engine/engine';
+import { canResume } from '../engine/version';
 import type { Action, Difficulty, GameState, LevelId, SetupConfig, ValuesCard } from '../engine/types';
 import { act as flowAct, settle } from '../shared/flow';
 import { leaveRoom, roomAct, sendRoomMessage } from './room';
@@ -39,6 +40,9 @@ const defaultSettings: Settings = {
   unlockAll: false,
 };
 
+/** Set when a saved game was dropped because the rules changed since it was saved (D-75). */
+let staleSaveDropped = false;
+
 function load(): Saved | null {
   try {
     const raw = localStorage.getItem(KEY);
@@ -46,8 +50,11 @@ function load(): Saved | null {
     const v = JSON.parse(raw) as Saved;
     if (v?.version !== 1) return null;
     if (v.game && v.game.version !== 1) v.game = null;
-    // Games saved before rules v2 have no level points (D-45); they cannot be resumed.
-    if (v.game && Object.values(v.game.scores).some((sc) => !Array.isArray(sc.points))) v.game = null;
+    // A game saved under other rules or parameters (or before D-75) would not continue as it began.
+    if (v.game && !canResume(v.game)) {
+      v.game = null;
+      staleSaveDropped = true;
+    }
     return v;
   } catch {
     return null;
@@ -79,6 +86,8 @@ interface Store {
   tipsSeen: string[];
   /** Playing in a multiplayer room: the screens show the room's view and actions go to the server. */
   online: boolean;
+  /** A saved game was dropped because the game's rules changed since it was saved (D-75). */
+  staleSave: boolean;
   /** Where "Play with friends" opens: create a room, or join one (with a code from a share link). */
   friendsFor: { tab: 'create' | 'join'; code?: string } | null;
   goOnline(): void;
@@ -139,6 +148,7 @@ export const useStore = create<Store>((set, get) => {
     talkFrom: null,
     tipsSeen: saved?.tipsSeen ?? [],
     game: saved?.game ?? null,
+    staleSave: staleSaveDropped,
     settings: { ...defaultSettings, ...(saved?.settings ?? {}) },
     progress: saved?.progress ?? { unlocked: 1, best: {} },
     setupFor: null,

@@ -187,6 +187,9 @@ function Reveal({ v }: { v: ViewState }) {
           );
         })}
       </ul>
+      {pay && c.subsidy && Object.values(c.subsidy).some((x) => x > 0) && (
+        <p className="mt-3 text-sm">{t('levels.4.reveal.subsidyRound', { n: Object.values(c.subsidy).reduce((a, b) => a + b, 0) })}</p>
+      )}
       {pay && c.priorsAfter && (
         <p className="mt-3 text-sm">
           {lv.policy === 'B' && c.priorsAfter.POOL !== null
@@ -241,7 +244,8 @@ function PayCalc({ c, id, viewer }: { c: Partial<L4Round>; id: string; viewer: s
   const parts = [t('levels.4.calc.pay', { n: wage })];
   if (chaos) parts.push(t('levels.4.calc.childcare', { n: chaos }));
   if (trained) parts.push(t('levels.4.calc.training', { n: c.costs?.[id] ?? wage - chaos - w }));
-  const text = `${parts.join(' - ')} ${t('levels.4.calc.equals', { w })}`;
+  const sub = c.subsidy?.[id] ?? 0;
+  const text = `${parts.join(' - ')} ${t('levels.4.calc.equals', { w })}${sub ? ` ${t('levels.4.calc.subsidy', { n: sub })}` : ''}`;
   return <p className={`num mt-1 text-xs ${id === viewer ? 'text-ink' : 'text-soft'}`}>{text}</p>;
 }
 
@@ -296,6 +300,7 @@ function Debrief({ v }: { v: ViewState }) {
         <>
           <p>{t('debrief.l4.you', { g: t(`levels.4.groups.${myGroup}`), care: d.care[v.viewer] ? t('ui.l4.careHolder') : '', k: invested })}</p>
           <p>{t('debrief.l4.gap', { gap: signed(d.gap) })}</p>
+          {d.policy === 'D' && <p>{t('debrief.l4.subsidyTotal', { n: Math.round(d.subsidyTotal ?? 0) })}</p>}
           <table className="data-table">
             <thead>
               <tr>
@@ -336,6 +341,9 @@ function Debrief({ v }: { v: ViewState }) {
       extra={
         cf && (
           <FormCard form={t('debrief.l4.decompTitle')}>
+            <p className="mb-2 text-sm">
+              {t('debrief.l4.thisGame', { gap: signed(d.gap), policyNote: d.policy !== 'A' ? t('debrief.l4.thisGamePolicy') : '' })}
+            </p>
             <p className="mb-3 text-sm">{t('debrief.l4.decompExplain', { k: cf.average.replays })}</p>
             <div className="overflow-x-auto">
               <table className="data-table">
@@ -350,22 +358,30 @@ function Debrief({ v }: { v: ViewState }) {
                   <tr>
                     <td>{t('debrief.l4.baselineGap')}</td>
                     <td className="num text-end">{signed(scen('BASELINE')?.gap ?? 0)}</td>
-                    <td className="num text-end">{signed(scen('BASELINE')?.avgGap ?? 0)}</td>
+                    <td className="num text-end">{pmSe(scen('BASELINE')?.avgGap ?? 0, scen('BASELINE')?.avgGapSe ?? 0)}</td>
                   </tr>
                   {(['stereotype', 'care', 'interaction', 'total'] as const).map((k) => (
                     <tr key={k} className={k === 'total' ? 'font-semibold' : ''}>
                       <td>{t(`debrief.l4.${k}`)}</td>
                       <td className="num text-end">{signed(cf.sameSeed[k])}</td>
-                      <td className="num text-end">{signed(cf.average[k])}</td>
+                      <td className="num text-end">{pmSe(cf.average[k], cf.average.se[k])}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+            <p className="mt-2 text-sm text-soft">{t('debrief.l4.decompNote')}</p>
             <div className="mt-4">
               <ChartFrame
                 title={t('debrief.l4.chartGapTitle')}
-                summary={t('ui.l4.gapSummary', { s: cf.average.stereotype.toFixed(1), c: cf.average.care.toFixed(1), i: cf.average.interaction.toFixed(1) })}
+                summary={t('ui.l4.gapSummary', {
+                  s: cf.average.stereotype.toFixed(1),
+                  ss: cf.average.se.stereotype.toFixed(1),
+                  c: cf.average.care.toFixed(1),
+                  cs: cf.average.se.care.toFixed(1),
+                  i: cf.average.interaction.toFixed(1),
+                  is: cf.average.se.interaction.toFixed(1),
+                })}
               >
                 <StackedBars
                   rows={(['stereotype', 'care', 'interaction'] as const).map((k) => ({ label: t(`debrief.l4.${k}`), parts: [cf.average[k]] }))}
@@ -379,6 +395,11 @@ function Debrief({ v }: { v: ViewState }) {
       }
     />
   );
+}
+
+/** "12 ± 3": a mean and its standard error, in whole coins. */
+function pmSe(x: number, se: number): string {
+  return `${signed(x)} ± ${Math.round(se)}`;
 }
 
 function Banner({ v, step }: { v: ViewState; step: string }) {

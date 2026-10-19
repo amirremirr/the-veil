@@ -3,7 +3,7 @@ import { BOT, L5 } from '../params';
 import { botParams, botRng, finishRound, gameRng, headline, ids, idx, lowerMedian, orderedDraws, playerOf } from '../core';
 import { equalShares, mean, ownNet, roundScore, valuesMetric } from '../scoring';
 import { floorTopUp } from '../tax';
-import { certaintyEquivalent, crra, logitChoice, logitProbs, argmax } from '../bots/utility';
+import { certaintyEquivalent, utility, logitChoice, logitProbs, argmax } from '../bots/utility';
 import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import type { LevelDefinition } from './types';
 
@@ -29,15 +29,6 @@ export interface AmendmentRecord {
   withdrawn?: boolean;
 }
 
-export type VerdictKey =
-  | 'consistent'
-  | 'paydayStrong'
-  | 'paydayMild'
-  | 'convenientStrong'
-  | 'convenientMild'
-  | 'selfTaxingRich'
-  | 'poorTaxCutter';
-
 export interface L5Debrief {
   veil: Record<PlayerId, Constitution>;
   /** What each delegate proposed after the reveal (null if they passed). Paid choices. */
@@ -49,20 +40,25 @@ export interface L5Debrief {
   fair2: Record<PlayerId, number>;
   incomes: Record<PlayerId, number>;
   rank: Record<PlayerId, number>;
-  /** Self-serving shift: fair answer after the reveal minus fair answer before (D-41). */
+  /** Shift in the unpaid fair answer: after the reveal minus before (D-41). */
   deltaT: Record<PlayerId, number>;
-  slope: number;
+  /**
+   * Least-squares slope of the shift on income rank (D-73). `humans` uses human answers only and exists
+   * only when at least 3 humans played; otherwise null. `everyone` includes the bots' answers, which are
+   * programmed (an Egoist bot's "fair" tax is the one that pays it most; the others drift by sigma toward
+   * their own money), so it is a check on the bot code, used by the simulator, never shown as a finding.
+   */
+  slopes: { humans: number | null; everyone: number };
   adopted: Constitution;
   final: Constitution;
   amendments: AmendmentRecord[];
   donations: Record<PlayerId, { to: PlayerId | null; amount: number }>;
   boughtVotes: Array<{ donor: PlayerId; recipient: PlayerId; amount: number; votedYes: boolean; passed: boolean }>;
-  verdict?: VerdictKey;
   W: Record<PlayerId, number>;
   /** The human's paid veil submission vs. their card's best submission (risk neutral, no noise). */
   cardBest?: { best: Constitution; chose: Constitution };
   /** Per human (D-43, D-62). visibleState merges the viewer's entry into the fields above. */
-  byHuman?: Record<PlayerId, { verdict: VerdictKey; cardBest: { best: Constitution; chose: Constitution } }>;
+  byHuman?: Record<PlayerId, { cardBest: { best: Constitution; chose: Constitution } }>;
 }
 
 export interface L5State {
@@ -122,7 +118,7 @@ export function veilCE(n: number, card: ValuesCard, rho: number): number[] {
   const eq = equalShares(n);
   const out = ALL_CONSTITUTIONS.map((c) => {
     let eu = 0;
-    for (const inc of draws) eu += crra(roundScore(card, constitutionWealth(inc, c), 0, eq), rho);
+    for (const inc of draws) eu += utility(roundScore(card, constitutionWealth(inc, c), 0, eq), rho);
     return certaintyEquivalent(eu / draws.length, rho);
   });
   veilCache.set(key, out);
@@ -208,7 +204,7 @@ function botLobby(s: GameState, botId: PlayerId): Lobby {
       return out;
     };
     const p = passProbability(s, botId, prop, to, d);
-    const eu = p * crra(roundScore(me.values, shift(Wa), i, eq), rho) + (1 - p) * crra(roundScore(me.values, shift(Wc), i, eq), rho);
+    const eu = p * utility(roundScore(me.values, shift(Wa), i, eq), rho) + (1 - p) * utility(roundScore(me.values, shift(Wc), i, eq), rho);
     return certaintyEquivalent(eu, rho);
   });
   const k = logitChoice(ce, lambda, botRng(s));
@@ -245,6 +241,17 @@ function botFairAnswer(s: GameState, botId: PlayerId, afterReveal: boolean): num
 export function fairShift(fair1: number, fair2: number): number {
   return fair2 - fair1;
 }
+
+/** Least-squares slope of ys on xs; 0 when xs do not vary. */
+export function olsSlope(xs: readonly number[], ys: readonly number[]): number {
+  const mx = mean(xs);
+  const my = mean(ys);
+  const sxx = xs.reduce((a, x) => a + (x - mx) ** 2, 0);
+  return sxx > 0 ? xs.reduce((a, x, k) => a + (x - mx) * (ys[k] - my), 0) / sxx : 0;
+}
+
+/** Fewest human answers a human-only slope is computed from (D-73). */
+export const MIN_HUMANS_FOR_SLOPE = 3;
 
 function amendIndex(step: string): number {
   return step.startsWith('AMEND_') ? Number(step.slice(6)) : -1;
@@ -420,12 +427,11 @@ export const level5: LevelDefinition = {
     const deltaT = Object.fromEntries(pids.map((id) => [id, fairShift(l.fair1![id], l.fair2![id])]));
     const proposals = Object.fromEntries(pids.map((id) => [id, l.lobby![id].proposal]));
     const paidMove = Object.fromEntries(pids.map((id) => [id, proposals[id] ? proposals[id]!.t - l.veil![id].t : null]));
-    const xs = pids.map((id) => rank[id]);
-    const ys = pids.map((id) => deltaT[id]);
-    const mx = mean(xs);
-    const my = mean(ys);
-    const sxx = xs.reduce((a, x) => a + (x - mx) ** 2, 0);
-    const slope = sxx > 0 ? xs.reduce((a, x, k) => a + (x - mx) * (ys[k] - my), 0) / sxx : 0;
+    const humans = s.players.filter((p) => p.isHuman).map((p) => p.id);
+    const slopes = {
+      humans: humans.length >= MIN_HUMANS_FOR_SLOPE ? olsSlope(humans.map((id) => rank[id]), humans.map((id) => deltaT[id])) : null,
+      everyone: olsSlope(pids.map((id) => rank[id]), pids.map((id) => deltaT[id])),
+    };
     const boughtVotes: L5Debrief['boughtVotes'] = [];
     for (const [donor, lb] of Object.entries(l.lobby!)) {
       if (!lb.donateTo || lb.amount <= 0) continue;
@@ -438,18 +444,9 @@ export const level5: LevelDefinition = {
         passed: am ? am.passed : false,
       });
     }
-    const verdictOf = (pid: PlayerId): VerdictKey => {
-      const dt = deltaT[pid];
-      const rich = rank[pid] > pids.length / 2;
-      if (Math.abs(dt) <= L5.CONSISTENT_BAND + 1e-9) return 'consistent';
-      if (rich && dt < 0) return dt <= -L5.STRONG_SHIFT + 1e-9 ? 'paydayStrong' : 'paydayMild';
-      if (!rich && dt > 0) return dt >= L5.STRONG_SHIFT - 1e-9 ? 'convenientStrong' : 'convenientMild';
-      return rich ? 'selfTaxingRich' : 'poorTaxCutter';
-    };
     const byHuman: NonNullable<L5Debrief['byHuman']> = {};
     for (const h of s.players.filter((p) => p.isHuman))
       byHuman[h.id] = {
-        verdict: verdictOf(h.id),
         cardBest: { best: ALL_CONSTITUTIONS[argmax(veilCE(pids.length, h.values, 0))], chose: l.veil![h.id] },
       };
     const d: L5Debrief = {
@@ -461,7 +458,7 @@ export const level5: LevelDefinition = {
       incomes: l.incomes!,
       rank,
       deltaT,
-      slope,
+      slopes,
       adopted: l.adopted!,
       final: l.current!,
       amendments: l.amendments,

@@ -7,7 +7,7 @@ import { t } from '../i18n';
 import { FormCard, Page, Stamp } from '../components/common';
 
 export function Title() {
-  const { go, game, online } = useStore();
+  const { go, game, online, staleSave } = useStore();
   const resumable = game && game.phase.kind !== 'END';
   const openFriends = () => {
     useStore.setState({ friendsFor: { tab: 'create' } });
@@ -22,6 +22,11 @@ export function Title() {
         <div className="mt-5">
           <Stamp rotate={-2} className="text-xs">{t('app.motto')}</Stamp>
         </div>
+        {staleSave && !game && (
+          <p className="mt-8 rounded-md border border-line bg-card px-3 py-2 text-sm sm:max-w-xs" role="status">
+            {t('app.staleSave')}
+          </p>
+        )}
         <nav className="mt-10 flex flex-col gap-3 sm:max-w-xs" aria-label={t('ui.mainMenu')}>
           {resumable && (
             <button type="button" className="btn-primary" onClick={() => go('game')}>

@@ -24,7 +24,7 @@ export const SCORE = {
    */
   LEVEL_POINTS_BASE: 100,
   LEVEL_POINTS_SPREAD: 50,
-  LEVEL_SD: [49.8, 57.7, 39.2, 114.5, 28.9],
+  LEVEL_SD: [49.5, 57.2, 39.5, 115.1, 28.6],
 };
 
 /**
@@ -34,9 +34,9 @@ export const SCORE = {
  */
 export const METRIC_SCALE: Record<ValuesCard, number> = {
   EGOIST: 1,
-  RAWLSIAN: 1.67,
+  RAWLSIAN: 1.66,
   UTILITARIAN: 1,
-  MERITOCRAT: 1.22,
+  MERITOCRAT: 1.27,
 };
 
 /**
@@ -60,15 +60,18 @@ export const DIFFICULTY = {
 };
 
 export const BOT = {
-  UTILITY_SHIFT: 50,
-  UTILITY_MIN_ARG: 1,
+  /**
+   * Bots' utility is CARA with a = rho / RISK_POINTS per score point (D-77). At a score of 50 this equals
+   * the local risk aversion of the CRRA-on-(score + 50) it replaced, so ordinary gambles look the same.
+   */
+  RISK_POINTS: 100,
   MC_SAMPLES: 300,
   BELIEF_MC_SAMPLES: 40,
   BELIEF_LAMBDA: 3,
   /** Logit scale in coins: P(a_k) is proportional to exp(lambda x CE_k / LOGIT_COIN_SCALE) (D-59). */
   LOGIT_COIN_SCALE: 10,
   /**
-   * The hardship line already makes losses hurt, so bots' CRRA would count risk twice. Every bot's
+   * The hardship line already makes losses hurt, so bots' risk aversion would count risk twice. Every bot's
    * rho is multiplied by this, keeping their order (D-51).
    */
   RHO_SCALE: 0.25,
