@@ -524,7 +524,7 @@
     "l2": {
       "predicted": "A selfish player works less when taxes are high, because they keep less of what they earn. Players who expect to earn less than average want higher taxes, so the middle voter decides (Meltzer and Richard 1981). People who believe income is mostly luck usually vote for more sharing (Alesina and Angeletos 2005).",
       "predictedT": "Selfish players in this game would have chosen a {t}% tax. The real taxes were {actual}.",
-      "variance": "Where income differences came from: {te}% from talent and work, {lu}% from luck, and {ia}% from both together.",
+      "variance": "Where income differences came from: {te}% from talent and work, {lu}% from luck.",
       "poll": "On average, you guessed that luck was {belief}% of the top earner's income. The real number was {truth}%.",
       "pollNone": "You did not answer the luck question.",
       "effort": "Your work each round, compared with what a selfish player would choose: {pairs}.",

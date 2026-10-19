@@ -346,8 +346,8 @@ function Debrief({ v }: { v: ViewState }) {
           <p>
             {t('debrief.l2.variance', {
               te: Math.round(d.variance.talentEffort * 100),
-              lu: Math.round(d.variance.luck * 100),
-              ia: Math.round(d.variance.interaction * 100),
+              // Rounded so the two shown shares always add up to 100.
+              lu: 100 - Math.round(d.variance.talentEffort * 100),
             })}
           </p>
           <p>{belief !== undefined ? t('debrief.l2.poll', { belief: Math.round(belief), truth: Math.round(truth!) }) : t('debrief.l2.pollNone')}</p>

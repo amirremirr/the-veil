@@ -172,3 +172,9 @@ Real-time play for 2 to 4 humans in private rooms, with bots in the empty seats.
   | 1 human + 3 bots | 87 | 29 ms | 204 ms | 2.34 s (entering the Level 4 summary) | 2.39 s | 33 KB (log 7.5 KB) |
 
   No message comes near 10 seconds. The slowest is always the one that enters the Level 4 summary, because it runs the counterfactual (4 same-seed replays and 96 averaged replays; more bots means more work). Rebuilding a late room by replaying the log costs about as much as playing it, about 2.4 seconds with three bots, and happens each time the object wakes from hibernation. Proposal, not applied: store a state snapshot at each level start as a cache (the log stays the source of truth), so a wake-up replays at most one level; or store the counterfactual's result so replays can skip it.
+
+## Audit fixes (October 2026)
+
+A read-only audit (October 2026) found two presentation errors, several model and measurement problems, and stale documentation. The game's purpose is unchanged: an educational game held to research-grade honesty, not a research instrument. Each entry below names the audit finding it answers.
+
+- **D-72 Level 2 variance shares (audit H2).** The summary used to report Var(talent and work)/Var(income), Var(luck)/Var(income), and the rest as "both together". The rest is twice the sample covariance of the two parts, which is pure noise here (luck is drawn after effort, independently), so it could be large or negative: seed `l2v-10` (4 bots, 60 samples) showed 78% / 121% / -99%, and the "both together" share was negative in about half of all games. Now each share is that part's variance divided by the sum of the two parts' variances (`varianceShares` in `level2.ts`), so both lie in [0, 100%] and add to 100%; the "both together" line is gone, and the screen rounds the second share as 100 minus the first. A test checks 1,000 seeds with 2 to 4 players.
