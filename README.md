@@ -40,12 +40,13 @@ Then open http://localhost:5173.
 | `npm run build` | Typecheck and build the static site into `dist/` |
 | `npm run preview` | Serve the built site |
 | `npm test` | Engine unit tests (Vitest), including every worked example in Section 12 of the spec |
-| `npm run sim -- --games 2000` | Headless bot-only simulation; writes a CSV and a summary to `sim/out/` |
+| `npm run rules-version` | Regenerate `src/engine/rules-hash.ts` after any engine change (the build and a unit test fail if it is stale) |
+| `npm run sim -- --games 2000` | Headless bot-only simulation; writes a CSV and a summary (mean ± bootstrap SE) to `sim/out/`. Bot-only: it checks design targets, not anything about people |
 | `npm run e2e` | Playwright end-to-end tests at 360 px and desktop widths |
 
 `npm run e2e` uses Playwright's bundled Chromium (install it once with `npx playwright install chromium`), or an installed browser via `PW_CHANNEL=msedge` or `PW_CHANNEL=chrome`.
 
-Simulator flags: `--games`, `--players 2|3|4`, `--difficulty EASY|NORMAL|HARD`, `--samples` (Monte Carlo draws per bot decision, default 300), `--seed`, `--out`.
+Simulator flags: `--games`, `--players 2|3|4`, `--difficulty EASY|NORMAL|HARD`, `--samples` (Monte Carlo draws per bot decision, default 300), `--seed`, `--out`, `--boot` (bootstrap resamples for the standard errors, default 400).
 
 ## Architecture
 
@@ -128,10 +129,12 @@ The room server listens on http://127.0.0.1:8787, and in development the site co
 
 | Milestone | State |
 |---|---|
-| M1 to M6: engine, five levels, bots, messaging, beliefs, finale, all UI | Done. All 25 unit tests and 6 e2e tests pass. |
-| M7: simulation balancing | Done. All Section 11 targets met (DECISIONS.md D-16). Level 2 parameters changed (D-15). |
+| M1 to M6: engine, five levels, bots, messaging, beliefs, finale, all UI | Done. |
+| M7: simulation balancing | Done. Every design target is met on bot-only tables, reported as mean ± SE (DECISIONS.md D-76, D-78). These are design targets, not findings about people. |
 | M8: visual design, copy, Archives, accessibility | Done, except a Lighthouse audit, which has not been run. Contrast checked by calculation; no horizontal scroll at 360 px in any phase. |
 | M9: deploy | Live on Vercel at https://the-veil-mauve.vercel.app. Pushes to `main` deploy automatically. Not yet checked on iOS Safari, Android Chrome, or Firefox. |
-| Multiplayer | On the `multiplayer` branch, not merged. Room server deployed with Wrangler 3 (3.114.17; version 4 is available) at https://the-veil-rooms.theveilgame.workers.dev. Vercel builds read it from `VITE_ROOM_SERVER_URL` (production and preview). 81 unit tests and 9 e2e tests pass, including a three-player test. |
+| Multiplayer | Merged into `main`. Room server deployed with Wrangler 3 (3.114.17; version 4 is available) at https://the-veil-rooms.theveilgame.workers.dev. Vercel builds read it from `VITE_ROOM_SERVER_URL` (production and preview). The room server must be redeployed whenever the engine's rules change; a page and a server with different rules refuse to play together (D-75). |
+| Audit fixes (October 2026) | DECISIONS.md D-72 to D-81. |
+| Tests | 104 unit tests (Vitest) and 9 e2e tests (Playwright, plus 1 skipped by design: the three-player test runs once, on desktop) pass. |
 
 Open items for the author: the final name, the hosting location, and whether to add opt-in result sharing in Phase 2. The About screen will link to the source repository once there is one.
