@@ -7,7 +7,8 @@ import { rnChoice, rnValue } from '../../src/engine/levels/level3';
 import { investGain } from '../../src/engine/levels/level4';
 import { fairShift, type AmendmentRecord, type Constitution, type L5State } from '../../src/engine/levels/level5';
 import { hardshipPenalty, mean, roundScore } from '../../src/engine/scoring';
-import { L1, L4, SCORE } from '../../src/engine/params';
+import { BOT, BOT_PROFILES, DIFFICULTY, L1, L4, SCORE } from '../../src/engine/params';
+import { logitProbs } from '../../src/engine/bots/utility';
 import type { GameState } from '../../src/engine/types';
 
 const DECK = [20, 50, 90, 160];
@@ -149,5 +150,29 @@ describe('D-57: Level 4 training costs offset the hardship line', () => {
   it('a Square never gains from training at the start', () => {
     for (const care of [false, true])
       expect(L4.COST_OPTIONS.filter((c) => investGain(L4.PRIOR_SQUARE, care, 'A', c) > 0)).toEqual([]);
+  });
+});
+
+describe('D-59: logit on a fixed 10-coin scale', () => {
+  it('the scale is 10 coins', () => expect(BOT.LOGIT_COIN_SCALE).toBe(10));
+  it('with lambda 2, gaps of 3, 10 and 30 coins give the worse option about 35%, 12% and 0.25%', () => {
+    expect(logitProbs([0, -3], 2)[1]).toBeCloseTo(1 / (1 + Math.exp(0.6)), 10);
+    expect(logitProbs([0, -10], 2)[1]).toBeCloseTo(0.1192, 4);
+    expect(logitProbs([0, -30], 2)[1]).toBeCloseTo(0.0025, 4);
+  });
+  it('two options 1 coin apart are close to 50/50 for every bot', () => {
+    for (const prof of Object.values(BOT_PROFILES)) {
+      const lam = prof.lambda * DIFFICULTY.NORMAL.lambdaMult;
+      const p = logitProbs([100, 99], lam)[1];
+      expect(p).toBeGreaterThan(0.35);
+      expect(p).toBeLessThan(0.5);
+    }
+  });
+  it('options 50 coins apart give the worse one under 1% for every bot at every difficulty', () => {
+    for (const prof of Object.values(BOT_PROFILES))
+      for (const d of Object.values(DIFFICULTY)) expect(logitProbs([100, 50], prof.lambda * d.lambdaMult)[1]).toBeLessThan(0.01);
+  });
+  it('the result depends on the coin gap, not on the spread of the options', () => {
+    expect(logitProbs([0, -10, -100], 2)[1] / logitProbs([0, -10, -100], 2)[0]).toBeCloseTo(Math.exp(-2), 10);
   });
 });

@@ -8,14 +8,14 @@ export function crra(S: number, rho: number): number {
   return (Math.pow(x, 1 - rho) - 1) / (1 - rho);
 }
 
-/** Logit (quantal response) choice probabilities with range-normalized scale (Section 5.3). */
+/**
+ * Logit (quantal response) choice probabilities over certainty equivalents in coins (D-05, D-59).
+ * P(a_k) is proportional to exp(lambda x CE_k / LOGIT_COIN_SCALE). A fixed coin scale replaces the
+ * spec 5.3 range scale, so a bot is careless about small gaps and careful about large ones.
+ */
 export function logitProbs(U: readonly number[], lambda: number): number[] {
   const max = Math.max(...U);
-  const min = Math.min(...U);
-  const scale = Math.max(1, max - min);
-  // Range normalization: utilities in "util" units are tiny for high rho, so we
-  // normalize by the spread when it exceeds 1 and by 1 otherwise (spec 5.3).
-  const ex = U.map((u) => Math.exp((lambda * (u - max)) / scale));
+  const ex = U.map((u) => Math.exp((lambda * (u - max)) / BOT.LOGIT_COIN_SCALE));
   const z = ex.reduce((a, b) => a + b, 0);
   return ex.map((e) => e / z);
 }
