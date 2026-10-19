@@ -408,7 +408,6 @@
         "pay": "{n} pay",
         "childcare": "{n} childcare",
         "training": "{n} training",
-        "trainingSecret": "training",
         "equals": "= {w}"
       },
       "reportNeed": "A Square who passes needs HireBot's belief to be at least 36%. Now: {now}%."
@@ -565,7 +564,7 @@
       "realCase": "A real case: in the 1990s Harvard changed how it paid for staff health plans. Healthier staff moved to cheaper plans, the most generous plan's price spiralled, and it was dropped within a few years (Cutler and Reber 1998)."
     },
     "l4": {
-      "predicted": "At the start, HireBot believes Circles are usually skilled, so a Circle who passes the test gets a good job. Training pays off for Circles. A Square who passes still does not convince HireBot, so training pays nothing for Squares, and they stop training. HireBot then sees few skilled Squares and believes even less in them. The belief makes itself true (Coate and Loury 1993).",
+      "predicted": "At the start, HireBot believes Circles are usually skilled, so a Circle who passes the test gets a good job. At first, training pays off for Circles. A Square who passes still does not convince HireBot, so training pays nothing for Squares, and they stop training. HireBot then sees few skilled Squares and believes even less in them. The belief makes itself true (Coate and Loury 1993).",
       "gap": "Average money gap per round (Circles minus Squares): {gap} coins.",
       "punchline": "No player and no part of HireBot disliked any group. The gap came from old beliefs, incentives, and working hours.",
       "decompTitle": "What caused the gap?",
@@ -582,7 +581,8 @@
       "chartTitle": "How HireBot's beliefs changed",
       "chartGapTitle": "How much of the gap each cause explains",
       "you": "You were a {g}{care}. You trained in {k} of 5 rounds.",
-      "lesson": "A gap can appear with nobody being prejudiced: old beliefs and childcare duties are enough."
+      "lesson": "A gap can appear with nobody being prejudiced: old beliefs and childcare duties are enough.",
+      "lessonNote": "Training is risky when failing leaves you in hardship, so fewer people train, and HireBot's belief falls for both groups. It falls faster for Squares, so the gap stays."
     },
     "l5": {
       "predicted": "Before incomes are known, everyone is in the same position. Once incomes are known, the score pays richer players to want lower taxes, so their votes move. That is plain self-interest. The real question is whether their sense of what is fair moves too. Babcock and Loewenstein (1997) found that it does: people honestly come to believe that what helps them is also what is fair. So this level asked everyone twice, without pay, what tax they think is fair.",
@@ -761,7 +761,7 @@
       "highShare": "High-risk players in this game: {p}",
       "cmpLabel": "Round 2 price",
       "cmpLab": "Market collapses",
-      "cmpNone": "no",
+      "cmpClosed": "closed",
       "premiumSeries": "Insurance price",
       "p1": "Start: 22",
       "typeLOW": "LOW",
@@ -769,7 +769,7 @@
     },
     "l4": {
       "cmpLabel": "Training",
-      "cmpBench": "Circles train, Squares don't",
+      "cmpBench": "Circles train more than Squares",
       "cmpLab": "Coate and Loury",
       "round": "Round",
       "gap": "Gap",

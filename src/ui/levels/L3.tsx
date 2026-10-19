@@ -4,7 +4,7 @@ import { L3 } from '../../engine/params';
 import type { ViewState } from '../../engine/types';
 import { useStore } from '../store';
 import { lifeEvent, t } from '../i18n';
-import { coins, pct } from '../labels';
+import { pct } from '../labels';
 import { HUMAN_ID, nameOf } from '../game';
 import { CheckBox, FormCard, ResultBanner, Stamp } from '../components/common';
 import { ContinueBar, PrimaryBar } from '../components/TableParts';
@@ -53,7 +53,7 @@ function ChoiceForm({ v }: { v: ViewState }) {
         {canBuy ? (
           <button type="button" aria-pressed={buy} className="choice" onClick={() => setBuy(!buy)}>
             <CheckBox on={buy} />
-            <span className="leading-snug">{t('levels.3.buy', { p: Math.round(lv.premium!) })}</span>
+            <span className="leading-snug">{t('levels.3.buy', { p: fmt1(lv.premium!) })}</span>
           </button>
         ) : (
           <p className="rounded-md border border-line p-3 text-sm">
@@ -144,7 +144,7 @@ function Reveal({ v }: { v: ViewState }) {
               <span className="flex gap-2">
                 {r.choices[p.id].buy && <span className="rounded bg-teal/15 px-1 font-mono text-xs">{t('table.statusInsured')}</span>}
                 {r.choices[p.id].gym && <span className="rounded bg-amber/15 px-1 font-mono text-xs">{t('table.statusGym')}</span>}
-                <span className="num">{coins(r.W[p.id])}</span>
+                <span className="num">{fmt1(r.W[p.id])}</span>
               </span>
             </div>
             <p className={`mt-1 ${r.events[p.id] ? 'text-stamp' : 'text-soft'}`}>{r.events[p.id] ? lifeEvent(r.eventCards[p.id]) : t('levels.3.reveal.none')}</p>
@@ -153,9 +153,9 @@ function Reveal({ v }: { v: ViewState }) {
         ))}
       </ul>
       <div className="mt-3 text-sm">
-        {r.regime !== 'VOL' && r.T !== undefined && <p>{t('levels.3.reveal.contribution', { T: Math.round(r.T) })}</p>}
+        {r.regime !== 'VOL' && r.T !== undefined && <p>{t('levels.3.reveal.contribution', { T: fmt1(r.T) })}</p>}
         {r.regime === 'VOL' && r.nextPremium !== null && (
-          <p>{t('levels.3.reveal.premiumWhy', { p: Math.round(r.nextPremium), r: Math.round((r.nextPremium / (L3.LOADING * L3.LOSS)) * 100) })}</p>
+          <p>{t('levels.3.reveal.premiumWhy', { p: fmt1(r.nextPremium), r: Math.round((r.nextPremium / (L3.LOADING * L3.LOSS)) * 100) })}</p>
         )}
         {r.regime === 'VOL' && r.nextPremium === null && (
           <>
@@ -198,14 +198,14 @@ function Info({ v }: { v: ViewState }) {
       <Letter type={lv.myType} />
       <p className="first-letter:uppercase">
         {rname(lv.regime)}
-        {lv.regime === 'VOL' && (lv.premium !== null ? ` · ${Math.round(lv.premium)}` : '')}
+        {lv.regime === 'VOL' && (lv.premium !== null ? ` · ${fmt1(lv.premium)}` : '')}
       </p>
       <div className="label">{t('levels.3.info')}</div>
       <ol className="num text-xs">
         <li>R1: 22</li>
         {lv.rounds.map((r, i) => (
           <li key={i}>
-            R{i + 2}: {r.regime === 'VOL' ? (r.nextPremium !== null ? Math.round(r.nextPremium) : '×') : t('ui.l3.mandate')}
+            R{i + 2}: {r.regime === 'VOL' ? (r.nextPremium !== null ? fmt1(r.nextPremium) : '×') : t('ui.l3.mandate')}
           </li>
         ))}
       </ol>
@@ -220,7 +220,9 @@ function Debrief({ v }: { v: ViewState }) {
   const best = d.bestRegimeForType[me];
   const g = d.gym;
   const rate = (x: [number, number]) => (x[1] ? `${x[0]}/${x[1]}` : '0/0');
-  const path = d.premiumPath.map((p, i) => `R${i + 1} ${p === null ? (d.rounds[i].regime === 'VOL' ? '×' : rname(d.rounds[i].regime)) : Math.round(p)}`).join(', ');
+  const p2 = d.premiumPath[1];
+  const round2Price = p2 !== null && p2 !== undefined ? fmt1(p2) : t('ui.l3.cmpClosed');
+  const path = d.premiumPath.map((p, i) => `R${i + 1} ${p === null ? (d.rounds[i].regime === 'VOL' ? '×' : rname(d.rounds[i].regime)) : fmt1(p)}`).join(', ');
   return (
     <DebriefShell
       v={v}
@@ -243,8 +245,8 @@ function Debrief({ v }: { v: ViewState }) {
           label: t('ui.l3.cmpLabel'),
           benchmark: '35.2',
           lab: t('ui.l3.cmpLab'),
-          you: d.rounds[1]?.choices[HUMAN_ID]?.buy ? t('table.statusInsured') : t('ui.l3.cmpNone'),
-          bots: d.premiumPath[1] !== null && d.premiumPath[1] !== undefined ? String(Math.round(d.premiumPath[1])) : '×',
+          you: round2Price,
+          bots: round2Price,
         },
       ]}
       did={
@@ -296,7 +298,7 @@ function Debrief({ v }: { v: ViewState }) {
             nullLabels={d.rounds.map((r) => (r.regime === 'VOL' ? '×' : t('ui.l3.mandateMark')))}
             yMin={0}
             yMax={L3.LOSS * 0.6}
-            format={(x) => String(Math.round(x))}
+            format={fmt1}
             annotations={d.pools.map((p) => t('debrief.l3.pool', { n: p.buyers.length }))}
             refLine={{ value: L3.LOADING * L3.LOSS * L3.P_BAR, label: t('ui.l3.p1') }}
           />

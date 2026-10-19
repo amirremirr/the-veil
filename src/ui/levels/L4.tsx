@@ -228,8 +228,8 @@ function Reveal({ v }: { v: ViewState }) {
 }
 
 /**
- * How a worker's money was worked out, shown when it differs from the plain wage. Training cost is
- * private, so only your own row shows its amount and the total.
+ * How a worker's money was worked out, shown when it differs from the plain wage. Each player's total
+ * is already on screen, so the training cost is pay - childcare - total and reveals nothing new.
  */
 function PayCalc({ c, id }: { c: Partial<L4Round>; id: string }) {
   if (!c.wage || !c.W || !c.chaos) return null;
@@ -237,12 +237,12 @@ function PayCalc({ c, id }: { c: Partial<L4Round>; id: string }) {
   const chaos = c.chaos[id];
   const trained = !!c.invest?.[id];
   if (!chaos && !trained) return null;
-  const mine = id === HUMAN_ID;
+  const w = Math.round(c.W[id]);
   const parts = [t('levels.4.calc.pay', { n: wage })];
   if (chaos) parts.push(t('levels.4.calc.childcare', { n: chaos }));
-  if (trained) parts.push(mine && c.costs?.[id] !== undefined ? t('levels.4.calc.training', { n: c.costs[id] }) : t('levels.4.calc.trainingSecret'));
-  const text = `${parts.join(' - ')}${mine ? ` ${t('levels.4.calc.equals', { w: Math.round(c.W[id]) })}` : ''}`;
-  return <p className="num mt-1 text-xs text-ink">{text}</p>;
+  if (trained) parts.push(t('levels.4.calc.training', { n: c.costs?.[id] ?? wage - chaos - w }));
+  const text = `${parts.join(' - ')} ${t('levels.4.calc.equals', { w })}`;
+  return <p className={`num mt-1 text-xs ${id === HUMAN_ID ? 'text-ink' : 'text-soft'}`}>{text}</p>;
 }
 
 function Info({ v }: { v: ViewState }) {
@@ -268,6 +268,7 @@ function Debrief({ v }: { v: ViewState }) {
   return (
     <DebriefShell
       v={v}
+      lessonNote={t('debrief.l4.lessonNote')}
       archiveIds={['statistical-discrimination', 'self-fulfilling-stereotypes', 'greedy-jobs', 'patronizing-equilibrium']}
       cardBest={
         d.cardBest && {

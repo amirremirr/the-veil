@@ -4,9 +4,10 @@ import { createInitialState, HUMAN_ID, levelPoints, step } from '../../src/engin
 import { orderedDraws } from '../../src/engine/core';
 import { principleOutcome, principleTax } from '../../src/engine/levels/level1';
 import { rnChoice, rnValue } from '../../src/engine/levels/level3';
+import { investGain } from '../../src/engine/levels/level4';
 import { fairShift, type AmendmentRecord, type Constitution, type L5State } from '../../src/engine/levels/level5';
 import { hardshipPenalty, mean, roundScore } from '../../src/engine/scoring';
-import { L1, SCORE } from '../../src/engine/params';
+import { L1, L4, SCORE } from '../../src/engine/params';
 import type { GameState } from '../../src/engine/types';
 
 const DECK = [20, 50, 90, 160];
@@ -133,4 +134,20 @@ describe('Part E: level points and guess bonus', () => {
     expect(pts.reduce((x, y) => x + y, 0) / 4).toBeCloseTo(100, 10);
   });
   it('guess bonus is 25 level points', () => expect(SCORE.GUESS_BONUS).toBe(25));
+});
+
+describe('D-57: Level 4 training costs offset the hardship line', () => {
+  it('costs are 15, 30, 45 and 60', () => expect(L4.COST_OPTIONS).toEqual([15, 30, 45, 60]));
+  it('a Circle without childcare gains 70 - 1.4 x cost, so trains at 15, 30 and 45 but not 60', () => {
+    for (const c of L4.COST_OPTIONS) expect(investGain(L4.PRIOR_CIRCLE, false, 'A', c)).toBeCloseTo(70 - 1.4 * c, 10);
+    expect(L4.COST_OPTIONS.filter((c) => investGain(L4.PRIOR_CIRCLE, false, 'A', c) > 0)).toEqual([15, 30, 45]);
+  });
+  it('a Circle with childcare trains only at 15', () => {
+    for (const c of L4.COST_OPTIONS) expect(investGain(L4.PRIOR_CIRCLE, true, 'A', c)).toBeCloseTo(35 - 1.4 * c, 10);
+    expect(L4.COST_OPTIONS.filter((c) => investGain(L4.PRIOR_CIRCLE, true, 'A', c) > 0)).toEqual([15]);
+  });
+  it('a Square never gains from training at the start', () => {
+    for (const care of [false, true])
+      expect(L4.COST_OPTIONS.filter((c) => investGain(L4.PRIOR_SQUARE, care, 'A', c) > 0)).toEqual([]);
+  });
 });

@@ -24,7 +24,7 @@ export const SCORE = {
    */
   LEVEL_POINTS_BASE: 100,
   LEVEL_POINTS_SPREAD: 50,
-  LEVEL_SD: [47.3, 52.2, 41.3, 114.8, 29.3],
+  LEVEL_SD: [47.3, 52.2, 41.3, 118.9, 28.4],
 };
 
 /**
@@ -131,8 +131,8 @@ export const L4 = {
   BASELINE_ROUNDS: 3,
   CARE_PROB_SQUARE: 0.7,
   CARE_PROB_CIRCLE: 0.3,
-  // All Level 4 money amounts doubled in rules v2 (D-53); thresholds and beliefs unchanged.
-  COST_OPTIONS: [20, 40, 60, 80],
+  // Level 4 money amounts doubled in rules v2 (D-53); training costs 1.5 x the original scale to offset the hardship line (D-57).
+  COST_OPTIONS: [15, 30, 45, 60],
   PASS_IF_SKILLED: 0.8,
   PASS_IF_UNSKILLED: 0.3,
   PRIOR_CIRCLE: 0.6,
