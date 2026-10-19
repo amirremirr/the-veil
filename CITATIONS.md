@@ -2,13 +2,19 @@
 
 Every source the game cites, with the exact claims the game makes about it. Generated from `src/ui/copy/en.json`, `src/ui/copy/archives.json` and `DECISIONS.md`. Citation text is copied as written, not corrected.
 
-**Verification flags.** No entry in DECISIONS.md is marked "needs verification". The only related note is the README caveat that, per Section 13 of the spec, every citation should be checked against its source before release. So every source below is unverified.
+**Verification.** Every source below was checked against the original and marked verified on 2026-10-19. DECISIONS.md had flagged three of them as needing verification (Kahneman and Tversky 1979 and Tversky and Kahneman 1992 in D-39; Cutler and Reber 1998 in D-48).
 
-Places are the Glossary entry title, or the en.json key path. "(same author, no year)" means the sentence names the author without a year, and the author has two works in the list.
+**Changes made during verification (2026-10-19):**
+
+1. Glossary "Hardship line": "Kahneman and Tversky called this loss aversion" became "Kahneman and Tversky (1979) showed that losses loom larger than gains, a pattern now called loss aversion". The Tversky and Kahneman (1992) sentence about 2.25 is unchanged.
+2. Added Harsanyi (1953) as the source of the equal-chance argument in the Glossary entries "Veil of ignorance" and "Expected utility (Harsanyi)". Harsanyi (1955) stays as the follow-up.
+3. Glossary "Fairness ideals": Cappelen, Hole, Sørensen and Tungodden (2007) are credited only with the three ideals they identified (strict egalitarian, libertarian, liberal egalitarian). The meritocratic view is now described as a fourth ideal the game adds, not attributed to them.
+
+Places are the Glossary entry title, or the en.json key path. "(same author, no year)" means the sentence names the author without a year, and the author has more than one work in the list.
 
 ## Akerlof, G. (1970). The market for "lemons": Quality uncertainty and the market mechanism. Quarterly Journal of Economics, 84(3).
 
-- Key: `akerlof1970`. Flagged in DECISIONS.md as needing verification: no.
+- Key: `akerlof1970`. Verified (2026-10-19).
 - Listed as further reading in Glossary entries: Adverse selection, Death spiral.
 - Claims in the game:
   - Glossary: Adverse selection: "George Akerlof's example was used cars."
@@ -18,7 +24,7 @@ Places are the Glossary entry title, or the en.json key path. "(same author, no 
 
 ## Alesina, A., and Angeletos, G.-M. (2005). Fairness and redistribution. American Economic Review, 95(4).
 
-- Key: `alesina2005`. Flagged in DECISIONS.md as needing verification: no.
+- Key: `alesina2005`. Verified (2026-10-19).
 - Listed as further reading in Glossary entries: Luck vs. effort beliefs.
 - Claims in the game:
   - Glossary: Luck vs. effort beliefs: "Alesina and Angeletos argued that beliefs matter."
@@ -26,14 +32,14 @@ Places are the Glossary entry title, or the en.json key path. "(same author, no 
 
 ## Arrow, K. (1963). Uncertainty and the welfare economics of medical care. American Economic Review, 53(5).
 
-- Key: `arrow1963`. Flagged in DECISIONS.md as needing verification: no.
+- Key: `arrow1963`. Verified (2026-10-19).
 - Listed as further reading in Glossary entries: Moral hazard.
 - Claims in the game:
   - Glossary: Moral hazard: "Kenneth Arrow discussed this problem in medical care, and Mark Pauly argued that much of it is not a moral failing at all but an ordinary response to prices: if a doctor visit is free at the point of use, people use more of it."
 
 ## Arrow, K. (1973). The theory of discrimination. In Ashenfelter and Rees (eds.), Discrimination in Labor Markets. Princeton University Press.
 
-- Key: `arrow1973`. Flagged in DECISIONS.md as needing verification: no.
+- Key: `arrow1973`. Verified (2026-10-19).
 - Listed as further reading in Glossary entries: Statistical discrimination.
 - Claims in the game:
   - Glossary: Statistical discrimination: "Edmund Phelps and Kenneth Arrow showed that this can produce different treatment of equally skilled people from different groups even when the employer has no prejudice at all."
@@ -41,7 +47,7 @@ Places are the Glossary entry title, or the en.json key path. "(same author, no 
 
 ## Babcock, L., and Loewenstein, G. (1997). Explaining bargaining impasse: The role of self-serving biases. Journal of Economic Perspectives, 11(1).
 
-- Key: `babcock1997`. Flagged in DECISIONS.md as needing verification: no.
+- Key: `babcock1997`. Verified (2026-10-19).
 - Listed as further reading in Glossary entries: Self-serving bias.
 - Claims in the game:
   - Glossary: Self-serving bias: "Babcock and Loewenstein found that when bargainers get the same facts but different roles, each side's view of a fair settlement drifts toward its own interest, and this drift helps explain why talks break down."
@@ -54,7 +60,7 @@ Places are the Glossary entry title, or the en.json key path. "(same author, no 
 
 ## Buchanan, J., and Tullock, G. (1962). The Calculus of Consent: Logical Foundations of Constitutional Democracy. University of Michigan Press.
 
-- Key: `buchanan1962`. Flagged in DECISIONS.md as needing verification: no.
+- Key: `buchanan1962`. Verified (2026-10-19).
 - Listed as further reading in Glossary entries: Supermajority rules.
 - Claims in the game:
   - Glossary: Supermajority rules: "Buchanan and Tullock analyzed the choice of voting rules as a constitutional decision in its own right: stricter rules reduce the risk that others impose costs on you, but raise the cost of reaching agreement."
@@ -63,16 +69,16 @@ Places are the Glossary entry title, or the en.json key path. "(same author, no 
 
 ## Cappelen, A., Hole, A., Sørensen, E., and Tungodden, B. (2007). The pluralism of fairness ideals: An experimental approach. American Economic Review, 97(3).
 
-- Key: `cappelen2007`. Flagged in DECISIONS.md as needing verification: no.
+- Key: `cappelen2007`. Verified (2026-10-19).
 - Listed as further reading in Glossary entries: Fairness ideals.
 - Claims in the game:
-  - Glossary: Fairness ideals: "Cappelen, Hole, Sørensen and Tungodden identified three common ideals in experiments."
+  - Glossary: Fairness ideals: "Cappelen, Hole, Sørensen and Tungodden (2007) identified three common ideals in experiments: strict egalitarian, libertarian and liberal egalitarian."
 - DECISIONS.md:
   - D-19: "The Bonus Pot deliberately shows two citizens in full (Cappelen et al."
 
 ## Coate, S., and Loury, G. (1993). Will affirmative-action policies eliminate negative stereotypes? American Economic Review, 83(5).
 
-- Key: `coate1993`. Flagged in DECISIONS.md as needing verification: no.
+- Key: `coate1993`. Verified (2026-10-19).
 - Listed as further reading in Glossary entries: Self-fulfilling stereotypes, Patronizing equilibrium.
 - Claims in the game:
   - Glossary: Self-fulfilling stereotypes: "Coate and Loury showed that employer beliefs can confirm themselves."
@@ -82,7 +88,7 @@ Places are the Glossary entry title, or the en.json key path. "(same author, no 
 
 ## Cutler, D., and Reber, S. (1998). Paying for health insurance: The trade-off between competition and adverse selection. Quarterly Journal of Economics, 113(2).
 
-- Key: `cutler1998`. Flagged in DECISIONS.md as needing verification: yes.
+- Key: `cutler1998`. Verified (2026-10-19). DECISIONS.md D-48 had flagged it as needing verification.
 - Listed as further reading in Glossary entries: Adverse selection, Death spiral.
 - Claims in the game:
   - Glossary: Adverse selection: "Cutler and Reber documented a real case at Harvard, where the most generous staff health plan lost its healthier members and was dropped."
@@ -93,14 +99,14 @@ Places are the Glossary entry title, or the en.json key path. "(same author, no 
 
 ## Fehr, E., and Gächter, S. (2000). Fairness and retaliation: The economics of reciprocity. Journal of Economic Perspectives, 14(3).
 
-- Key: `fehr2000`. Flagged in DECISIONS.md as needing verification: no.
+- Key: `fehr2000`. Verified (2026-10-19).
 - Listed as further reading in Glossary entries: Reciprocity.
 - Claims in the game:
   - Glossary: Reciprocity: "Fehr and Gächter reviewed the experimental evidence and argued that reciprocity shapes how contracts, workplaces, and public goods actually work."
 
 ## Frohlich, N., Oppenheimer, J., and Eavey, C. (1987). Choices of principles of distributive justice in experimental groups. American Journal of Political Science, 31(3).
 
-- Key: `frohlich1987`. Flagged in DECISIONS.md as needing verification: no.
+- Key: `frohlich1987`. Verified (2026-10-19).
 - Listed as further reading in Glossary entries: Veil of ignorance.
 - Claims in the game:
   - Glossary: Veil of ignorance: "Laboratory groups asked to choose under a veil, as in Frohlich, Oppenheimer and Eavey, mostly picked neither extreme." (same author, no year)
@@ -108,46 +114,54 @@ Places are the Glossary entry title, or the en.json key path. "(same author, no 
 
 ## Frohlich, N., and Oppenheimer, J. (1992). Choosing Justice: An Experimental Approach to Ethical Theory. University of California Press.
 
-- Key: `frohlich1992`. Flagged in DECISIONS.md as needing verification: no.
+- Key: `frohlich1992`. Verified (2026-10-19).
 - Listed as further reading in Glossary entries: Veil of ignorance.
 - Claims in the game:
   - Glossary: Veil of ignorance: "Laboratory groups asked to choose under a veil, as in Frohlich, Oppenheimer and Eavey, mostly picked neither extreme." (same author, no year)
 
 ## Goldin, C. (2014). A grand gender convergence: Its last chapter. American Economic Review, 104(4).
 
-- Key: `goldin2014`. Flagged in DECISIONS.md as needing verification: no.
+- Key: `goldin2014`. Verified (2026-10-19).
 - Listed as further reading in Glossary entries: Greedy jobs.
 - Claims in the game:
   - Glossary: Greedy jobs: "Claudia Goldin argued that a large part of the remaining gender gap in pay comes from how some jobs pay for time."
   - en.json debrief.l4.realWorld: "In real life, this is one way economists explain part of the pay gap between men and women: women do more of the caregiving, and some jobs pay much more for long, inflexible hours (Goldin 2014)."
 
-## Harsanyi, J. (1955). Cardinal welfare, individualistic ethics, and interpersonal comparisons of utility. Journal of Political Economy, 63(4).
+## Harsanyi, J. (1953). Cardinal utility in welfare economics and in the theory of risk-taking. Journal of Political Economy, 61(5).
 
-- Key: `harsanyi1955`. Flagged in DECISIONS.md as needing verification: no.
+- Key: `harsanyi1953`. Verified (2026-10-19).
 - Listed as further reading in Glossary entries: Veil of ignorance, Expected utility (Harsanyi).
 - Claims in the game:
-  - Glossary: Veil of ignorance: "John Rawls made the device famous, and John Harsanyi used a similar setup earlier to argue for maximizing average welfare."
-  - Glossary: Expected utility (Harsanyi): "Harsanyi argued that a rational person behind a veil, with an equal chance of being anyone, would maximize expected utility, which amounts to maximizing average welfare."
+  - Glossary: Veil of ignorance: "John Rawls made the device famous, and John Harsanyi (1953) used a similar setup earlier: with an equal chance of being anyone, he argued, you would maximize average welfare."
+  - Glossary: Expected utility (Harsanyi): "Harsanyi (1953) argued that a rational person behind a veil, with an equal chance of being anyone, would maximize expected utility, which amounts to maximizing average welfare."
+
+## Harsanyi, J. (1955). Cardinal welfare, individualistic ethics, and interpersonal comparisons of utility. Journal of Political Economy, 63(4).
+
+- Key: `harsanyi1955`. Verified (2026-10-19).
+- Listed as further reading in Glossary entries: Veil of ignorance, Expected utility (Harsanyi).
+- Claims in the game (as the follow-up to Harsanyi 1953):
+  - Glossary: Veil of ignorance: "He developed the argument further in 1955."
+  - Glossary: Expected utility (Harsanyi): "He developed the argument further in 1955."
 
 ## Harsanyi, J. (1975). Can the maximin principle serve as a basis for morality? A critique of John Rawls's theory. American Political Science Review, 69(2).
 
-- Key: `harsanyi1975`. Flagged in DECISIONS.md as needing verification: no.
+- Key: `harsanyi1975`. Verified (2026-10-19).
 - Listed as further reading in Glossary entries: Maximin.
 - Claims in the game:
   - Glossary: Maximin: "Critics, Harsanyi among them, answered that maximin is the choice of someone infinitely afraid of risk, and that it can sacrifice large gains for many people to secure tiny gains for one."
 
 ## Kahneman, D., and Tversky, A. (1979). Prospect theory: An analysis of decision under risk. Econometrica, 47(2).
 
-- Key: `kahneman1979`. Flagged in DECISIONS.md as needing verification: yes.
+- Key: `kahneman1979`. Verified (2026-10-19). DECISIONS.md D-39 had flagged it as needing verification.
 - Listed as further reading in Glossary entries: Hardship line.
 - Claims in the game:
-  - Glossary: Hardship line: "Kahneman and Tversky called this loss aversion, and Tversky and Kahneman later estimated that losses weigh about 2.25 times as much as gains."
+  - Glossary: Hardship line: "Kahneman and Tversky (1979) showed that losses loom larger than gains, a pattern now called loss aversion, and Tversky and Kahneman later estimated that losses weigh about 2.25 times as much as gains."
 - DECISIONS.md:
   - D-39: "Glossary entry "Hardship line" cites Kahneman and Tversky (1979) and Tversky and Kahneman (1992, loss-aversion ratio about 2.25); both need verification like the other citations."
 
 ## Konow, J. (2000). Fair shares: Accountability and cognitive dissonance in allocation decisions. American Economic Review, 90(4).
 
-- Key: `konow2000`. Flagged in DECISIONS.md as needing verification: no.
+- Key: `konow2000`. Verified (2026-10-19).
 - Listed as further reading in Glossary entries: Fairness ideals, Self-serving bias.
 - Claims in the game:
   - Glossary: Fairness ideals: "Konow found similar patterns, with people treating outcomes as fair when they reflect choices people are accountable for."
@@ -155,7 +169,7 @@ Places are the Glossary entry title, or the en.json key path. "(same author, no 
 
 ## McKelvey, R., and Palfrey, T. (1995). Quantal response equilibria for normal form games. Games and Economic Behavior, 10(1).
 
-- Key: `mckelvey1995`. Flagged in DECISIONS.md as needing verification: no.
+- Key: `mckelvey1995`. Verified (2026-10-19).
 - Listed as further reading in Glossary entries: Quantal response.
 - Claims in the game:
   - Glossary: Quantal response: "McKelvey and Palfrey used this logit form to define quantal response equilibrium, which often fits laboratory data better than exact best responses."
@@ -163,7 +177,7 @@ Places are the Glossary entry title, or the en.json key path. "(same author, no 
 
 ## Meltzer, A., and Richard, S. (1981). A rational theory of the size of government. Journal of Political Economy, 89(5).
 
-- Key: `meltzer1981`. Flagged in DECISIONS.md as needing verification: no.
+- Key: `meltzer1981`. Verified (2026-10-19).
 - Listed as further reading in Glossary entries: Median voter theorem.
 - Claims in the game:
   - Glossary: Median voter theorem: "Meltzer and Richard used this to explain the size of government."
@@ -171,7 +185,7 @@ Places are the Glossary entry title, or the en.json key path. "(same author, no 
 
 ## Mirrlees, J. (1971). An exploration in the theory of optimum income taxation. Review of Economic Studies, 38(2).
 
-- Key: `mirrlees1971`. Flagged in DECISIONS.md as needing verification: no.
+- Key: `mirrlees1971`. Verified (2026-10-19).
 - Listed as further reading in Glossary entries: Optimal income taxation.
 - Claims in the game:
   - Glossary: Optimal income taxation: "James Mirrlees asked how to tax income when the government cannot observe ability, only earnings."
@@ -179,7 +193,7 @@ Places are the Glossary entry title, or the en.json key path. "(same author, no 
 
 ## Okun, A. (1975). Equality and Efficiency: The Big Tradeoff. Brookings Institution.
 
-- Key: `okun1975`. Flagged in DECISIONS.md as needing verification: no.
+- Key: `okun1975`. Verified (2026-10-19).
 - Listed as further reading in Glossary entries: Leaky bucket.
 - Claims in the game:
   - Glossary: Leaky bucket: "Arthur Okun's image of redistribution: moving money from rich to poor is like carrying water in a leaky bucket."
@@ -187,14 +201,14 @@ Places are the Glossary entry title, or the en.json key path. "(same author, no 
 
 ## Pauly, M. (1968). The economics of moral hazard: Comment. American Economic Review, 58(3).
 
-- Key: `pauly1968`. Flagged in DECISIONS.md as needing verification: no.
+- Key: `pauly1968`. Verified (2026-10-19).
 - Listed as further reading in Glossary entries: Moral hazard.
 - Claims in the game:
   - Glossary: Moral hazard: "Kenneth Arrow discussed this problem in medical care, and Mark Pauly argued that much of it is not a moral failing at all but an ordinary response to prices: if a doctor visit is free at the point of use, people use more of it."
 
 ## Phelps, E. (1972). The statistical theory of racism and sexism. American Economic Review, 62(4).
 
-- Key: `phelps1972`. Flagged in DECISIONS.md as needing verification: no.
+- Key: `phelps1972`. Verified (2026-10-19).
 - Listed as further reading in Glossary entries: Statistical discrimination.
 - Claims in the game:
   - Glossary: Statistical discrimination: "Edmund Phelps and Kenneth Arrow showed that this can produce different treatment of equally skilled people from different groups even when the employer has no prejudice at all."
@@ -202,10 +216,9 @@ Places are the Glossary entry title, or the en.json key path. "(same author, no 
 
 ## Rawls, J. (1971). A Theory of Justice. Harvard University Press.
 
-- Key: `rawls1971`. Flagged in DECISIONS.md as needing verification: no.
+- Key: `rawls1971`. Verified (2026-10-19).
 - Listed as further reading in Glossary entries: Veil of ignorance, Maximin.
 - Claims in the game:
-  - Glossary: Veil of ignorance: "John Rawls made the device famous, and John Harsanyi used a similar setup earlier to argue for maximizing average welfare."
   - Glossary: Maximin: "Rawls argued that people behind a veil of ignorance would use maximin to choose principles of justice, so a just society maximizes the position of its worst-off members."
   - en.json values.deck: "There were five cards: two Egoists, one Rawlsian, one Utilitarian, and one Meritocrat."
   - en.json values.RAWLSIAN.name: "Rawlsian"
@@ -226,7 +239,7 @@ Places are the Glossary entry title, or the en.json key path. "(same author, no 
 
 ## Rothschild, M., and Stiglitz, J. (1976). Equilibrium in competitive insurance markets: An essay on the economics of imperfect information. Quarterly Journal of Economics, 90(4).
 
-- Key: `rothschild1976`. Flagged in DECISIONS.md as needing verification: no.
+- Key: `rothschild1976`. Verified (2026-10-19).
 - Listed as related reading in Glossary entry Adverse selection, with the note: "Related: what changes if insurers offer several plans with different coverage."
 - Claims in the game: none. The game names it only as related reading.
 - DECISIONS.md:
@@ -235,10 +248,9 @@ Places are the Glossary entry title, or the en.json key path. "(same author, no 
 
 ## Tversky, A., and Kahneman, D. (1992). Advances in prospect theory: Cumulative representation of uncertainty. Journal of Risk and Uncertainty, 5(4).
 
-- Key: `tversky1992`. Flagged in DECISIONS.md as needing verification: yes.
+- Key: `tversky1992`. Verified (2026-10-19). DECISIONS.md D-39 had flagged it as needing verification.
 - Listed as further reading in Glossary entries: Hardship line.
 - Claims in the game:
-  - Glossary: Hardship line: "Kahneman and Tversky called this loss aversion, and Tversky and Kahneman later estimated that losses weigh about 2.25 times as much as gains."
   - en.json about.methods: "It makes self-interested players risk averse, because a coin lost below the line counts about twice as much as a coin gained, close to the loss aversion of about 2 found in experiments (Tversky and Kahneman 1992)."
 - DECISIONS.md:
   - D-39: "Glossary entry "Hardship line" cites Kahneman and Tversky (1979) and Tversky and Kahneman (1992, loss-aversion ratio about 2.25); both need verification like the other citations."
