@@ -379,7 +379,7 @@
         },
         "D": {
           "name": "Cheaper Childcare",
-          "desc": "The extra cost of long hours for people with childcare duty drops from 80 to 20."
+          "desc": "The extra cost of long hours for people with childcare duty drops from 80 to 20. The other 60 coins are paid from outside the game, not by any player."
         }
       },
       "report": "What HireBot believes",
@@ -399,7 +399,8 @@
         "poolUpdate": "HireBot now thinks {pp}% of everyone is skilled.",
         "policyTitle": "Vote results",
         "updateMath": "{g}: 80% x {old}% + 20% x {rate}% trained = {new}%",
-        "updateMathPool": "Everyone: 80% x {old}% + 20% x {rate}% trained = {new}%"
+        "updateMathPool": "Everyone: 80% x {old}% + 20% x {rate}% trained = {new}%",
+        "subsidyRound": "Paid from outside: {n} coins of childcare help this round. No player paid for it, so it adds to the total money in this level."
       },
       "info": "What HireBot believes",
       "banner": {
@@ -410,7 +411,8 @@
         "pay": "{n} pay",
         "childcare": "{n} childcare",
         "training": "{n} training",
-        "equals": "= {w}"
+        "equals": "= {w}",
+        "subsidy": "(plus {n} childcare help paid from outside)"
       },
       "reportNeed": "A Square who passes needs HireBot's belief to be at least 36%. Now: {now}%."
     },
@@ -588,7 +590,8 @@
       "lessonNote": "Training is risky when failing leaves you in hardship, so fewer people train, and HireBot's belief falls for both groups. It falls faster for Squares, so the gap stays.",
       "thisGame": "The gap in your game was {gap} coins per round{policyNote}.",
       "thisGamePolicy": ", with the rule your table voted for in rounds 4 and 5",
-      "decompNote": "With 4 players, one history is mostly luck: a single replay's numbers often differ from the average by 20 coins or more."
+      "decompNote": "With 4 players, one history is mostly luck: a single replay's numbers often differ from the average by 20 coins or more.",
+      "subsidyTotal": "Cheaper Childcare cost {n} coins over the level, paid from outside the game. In real life someone pays for such a rule, so comparing it with the free rules is not like for like."
     },
     "l5": {
       "predicted": "Before incomes are known, everyone is in the same position. Once incomes are known, the score pays richer players to want lower taxes, so their votes move. That is plain self-interest. A different question is whether their sense of what is fair moves too. In bargaining experiments, Babcock and Loewenstein (1997) found that it often does: people honestly come to believe that what helps them is also what is fair. So this level asked everyone twice, without pay, what tax they think is fair.",

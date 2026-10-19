@@ -32,6 +32,12 @@ export interface L4Round {
   schedule: Record<PlayerId, Schedule | null>;
   wage: Record<PlayerId, number>;
   chaos: Record<PlayerId, number>;
+  /**
+   * Under Cheaper Childcare, the part of the long-hours childcare cost paid from outside the game
+   * (CHAOS_COST - CHAOS_COST_SUBSIDIZED per worker with childcare duty on long hours). It is not taken
+   * from any player; the screens show it so the rule's cost is visible (D-81). Display only.
+   */
+  subsidy: Record<PlayerId, number>;
   W: Record<PlayerId, number>;
   skillRevealed: boolean;
 }
@@ -65,6 +71,8 @@ export interface L4Debrief {
   policy: Policy;
   policyVotes?: Record<PlayerId, Policy>;
   investRate: { CIRCLE: number; SQUARE: number };
+  /** Coins paid from outside the game for Cheaper Childcare over the whole level (D-81). */
+  subsidyTotal: number;
   /** Round 1 training: the human's card's best choice (risk neutral apart from hardship) vs. theirs. */
   cardBest?: { best: boolean; chose: boolean };
   /** Per human (D-43, D-62). visibleState merges the viewer's entry into the fields above. */
@@ -108,6 +116,11 @@ export function updatePrior(pi: number, rate: number): number {
 
 export function chaosCost(policy: Policy): number {
   return policy === 'D' ? L4.CHAOS_COST_SUBSIDIZED : L4.CHAOS_COST;
+}
+
+/** The outside payment for one worker under Cheaper Childcare (D-81): the cost they would otherwise bear. */
+export function subsidyFor(job: Job, sched: Schedule | null, care: boolean, policy: Policy): number {
+  return policy === 'D' && job === 'COMPLEX' && sched === 'GREEDY' && care ? L4.CHAOS_COST - L4.CHAOS_COST_SUBSIDIZED : 0;
 }
 
 function priorFor(priors: Priors, group: Group, policy: Policy): number {
@@ -426,6 +439,7 @@ export const level4: LevelDefinition = {
       schedule: rec(schedule),
       wage: rec(pay.map((p) => p.wage)),
       chaos: rec(pay.map((p) => p.chaos)),
+      subsidy: rec(pids.map((id, i) => subsidyFor(c.job![id], schedule[i], l.care[id], l.policy))),
       W: rec(W),
       priorsAfter: { ...l.priors },
       skillRevealed: true,
@@ -497,6 +511,7 @@ export const level4: LevelDefinition = {
       policyVotes: l.policyVotes,
       byHuman,
       investRate: { CIRCLE: rate('CIRCLE'), SQUARE: rate('SQUARE') },
+      subsidyTotal: l.rounds.reduce((a, r) => a + Object.values(r.subsidy).reduce((x, y) => x + y, 0), 0),
     };
     l.debrief = d;
     return d;

@@ -187,6 +187,9 @@ function Reveal({ v }: { v: ViewState }) {
           );
         })}
       </ul>
+      {pay && c.subsidy && Object.values(c.subsidy).some((x) => x > 0) && (
+        <p className="mt-3 text-sm">{t('levels.4.reveal.subsidyRound', { n: Object.values(c.subsidy).reduce((a, b) => a + b, 0) })}</p>
+      )}
       {pay && c.priorsAfter && (
         <p className="mt-3 text-sm">
           {lv.policy === 'B' && c.priorsAfter.POOL !== null
@@ -241,7 +244,8 @@ function PayCalc({ c, id, viewer }: { c: Partial<L4Round>; id: string; viewer: s
   const parts = [t('levels.4.calc.pay', { n: wage })];
   if (chaos) parts.push(t('levels.4.calc.childcare', { n: chaos }));
   if (trained) parts.push(t('levels.4.calc.training', { n: c.costs?.[id] ?? wage - chaos - w }));
-  const text = `${parts.join(' - ')} ${t('levels.4.calc.equals', { w })}`;
+  const sub = c.subsidy?.[id] ?? 0;
+  const text = `${parts.join(' - ')} ${t('levels.4.calc.equals', { w })}${sub ? ` ${t('levels.4.calc.subsidy', { n: sub })}` : ''}`;
   return <p className={`num mt-1 text-xs ${id === viewer ? 'text-ink' : 'text-soft'}`}>{text}</p>;
 }
 
@@ -296,6 +300,7 @@ function Debrief({ v }: { v: ViewState }) {
         <>
           <p>{t('debrief.l4.you', { g: t(`levels.4.groups.${myGroup}`), care: d.care[v.viewer] ? t('ui.l4.careHolder') : '', k: invested })}</p>
           <p>{t('debrief.l4.gap', { gap: signed(d.gap) })}</p>
+          {d.policy === 'D' && <p>{t('debrief.l4.subsidyTotal', { n: Math.round(d.subsidyTotal ?? 0) })}</p>}
           <table className="data-table">
             <thead>
               <tr>

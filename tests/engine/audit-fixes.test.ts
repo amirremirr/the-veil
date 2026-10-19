@@ -8,7 +8,7 @@ import { roundScore } from '../../src/engine/scoring';
 import { pluralityResolve } from '../../src/engine/core';
 import { standalone } from '../../src/engine/rng';
 import { stdErr } from '../../src/engine/counterfactual';
-import type { L4Debrief } from '../../src/engine/levels/level4';
+import { subsidyFor, type L4Debrief, type L4State } from '../../src/engine/levels/level4';
 import { expectedByType, voluntaryPath } from '../../src/engine/levels/level3';
 import { RULES_HASH } from '../../src/engine/rules-hash';
 import { canResume, compareRules, currentRules, gameRecord, paramsHash, RulesMismatchError } from '../../src/engine/version';
@@ -268,5 +268,39 @@ describe('D-80: Level 3 values voluntary insurance along its price path', () => 
       const nHigh = Object.values(d.types).filter((x) => x === 'HIGH').length;
       expect(d.volPath).toEqual(voluntaryPath(nHigh, 4));
     }
+  });
+});
+
+describe('D-81: the Cheaper Childcare subsidy is shown as paid from outside', () => {
+  it('60 coins per childcare worker on long hours, only under Cheaper Childcare', () => {
+    expect(subsidyFor('COMPLEX', 'GREEDY', true, 'D')).toBe(60);
+    expect(subsidyFor('COMPLEX', 'GREEDY', true, 'A')).toBe(0);
+    expect(subsidyFor('COMPLEX', 'FLEX', true, 'D')).toBe(0);
+    expect(subsidyFor('COMPLEX', 'GREEDY', false, 'D')).toBe(0);
+    expect(subsidyFor('SIMPLE', null, true, 'D')).toBe(0);
+  });
+
+  it('round records and the level total add up, and money itself is unchanged', () => {
+    let found = 0;
+    for (let g = 0; g < 12; g++) {
+      const s = createInitialState({ mode: 'SINGLE_LEVEL', level: 4, nPlayers: 4, difficulty: 'NORMAL', seed: `m2-${g}`, allBots: true, botSamples: 8 });
+      s.cf = { fixedPolicy: 'D', fast: false };
+      for (let i = 0; i < 1000 && s.phase.kind !== 'END'; i++) {
+        if (s.phase.kind === 'ROUND_SUMMARY' && s.round === 5) delete s.cf;
+        step(s, { type: 'ADVANCE' });
+      }
+      const l = s.levelState as L4State;
+      const d = s.levelResults[4] as L4Debrief;
+      let total = 0;
+      for (const r of l.rounds)
+        for (const id of Object.keys(r.W)) {
+          expect(r.subsidy[id]).toBe(subsidyFor(r.job[id], r.schedule[id], l.care[id], r.policy));
+          expect(r.W[id]).toBe(r.wage[id] - r.chaos[id] - (r.invest[id] ? r.costs[id] : 0));
+          total += r.subsidy[id];
+        }
+      expect(d.subsidyTotal).toBe(total);
+      found += total;
+    }
+    expect(found).toBeGreaterThan(0);
   });
 });
