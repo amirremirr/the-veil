@@ -6,10 +6,10 @@ import type { L5Debrief } from '../../engine/levels/level5';
 import { useStore } from '../store';
 import { t } from '../i18n';
 import { cardName, cardTitle, coins, pct } from '../labels';
-import { HUMAN_ID, currentRecord, headlineText, nameOf, useView } from '../game';
+import { currentRecord, headlineText, nameOf, useView } from '../game';
 import { Collapsible, FlipCard, FormCard, Page, Stamp, useMotionOff } from '../components/common';
 import { ChatFeed, ChatStrip, ContinueBar, MessageComposer, PlayerStrip, PrimaryBar, ResultsContext, Sheet, SummaryBlock, TopBar } from '../components/TableParts';
-import { isBannerReveal, screenDecisionPhase } from '../flow';
+import { isBannerReveal, screenDecisionPhase } from '../../shared/flow';
 import type { Phase } from '../../engine/types';
 import { L1UI } from '../levels/L1';
 import { L2UI } from '../levels/L2';
@@ -34,7 +34,7 @@ function ValuesCardFace({ card }: { card: ValuesCard }) {
 }
 
 function ValuesReveal({ v }: { v: ViewState }) {
-  const me = v.players.find((p) => p.id === HUMAN_ID)!;
+  const me = v.players.find((p) => p.id === v.viewer)!;
   const [flipped, setFlipped] = useState(false);
   const off = useMotionOff();
   useEffect(() => {
@@ -272,7 +272,8 @@ function Table({ v }: { v: ViewState }) {
 
 function Guess({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
-  const bots = v.players.filter((p) => !p.isHuman);
+  // Everyone else at the table (in solo play, the bots).
+  const bots = v.players.filter((p) => p.id !== v.viewer);
   const [g, setG] = useState<Record<string, ValuesCard>>(Object.fromEntries(bots.map((b) => [b.id, 'EGOIST' as ValuesCard])));
   return (
     <Page narrow>
@@ -309,8 +310,8 @@ function ideology(v: ViewState) {
   const ideal = d2?.bonus?.classification?.[0] ?? 'none';
   const verdict = d5?.verdict ?? 'none';
   const lines: string[] = [t('run.ideologyLine2', { ideal: t(`run.l2.${ideal}`), tail: t(`run.tails.${verdict}`) })];
-  if (d5?.fair1?.[HUMAN_ID] !== undefined && d5.fair2?.[HUMAN_ID] !== undefined)
-    lines.push(t('run.fairLine', { f1: `${Math.round(d5.fair1[HUMAN_ID] * 100)}%`, f2: `${Math.round(d5.fair2[HUMAN_ID] * 100)}%` }));
+  if (d5?.fair1?.[v.viewer] !== undefined && d5.fair2?.[v.viewer] !== undefined)
+    lines.push(t('run.fairLine', { f1: `${Math.round(d5.fair1[v.viewer] * 100)}%`, f2: `${Math.round(d5.fair2[v.viewer] * 100)}%` }));
   if (d2?.bonus?.classification?.length) lines.push(t('run.bonusLine', { ideal: t(`run.l2.${ideal}`) }));
   if (d2?.polls?.length) {
     const belief = Math.round((d2.polls.reduce((x, p) => x + p.answer, 0) / d2.polls.length) * 100);
@@ -365,7 +366,7 @@ function RunDebrief({ v }: { v: ViewState }) {
               </thead>
               <tbody>
                 {ranked.map((p, i) => (
-                  <tr key={p.id} className={p.id === HUMAN_ID ? 'font-semibold' : ''}>
+                  <tr key={p.id} className={p.id === v.viewer ? 'font-semibold' : ''}>
                     <td className="num">{i + 1}</td>
                     <td>{nameOf(v, p.id)}</td>
                     <td>
@@ -401,8 +402,8 @@ function RunDebrief({ v }: { v: ViewState }) {
         <FormCard form={t('run.botGuesses')}>
           <ul className="space-y-2 text-sm">
             {Object.entries(v.botBeliefs ?? {}).map(([bot, belief]) => {
-              const guess = v.guesses?.bots[bot]?.[HUMAN_ID];
-              const mine = v.players.find((p) => p.id === HUMAN_ID)?.values;
+              const guess = v.guesses?.bots[bot]?.[v.viewer];
+              const mine = v.players.find((p) => p.id === v.viewer)?.values;
               return (
                 <li key={bot}>
                   <div className="flex justify-between">

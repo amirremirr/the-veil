@@ -7,7 +7,7 @@ import type { ViewState } from '../../engine/types';
 import { useStore } from '../store';
 import { t } from '../i18n';
 import { coins, pct } from '../labels';
-import { HUMAN_ID, nameOf } from '../game';
+import { nameOf } from '../game';
 import { FormCard, ResultBanner, Stamp } from '../components/common';
 import { ContinueBar, PrimaryBar } from '../components/TableParts';
 import { ChartFrame, StackedBars } from '../components/Charts';
@@ -215,8 +215,8 @@ function Reveal({ v }: { v: ViewState }) {
     );
   }
   const r = lv.rounds[lv.rounds.length - 1];
-  const myE = r.effort[HUMAN_ID];
-  const myLuck = r.eps[HUMAN_ID];
+  const myE = r.effort[v.viewer];
+  const myLuck = r.eps[v.viewer];
   return (
     <FormCard form={t('levels.2.reveal.incomeTitle')}>
       <table className="data-table">
@@ -229,7 +229,7 @@ function Reveal({ v }: { v: ViewState }) {
         </thead>
         <tbody>
           {v.players.map((p) => (
-            <tr key={p.id} className={p.id === HUMAN_ID ? 'font-semibold' : ''}>
+            <tr key={p.id} className={p.id === v.viewer ? 'font-semibold' : ''}>
               <td>{nameOf(v, p.id)}</td>
               <td className="num text-end">{coins(r.y[p.id])}</td>
               <td className="num text-end">{coins(r.W[p.id])}</td>
@@ -244,7 +244,7 @@ function Reveal({ v }: { v: ViewState }) {
             e: myE,
             te: fmt1(L2.BASE_INCOME + L2.TALENT_MULT * lv.myTalent * myE),
             luck: myLuck,
-            y: fmt1(r.y[HUMAN_ID]),
+            y: fmt1(r.y[v.viewer]),
           })}
         </p>
       )}
@@ -258,7 +258,7 @@ function Reveal({ v }: { v: ViewState }) {
           return (
             <>
               {v.players.map((p) => {
-                const mine = p.id === HUMAN_ID;
+                const mine = p.id === v.viewer;
                 const vars = { y: fmt1(r.y[p.id]), tax: fmt1(r.t * r.y[p.id]), share: fmt1(pool.share), w: fmt1(r.W[p.id]) };
                 return (
                   <MoneyLine key={p.id} mine={mine}>
@@ -307,12 +307,12 @@ function Debrief({ v }: { v: ViewState }) {
     aa = t(highLuck === highTax ? 'debrief.l2.aaConsistent' : 'debrief.l2.aaInconsistent', { why });
   }
   const ideals = d.bonus?.classification?.map((c: FairnessIdeal) => t(`debrief.l2.ideals.${c}`)).join(' / ');
-  const pairs = d.rounds.map((r, i) => `R${i + 1} ${r.effort[HUMAN_ID]} vs ${d.eStar[i][HUMAN_ID]}`).join(', ');
+  const pairs = d.rounds.map((r, i) => `R${i + 1} ${r.effort[v.viewer]} vs ${d.eStar[i][v.viewer]}`).join(', ');
   const rows = v.players.map((p) => {
     const base = d.rounds.length * L2.BASE_INCOME;
     const te = d.rounds.reduce((a, r) => a + L2.TALENT_MULT * d.talents[p.id] * r.effort[p.id], 0);
     const luck = d.rounds.reduce((a, r) => a + r.eps[p.id], 0);
-    return { label: `${nameOf(v, p.id)} (a=${d.talents[p.id]})`, parts: [base, te, luck], highlight: p.id === HUMAN_ID };
+    return { label: `${nameOf(v, p.id)} (a=${d.talents[p.id]})`, parts: [base, te, luck], highlight: p.id === v.viewer };
   });
   return (
     <DebriefShell
@@ -337,7 +337,7 @@ function Debrief({ v }: { v: ViewState }) {
           lab: t('ui.l2.cmpLab'),
           you: pct(meanVote),
           bots: pct(
-            d.rounds.flatMap((r) => Object.entries(r.tVotes).filter(([id]) => id !== HUMAN_ID).map(([, x]) => x)).reduce((a, b, _, arr) => a + b / arr.length, 0),
+            d.rounds.flatMap((r) => Object.entries(r.tVotes).filter(([id]) => id !== v.viewer).map(([, x]) => x)).reduce((a, b, _, arr) => a + b / arr.length, 0),
           ),
         },
       ]}

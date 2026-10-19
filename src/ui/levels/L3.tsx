@@ -5,7 +5,7 @@ import type { ViewState } from '../../engine/types';
 import { useStore } from '../store';
 import { lifeEvent, t } from '../i18n';
 import { pct } from '../labels';
-import { HUMAN_ID, nameOf } from '../game';
+import { nameOf } from '../game';
 import { CheckBox, FormCard, ResultBanner, Stamp } from '../components/common';
 import { ContinueBar, PrimaryBar } from '../components/TableParts';
 import { ChartFrame, LineChart } from '../components/Charts';
@@ -148,7 +148,7 @@ function Reveal({ v }: { v: ViewState }) {
               </span>
             </div>
             <p className={`mt-1 ${r.events[p.id] ? 'text-stamp' : 'text-soft'}`}>{r.events[p.id] ? lifeEvent(r.eventCards[p.id]) : t('levels.3.reveal.none')}</p>
-            <MoneyLine mine={p.id === HUMAN_ID}>{moneyText(r, p.id)}</MoneyLine>
+            <MoneyLine mine={p.id === v.viewer}>{moneyText(r, p.id)}</MoneyLine>
           </li>
         ))}
       </ul>
@@ -215,8 +215,8 @@ function Info({ v }: { v: ViewState }) {
 
 function Debrief({ v }: { v: ViewState }) {
   const d = (v.levelView as L3View).debrief ?? (v.levelResults[3] as L3Debrief);
-  const me = d.types[HUMAN_ID];
-  const myVote = d.regimeVotes?.[HUMAN_ID];
+  const me = d.types[v.viewer];
+  const myVote = d.regimeVotes?.[v.viewer];
   const best = d.bestRegimeForType[me];
   const g = d.gym;
   const rate = (x: [number, number]) => (x[1] ? `${x[0]}/${x[1]}` : '0/0');

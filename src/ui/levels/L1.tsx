@@ -5,7 +5,7 @@ import type { ViewState } from '../../engine/types';
 import { useStore } from '../store';
 import { t } from '../i18n';
 import { pct } from '../labels';
-import { HUMAN_ID, nameOf, shortName } from '../game';
+import { nameOf, shortName } from '../game';
 import { FlipCard, FormCard, Stamp, Tip, useMotionOff } from '../components/common';
 import { ContinueBar, PrimaryBar } from '../components/TableParts';
 import { ChartFrame, GroupedBars } from '../components/Charts';
@@ -115,11 +115,11 @@ function Reveal({ v }: { v: ViewState }) {
               r.t,
               L1.KAPPA,
             );
-            const y = r.incomes[HUMAN_ID];
+            const y = r.incomes[v.viewer];
             return (
               <>
                 <MoneyLine mine>
-                  {t('summary.money.l1', { y, tax: fmt1(r.t * y), share: fmt1(pool.share), w: fmt1(r.W[HUMAN_ID]) })}
+                  {t('summary.money.l1', { y, tax: fmt1(r.t * y), share: fmt1(pool.share), w: fmt1(r.W[v.viewer]) })}
                 </MoneyLine>
                 <p className="text-xs text-soft">
                   {t('summary.taxWent', { c: fmt1(pool.collected), lost: fmt1(pool.lost), share: fmt1(pool.share) })}
@@ -200,10 +200,10 @@ function RoundTabs({ d }: { d: L1Debrief }) {
 
 function Debrief({ v }: { v: ViewState }) {
   const d = (v.levelView as L1View).debrief ?? (v.levelResults[1] as L1Debrief);
-  const myVotes = d.rounds.map((r) => r.votes[HUMAN_ID]).filter(Boolean);
+  const myVotes = d.rounds.map((r) => r.votes[v.viewer]).filter(Boolean);
   const counts = PS.map((p) => myVotes.filter((x) => x === p).length);
   const main = PS[counts.indexOf(Math.max(...counts))];
-  const botVotes = d.rounds.flatMap((r) => Object.entries(r.votes).filter(([id]) => id !== HUMAN_ID).map(([, p]) => p));
+  const botVotes = d.rounds.flatMap((r) => Object.entries(r.votes).filter(([id]) => id !== v.viewer).map(([, p]) => p));
   const botMain = PS.map((p) => [p, botVotes.filter((x) => x === p).length] as const).sort((a, b) => b[1] - a[1])[0]?.[0];
   const price = d.priceOfInsurance[main] ?? 0;
   const tease = new Set(myVotes).size > 1 ? t('debrief.l1.teaseMix') : main === 'P1' ? t('debrief.l1.teaseEgo') : t('debrief.l1.teaseRisk');

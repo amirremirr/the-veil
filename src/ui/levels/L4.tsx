@@ -5,7 +5,7 @@ import type { ViewState } from '../../engine/types';
 import { useStore } from '../store';
 import { t } from '../i18n';
 import { coins, pct, signed } from '../labels';
-import { HUMAN_ID, nameOf } from '../game';
+import { nameOf } from '../game';
 import { FormCard, ResultBanner, Shape, Stamp } from '../components/common';
 import { ContinueBar, PrimaryBar } from '../components/TableParts';
 import { ChartFrame, LineChart, StackedBars } from '../components/Charts';
@@ -61,7 +61,7 @@ function InvestForm({ v }: { v: ViewState }) {
 function ScheduleForm({ v }: { v: ViewState }) {
   const lv = v.levelView as L4View;
   const [x, setX] = useState<Schedule | null>(null);
-  const care = lv.care[HUMAN_ID];
+  const care = lv.care[v.viewer];
   const chaos = lv.policy === 'D' ? L4.CHAOS_COST_SUBSIDIZED : L4.CHAOS_COST;
   return (
     <FormCard form={t('levels.4.scheduleTitle')}>
@@ -182,7 +182,7 @@ function Reveal({ v }: { v: ViewState }) {
                 {pay && c.schedule?.[p.id] && <span>{c.schedule[p.id] === 'GREEDY' ? t('ui.l4.greedy') : t('ui.l4.flex')}</span>}
                 {pay && c.W && <span className="num text-ink">{t('ui.wealthShort')} {coins(c.W[p.id])}</span>}
               </div>
-              {pay && <PayCalc c={c} id={p.id} />}
+              {pay && <PayCalc c={c} id={p.id} viewer={v.viewer} />}
             </li>
           );
         })}
@@ -231,7 +231,7 @@ function Reveal({ v }: { v: ViewState }) {
  * How a worker's money was worked out, shown when it differs from the plain wage. Each player's total
  * is already on screen, so the training cost is pay - childcare - total and reveals nothing new.
  */
-function PayCalc({ c, id }: { c: Partial<L4Round>; id: string }) {
+function PayCalc({ c, id, viewer }: { c: Partial<L4Round>; id: string; viewer: string }) {
   if (!c.wage || !c.W || !c.chaos) return null;
   const wage = c.wage[id];
   const chaos = c.chaos[id];
@@ -242,7 +242,7 @@ function PayCalc({ c, id }: { c: Partial<L4Round>; id: string }) {
   if (chaos) parts.push(t('levels.4.calc.childcare', { n: chaos }));
   if (trained) parts.push(t('levels.4.calc.training', { n: c.costs?.[id] ?? wage - chaos - w }));
   const text = `${parts.join(' - ')} ${t('levels.4.calc.equals', { w })}`;
-  return <p className={`num mt-1 text-xs ${id === HUMAN_ID ? 'text-ink' : 'text-soft'}`}>{text}</p>;
+  return <p className={`num mt-1 text-xs ${id === viewer ? 'text-ink' : 'text-soft'}`}>{text}</p>;
 }
 
 function Info({ v }: { v: ViewState }) {
@@ -251,8 +251,8 @@ function Info({ v }: { v: ViewState }) {
     <div className="space-y-3">
       <Report priors={lv.priors} policy={lv.policy} />
       <p className="text-sm">
-        <Shape group={lv.groups[HUMAN_ID]} /> {t(`levels.4.groups.${lv.groups[HUMAN_ID]}`)}
-        {lv.care[HUMAN_ID] ? ` · ${t('levels.4.care')}` : ''}
+        <Shape group={lv.groups[v.viewer]} /> {t(`levels.4.groups.${lv.groups[v.viewer]}`)}
+        {lv.care[v.viewer] ? ` · ${t('levels.4.care')}` : ''}
       </p>
     </div>
   );
@@ -261,8 +261,8 @@ function Info({ v }: { v: ViewState }) {
 function Debrief({ v }: { v: ViewState }) {
   const d = (v.levelView as L4View).debrief ?? (v.levelResults[4] as L4Debrief);
   const cf = d.counterfactual;
-  const myGroup = d.groups[HUMAN_ID];
-  const invested = d.rounds.filter((r) => r.invest[HUMAN_ID]).length;
+  const myGroup = d.groups[v.viewer];
+  const invested = d.rounds.filter((r) => r.invest[v.viewer]).length;
   const scen = (k: CfScenario['key']) => cf?.scenarios.find((s) => s.key === k);
   const rounds = d.piPath.SQUARE.map((_, i) => (i === 0 ? t('ui.l4.start') : `R${i}`));
   return (
@@ -294,7 +294,7 @@ function Debrief({ v }: { v: ViewState }) {
       ]}
       did={
         <>
-          <p>{t('debrief.l4.you', { g: t(`levels.4.groups.${myGroup}`), care: d.care[HUMAN_ID] ? t('ui.l4.careHolder') : '', k: invested })}</p>
+          <p>{t('debrief.l4.you', { g: t(`levels.4.groups.${myGroup}`), care: d.care[v.viewer] ? t('ui.l4.careHolder') : '', k: invested })}</p>
           <p>{t('debrief.l4.gap', { gap: signed(d.gap) })}</p>
           <table className="data-table">
             <thead>
@@ -391,8 +391,8 @@ function Banner({ v, step }: { v: ViewState; step: string }) {
       </ResultBanner>
     );
   const c = lv.current;
-  if (step === 'ASSIGN' && c?.job?.[HUMAN_ID] === 'COMPLEX')
-    return <ResultBanner>{t('levels.4.banner.assign', { q: Math.round((c.q?.[HUMAN_ID] ?? 0) * 100) })}</ResultBanner>;
+  if (step === 'ASSIGN' && c?.job?.[v.viewer] === 'COMPLEX')
+    return <ResultBanner>{t('levels.4.banner.assign', { q: Math.round((c.q?.[v.viewer] ?? 0) * 100) })}</ResultBanner>;
   return null;
 }
 

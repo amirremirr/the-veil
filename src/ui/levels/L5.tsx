@@ -7,7 +7,7 @@ import type { ViewState } from '../../engine/types';
 import { useStore } from '../store';
 import { t } from '../i18n';
 import { coins, constitutionLabel, signed } from '../labels';
-import { HUMAN_ID, nameOf, shortName } from '../game';
+import { nameOf, shortName } from '../game';
 import { FlipCard, FormCard, Stamp, useMotionOff } from '../components/common';
 import { ContinueBar, PrimaryBar } from '../components/TableParts';
 import { ChartFrame, Scatter } from '../components/Charts';
@@ -122,7 +122,7 @@ function LobbyForm({ v }: { v: ViewState }) {
   const [prop, setProp] = useState<Constitution>({ ...cur });
   const ids = v.players.map((p) => p.id);
   const inc = ids.map((id) => lv.incomes![id]);
-  const me = ids.indexOf(HUMAN_ID);
+  const me = ids.indexOf(v.viewer);
   const wCur = constitutionWealth(inc, cur)[me];
   const wNew = constitutionWealth(inc, prop)[me];
   const decision: Lobby = { donateTo: to && amount > 0 ? to : null, amount: to ? amount : 0, proposal: proposing ? prop : null };
@@ -135,7 +135,7 @@ function LobbyForm({ v }: { v: ViewState }) {
           <select className="mt-1 min-h-[44px] w-full rounded-md border-2 border-line bg-card px-2" value={to} onChange={(e) => setTo(e.target.value)}>
             <option value="">{t('levels.5.nobody')}</option>
             {v.players
-              .filter((p) => p.id !== HUMAN_ID)
+              .filter((p) => p.id !== v.viewer)
               .map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -183,12 +183,12 @@ function AmendForm({ v }: { v: ViewState }) {
   const cur = lv.current!;
   const ids = v.players.map((p) => p.id);
   const inc = ids.map((id) => lv.incomes![id]);
-  const me = ids.indexOf(HUMAN_ID);
+  const me = ids.indexOf(v.viewer);
   return (
     <FormCard form={t('levels.5.amendTitle', { k: k + 1, total: lv.order.length })}>
       {lv.amendments.length > 0 && <AmendmentLog v={v} list={lv.amendments} />}
       <p className="mb-2 text-sm">
-        {t(proposer === HUMAN_ID ? 'levels.5.amendDecideYou' : 'levels.5.amendDecide', {
+        {t(proposer === v.viewer ? 'levels.5.amendDecideYou' : 'levels.5.amendDecide', {
           name: nameOf(v, proposer),
           from: constitutionLabel(cur),
           to: constitutionLabel(prop),
@@ -347,10 +347,10 @@ function Reveal({ v }: { v: ViewState }) {
             const ids = v.players.map((p) => p.id);
             const inc = ids.map((id) => lv.incomes![id]);
             const parts = floorTopUpParts(inc, lv.current!.t, lv.current!.F, L5.KAPPA);
-            const me = ids.indexOf(HUMAN_ID);
-            const mine = lv.lobby![HUMAN_ID];
+            const me = ids.indexOf(v.viewer);
+            const mine = lv.lobby![v.viewer];
             const given = mine?.donateTo ? mine.amount : 0;
-            const recv = Object.values(lv.lobby!).reduce((a, l) => a + (l.donateTo === HUMAN_ID ? l.amount : 0), 0);
+            const recv = Object.values(lv.lobby!).reduce((a, l) => a + (l.donateTo === v.viewer ? l.amount : 0), 0);
             return (
               <>
                 <MoneyLine mine>
@@ -361,7 +361,7 @@ function Reveal({ v }: { v: ViewState }) {
                     share: fmt1(parts.shareEach),
                     given,
                     recv,
-                    w: fmt1(lv.W![HUMAN_ID]),
+                    w: fmt1(lv.W![v.viewer]),
                   })}
                 </MoneyLine>
                 <p className="text-xs text-soft">
@@ -420,29 +420,29 @@ function Debrief({ v }: { v: ViewState }) {
           label: t('ui.l5.cmpLabel'),
           benchmark: t('ui.l5.cmpBench'),
           lab: t('ui.l5.cmpLab'),
-          you: t('ui.l5.pts', { x: signed(dtPts(HUMAN_ID)) }),
+          you: t('ui.l5.pts', { x: signed(dtPts(v.viewer)) }),
           bots: t('ui.l5.ptsRank', { x: signed(m, 1) }),
         },
       ]}
       did={
         <>
           <p>
-            {d.proposals[HUMAN_ID]
+            {d.proposals[v.viewer]
               ? t('debrief.l5.paidLine', {
-                  veil: constitutionLabel(d.veil[HUMAN_ID]),
-                  prop: constitutionLabel(d.proposals[HUMAN_ID]!),
-                  dt: signed((d.paidMove[HUMAN_ID] ?? 0) * 100),
+                  veil: constitutionLabel(d.veil[v.viewer]),
+                  prop: constitutionLabel(d.proposals[v.viewer]!),
+                  dt: signed((d.paidMove[v.viewer] ?? 0) * 100),
                 })
-              : t('debrief.l5.paidLinePass', { veil: constitutionLabel(d.veil[HUMAN_ID]) })}
+              : t('debrief.l5.paidLinePass', { veil: constitutionLabel(d.veil[v.viewer]) })}
           </p>
           <p className="font-semibold">
             {t('debrief.l5.fairLine', {
-              f1: `${Math.round(d.fair1[HUMAN_ID] * 100)}%`,
-              f2: `${Math.round(d.fair2[HUMAN_ID] * 100)}%`,
-              inc: d.incomes[HUMAN_ID],
-              rank: d.rank[HUMAN_ID],
+              f1: `${Math.round(d.fair1[v.viewer] * 100)}%`,
+              f2: `${Math.round(d.fair2[v.viewer] * 100)}%`,
+              inc: d.incomes[v.viewer],
+              rank: d.rank[v.viewer],
               n,
-              dt: signed(dtPts(HUMAN_ID)),
+              dt: signed(dtPts(v.viewer)),
             })}
           </p>
           {d.verdict && <p className="h-display text-xl">{t(`verdicts.${d.verdict}`)}</p>}
@@ -457,7 +457,7 @@ function Debrief({ v }: { v: ViewState }) {
           </p>
           {d.boughtVotes.map((b, i) => (
             <p key={i} className="text-soft">
-              {t(b.donor === HUMAN_ID ? 'debrief.l5.boughtYou' : b.recipient === HUMAN_ID ? 'debrief.l5.boughtToYou' : 'debrief.l5.bought', {
+              {t(b.donor === v.viewer ? 'debrief.l5.boughtYou' : b.recipient === v.viewer ? 'debrief.l5.boughtToYou' : 'debrief.l5.bought', {
                 donor: nameOf(v, b.donor),
                 amount: b.amount,
                 to: nameOf(v, b.recipient),
@@ -470,7 +470,7 @@ function Debrief({ v }: { v: ViewState }) {
       chart={
         <ChartFrame title={t('debrief.l5.chartTitle')} summary={v.players.map((p) => t('ui.l5.summary', { name: nameOf(v, p.id), rank: d.rank[p.id], dt: dtPts(p.id).toFixed(0) })).join('; ')}>
           <Scatter
-            points={v.players.map((p) => ({ x: d.rank[p.id], y: dtPts(p.id), label: nameOf(v, p.id), highlight: p.id === HUMAN_ID }))}
+            points={v.players.map((p) => ({ x: d.rank[p.id], y: dtPts(p.id), label: nameOf(v, p.id), highlight: p.id === v.viewer }))}
             xLabel={t('debrief.l5.chartX')}
             yLabel={t('debrief.l5.chartY')}
             slope={{ m, b: my - m * mx }}

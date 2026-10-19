@@ -4,7 +4,7 @@ import type { ViewState } from '../../engine/types';
 import { useStore } from '../store';
 import { t } from '../i18n';
 import { cardName, coins } from '../labels';
-import { HUMAN_ID, levelRounds, nameOf } from '../game';
+import { levelRounds, nameOf } from '../game';
 import { Collapsible, FormCard, Page, Stamp } from './common';
 
 export interface CompareRow {
@@ -49,7 +49,7 @@ export function DebriefShell({
   const players = v.players.slice().sort((a, b) => score(b.id) - score(a.id));
   const entries = archives.entries.filter((e) => archiveIds.includes(e.id));
   const refs = archives.refs as Record<string, string>;
-  const rel = v.reliability?.[HUMAN_ID];
+  const rel = v.reliability?.[v.viewer];
   const canNext = level < 5 && (settings.unlockAll || progress.unlocked > level);
   const row = compare?.[0];
   return (
@@ -104,7 +104,7 @@ export function DebriefShell({
             <h2 className="label mb-1">{t('debrief.scores')}</h2>
             <ol className="divide-y divide-line/60 rounded-md border border-line bg-card px-3 text-sm">
               {players.map((p) => (
-                <li key={p.id} className={`flex items-baseline justify-between gap-2 py-1 ${p.id === HUMAN_ID ? 'font-semibold' : ''}`}>
+                <li key={p.id} className={`flex items-baseline justify-between gap-2 py-1 ${p.id === v.viewer ? 'font-semibold' : ''}`}>
                   <span className="min-w-0 truncate">
                     {nameOf(v, p.id)}
                     {v.revealAll && p.values && <span className="font-normal text-soft"> · {cardName(p.values)}</span>}
@@ -175,7 +175,7 @@ export function DebriefShell({
                   </thead>
                   <tbody>
                     {players.map((p) => (
-                      <tr key={p.id} className={p.id === HUMAN_ID ? 'font-semibold' : ''}>
+                      <tr key={p.id} className={p.id === v.viewer ? 'font-semibold' : ''}>
                         <td>{nameOf(v, p.id)}</td>
                         {rounds.map((r) => (
                           <td key={r.round} className="num text-end">

@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { reduce, HUMAN_ID } from '../engine/engine';
 import type { Action, Difficulty, GameState, LevelId, SetupConfig, ValuesCard } from '../engine/types';
-import { act as flowAct, settle } from './flow';
+import { act as flowAct, settle } from '../shared/flow';
 
 export type Screen = 'title' | 'mode' | 'setup' | 'game' | 'archives' | 'settings' | 'about';
 
@@ -77,7 +77,7 @@ interface Store {
   talkFrom: number | null;
   tipsSeen: string[];
   go(screen: Screen): void;
-  /** One tap of the main button on the current screen (see flow.ts). */
+  /** One tap of the main button on the current screen (see src/shared/flow.ts). */
   act(decision?: unknown, guesses?: Record<string, ValuesCard>): void;
   dismissTip(id: string): void;
   resetTips(): void;
@@ -135,7 +135,9 @@ export const useStore = create<Store>((set, get) => {
     },
     start(config) {
       const seed = config.seed?.trim() || randomSeed();
-      const g = settle(reduce(null as unknown as GameState, { type: 'START_RUN', config: { ...config, seed } }));
+      // Solo play: one human seat with HUMAN_ID (multiplayer rooms pass several, see server/).
+      const humans = [{ id: HUMAN_ID, name: config.humanName || 'You' }];
+      const g = settle(reduce(null as unknown as GameState, { type: 'START_RUN', config: { ...config, humans, seed } }));
       set({ game: g, screen: 'game', talkFrom: null });
       persist();
       if (typeof window !== 'undefined') window.scrollTo({ top: 0 });
@@ -150,7 +152,7 @@ export const useStore = create<Store>((set, get) => {
     act(decision, guesses) {
       const g = get().game;
       if (!g) return;
-      commit(g, flowAct(g, decision, guesses));
+      commit(g, flowAct(g, HUMAN_ID, decision, guesses));
     },
     dismissTip(id) {
       if (get().tipsSeen.includes(id)) return;

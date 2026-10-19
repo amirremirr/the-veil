@@ -55,6 +55,8 @@ export interface L4Debrief {
   investRate: { CIRCLE: number; SQUARE: number };
   /** Round 1 training: the human's card's best choice (risk neutral apart from hardship) vs. theirs. */
   cardBest?: { best: boolean; chose: boolean };
+  /** Per human (D-43, D-62). visibleState merges the viewer's entry into the fields above. */
+  byHuman?: Record<PlayerId, { cardBest: { best: boolean; chose: boolean } }>;
   counterfactual?: {
     scenarios: CfScenario[];
     sameSeed: { stereotype: number; care: number; interaction: number; total: number };
@@ -454,7 +456,14 @@ export const level4: LevelDefinition = {
       const xs = l.rounds.flatMap((r) => pids.filter((id) => l.groups[id] === g).map((id) => (r.invest[id] ? 1 : 0)));
       return mean(xs);
     };
-    const human = s.players.find((p) => p.isHuman);
+    const byHuman: NonNullable<L4Debrief['byHuman']> = {};
+    const r1 = l.rounds[0];
+    for (const h of s.players.filter((p) => p.isHuman)) {
+      // Each human's line uses a fresh copy of the same private stream, so the order of humans does not matter.
+      const world = worldOf(s, r1.policy, r1.priorsBefore);
+      const ce = investCE(s, h.id, h.values, 0, s.botSamples, { world, cost: r1.costs[h.id], rng: debriefRng(s, 'l4') });
+      byHuman[h.id] = { cardBest: { best: ce[1] > ce[0], chose: r1.invest[h.id] } };
+    }
     const d: L4Debrief = {
       groups: { ...l.groups },
       care: { ...l.care },
@@ -468,14 +477,7 @@ export const level4: LevelDefinition = {
       },
       policy: l.policy,
       policyVotes: l.policyVotes,
-      cardBest: human
-        ? (() => {
-            const r1 = l.rounds[0];
-            const world = worldOf(s, r1.policy, r1.priorsBefore);
-            const ce = investCE(s, human.id, human.values, 0, s.botSamples, { world, cost: r1.costs[human.id], rng: debriefRng(s, 'l4') });
-            return { best: ce[1] > ce[0], chose: r1.invest[human.id] };
-          })()
-        : undefined,
+      byHuman,
       investRate: { CIRCLE: rate('CIRCLE'), SQUARE: rate('SQUARE') },
     };
     l.debrief = d;

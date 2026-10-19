@@ -1,6 +1,6 @@
 // Level 4 counterfactual decomposition: re-run the level with altered parameters (Section 4, Level 4).
 import { L4 } from './params';
-import { initBeliefs, humanOf } from './core';
+import { initBeliefs } from './core';
 import { mean } from './scoring';
 import { initRng } from './rng';
 import { _startLevel, step, waitingOn } from './engine';
@@ -25,6 +25,8 @@ const SCENARIOS: Array<{ key: CfScenario['key']; cf: Cf }> = [
 ];
 
 type Plan = { invest: boolean[]; schedule: Array<Schedule | null>; policy?: string } | null;
+/** Each human's logged decisions, by seat (D-24: every human's choices are replayed where they still apply). */
+type Plans = Record<PlayerId, Plan>;
 
 function sandbox(base: GameState, cf: Cf, rng: RngState, botSamples: number): GameState {
   const s: GameState = structuredClone({
@@ -63,14 +65,14 @@ function humanDecision(s: GameState, pid: PlayerId, stepId: string, plan: Plan):
   return null;
 }
 
-function run(base: GameState, cf: Cf, rng: RngState, botSamples: number, plan: Plan, fast: boolean) {
+function run(base: GameState, cf: Cf, rng: RngState, botSamples: number, plans: Plans, fast: boolean) {
   const s = sandbox(base, { ...cf, fast }, rng, botSamples);
   let guard = 0;
   while (s.phase.kind !== 'LEVEL_DEBRIEF' && guard++ < 1000) {
     if (s.phase.kind === 'DECIDE') {
       const w = waitingOn(s);
       if (!w.length) break;
-      for (const pid of w) step(s, { type: 'SUBMIT_DECISION', from: pid, decision: humanDecision(s, pid, s.phase.step!, plan) });
+      for (const pid of w) step(s, { type: 'SUBMIT_DECISION', from: pid, decision: humanDecision(s, pid, s.phase.step!, plans[pid] ?? null) });
     } else step(s, { type: 'ADVANCE' });
   }
   const l = s.levelState as L4State;
@@ -87,21 +89,20 @@ function decompose(g: Record<CfScenario['key'], number>) {
 
 export function level4Counterfactual(s: GameState): NonNullable<L4Debrief['counterfactual']> {
   const l = s.levelState as L4State;
-  const h = humanOf(s);
-  let plan: Plan = null;
-  if (h) {
-    plan = {
+  const plans: Plans = {};
+  for (const h of s.players.filter((p) => p.isHuman)) {
+    plans[h.id] = {
       invest: l.rounds.map((r) => r.invest[h.id]),
       schedule: l.rounds.map((r) => r.schedule[h.id]),
       policy: l.policyVotes?.[h.id],
     };
   }
-  const same = SCENARIOS.map((sc) => ({ key: sc.key, ...run(s, sc.cf, l.startRng, s.botSamples, plan, false) }));
+  const same = SCENARIOS.map((sc) => ({ key: sc.key, ...run(s, sc.cf, l.startRng, s.botSamples, plans, false) }));
   const sameGaps = Object.fromEntries(same.map((x) => [x.key, x.gap])) as Record<CfScenario['key'], number>;
   const avgGaps = { BASELINE: 0, EQUAL_PRIORS: 0, EQUAL_CARE: 0, BOTH: 0 } as Record<CfScenario['key'], number>;
   for (let k = 0; k < L4.CF_REPLAYS; k++) {
     const rng = initRng(`${s.seed}|cf|${k}`);
-    for (const sc of SCENARIOS) avgGaps[sc.key] += run(s, sc.cf, rng, L4.CF_BOT_SAMPLES, null, true).gap / L4.CF_REPLAYS;
+    for (const sc of SCENARIOS) avgGaps[sc.key] += run(s, sc.cf, rng, L4.CF_BOT_SAMPLES, {}, true).gap / L4.CF_REPLAYS;
   }
   return {
     scenarios: same.map((x) => ({ key: x.key, gap: x.gap, avgGap: avgGaps[x.key], piSquare: x.piSquare })),

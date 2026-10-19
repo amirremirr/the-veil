@@ -1,7 +1,7 @@
 // Dev and e2e helpers. Loaded only when import.meta.env.DEV is true.
 import type { GameState } from '../engine/types';
 import { useStore } from './store';
-import { screenDecisionPhase } from './flow';
+import { screenDecisionPhase } from '../shared/flow';
 
 const SCRIPT: Record<string, unknown> = {
   VOTE: 'P2',

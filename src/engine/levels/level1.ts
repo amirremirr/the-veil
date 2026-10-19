@@ -44,6 +44,8 @@ export interface L1Debrief {
   voteShares: Record<PrincipleId, number>;
   /** The human's card's best vote (risk neutral apart from the hardship line, no noise) vs. their votes. */
   cardBest?: { best: PrincipleId; chose: PrincipleId[] };
+  /** Per human (D-43, D-62). visibleState merges the viewer's entry into the fields above. */
+  byHuman?: Record<PlayerId, { cardBest: { best: PrincipleId; chose: PrincipleId[] } }>;
 }
 
 export interface L1State {
@@ -216,7 +218,9 @@ export const level1: LevelDefinition = {
         total++;
       }
     for (const p of PRINCIPLES) shares[p] = total ? shares[p] / total : 0;
-    const human = s.players.find((p) => p.isHuman);
+    const byHuman: NonNullable<L1Debrief['byHuman']> = {};
+    for (const h of s.players.filter((p) => p.isHuman))
+      byHuman[h.id] = { cardBest: { best: sincereFavorite(n, h.values, 0), chose: st(s).rounds.map((r) => r.votes[h.id]) } };
     const d: L1Debrief = {
       rounds,
       expected,
@@ -224,9 +228,7 @@ export const level1: LevelDefinition = {
       // Harsanyi's benchmark maximizes expected income, which is the average: No Tax, because every tax leaks.
       benchmark: { harsanyi: 'P1', rawls: 'P4', lab: 'P2' },
       voteShares: shares,
-      cardBest: human
-        ? { best: sincereFavorite(n, human.values, 0), chose: st(s).rounds.map((r) => r.votes[human.id]) }
-        : undefined,
+      byHuman,
     };
     st(s).debrief = d;
     return d;
