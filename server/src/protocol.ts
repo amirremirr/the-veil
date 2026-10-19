@@ -1,7 +1,7 @@
 // Room protocol, version 1 (JSON over a WebSocket). Every client message is checked here for shape
 // and size before the room looks at it; anything else is rejected. No DOM, no Worker APIs, so the
 // root test suite can import it.
-import type { Difficulty, LevelId, Mode, StructuredMessage, ValuesCard, ViewState } from '../../src/engine/types';
+import type { Difficulty, LevelId, Mode, RulesVersion, StructuredMessage, ValuesCard, ViewState } from '../../src/engine/types';
 
 export const PROTOCOL_VERSION = 1;
 
@@ -46,7 +46,8 @@ export interface LobbySeat {
 }
 
 export type ServerMessage =
-  | { v: 1; type: 'WELCOME'; code: string; yourSeat: string; token: string }
+  /** `rules`: the server's engine rules (D-75), so a client built from other rules can refuse to play. */
+  | { v: 1; type: 'WELCOME'; code: string; yourSeat: string; token: string; rules?: RulesVersion }
   | { v: 1; type: 'LOBBY'; code: string; seats: LobbySeat[]; host: string | null; settings: RoomSettings; started: boolean }
   | {
       v: 1;

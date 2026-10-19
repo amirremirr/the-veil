@@ -5,6 +5,8 @@
 import { DurableObject } from 'cloudflare:workers';
 import { reduce, replay, visibleState } from '../../src/engine/engine';
 import { BOT_PROFILES } from '../../src/engine/params';
+import { compareRules, currentRules } from '../../src/engine/version';
+import type { RulesVersion } from '../../src/engine/types';
 import type { GameState, LoggedAction, PlayerId, SetupConfig } from '../../src/engine/types';
 import {
   lockedIn,
@@ -52,6 +54,8 @@ interface Meta {
   host: PlayerId | null;
   settings: RoomSettings;
   started: boolean;
+  /** Rules the game was started under (D-75). A log only replays the same under the same rules. */
+  rules?: RulesVersion;
 }
 
 interface Flow {
@@ -86,7 +90,13 @@ export class Room extends DurableObject<Env> {
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     this.sql = ctx.storage.sql;
-    ctx.blockConcurrencyWhile(async () => this.load());
+    ctx.blockConcurrencyWhile(async () => {
+      this.load();
+      // A deploy that changed the rules would replay this room's log into a different game (D-75):
+      // close the room instead of continuing it silently.
+      if (this.meta?.started && compareRules(this.meta.rules) === 'different') await this.close();
+      else if (this.meta?.started) this.rebuild();
+    });
   }
 
   // --- storage --------------------------------------------------------------------------------
@@ -100,7 +110,6 @@ export class Room extends DurableObject<Env> {
     this.meta = JSON.parse(kv.get('meta')!);
     this.seats = JSON.parse(kv.get('seats') ?? '[]');
     this.flow = JSON.parse(kv.get('flow') ?? 'null') ?? this.flow;
-    if (this.meta!.started) this.rebuild();
   }
 
   /** Rebuild the full state by replaying the stored log (the engine is deterministic, so this is exact). */
@@ -267,7 +276,7 @@ export class Room extends DurableObject<Env> {
     seat.missed = 0;
     seat.left = false;
     if (!meta.host || !this.seats.some((s) => s.id === meta.host)) meta.host = seat.id;
-    this.send(ws, { v: 1, type: 'WELCOME', code: meta.code, yourSeat: seat.id, token: token! });
+    this.send(ws, { v: 1, type: 'WELCOME', code: meta.code, yourSeat: seat.id, token: token!, rules: currentRules() });
     this.armDeadline();
     this.save();
     await this.scheduleAlarm();
@@ -293,6 +302,7 @@ export class Room extends DurableObject<Env> {
       humans: this.seats.map((s) => ({ id: s.id, name: s.name })),
     };
     meta.started = true;
+    meta.rules = currentRules();
     await this.commit(newTable(reduce(null as unknown as GameState, { type: 'START_RUN', config })));
   }
 

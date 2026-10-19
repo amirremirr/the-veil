@@ -1,6 +1,10 @@
 // Fixes from the October 2026 audit (DECISIONS.md D-72 onward).
 import { describe, expect, it } from 'vitest';
-import { createInitialState, step, waitingOn } from '../../src/engine/engine';
+import { execSync } from 'node:child_process';
+import { createInitialState, reduce, replay, step, waitingOn } from '../../src/engine/engine';
+import { L4 } from '../../src/engine/params';
+import { RULES_HASH } from '../../src/engine/rules-hash';
+import { canResume, compareRules, currentRules, gameRecord, paramsHash, RulesMismatchError } from '../../src/engine/version';
 import { varianceShares, type L2Debrief } from '../../src/engine/levels/level2';
 import { MIN_HUMANS_FOR_SLOPE, olsSlope, type L5Debrief } from '../../src/engine/levels/level5';
 import en from '../../src/ui/copy/en.json';
@@ -96,5 +100,60 @@ describe('D-73: Level 5 measures use human answers only', () => {
     expect(en.debrief.l5.botsProgrammed).toMatch(/programmed/);
     expect(en.debrief.l5.botsProgrammed).toMatch(/Egoist/);
     expect(en.debrief.l5.ownShiftNote).toMatch(/several causes/);
+  });
+});
+
+describe('D-75: rules version in games, saves and exports', () => {
+  const play = () => {
+    let s = reduce(null as unknown as GameState, { type: 'START_RUN', config: { mode: 'SINGLE_LEVEL', level: 1, nPlayers: 3, difficulty: 'NORMAL', seed: 'm5', botSamples: 8 } });
+    for (let i = 0; i < 200 && s.phase.kind !== 'END'; i++) {
+      const a = s.phase.kind === 'DECIDE' ? { type: 'SUBMIT_DECISION' as const, from: 'you', decision: 'P2' } : { type: 'ADVANCE' as const };
+      s = reduce(s, a);
+    }
+    return s;
+  };
+
+  it('src/engine/rules-hash.ts matches the engine sources (run npm run rules-version if this fails)', () => {
+    expect(() => execSync('node scripts/rules-version.mjs --check', { stdio: 'pipe' })).not.toThrow();
+  });
+
+  it('every new game records the current rules, and its export carries them', () => {
+    const g = play();
+    expect(g.phase.kind).toBe('END');
+    expect(g.rules).toEqual(currentRules());
+    expect(g.rules!.rules).toBe(RULES_HASH);
+    const rec = JSON.parse(JSON.stringify(gameRecord(g)));
+    expect(rec.rules).toEqual(g.rules);
+    expect(replay(rec.log, rec)).toEqual(g);
+  });
+
+  it('a record from other rules or parameters, or with none, is refused; another commit alone is accepted', () => {
+    const g = play();
+    const rules = g.rules!;
+    expect(() => replay(g.log, { rules: { ...rules, rules: '0000000000000000' } })).toThrow(RulesMismatchError);
+    expect(() => replay(g.log, { rules: { ...rules, params: 'ffffffffffffffff' } })).toThrow(RulesMismatchError);
+    expect(() => replay(g.log, {})).toThrow(RulesMismatchError);
+    expect(compareRules({ ...rules, commit: 'abc123' })).toBe('commitOnly');
+    expect(() => replay(g.log, { rules: { ...rules, commit: 'abc123' } })).not.toThrow();
+  });
+
+  it('saved games resume only under the same rules', () => {
+    const g = play();
+    expect(canResume(g)).toBe(true);
+    expect(canResume({ ...g, rules: undefined })).toBe(false);
+    expect(canResume({ ...g, rules: { ...g.rules!, params: 'x' } })).toBe(false);
+    expect(canResume(null)).toBe(false);
+  });
+
+  it('changing a parameter in memory changes the params hash', () => {
+    const before = paramsHash();
+    const old = L4.UPDATE_WEIGHT;
+    (L4 as { UPDATE_WEIGHT: number }).UPDATE_WEIGHT = 0.3;
+    try {
+      expect(paramsHash()).not.toBe(before);
+    } finally {
+      (L4 as { UPDATE_WEIGHT: number }).UPDATE_WEIGHT = old;
+    }
+    expect(paramsHash()).toBe(before);
   });
 });

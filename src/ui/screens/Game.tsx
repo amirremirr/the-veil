@@ -3,6 +3,7 @@ import type { LevelId, ValuesCard, ViewState } from '../../engine/types';
 import { VALUES_CARDS } from '../../engine/types';
 import type { L2Debrief } from '../../engine/levels/level2';
 import type { L5Debrief } from '../../engine/levels/level5';
+import { gameRecord } from '../../engine/version';
 import { useStore } from '../store';
 import { t } from '../i18n';
 import { cardName, cardTitle, coins, pct } from '../labels';
@@ -353,7 +354,7 @@ function RunDebrief({ v }: { v: ViewState }) {
   }, [off]);
   const download = () => {
     if (!game) return;
-    const blob = new Blob([JSON.stringify({ seed: game.seed, config: game.config, log: game.log, history: game.history }, null, 2)], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify(gameRecord(game), null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

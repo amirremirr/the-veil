@@ -13,7 +13,8 @@
     "continue": "Continue",
     "mainMenu": "Main menu",
     "liveRegion": "Game announcements",
-    "playFriends": "Play with friends"
+    "playFriends": "Play with friends",
+    "staleSave": "Your saved game was made with an older version of the rules, so it cannot continue the way it started. Start a new one."
   },
   "mode": {
     "title": "How do you want to play?",
@@ -852,7 +853,8 @@
       "BAD_TOKEN": "Your seat in this room could not be found.",
       "ROOM_CLOSED": "This room has closed. Rooms close 24 hours after the last move.",
       "badCode": "A room code is four letters.",
-      "badName": "Enter a name of 1 to 20 characters."
+      "badName": "Enter a name of 1 to 20 characters.",
+      "VERSION_MISMATCH": "The room server runs a different version of the game rules than this page, so you cannot play together. Reload the page, or try again after both are updated."
     },
     "thinking": "Thinking..."
   }

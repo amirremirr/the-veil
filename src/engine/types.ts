@@ -126,8 +126,20 @@ export interface RngState {
 
 export type Beliefs = Record<PlayerId, Record<PlayerId, Record<ValuesCard, number>>>;
 
+/** Which rules a game was played under (D-75); see src/engine/version.ts. */
+export interface RulesVersion {
+  /** SHA-256 prefix of every engine source file. */
+  rules: string;
+  /** Hash of every parameter value at the moment the game started. */
+  params: string;
+  /** Git commit of the build, or 'unknown'. Informational: a different commit with the same hashes replays the same. */
+  commit: string;
+}
+
 export interface GameState {
   version: 1;
+  /** Rules and parameters the game was started under (D-75). Missing in games saved before it. */
+  rules?: RulesVersion;
   seed: string;
   rng: RngState;
   mode: Mode;
