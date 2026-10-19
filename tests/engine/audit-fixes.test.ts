@@ -2,7 +2,9 @@
 import { describe, expect, it } from 'vitest';
 import { execSync } from 'node:child_process';
 import { createInitialState, reduce, replay, step, waitingOn } from '../../src/engine/engine';
-import { L4 } from '../../src/engine/params';
+import { BOT, BOT_PROFILES, L4 } from '../../src/engine/params';
+import { ceOfLottery, certaintyEquivalent, utility } from '../../src/engine/bots/utility';
+import { roundScore } from '../../src/engine/scoring';
 import { RULES_HASH } from '../../src/engine/rules-hash';
 import { canResume, compareRules, currentRules, gameRecord, paramsHash, RulesMismatchError } from '../../src/engine/version';
 import { varianceShares, type L2Debrief } from '../../src/engine/levels/level2';
@@ -155,5 +157,41 @@ describe('D-75: rules version in games, saves and exports', () => {
       (L4 as { UPDATE_WEIGHT: number }).UPDATE_WEIGHT = old;
     }
     expect(paramsHash()).toBe(before);
+  });
+});
+
+describe('D-77: bot utility is defined, increasing and concave over every reachable score', () => {
+  const rhos = [0, BOT.BELIEF_RHO, ...Object.values(BOT_PROFILES).map((p) => p.rho * BOT.RHO_SCALE), 2.5, 5];
+  const grid = Array.from({ length: 601 }, (_, k) => -200 + k);
+
+  it('strictly increasing on [-200, 400] for every risk attitude', () => {
+    for (const rho of rhos) for (let k = 1; k < grid.length; k++) expect(utility(grid[k], rho)).toBeGreaterThan(utility(grid[k - 1], rho));
+  });
+
+  it('strictly concave on [-200, 400] when rho > 0 (second differences negative), linear at rho = 0', () => {
+    for (const rho of rhos)
+      for (let k = 1; k < grid.length - 1; k++) {
+        const d2 = utility(grid[k + 1], rho) - 2 * utility(grid[k], rho) + utility(grid[k - 1], rho);
+        if (rho > 0) expect(d2).toBeLessThan(0);
+        else expect(Math.abs(d2)).toBeLessThan(1e-9);
+      }
+  });
+
+  it('the certainty equivalent inverts the utility and a worse tail always lowers it', () => {
+    for (const rho of rhos) for (const S of [-200, -140, -49, 0, 50, 400]) expect(certaintyEquivalent(utility(S, rho), rho)).toBeCloseTo(S, 4);
+    const rho = 0.375;
+    // Under the old CRRA on max(1, S + 50), these two lotteries had the same value.
+    expect(ceOfLottery([[0.5, -140], [0.5, 100]], rho)).toBeLessThan(ceOfLottery([[0.5, -50], [0.5, 100]], rho) - 30);
+    // Risk aversion: below the mean, above the worst outcome.
+    const ce = ceOfLottery([[0.5, -140], [0.5, 100]], rho);
+    expect(ce).toBeLessThan(-20);
+    expect(ce).toBeGreaterThan(-140);
+  });
+
+  it('the lowest reachable score is inside the tested range: an Egoist at -40 coins scores -200', () => {
+    // Level 2: maximum effort cost 0.4 x 10^2 = 40 with zero income is the lowest reachable wealth.
+    expect(roundScore('EGOIST', [-40, 100], 0, [0.5, 0.5])).toBe(-200);
+    // Level 4: training at 60 and still getting a basic job.
+    expect(roundScore('EGOIST', [-20, 40], 0, [1, 0])).toBe(-140);
   });
 });

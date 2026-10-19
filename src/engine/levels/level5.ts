@@ -3,7 +3,7 @@ import { BOT, L5 } from '../params';
 import { botParams, botRng, finishRound, gameRng, headline, ids, idx, lowerMedian, orderedDraws, playerOf } from '../core';
 import { equalShares, mean, ownNet, roundScore, valuesMetric } from '../scoring';
 import { floorTopUp } from '../tax';
-import { certaintyEquivalent, crra, logitChoice, logitProbs, argmax } from '../bots/utility';
+import { certaintyEquivalent, utility, logitChoice, logitProbs, argmax } from '../bots/utility';
 import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import type { LevelDefinition } from './types';
 
@@ -118,7 +118,7 @@ export function veilCE(n: number, card: ValuesCard, rho: number): number[] {
   const eq = equalShares(n);
   const out = ALL_CONSTITUTIONS.map((c) => {
     let eu = 0;
-    for (const inc of draws) eu += crra(roundScore(card, constitutionWealth(inc, c), 0, eq), rho);
+    for (const inc of draws) eu += utility(roundScore(card, constitutionWealth(inc, c), 0, eq), rho);
     return certaintyEquivalent(eu / draws.length, rho);
   });
   veilCache.set(key, out);
@@ -204,7 +204,7 @@ function botLobby(s: GameState, botId: PlayerId): Lobby {
       return out;
     };
     const p = passProbability(s, botId, prop, to, d);
-    const eu = p * crra(roundScore(me.values, shift(Wa), i, eq), rho) + (1 - p) * crra(roundScore(me.values, shift(Wc), i, eq), rho);
+    const eu = p * utility(roundScore(me.values, shift(Wa), i, eq), rho) + (1 - p) * utility(roundScore(me.values, shift(Wc), i, eq), rho);
     return certaintyEquivalent(eu, rho);
   });
   const k = logitChoice(ce, lambda, botRng(s));

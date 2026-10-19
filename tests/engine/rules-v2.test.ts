@@ -7,7 +7,7 @@ import { rnChoice, rnValue } from '../../src/engine/levels/level3';
 import { investGain } from '../../src/engine/levels/level4';
 import { fairShift, type AmendmentRecord, type Constitution, type L5State } from '../../src/engine/levels/level5';
 import { hardshipPenalty, mean, roundScore } from '../../src/engine/scoring';
-import { BOT, BOT_PROFILES, DIFFICULTY, L1, L4, SCORE } from '../../src/engine/params';
+import { BOT, BOT_PROFILES, DIFFICULTY, L1, L4, METRIC_SCALE, SCORE } from '../../src/engine/params';
 import { logitProbs } from '../../src/engine/bots/utility';
 import type { GameState } from '../../src/engine/types';
 
@@ -25,8 +25,8 @@ describe('Part A: hardship line', () => {
     expect(roundScore('EGOIST', W, 1, eq)).toBe(50);
     // Utilitarian: S = 0.5 (W - penalty) + 0.5 x mean(W). The metric uses plain wealth.
     expect(roundScore('UTILITARIAN', W, 0, eq)).toBeCloseTo(0.5 * (20 - 40) + 0.5 * 80, 10);
-    // Rawlsian: the metric is still the plain minimum (20), scaled by 1.67.
-    expect(roundScore('RAWLSIAN', W, 0, eq)).toBeCloseTo(0.5 * (20 - 40) + 0.5 * 1.67 * 20, 10);
+    // Rawlsian: the metric is still the plain minimum (20), scaled by the Rawlsian's balancing scale.
+    expect(roundScore('RAWLSIAN', W, 0, eq)).toBeCloseTo(0.5 * (20 - 40) + 0.5 * METRIC_SCALE.RAWLSIAN * 20, 10);
     // Without hardship the non-Egoist half is unchanged.
     expect(roundScore('UTILITARIAN', W, 1, eq)).toBeCloseTo(0.5 * 50 + 0.5 * 80, 10);
   });
