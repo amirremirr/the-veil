@@ -43,22 +43,40 @@ const defaultSettings: Settings = {
 /** Set when a saved game was dropped because the rules changed since it was saved (D-75). */
 let staleSaveDropped = false;
 
-function load(): Saved | null {
+/**
+ * Read the stored data. A game saved under other rules or parameters (or before D-75) would not
+ * continue as it began, so it is dropped (`dropped: true`); settings, progress and tips are kept.
+ */
+export function parseSaved(raw: string | null): { saved: Saved | null; dropped: boolean } {
   try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return null;
+    if (!raw) return { saved: null, dropped: false };
     const v = JSON.parse(raw) as Saved;
-    if (v?.version !== 1) return null;
+    if (v?.version !== 1) return { saved: null, dropped: false };
     if (v.game && v.game.version !== 1) v.game = null;
-    // A game saved under other rules or parameters (or before D-75) would not continue as it began.
     if (v.game && !canResume(v.game)) {
       v.game = null;
-      staleSaveDropped = true;
+      return { saved: v, dropped: true };
     }
-    return v;
+    return { saved: v, dropped: false };
+  } catch {
+    return { saved: null, dropped: false };
+  }
+}
+
+function load(): Saved | null {
+  let raw: string | null = null;
+  try {
+    raw = localStorage.getItem(KEY);
   } catch {
     return null;
   }
+  const { saved, dropped } = parseSaved(raw);
+  if (dropped && saved) {
+    // Write the data back without the old game, so the title-screen notice shows once, not on every visit.
+    staleSaveDropped = true;
+    save(saved);
+  }
+  return saved;
 }
 
 function save(data: Saved): void {
