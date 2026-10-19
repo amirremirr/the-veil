@@ -59,6 +59,8 @@ export type ServerMessage =
       lockedIn: string[];
       /** How many humans pressed Ready on this screen. */
       readyCount: number;
+      /** The server's clock when this was sent, so clients can correct the countdown for clock skew. */
+      serverNow: number;
     }
   | { v: 1; type: 'ERROR'; code: ErrorCode; message: string };
 

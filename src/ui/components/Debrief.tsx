@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import archives from '../copy/archives.json';
 import type { ViewState } from '../../engine/types';
 import { useStore } from '../store';
+import { OnlineStatus, ReadyButton } from './Online';
 import { t } from '../i18n';
 import { cardName, coins } from '../labels';
 import { levelRounds, nameOf } from '../game';
@@ -42,7 +43,7 @@ export function DebriefShell({
   /** One plain sentence under the lesson. */
   lessonNote?: string;
 }) {
-  const { dispatch, replay, go, nextSingleLevel, progress, settings } = useStore();
+  const { dispatch, replay, go, nextSingleLevel, progress, settings, online, leaveOnline } = useStore();
   const rounds = levelRounds(v);
   const level = v.levelIndex;
   const score = (id: string) => v.scores[id]?.byLevel[level - 1] ?? 0;
@@ -121,9 +122,17 @@ export function DebriefShell({
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2" data-debrief-actions>
+        <OnlineStatus v={v} />
         {v.mode === 'FULL_RUN' ? (
-          <button type="button" className="btn-primary w-full sm:w-auto" onClick={() => dispatch({ type: 'ADVANCE' })}>
-            {level < 5 ? t('debrief.next') : t('debrief.toRunDebrief')}
+          <ReadyButton
+            v={v}
+            className="btn-primary w-full sm:w-auto"
+            label={level < 5 ? t('debrief.next') : t('debrief.toRunDebrief')}
+            onClick={() => dispatch({ type: 'ADVANCE' })}
+          />
+        ) : online ? (
+          <button type="button" className="btn-primary w-full sm:w-auto" onClick={() => leaveOnline()}>
+            {t('debrief.menu')}
           </button>
         ) : (
           canNext && (
@@ -132,15 +141,19 @@ export function DebriefShell({
             </button>
           )
         )}
-        <button type="button" className="btn-ghost flex-1 px-2 text-sm sm:flex-none" onClick={() => replay(true)}>
-          {t('debrief.replaySame')}
-        </button>
-        <button type="button" className="btn-ghost flex-1 px-2 text-sm sm:flex-none" onClick={() => replay(false)}>
-          {t('debrief.replayNew')}
-        </button>
-        <button type="button" className="btn-ghost flex-1 px-2 text-sm sm:flex-none" onClick={() => go('title')}>
-          {t('debrief.menu')}
-        </button>
+        {!online && (
+          <>
+            <button type="button" className="btn-ghost flex-1 px-2 text-sm sm:flex-none" onClick={() => replay(true)}>
+              {t('debrief.replaySame')}
+            </button>
+            <button type="button" className="btn-ghost flex-1 px-2 text-sm sm:flex-none" onClick={() => replay(false)}>
+              {t('debrief.replayNew')}
+            </button>
+            <button type="button" className="btn-ghost flex-1 px-2 text-sm sm:flex-none" onClick={() => go('title')}>
+              {t('debrief.menu')}
+            </button>
+          </>
+        )}
       </div>
 
       <div className="mt-4">

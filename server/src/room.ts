@@ -466,6 +466,7 @@ export class Room extends DurableObject<Env> {
         deadline: this.flow.deadline,
         lockedIn: locked,
         readyCount: t.ready.length,
+        serverNow: Date.now(),
       });
     }
   }

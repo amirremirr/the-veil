@@ -17,6 +17,7 @@ import { L3UI } from '../levels/L3';
 import { L4UI } from '../levels/L4';
 import { L5UI } from '../levels/L5';
 import type { LevelUI } from '../levels/types';
+import { LockedInPanel, ReadyButton, useOnline, useWaiting } from '../components/Online';
 
 const UI: Record<LevelId, LevelUI> = { 1: L1UI, 2: L2UI, 3: L3UI, 4: L4UI, 5: L5UI };
 
@@ -147,12 +148,16 @@ function DecisionScreen({ v, onReply }: { v: ViewState; onReply: () => void }) {
   const dv = dp && dp !== v.phase ? { ...v, phase: dp } : v;
   const { briefing, reveal } = banners(v);
   const brief = briefing ? ui.briefing({ ...v, phase: briefing }) : '';
+  const online = useOnline();
+  // Online, once this player's choice is in, the form gives way to a short note (the talk stays open).
+  const { done } = useWaiting(v);
   return (
     <div className="space-y-3">
       {brief && <p className="border-s-4 border-ink ps-3 text-sm leading-snug text-soft">{brief}</p>}
       {reveal && ui.Banner && <ui.Banner v={v} step={reveal.step ?? ''} />}
       {v.phase.kind === 'TALK' && <ChatStrip v={v} onReply={onReply} />}
-      <ui.Decide v={dv} />
+      {online && done ? <LockedInPanel v={v} /> : <ui.Decide v={dv} />}
+      {online && !done && <p className="text-xs text-soft">{t('room.autoNote')}</p>}
     </div>
   );
 }
@@ -163,19 +168,19 @@ function ResultsScreen({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
   const next = v.queue[v.phaseIdx + 1];
   const poll = next?.kind === 'DECIDE' && next.step === 'POLL';
+  const online = useOnline();
+  const { done } = useWaiting(v);
   return (
     <div className="space-y-4">
       <ResultsContext.Provider value>
         <ui.Reveal v={v} />
         {/* Levels 2 to 4 already list everyone's money in the reveal. */}
         <SummaryBlock v={v} showMoney={![2, 3, 4].includes(v.levelIndex)} />
-        {poll && <ui.Decide v={{ ...v, phase: next }} />}
+        {poll && (online && done ? <LockedInPanel v={v} /> : <ui.Decide v={{ ...v, phase: next }} />)}
       </ResultsContext.Provider>
       {!poll && (
         <PrimaryBar>
-          <button type="button" className="btn-primary" onClick={() => act()}>
-            {t('app.continue')}
-          </button>
+          <ReadyButton v={v} label={t('app.continue')} onClick={() => act()} />
         </PrimaryBar>
       )}
     </div>
@@ -203,6 +208,8 @@ function Center({ v, onReply }: { v: ViewState; onReply: () => void }) {
 
 function Table({ v }: { v: ViewState }) {
   const go = useStore((s) => s.go);
+  const online = useOnline();
+  const leaveOnline = useStore((s) => s.leaveOnline);
   const [menu, setMenu] = useState(false);
   const [sheet, setSheet] = useState<null | 'chat' | 'reply'>(null);
   const ui = UI[v.levelIndex];
@@ -251,7 +258,7 @@ function Table({ v }: { v: ViewState }) {
       {menu && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4" role="dialog" aria-modal="true" aria-label={t('table.menu')}>
           <div className="form-card w-full max-w-sm p-4">
-            <p className="mb-4 text-sm">{t('table.quitConfirm')}</p>
+            <p className="mb-4 text-sm">{online ? t('room.leaveConfirm') : t('table.quitConfirm')}</p>
             <div className="flex flex-col gap-2">
               <button type="button" className="btn-primary" autoFocus onClick={() => setMenu(false)}>
                 {t('table.resume')}
@@ -259,8 +266,8 @@ function Table({ v }: { v: ViewState }) {
               <button type="button" className="btn-ghost" onClick={() => go('archives')}>
                 {t('app.archives')}
               </button>
-              <button type="button" className="btn-ghost" onClick={() => go('title')}>
-                {t('table.quit')}
+              <button type="button" className="btn-ghost" onClick={() => (online ? leaveOnline() : go('title'))}>
+                {online ? t('room.leaveGame') : t('table.quit')}
               </button>
             </div>
           </div>
@@ -272,6 +279,8 @@ function Table({ v }: { v: ViewState }) {
 
 function Guess({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
+  const online = useOnline();
+  const { done } = useWaiting(v);
   // Everyone else at the table (in solo play, the bots).
   const bots = v.players.filter((p) => p.id !== v.viewer);
   const [g, setG] = useState<Record<string, ValuesCard>>(Object.fromEntries(bots.map((b) => [b.id, 'EGOIST' as ValuesCard])));
@@ -279,25 +288,31 @@ function Guess({ v }: { v: ViewState }) {
     <Page narrow>
       <FormCard form={t('guess.title')}>
         <p className="mb-4 text-sm">{t('guess.intro')}</p>
-        <div className="space-y-4">
-          {bots.map((b) => (
-            <fieldset key={b.id}>
-              <legend className="font-semibold">{b.name}</legend>
-              <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-4" role="group" aria-label={b.name}>
-                {VALUES_CARDS.map((c) => (
-                  <button key={c} type="button" aria-pressed={g[b.id] === c} className="choice justify-center px-2 text-sm" onClick={() => setG({ ...g, [b.id]: c })}>
-                    {cardName(c)}
-                  </button>
-                ))}
-              </div>
-            </fieldset>
-          ))}
-        </div>
-        <PrimaryBar>
-          <button type="button" className="btn-primary" onClick={() => act(undefined, g)}>
-            {t('guess.submit')}
-          </button>
-        </PrimaryBar>
+        {online && done ? (
+          <LockedInPanel v={v} />
+        ) : (
+          <>
+            <div className="space-y-4">
+              {bots.map((b) => (
+                <fieldset key={b.id}>
+                  <legend className="font-semibold">{b.name}</legend>
+                  <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-4" role="group" aria-label={b.name}>
+                    {VALUES_CARDS.map((c) => (
+                      <button key={c} type="button" aria-pressed={g[b.id] === c} className="choice justify-center px-2 text-sm" onClick={() => setG({ ...g, [b.id]: c })}>
+                        {cardName(c)}
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+              ))}
+            </div>
+            <PrimaryBar>
+              <button type="button" className="btn-primary" onClick={() => act(undefined, g)}>
+                {t('guess.submit')}
+              </button>
+            </PrimaryBar>
+          </>
+        )}
       </FormCard>
     </Page>
   );
@@ -322,7 +337,7 @@ function ideology(v: ViewState) {
 }
 
 function RunDebrief({ v }: { v: ViewState }) {
-  const { go, game, replay } = useStore();
+  const { go, game, replay, online, leaveOnline } = useStore();
   // Level points (D-45): each level counts the same. Raw scores stay in the level summaries.
   const points = (id: string) => v.scores[id]?.points?.reduce((a, b) => a + b, 0) ?? 0;
   const total = (id: string) => points(id) + (v.scores[id]?.guessBonus ?? 0);
@@ -445,13 +460,17 @@ function RunDebrief({ v }: { v: ViewState }) {
       </div>
       <p className="label mt-6">{t('run.seed', { seed: v.seed })}</p>
       <div className="sticky bottom-0 -mx-4 mt-4 flex flex-wrap justify-end gap-2 border-t border-line bg-paper/95 px-4 py-3 backdrop-blur">
-        <button type="button" className="btn-ghost" onClick={download}>
-          {t('run.download')}
-        </button>
-        <button type="button" className="btn-ghost" onClick={() => replay(true)}>
-          {t('debrief.replaySame')}
-        </button>
-        <button type="button" className="btn-primary" onClick={() => go('title')}>
+        {!online && (
+          <>
+            <button type="button" className="btn-ghost" onClick={download}>
+              {t('run.download')}
+            </button>
+            <button type="button" className="btn-ghost" onClick={() => replay(true)}>
+              {t('debrief.replaySame')}
+            </button>
+          </>
+        )}
+        <button type="button" className="btn-primary" onClick={() => (online ? leaveOnline() : go('title'))}>
           {t('debrief.menu')}
         </button>
       </div>

@@ -2,8 +2,9 @@ import { create } from 'zustand';
 import { reduce, HUMAN_ID } from '../engine/engine';
 import type { Action, Difficulty, GameState, LevelId, SetupConfig, ValuesCard } from '../engine/types';
 import { act as flowAct, settle } from '../shared/flow';
+import { leaveRoom, roomAct, sendRoomMessage } from './room';
 
-export type Screen = 'title' | 'mode' | 'setup' | 'game' | 'archives' | 'settings' | 'about';
+export type Screen = 'title' | 'mode' | 'setup' | 'game' | 'archives' | 'settings' | 'about' | 'friends' | 'lobby';
 
 export interface Settings {
   reducedMotion: boolean;
@@ -76,6 +77,12 @@ interface Store {
   /** First message id of the current talk phase, so the chat strip shows only this round's talk. */
   talkFrom: number | null;
   tipsSeen: string[];
+  /** Playing in a multiplayer room: the screens show the room's view and actions go to the server. */
+  online: boolean;
+  /** Where "Play with friends" opens: create a room, or join one (with a code from a share link). */
+  friendsFor: { tab: 'create' | 'join'; code?: string } | null;
+  goOnline(): void;
+  leaveOnline(): void;
   go(screen: Screen): void;
   /** One tap of the main button on the current screen (see src/shared/flow.ts). */
   act(decision?: unknown, guesses?: Record<string, ValuesCard>): void;
@@ -120,6 +127,15 @@ export const useStore = create<Store>((set, get) => {
   };
   return {
     screen: 'title',
+    online: false,
+    friendsFor: null,
+    goOnline() {
+      set({ online: true, screen: 'game' });
+    },
+    leaveOnline() {
+      leaveRoom();
+      set({ online: false, screen: 'title' });
+    },
     talkFrom: null,
     tipsSeen: saved?.tipsSeen ?? [],
     game: saved?.game ?? null,
@@ -143,6 +159,12 @@ export const useStore = create<Store>((set, get) => {
       if (typeof window !== 'undefined') window.scrollTo({ top: 0 });
     },
     dispatch(action) {
+      if (get().online) {
+        // Online, the server applies every action; a client can only talk or press its own buttons.
+        if (action.type === 'SEND_MESSAGE') sendRoomMessage(action.msg);
+        else if (action.type === 'ADVANCE') roomAct();
+        return;
+      }
       const g = get().game;
       if (!g) return;
       const next = reduce(g, action);
@@ -150,6 +172,7 @@ export const useStore = create<Store>((set, get) => {
       commit(g, settle(next));
     },
     act(decision, guesses) {
+      if (get().online) return roomAct(decision, guesses);
       const g = get().game;
       if (!g) return;
       commit(g, flowAct(g, HUMAN_ID, decision, guesses));

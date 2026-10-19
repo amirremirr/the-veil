@@ -7,7 +7,9 @@ import { hardshipPenalty } from '../../engine/scoring';
 import { useStore } from '../store';
 import { t } from '../i18n';
 import { actionName, cardName, coins, optionName } from '../labels';
-import { currentRecord, headlineText, humanLevelScore, nameOf, renderMessage, shortName, type VPlayer } from '../game';
+import { currentRecord, headlineText, humanLevelScore, nameOf, renderMessage, shortName, useTalkFrom, useView, type VPlayer } from '../game';
+import { OnlineStatus, ReadyButton } from './Online';
+import { useRoom } from '../room';
 import { Avatar, FormCard, Shape, Tip, useMotionOff } from './common';
 
 /** True inside a combined results screen: the screen supplies one Continue button for everything. */
@@ -17,8 +19,9 @@ export const ResultsContext = createContext(false);
  * The main action bar. Fixed to the bottom on phones, inline on desktop. Its height is published
  * as --bar-h so the page can pad its bottom and nothing ends up hidden under the bar.
  */
-export function PrimaryBar({ children }: { children: ReactNode }) {
+export function PrimaryBar({ children, status = true }: { children: ReactNode; status?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
+  const v = useView();
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -38,7 +41,11 @@ export function PrimaryBar({ children }: { children: ReactNode }) {
       data-primary-bar
       className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-paper/95 px-4 py-3 backdrop-blur lg:static lg:mt-4 lg:border-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none"
     >
-      <div className="mx-auto flex max-w-page flex-wrap justify-end gap-2">{children}</div>
+      <div className="mx-auto flex max-w-page flex-wrap items-center justify-end gap-2">
+        {/* Online: the screen's countdown and who is still choosing. */}
+        {status && v && <OnlineStatus v={v} />}
+        {children}
+      </div>
     </div>
   );
 }
@@ -99,12 +106,17 @@ function statusFor(v: ViewState, p: VPlayer): string[] {
 /** Compact row of players: avatar, short name, and level-specific badges. */
 export function PlayerStrip({ v }: { v: ViewState }) {
   const lv = v.levelView as Record<string, any>;
+  const online = useStore((s) => s.online);
+  const lockedIn = useRoom((s) => s.lockedIn);
+  const seats = useRoom((s) => s.seats);
   return (
     <ul className="grid grid-cols-4 gap-1.5" aria-label={t('ui.citizens')}>
       {v.players.map((p) => {
         const me = p.id === v.viewer;
         const group = v.levelIndex === 4 ? (lv?.groups?.[p.id] as 'CIRCLE' | 'SQUARE' | undefined) : undefined;
         const status = statusFor(v, p);
+        if (online && lockedIn.includes(p.id)) status.unshift(`✓ ${t('room.lockedIn')}`);
+        if (online && p.isHuman && seats.some((s) => s.seat === p.id && !s.connected)) status.unshift(t('room.offlineTag'));
         return (
           <li key={p.id} className={`form-card flex min-w-0 flex-col items-center gap-0.5 px-1 py-1.5 text-center ${me ? 'ring-2 ring-ink' : ''}`}>
             <Avatar bot={p.botKey} human={p.isHuman} size={26} />
@@ -160,7 +172,7 @@ export function ChatFeed({ v, onlyCurrent = false }: { v: ViewState; onlyCurrent
 
 /** "What others said" strip at the top of a decision form, while the chat is open. */
 export function ChatStrip({ v, onReply }: { v: ViewState; onReply: () => void }) {
-  const talkFrom = useStore((s) => s.talkFrom);
+  const talkFrom = useTalkFrom();
   const msgs = v.messages.filter((m) => m.level === v.levelIndex && (talkFrom !== null ? m.id >= talkFrom : m.round === v.round));
   const left = TALK.MAX_MESSAGES - v.talkSent;
   return (
@@ -377,13 +389,12 @@ export function SummaryBlock({ v, showMoney = true }: { v: ViewState; showMoney?
 
 export function ContinueBar({ label }: { label?: string }) {
   const act = useStore((s) => s.act);
+  const v = useView();
   const inResults = useContext(ResultsContext);
-  if (inResults) return null;
+  if (inResults || !v) return null;
   return (
     <PrimaryBar>
-      <button type="button" className="btn-primary" onClick={() => act()}>
-        {label ?? t('app.continue')}
-      </button>
+      <ReadyButton v={v} label={label ?? t('app.continue')} onClick={() => act()} />
     </PrimaryBar>
   );
 }

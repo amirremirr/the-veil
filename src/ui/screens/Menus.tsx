@@ -2,12 +2,17 @@ import { useMemo, useState } from 'react';
 import archives from '../copy/archives.json';
 import type { Difficulty, LevelId } from '../../engine/types';
 import { useStore } from '../store';
+import { ROOM_SERVER } from '../room';
 import { t } from '../i18n';
 import { FormCard, Page, Stamp } from '../components/common';
 
 export function Title() {
-  const { go, game } = useStore();
+  const { go, game, online } = useStore();
   const resumable = game && game.phase.kind !== 'END';
+  const openFriends = () => {
+    useStore.setState({ friendsFor: { tab: 'create' } });
+    go('friends');
+  };
   return (
     <Page narrow>
       <div className="flex min-h-[80vh] flex-col justify-center py-8">
@@ -26,6 +31,11 @@ export function Title() {
           <button type="button" className={resumable ? 'btn-ghost' : 'btn-primary'} onClick={() => go('mode')}>
             {t('app.begin')}
           </button>
+          {ROOM_SERVER && (
+            <button type="button" className="btn-ghost" onClick={online ? () => go('game') : openFriends}>
+              {t('app.playFriends')}
+            </button>
+          )}
           <button type="button" className="btn-ghost" onClick={() => go('archives')}>
             {t('app.archives')}
           </button>
@@ -145,7 +155,7 @@ export function BackLink({ onClick }: { onClick: () => void }) {
 }
 
 export function Archives() {
-  const { go, game } = useStore();
+  const { go, game, online } = useStore();
   const [q, setQ] = useState('');
   const refs = archives.refs as Record<string, string>;
   const list = useMemo(() => {
@@ -155,7 +165,7 @@ export function Archives() {
   }, [q, refs]);
   return (
     <Page>
-      <BackLink onClick={() => go(game && game.phase.kind !== 'END' ? 'game' : 'title')} />
+      <BackLink onClick={() => go(online || (game && game.phase.kind !== 'END') ? 'game' : 'title')} />
       <h1 className="h-display mb-1 text-3xl">{t('archives.title')}</h1>
       <label className="mt-3 block max-w-md">
         <span className="label">{t('archives.search')}</span>
@@ -291,6 +301,7 @@ export function About() {
               <p key={para.slice(0, 24)}>{para}</p>
             ))}
           <p className="text-soft">{t('about.noTracking')}</p>
+          <p className="text-soft">{t('about.rooms')}</p>
         </div>
       </FormCard>
     </Page>

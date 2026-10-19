@@ -2,12 +2,24 @@ import { useMemo } from 'react';
 import { HUMAN_ID, visibleState } from '../engine/engine';
 import type { LevelId, Message, RoundRecord, ViewState } from '../engine/types';
 import { useStore } from './store';
+import { useRoom } from './room';
 import { newsletter, t, voiceLine } from './i18n';
 import { actionName, cardName, optionName } from './labels';
 
 export function useView(): ViewState | null {
   const game = useStore((s) => s.game);
-  return useMemo(() => (game ? visibleState(game, HUMAN_ID) : null), [game]);
+  const online = useStore((s) => s.online);
+  const roomView = useRoom((s) => s.view);
+  const solo = useMemo(() => (game && !online ? visibleState(game, HUMAN_ID) : null), [game, online]);
+  return online ? roomView : solo;
+}
+
+/** First message id of the current talk (solo: from the store; online: from the room). */
+export function useTalkFrom(): number | null {
+  const online = useStore((s) => s.online);
+  const solo = useStore((s) => s.talkFrom);
+  const room = useRoom((s) => s.talkFrom);
+  return online ? room : solo;
 }
 
 export type VPlayer = ViewState['players'][number];
