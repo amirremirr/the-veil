@@ -1,0 +1,16 @@
+name = "the-veil-rooms"
+main = "src/index.ts"
+compatibility_date = "2025-01-01"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "Room"
+
+# SQLite-backed Durable Objects (available on the free plan).
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room"]
+
+[vars]
+# Production site, this project's Vercel preview URLs, and localhost (any port).
+ALLOWED_ORIGINS = "https://the-veil-mauve.vercel.app,https://the-veil-*-amirrezaakhavan2003-4212s-projects.vercel.app,http://localhost:*,http://127.0.0.1:*"
