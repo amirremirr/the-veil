@@ -287,6 +287,9 @@ function Debrief({ v }: { v: ViewState }) {
               </tbody>
             </table>
             <p className="mt-1 text-xs text-soft">{t('ui.l3.highShare', { p: pct(d.highShare) })}</p>
+            <p className="mt-1 text-xs text-soft">
+              {t('debrief.l3.volPathNote', { path: d.volPath.map((p, i) => `R${i + 1} ${p === null ? t('ui.l3.cmpClosed') : fmt1(p)}`).join(', ') })}
+            </p>
           </div>
         </>
       }

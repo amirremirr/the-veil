@@ -34,6 +34,8 @@ export interface L3Debrief {
   pools: Array<{ round: number; buyers: PlayerId[]; meanP: number | null }>;
   gym: { insured: [number, number]; uninsured: [number, number]; mandatory: [number, number] };
   expectedByType: Record<Regime, Record<RiskType, number>>;
+  /** Prices the voluntary market would have had in every round with this table's types (D-80). */
+  volPath: Array<number | null>;
   highShare: number;
   regimeVotes?: Record<PlayerId, Regime>;
   regime: Regime;
@@ -192,19 +194,49 @@ function regimeCE(s: GameState, n: number, i: number, myType: RiskType | null, c
 }
 
 /**
- * Analytic risk-neutral expectation per type under each regime with a given high-risk share.
- * With `net`, each outcome counts own money minus the hardship penalty (used to pick a type's best regime).
+ * The voluntary market's price path if it ran every round (D-80), with every player choosing by the
+ * risk-neutral rule that counts the hardship line (`rnChoice`): each round the types that buy at the
+ * current price set next round's price from their average risk, and if nobody buys the insurer leaves
+ * for good. Deterministic: it uses the table's mix of types, not anyone's luck.
  */
-export function expectedByType(highShare: number, net = false): Record<Regime, Record<RiskType, number>> {
+export function voluntaryPath(nHigh: number, n: number): Array<number | null> {
+  const out: Array<number | null> = [];
+  let premium: number | null = premiumFor(L3.P_BAR);
+  for (let r = 0; r < L3.ROUNDS; r++) {
+    out.push(premium);
+    if (premium === null) continue;
+    const counts: Record<RiskType, number> = { HIGH: nHigh, LOW: n - nHigh };
+    let buyers = 0;
+    let riskSum = 0;
+    for (const type of ['LOW', 'HIGH'] as RiskType[]) {
+      const c = rnChoice(type, 'VOL', premium);
+      if (!c.buy || counts[type] === 0) continue;
+      buyers += counts[type];
+      riskSum += counts[type] * pEffOf(type, c.gym);
+    }
+    premium = buyers ? premiumFor(riskSum / buyers) : null;
+  }
+  return out;
+}
+
+/**
+ * Risk-neutral expectation per type and round, averaged over the level's rounds, under each regime for a
+ * table with `nHigh` High types out of `n`. Voluntary insurance is valued along `voluntaryPath`, not at
+ * the opening price (D-80). With `net`, each outcome counts own money minus the hardship penalty (used to
+ * pick a type's best regime).
+ */
+export function expectedByType(nHigh: number, n: number, net = false): Record<Regime, Record<RiskType, number>> {
   const f = net ? ownNet : (w: number) => w;
-  const vol = (type: RiskType) => {
-    const prem = premiumFor(L3.P_BAR);
+  const highShare = n > 0 ? nHigh / n : 0;
+  const path = voluntaryPath(nHigh, n);
+  const volRound = (type: RiskType, prem: number | null) => {
     const c = rnChoice(type, 'VOL', prem);
     const gym = c.gym ? L3.GYM_COST : 0;
-    if (c.buy) return f(L3.BASE_INCOME - prem - gym);
+    if (c.buy && prem !== null) return f(L3.BASE_INCOME - prem - gym);
     const p = pEffOf(type, c.gym);
     return (1 - p) * f(L3.BASE_INCOME - gym) + p * f(L3.BASE_INCOME - gym - L3.LOSS);
   };
+  const vol = (type: RiskType) => mean(path.map((prem) => volRound(type, prem)));
   const mand = (r: Regime) => {
     const cv = coverage(r);
     const gymL = rnChoice('LOW', r, null).gym;
@@ -398,9 +430,10 @@ export const level3: LevelDefinition = {
   debrief(s) {
     const l = st(s);
     const pids = ids(s);
-    const highShare = pids.filter((id) => l.types[id] === 'HIGH').length / pids.length;
-    const exp = expectedByType(highShare);
-    const expNet = expectedByType(highShare, true);
+    const nHigh = pids.filter((id) => l.types[id] === 'HIGH').length;
+    const highShare = nHigh / pids.length;
+    const exp = expectedByType(nHigh, pids.length);
+    const expNet = expectedByType(nHigh, pids.length, true);
     const best = (type: RiskType) => REGIMES.reduce((a, b) => (expNet[b][type] > expNet[a][type] + 1e-9 ? b : a), 'VOL' as Regime);
     const gym = { insured: [0, 0] as [number, number], uninsured: [0, 0] as [number, number], mandatory: [0, 0] as [number, number] };
     for (const r of l.rounds)
@@ -422,6 +455,7 @@ export const level3: LevelDefinition = {
       }),
       gym,
       expectedByType: exp,
+      volPath: voluntaryPath(nHigh, pids.length),
       highShare,
       regimeVotes: l.regimeVotes,
       regime: l.regime,

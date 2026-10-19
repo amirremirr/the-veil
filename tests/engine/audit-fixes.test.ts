@@ -9,6 +9,7 @@ import { pluralityResolve } from '../../src/engine/core';
 import { standalone } from '../../src/engine/rng';
 import { stdErr } from '../../src/engine/counterfactual';
 import type { L4Debrief } from '../../src/engine/levels/level4';
+import { expectedByType, voluntaryPath } from '../../src/engine/levels/level3';
 import { RULES_HASH } from '../../src/engine/rules-hash';
 import { canResume, compareRules, currentRules, gameRecord, paramsHash, RulesMismatchError } from '../../src/engine/version';
 import { varianceShares, type L2Debrief } from '../../src/engine/levels/level2';
@@ -241,5 +242,31 @@ describe('D-79: Level 4 decomposition holds the rule fixed, keeps streams aligne
   it('stdErr is the sample SD over the square root of n', () => {
     expect(stdErr([1, 2, 3, 4])).toBeCloseTo(Math.sqrt(5 / 3) / 2, 12);
     expect(stdErr([7])).toBe(0);
+  });
+});
+
+describe('D-80: Level 3 values voluntary insurance along its price path', () => {
+  it('price paths: High types buy at 22, the pool is all High, the price goes to 35.2, then the insurer leaves', () => {
+    const p = voluntaryPath(2, 4);
+    expect(p[0]).toBeCloseTo(22, 10);
+    expect(p[1]).toBeCloseTo(35.2, 10);
+    expect(p.slice(2)).toEqual([null, null]);
+    // Nobody High: nobody buys at 22 and the insurer leaves after round 1.
+    expect(voluntaryPath(0, 4).slice(1)).toEqual([null, null, null]);
+  });
+
+  it("a High type's voluntary value averages 78 (insured at 22) with three rounds uninsured with the gym (67.6)", () => {
+    const net = expectedByType(2, 4, true);
+    expect(net.VOL.HIGH).toBeCloseTo((78 + 3 * 67.6) / 4, 9);
+    // Valued at the opening price for all four rounds it would have been 78.
+    expect(net.VOL.HIGH).toBeLessThan(78);
+  });
+
+  it('the debrief carries the path it used', () => {
+    for (let g = 0; g < 5; g++) {
+      const d = playBots(3, `m4-${g}`).levelResults[3] as { volPath: Array<number | null>; types: Record<string, string> };
+      const nHigh = Object.values(d.types).filter((x) => x === 'HIGH').length;
+      expect(d.volPath).toEqual(voluntaryPath(nHigh, 4));
+    }
   });
 });

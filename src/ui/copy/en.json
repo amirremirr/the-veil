@@ -558,12 +558,13 @@
       "yourType": "You were {type} risk. The best option for your risk level here: {best}. You voted for {vote}.",
       "matchType": "Your vote matched your own interest.",
       "mismatchType": "Your vote did not match your own interest. Maybe you were thinking of others, or of your secret card.",
-      "expectedTitle": "Expected money per round by risk level",
+      "expectedTitle": "Expected money per round by risk level, averaged over the 4 rounds",
       "realWorld": "Most bad luck here is not chosen: illness, disability, accidents. That is one reason most rich countries make some insurance compulsory. Low-risk people pay more than their own risk, but in return everyone can get protection.",
       "chartTitle": "Insurance price each round",
       "pool": "Buyers: {n}",
       "lesson": "If only risky people buy insurance, the price climbs until the market collapses. Making it compulsory stops that.",
-      "realCase": "A real case: in the 1990s Harvard changed how it paid for staff health plans. Healthier staff moved to cheaper plans, the most generous plan's price spiralled, and it was dropped within a few years (Cutler and Reber 1998)."
+      "realCase": "A real case: in the 1990s Harvard changed how it paid for staff health plans. Healthier staff moved to cheaper plans, the most generous plan's price spiralled, and it was dropped within a few years (Cutler and Reber 1998).",
+      "volPathNote": "Voluntary is valued at the prices the private market would reach with this table's risk levels if everyone chose by expected money: {path}. It is not valued at the opening price of 22, which does not last."
     },
     "l4": {
       "predicted": "At the start, HireBot believes Circles are usually skilled, so a Circle who passes the test gets a good job. At first, training pays off for Circles. A Square who passes still does not convince HireBot, so training pays nothing for Squares, and they stop training. HireBot then sees few skilled Squares and believes even less in them. The belief makes itself true (Coate and Loury 1993).",
