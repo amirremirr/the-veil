@@ -285,7 +285,11 @@ export function About() {
           <p>{t('about.purpose')}</p>
           <p>{t('about.author')}</p>
           <h2 className="h-display text-xl">{t('about.methodsTitle')}</h2>
-          <p>{t('about.methods')}</p>
+          {t('about.methods')
+            .split('\n\n')
+            .map((para) => (
+              <p key={para.slice(0, 24)}>{para}</p>
+            ))}
           <p className="text-soft">{t('about.noTracking')}</p>
         </div>
       </FormCard>

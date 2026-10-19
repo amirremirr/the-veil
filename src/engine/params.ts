@@ -24,7 +24,7 @@ export const SCORE = {
    */
   LEVEL_POINTS_BASE: 100,
   LEVEL_POINTS_SPREAD: 50,
-  LEVEL_SD: [47.3, 52.2, 41.3, 118.9, 28.4],
+  LEVEL_SD: [49.8, 57.7, 39.2, 114.5, 28.9],
 };
 
 /**
@@ -65,6 +65,8 @@ export const BOT = {
   MC_SAMPLES: 300,
   BELIEF_MC_SAMPLES: 40,
   BELIEF_LAMBDA: 3,
+  /** Logit scale in coins: P(a_k) is proportional to exp(lambda x CE_k / LOGIT_COIN_SCALE) (D-59). */
+  LOGIT_COIN_SCALE: 10,
   /**
    * The hardship line already makes losses hurt, so bots' CRRA would count risk twice. Every bot's
    * rho is multiplied by this, keeping their order (D-51).

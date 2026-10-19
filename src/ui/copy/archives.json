@@ -12,6 +12,7 @@
     "frohlich1987": "Frohlich, N., Oppenheimer, J., and Eavey, C. (1987). Choices of principles of distributive justice in experimental groups. American Journal of Political Science, 31(3).",
     "frohlich1992": "Frohlich, N., and Oppenheimer, J. (1992). Choosing Justice: An Experimental Approach to Ethical Theory. University of California Press.",
     "goldin2014": "Goldin, C. (2014). A grand gender convergence: Its last chapter. American Economic Review, 104(4).",
+    "harsanyi1953": "Harsanyi, J. (1953). Cardinal utility in welfare economics and in the theory of risk-taking. Journal of Political Economy, 61(5).",
     "harsanyi1955": "Harsanyi, J. (1955). Cardinal welfare, individualistic ethics, and interpersonal comparisons of utility. Journal of Political Economy, 63(4).",
     "harsanyi1975": "Harsanyi, J. (1975). Can the maximin principle serve as a basis for morality? A critique of John Rawls's theory. American Political Science Review, 69(2).",
     "konow2000": "Konow, J. (2000). Fair shares: Accountability and cognitive dissonance in allocation decisions. American Economic Review, 90(4).",
@@ -35,10 +36,11 @@
         1,
         5
       ],
-      "body": "A thought experiment for choosing rules fairly. You pick the rules of a society before you know which position you will hold in it: rich or poor, talented or not, healthy or sick. Because you cannot tailor the rules to yourself, the idea goes, you will pick rules that are fair to everyone. John Rawls made the device famous, and John Harsanyi used a similar setup earlier to argue for maximizing average welfare. The two men looked behind the same veil and saw different things. Laboratory groups asked to choose under a veil, as in Frohlich, Oppenheimer and Eavey, mostly picked neither extreme. They tended to choose a high average with a guaranteed floor. Level 1 puts you behind the veil. Level 5 lifts it and checks whether you still like what you chose.",
+      "body": "A thought experiment for choosing rules fairly. You pick the rules of a society before you know which position you will hold in it: rich or poor, talented or not, healthy or sick. Because you cannot tailor the rules to yourself, the idea goes, you will pick rules that are fair to everyone. John Rawls made the device famous, and John Harsanyi (1953) used a similar setup earlier: with an equal chance of being anyone, he argued, you would maximize average welfare. He developed the argument further in 1955. The two men looked behind the same veil and saw different things. Laboratory groups asked to choose under a veil, as in Frohlich, Oppenheimer and Eavey, mostly picked neither extreme. They tended to choose a high average with a guaranteed floor. Level 1 puts you behind the veil. Level 5 lifts it and checks whether you still like what you chose.",
       "formula": "",
       "refs": [
         "rawls1971",
+        "harsanyi1953",
         "harsanyi1955",
         "frohlich1987",
         "frohlich1992"
@@ -64,9 +66,10 @@
         1,
         3
       ],
-      "body": "The standard model of choice under risk: weigh each possible outcome by its probability and add up. Harsanyi argued that a rational person behind a veil, with an equal chance of being anyone, would maximize expected utility, which amounts to maximizing average welfare. If utility is linear in money, that means maximizing average income. If utility is concave, so that each extra coin matters less, the person also values insurance against bad draws. Risk aversion is how much curvature there is. The bots in this game use constant relative risk aversion, and their rho parameter sets the curvature. A rho of zero is a pure expected-income maximizer.",
+      "body": "The standard model of choice under risk: weigh each possible outcome by its probability and add up. Harsanyi (1953) argued that a rational person behind a veil, with an equal chance of being anyone, would maximize expected utility, which amounts to maximizing average welfare. He developed the argument further in 1955. If utility is linear in money, that means maximizing average income. If utility is concave, so that each extra coin matters less, the person also values insurance against bad draws. Risk aversion is how much curvature there is. The bots in this game use constant relative risk aversion, and their rho parameter sets the curvature. A rho of zero is a pure expected-income maximizer.",
       "formula": "EU(a) = sum over s of p(s) u(x(a, s)); CRRA: u(x) = (x^(1 - rho) - 1) / (1 - rho)",
       "refs": [
+        "harsanyi1953",
         "harsanyi1955"
       ]
     },
@@ -80,7 +83,7 @@
         4,
         5
       ],
-      "body": "People feel a loss more than a gain of the same size. Kahneman and Tversky called this loss aversion, and Tversky and Kahneman later estimated that losses weigh about 2.25 times as much as gains. The game builds a simple version into the score. In any round where your own money ends below 40 coins, each coin you are short counts as 2 more coins lost when your score is worked out. Money is half the score for most cards, so for them that is about 1 point per coin short; for the Egoist, whose whole score is money, it is 2. Your real money does not change, and nobody else's goal changes. This gives every player a reason to want protection from the worst outcomes: a safety net in Level 1, insurance in Level 3, a minimum income in Level 5. Without it, a player who only counts coins would never pay for protection that costs more than the expected loss.",
+      "body": "People feel a loss more than a gain of the same size. Kahneman and Tversky (1979) showed that losses loom larger than gains, a pattern now called loss aversion, and Tversky and Kahneman later estimated that losses weigh about 2.25 times as much as gains. The game builds a simple version into the score. In any round where your own money ends below 40 coins, each coin you are short counts as 2 more coins lost when your score is worked out. Money is half the score for most cards, so for them that is about 1 point per coin short; for the Egoist, whose whole score is money, it is 2. Your real money does not change, and nobody else's goal changes. This gives every player a reason to want protection from the worst outcomes: a safety net in Level 1, insurance in Level 3, a minimum income in Level 5. Without it, a player who only counts coins would never pay for protection that costs more than the expected loss.",
       "formula": "money counted in your score = your money - 2 x max(0, 40 - your money)",
       "refs": [
         "kahneman1979",
@@ -143,7 +146,7 @@
       "levels": [
         2
       ],
-      "body": "People disagree about what a fair split looks like. Cappelen, Hole, Sørensen and Tungodden identified three common ideals in experiments. Strict egalitarians split equally no matter what. Libertarians reward whatever people produced, including luck. Liberal egalitarians reward what people control, such as effort, but not what they do not control, such as talent and luck. A related meritocratic view rewards productivity, meaning talent times effort, but not luck. Konow found similar patterns, with people treating outcomes as fair when they reflect choices people are accountable for. The Bonus Pot in Level 2 sorts you into the ideal closest to your split.",
+      "body": "People disagree about what a fair split looks like. Cappelen, Hole, Sørensen and Tungodden (2007) identified three common ideals in experiments: strict egalitarian, libertarian and liberal egalitarian. Strict egalitarians split equally no matter what. Libertarians reward whatever people produced, including luck. Liberal egalitarians reward what people control, such as effort, but not what they do not control, such as talent and luck. The game adds a fourth, a productivity-based meritocratic view that rewards talent and effort but not luck. Konow found similar patterns, with people treating outcomes as fair when they reflect choices people are accountable for. The Bonus Pot in Level 2 sorts you into the ideal closest to your split.",
       "formula": "share to A: egalitarian 0.5; libertarian yA/(yA+yB); meritocratic aA eA/(aA eA + aB eB); liberal egalitarian eA/(eA+eB)",
       "refs": [
         "cappelen2007",

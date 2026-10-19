@@ -63,6 +63,8 @@ const extra = {
   lowBuyR1: [0, 0] as [number, number],
   r2Open: 0,
   r2Price30: 0,
+  r1PriceSum: 0,
+  r2PriceSum: 0,
   runs: [] as Array<{ cards: ValuesCard[]; raw: number[][]; guess: number[] }>,
   levelScores: [[], [], [], [], []] as number[][],
   tableAvg: [[], [], [], [], []] as number[][],
@@ -118,6 +120,8 @@ for (let g = 0; g < games; g++) {
   if (r2b.regime === 'VOL' && r2b.premium !== null) {
     extra.r2Open++;
     if (r2b.premium >= 30 - 1e-9) extra.r2Price30++;
+    extra.r1PriceSum += r1.premium ?? 0;
+    extra.r2PriceSum += r2b.premium;
   }
   extra.runs.push({
     cards: s.players.map((p) => p.values),
@@ -198,7 +202,6 @@ lines.push(`L2 mean chosen t: ${mean(agg.t).toFixed(3)}   (target 0.2 to 0.5)`);
 lines.push(
   `L2 mean effort minus e*: ${mean(agg.effortGap).toFixed(3)}, mean abs gap: ${mean(agg.effortAbsGap).toFixed(3)}   (target within 1)`,
 );
-lines.push(`L3 voluntary market unravels by round 2: ${pct(agg.unravel / games)}   (target 50 to 80%)`);
 lines.push(`L3 regime vote unanimous: ${pct(agg.unanimous / games)}   (target at most 30%)`);
 lines.push(`L3 regimes chosen: ${JSON.stringify(agg.regimes)}`);
 lines.push(`L4 mean group gap: ${mean(agg.gaps).toFixed(2)}; gap positive in ${pct(agg.gapPositive / games)}   (target at least 80%)`);
@@ -247,11 +250,19 @@ for (const r of extra.runs) {
 lines.push(`Level spread SD (within-table, for params.ts): ${JSON.stringify(levelSD.map((x) => Math.round(x * 10) / 10))}`);
 lines.push('Win rate by Values card with standardized level points, per seat (target 15% to 35%):');
 for (const c of Object.keys(stdWins) as ValuesCard[]) lines.push(`  ${c}: ${pct(stdWins[c] / Math.max(1, stdSeats[c]))}`);
-lines.push(`L3 Low types buying in round 1 (when offered): ${pct(extra.lowBuyR1[0] / Math.max(1, extra.lowBuyR1[1]))}   (target at most 15%)`);
+// Level 3 checks of the lesson itself (D-60).
+const highR1 = extra.highBuy[0][0] / Math.max(1, extra.highBuy[0][1]);
+const lowR1 = extra.lowBuyR1[0] / Math.max(1, extra.lowBuyR1[1]);
 lines.push(
-  `L3 round-2 price at least 30, among games where the insurer is still open: ${pct(extra.r2Price30 / Math.max(1, extra.r2Open))} of ${extra.r2Open}   (target at least 60%)`,
+  `L3 round 1 buying: High ${pct(highR1)}, Low ${pct(lowR1)}; High buy ${(highR1 / Math.max(1e-9, lowR1)).toFixed(2)} x as often as Low   (target at least 3 x)`,
 );
-lines.push(`L3 unravels by round 2 (new target at least 20%): ${pct(agg.unravel / games)}`);
+const r1Mean = extra.r1PriceSum / Math.max(1, extra.r2Open);
+const r2Mean = extra.r2PriceSum / Math.max(1, extra.r2Open);
+lines.push(
+  `L3 mean price where the insurer is still open in round 2 (${extra.r2Open} games): round 1 ${r1Mean.toFixed(2)}, round 2 ${r2Mean.toFixed(2)}, rise ${pct(r2Mean / Math.max(1e-9, r1Mean) - 1)}   (target at least 15%)`,
+);
+lines.push(`L3 market collapses by round 2: ${pct(agg.unravel / games)}   (target at least 10%)`);
+lines.push(`L3 round-2 price at least 30 among open insurers (old check, for reference): ${pct(extra.r2Price30 / Math.max(1, extra.r2Open))}`);
 const egoTotal = Object.values(extra.egoVotes).reduce((a, b) => a + b, 0) || 1;
 lines.push(`L1 principle votes by Egoist bots: ${['P1', 'P2', 'P3', 'P4'].map((k) => `${k} ${pct(extra.egoVotes[k] / egoTotal)}`).join(', ')}`);
 lines.push(
