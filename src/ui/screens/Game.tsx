@@ -458,7 +458,12 @@ function RunDebrief({ v }: { v: ViewState }) {
           </ul>
         </FormCard>
       </div>
-      <p className="label mt-6">{t('run.seed', { seed: v.seed })}</p>
+      {/* Online, the game code stays blank until every card is public (D-65). */}
+      {v.seed && (
+        <p className="label mt-6" data-seed>
+          {t('run.seed', { seed: v.seed })}
+        </p>
+      )}
       <div className="sticky bottom-0 -mx-4 mt-4 flex flex-wrap justify-end gap-2 border-t border-line bg-paper/95 px-4 py-3 backdrop-blur">
         {!online && (
           <>

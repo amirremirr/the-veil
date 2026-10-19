@@ -175,7 +175,8 @@ describe('hidden information with several humans', () => {
         // Per-human debrief lines are merged for the viewer only.
         expect(json).not.toMatch(/"byHuman"|"bonusBy"|"pollTargets"|"polls":\{/);
         // The seed would let a client recompute every hidden draw.
-        if (s.phase.kind !== 'END') expect(json).not.toContain(SEED);
+        if (!revealValues) expect(json).not.toContain(SEED);
+        else expect(JSON.parse(json).seed).toBe(s.seed);
         checked++;
       }
     }

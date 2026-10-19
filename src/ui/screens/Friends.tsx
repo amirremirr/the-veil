@@ -244,7 +244,7 @@ export function Lobby() {
         {isHost ? (
           <>
             <p className="text-sm text-soft">{t('room.startHint')}</p>
-            <button type="button" className="btn-primary" disabled={r.status !== 'open' || !s} onClick={() => s && startRoomGame(s)}>
+            <button type="button" className="btn-primary" disabled={r.status !== 'open' || !s || r.pendingSince !== null} onClick={() => s && startRoomGame(s)}>
               {t('room.start')}
             </button>
           </>

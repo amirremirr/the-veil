@@ -10,6 +10,62 @@ import { PrimaryBar } from './TableParts';
 
 export const useOnline = () => useStore((s) => s.online);
 
+/** Online and an action is waiting for the server: the main button is disabled meanwhile. */
+export function usePending(): boolean {
+  const online = useOnline();
+  const since = useRoom((s) => s.pendingSince);
+  return online && since !== null;
+}
+
+/** Shown once an action has waited this long without an answer. */
+export const THINKING_AFTER_MS = 300;
+
+/** True when an action has waited longer than THINKING_AFTER_MS. */
+export function useThinking(): boolean {
+  const online = useOnline();
+  const since = useRoom((s) => s.pendingSince);
+  const [, tick] = useState(0);
+  useEffect(() => {
+    if (since === null) return;
+    const left = THINKING_AFTER_MS - (Date.now() - since);
+    if (left <= 0) return;
+    const id = setTimeout(() => tick((x) => x + 1), left);
+    return () => clearTimeout(id);
+  }, [since]);
+  return online && since !== null && Date.now() - since >= THINKING_AFTER_MS;
+}
+
+/**
+ * "Thinking..." while the server has not answered. `inline` sits in the TopBar; otherwise it floats
+ * at the top of screens that have no TopBar. The live region is always mounted so the text is announced.
+ */
+export function Thinking({ inline = false }: { inline?: boolean }) {
+  const online = useOnline();
+  const topBar = useRoom((s) => s.topBar);
+  const on = useThinking();
+  useEffect(() => {
+    if (!inline) return;
+    useRoom.setState({ topBar: true });
+    return () => useRoom.setState({ topBar: false });
+  }, [inline]);
+  if (!online || (!inline && topBar)) return null;
+  return (
+    <span
+      role="status"
+      aria-live="polite"
+      data-thinking={on ? 'on' : 'off'}
+      className={inline ? 'min-w-0 text-sm text-soft' : 'pointer-events-none fixed end-3 top-3 z-40 text-sm text-soft'}
+    >
+      {on && (
+        <span className="inline-flex items-center gap-1.5 rounded-md border border-line bg-paper px-2 py-1">
+          <span aria-hidden className="h-2 w-2 animate-pulse rounded-full bg-ink" />
+          {t('room.thinking')}
+        </span>
+      )}
+    </span>
+  );
+}
+
 /** How many humans this screen is still waiting for, and whether this player is done here. */
 export function useWaiting(v: ViewState | null): { waiting: number; done: boolean } {
   const r = useRoom();
@@ -78,6 +134,7 @@ export function OnlineStatus({ v }: { v: ViewState }) {
 /** Online, a Continue button becomes Ready; once pressed it waits for the others. */
 export function ReadyButton({ v, label, onClick, className = 'btn-primary' }: { v: ViewState; label: string; onClick: () => void; className?: string }) {
   const online = useOnline();
+  const pending = usePending();
   const { done } = useWaiting(v);
   if (!online) {
     return (
@@ -87,7 +144,7 @@ export function ReadyButton({ v, label, onClick, className = 'btn-primary' }: { 
     );
   }
   return (
-    <button type="button" className={className} disabled={done} aria-pressed={done} onClick={onClick}>
+    <button type="button" className={className} disabled={done || pending} aria-pressed={done} onClick={onClick}>
       {done ? `${t('room.readyDone')} ✓` : t('room.ready')}
     </button>
   );

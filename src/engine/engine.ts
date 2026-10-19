@@ -412,7 +412,10 @@ export function personalize<T>(result: T, viewer: PlayerId): T {
 }
 
 export interface ViewOptions {
-  /** Multiplayer: the seed would let a client recompute every hidden draw, so it is blank until the end. */
+  /**
+   * Multiplayer: the seed would let a client recompute every hidden draw, so it is blank until every
+   * card is public (the run summary, a single level's summary, and the end).
+   */
   hideSeed?: boolean;
 }
 
@@ -450,7 +453,7 @@ export function visibleState(s: GameState, viewer: PlayerId, opts: ViewOptions =
   }
   return {
     viewer,
-    seed: opts.hideSeed && s.phase.kind !== 'END' ? '' : s.seed,
+    seed: opts.hideSeed && !revealValues ? '' : s.seed,
     mode: s.mode,
     difficulty: s.difficulty,
     players: s.players.map((p) => {

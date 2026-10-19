@@ -221,7 +221,7 @@ export function DebriefShell({
                 {t('debrief.openArchives')}
               </button>
             </section>
-            <p className="label">{t('debrief.seed', { seed: v.seed })}</p>
+            {v.seed && <p className="label">{t('debrief.seed', { seed: v.seed })}</p>}
           </div>
         </Collapsible>
       </div>

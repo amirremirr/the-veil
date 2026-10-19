@@ -870,6 +870,7 @@
       "ROOM_CLOSED": "This room has closed. Rooms close 24 hours after the last move.",
       "badCode": "A room code is four letters.",
       "badName": "Enter a name of 1 to 20 characters."
-    }
+    },
+    "thinking": "Thinking..."
   }
 }

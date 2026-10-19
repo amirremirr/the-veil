@@ -18,7 +18,7 @@ async function noHorizontalScroll(page: Page) {
 
 test('three players: create, join by code, one round, a timeout, a dropped connection', async ({ browser }, info) => {
   test.skip(info.project.name !== 'desktop', 'One run is enough; every player already uses a 375 px phone viewport.');
-  test.setTimeout(240_000);
+  test.setTimeout(300_000);
   const [ana, ben, cai] = await Promise.all([newPlayer(browser), newPlayer(browser), newPlayer(browser)]);
 
   // Ana creates a room for Level 1.
@@ -100,4 +100,37 @@ test('three players: create, join by code, one round, a timeout, a dropped conne
   await cai.getByRole('button', { name: 'Ready', exact: true }).click();
   for (const p of [ana, ben, cai]) await expect(p.getByText('Round 2 of 3')).toBeVisible();
   await noHorizontalScroll(ana);
+
+  // The game code (seed) is never on screen during online play.
+  for (const p of [ana, ben, cai]) {
+    await expect(p.locator('body')).not.toContainText(`room-${code}`);
+    await expect(p.locator('[data-seed]')).toHaveCount(0);
+  }
+
+  // A slow answer from the server: "Thinking..." in the top bar, and the main button cannot be tapped twice.
+  await ana.evaluate(() => (window as unknown as { __roomDelay: (ms: number) => void }).__roomDelay(1500));
+  await ana.getByRole('button', { name: /Safety Net/ }).click();
+  const vote = ana.getByRole('button', { name: 'Vote', exact: true });
+  await vote.click();
+  await expect(vote).toBeDisabled();
+  await expect(ana.locator('header [data-thinking="on"]')).toHaveText('Thinking...');
+  await expect(ana.getByRole('status').filter({ hasText: 'Thinking...' })).toHaveAttribute('aria-live', 'polite');
+  await expect(ana.locator('[data-locked-in]')).toBeVisible({ timeout: 10_000 });
+  await expect(ana.locator('[data-thinking="on"]')).toHaveCount(0);
+  await ana.evaluate(() => (window as unknown as { __roomDelay: (ms: number) => void }).__roomDelay(0));
+
+  // Finish the level: everyone votes in rounds 2 and 3 and presses Ready on the results.
+  for (let round = 2; round <= 3; round++) {
+    for (const p of round === 2 ? [ben, cai] : [ana, ben, cai]) {
+      await p.getByRole('button', { name: /Limit the Gap/ }).click();
+      await p.getByRole('button', { name: 'Vote', exact: true }).click();
+    }
+    for (const p of [ana, ben, cai]) await expect(p.getByText('Winning rule', { exact: false }).first()).toBeVisible();
+    for (const p of [ana, ben, cai]) await p.getByRole('button', { name: 'Ready', exact: true }).click();
+  }
+
+  // The level summary is the last screen: every card is public, so the game code is shown.
+  await expect(ana.locator('[data-debrief-actions]')).toBeVisible();
+  await ana.getByRole('button', { name: 'Show details' }).click();
+  await expect(ana.getByText(`Game code: room-${code}-`, { exact: false })).toBeVisible();
 });

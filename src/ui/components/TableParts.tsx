@@ -8,7 +8,7 @@ import { useStore } from '../store';
 import { t } from '../i18n';
 import { actionName, cardName, coins, optionName } from '../labels';
 import { currentRecord, headlineText, humanLevelScore, nameOf, renderMessage, shortName, useTalkFrom, useView, type VPlayer } from '../game';
-import { OnlineStatus, ReadyButton } from './Online';
+import { OnlineStatus, ReadyButton, Thinking, usePending } from './Online';
 import { useRoom } from '../room';
 import { Avatar, FormCard, Shape, Tip, useMotionOff } from './common';
 
@@ -22,6 +22,8 @@ export const ResultsContext = createContext(false);
 export function PrimaryBar({ children, status = true }: { children: ReactNode; status?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const v = useView();
+  // Online, while an action waits for the server, the bar's buttons cannot be tapped again.
+  const pending = usePending();
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -44,7 +46,9 @@ export function PrimaryBar({ children, status = true }: { children: ReactNode; s
       <div className="mx-auto flex max-w-page flex-wrap items-center justify-end gap-2">
         {/* Online: the screen's countdown and who is still choosing. */}
         {status && v && <OnlineStatus v={v} />}
-        {children}
+        <fieldset disabled={pending} aria-busy={pending} className="contents">
+          {children}
+        </fieldset>
       </div>
     </div>
   );
@@ -80,6 +84,7 @@ export function TopBar({ v, onMenu, onChat }: { v: ViewState; onMenu: () => void
           </div>
           <div className="num text-sm">{t('table.round', { r: Math.max(1, v.round), n: rounds })}</div>
         </div>
+        <Thinking inline />
         <button type="button" className="btn-ghost px-3 lg:hidden" onClick={onChat}>
           {t('table.openTranscript', { n: count })}
         </button>
