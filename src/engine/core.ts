@@ -1,8 +1,11 @@
 // Shared helpers for the engine and level definitions. No UI, no browser APIs.
-import { BOT, VALUES_PRIOR } from './params';
+import { BOT, BOT_PROFILES, DIFFICULTY, VALUES_PRIOR } from './params';
 import { roundScore, valuesMetric } from './scoring';
 import { flavorIndex, stream, type Rng, standalone, hashString } from './rng';
 import type {
+  BotKey,
+  BotProfile,
+  Difficulty,
   GameState,
   Headline,
   LevelId,
@@ -23,6 +26,19 @@ export const nPlayers = (s: GameState): number => s.players.length;
 
 export const gameRng = (s: GameState): Rng => stream(s, 'game');
 export const botRng = (s: GameState): Rng => stream(s, 'bots');
+
+/** A bot's working parameters at a difficulty (Section 5.2, D-51). */
+export function makeBotProfile(key: BotKey, difficulty: Difficulty): BotProfile {
+  const prof = BOT_PROFILES[key];
+  const diff = DIFFICULTY[difficulty];
+  return {
+    key,
+    rho: prof.rho * BOT.RHO_SCALE,
+    lambda: prof.lambda * diff.lambdaMult,
+    honesty: Math.max(prof.honesty * diff.honestyMult, diff.honestyFloor),
+    sigma: prof.sigma,
+  };
+}
 
 export function botParams(s: GameState, pid: PlayerId) {
   const p = playerOf(s, pid);

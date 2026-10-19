@@ -1,6 +1,6 @@
 // LEVEL 2: LUCK VS. EFFORT. Vote on a tax, choose effort, guess how much was luck.
 import { BOT, L2 } from '../params';
-import { botParams, botRng, finishRound, gameRng, headline, humanOf, ids, idx, lowerMedian, playerOf, debriefRng } from '../core';
+import { botParams, botRng, finishRound, gameRng, headline, ids, idx, lowerMedian, playerOf, debriefRng } from '../core';
 import { effortSharesFrom, mean, roundScore } from '../scoring';
 import { leakyRevenue, sum } from '../tax';
 import { ceOfSamples, logitChoice, logitProbs, argmax } from '../bots/utility';
@@ -17,8 +17,13 @@ export interface L2Round {
   W: Record<PlayerId, number>;
   revenue: number;
   leaked: number;
+  /** The viewer's poll target and answer (visibleState fills these from the per-human records). */
   pollTarget?: PlayerId;
   poll?: { target: PlayerId; answer: number; truth: number };
+  /** Per human: the other player with the highest gross income this round. */
+  pollTargets?: Record<PlayerId, PlayerId>;
+  /** Per human answers to the luck poll. Private to each human until the debrief. */
+  polls?: Record<PlayerId, { target: PlayerId; answer: number; truth: number }>;
 }
 
 export interface BonusCitizen {
@@ -54,13 +59,19 @@ export interface L2Debrief {
   humanMeanTaxVote?: number;
   /** The human's card's best round-1 tax vote (risk neutral apart from the hardship line) vs. their vote. */
   cardBest?: { best: number; chose: number };
+  /** Per human (D-43, D-62). visibleState merges the viewer's entry into the fields above. */
+  byHuman?: Record<
+    PlayerId,
+    Pick<L2Debrief, 'polls' | 'bonus' | 'humanMeanLuckBelief' | 'humanMeanTaxVote' | 'cardBest'> & { rounds: L2Round[] }
+  >;
 }
 
 export interface L2State {
   talents: Record<PlayerId, number>;
   rounds: L2Round[];
   current: { tVotes?: Record<PlayerId, number>; t?: number };
-  bonus?: L2Bonus;
+  /** Each human's Bonus Pot pair and split. */
+  bonusBy?: Record<PlayerId, L2Bonus>;
   debrief?: L2Debrief;
 }
 
@@ -176,9 +187,31 @@ export function classifyFairness(share: number, ideals: Record<FairnessIdeal, nu
   return d.filter((x) => x[1] <= min + L2.FAIRNESS_TIE + 1e-9).map((x) => x[0]);
 }
 
+/** The Bonus Pot pair one human splits coins between: two other citizens, shown in full (D-19). */
+function drawBonusPair(s: GameState, hid: PlayerId): L2Bonus {
+  const last = st(s).rounds[st(s).rounds.length - 1];
+  const g = gameRng(s);
+  const others = g.shuffle(ids(s).filter((id) => id !== hid));
+  const a = makeBonusCitizen(s, others[0], last);
+  if (others.length >= 2) return { a, b: makeBonusCitizen(s, others[1], last) };
+  // Two-player game: pair the only other player with an archival citizen (see DECISIONS.md).
+  const used = Object.values(st(s).talents);
+  const pool = L2.TALENT_DECK.filter((x) => !used.includes(x));
+  const talent = g.pick(pool);
+  const effort = bestEffort(last.t, talent, s.players.length);
+  const luck = g.pick(L2.LUCK_VALUES);
+  return { a, b: { id: 'archival', name: 'Citizen #4471 (Archival)', talent, effort, luck, y: grossIncome(talent, effort, luck) } };
+}
+
 function variance(xs: number[]): number {
   const m = mean(xs);
   return mean(xs.map((x) => (x - m) ** 2));
+}
+
+/** A round as one human sees it: their own poll target and answer, nobody else's. */
+function personalRound(r: L2Round, pid: PlayerId): L2Round {
+  const { pollTargets, polls, ...rest } = r;
+  return { ...rest, pollTarget: pollTargets?.[pid], poll: polls?.[pid] };
 }
 
 export const level2: LevelDefinition = {
@@ -214,35 +247,17 @@ export const level2: LevelDefinition = {
   onEnter(s, phase) {
     if (phase.kind === 'BRIEFING') st(s).current = {};
     if (phase.kind === 'DECIDE' && phase.step === 'BONUS') {
-      const h = humanOf(s);
-      if (!h) return;
-      const last = st(s).rounds[st(s).rounds.length - 1];
-      const g = gameRng(s);
-      const others = g.shuffle(ids(s).filter((id) => id !== h.id));
-      let a: BonusCitizen;
-      let b: BonusCitizen;
-      if (others.length >= 2) {
-        a = makeBonusCitizen(s, others[0], last);
-        b = makeBonusCitizen(s, others[1], last);
-      } else {
-        // Two-player game: pair the only bot with an archival citizen (see DECISIONS.md).
-        a = makeBonusCitizen(s, others[0], last);
-        const used = Object.values(st(s).talents);
-        const pool = L2.TALENT_DECK.filter((x) => !used.includes(x));
-        const talent = g.pick(pool);
-        const effort = bestEffort(last.t, talent, s.players.length);
-        const luck = g.pick(L2.LUCK_VALUES);
-        b = { id: 'archival', name: 'Citizen #4471 (Archival)', talent, effort, luck, y: grossIncome(talent, effort, luck) };
-      }
-      st(s).bonus = { a, b };
+      // One pair per human, drawn in seat order (solo play draws exactly as before).
+      const bonusBy: Record<PlayerId, L2Bonus> = {};
+      for (const h of s.players.filter((p) => p.isHuman)) bonusBy[h.id] = drawBonusPair(s, h.id);
+      if (Object.keys(bonusBy).length) st(s).bonusBy = bonusBy;
     }
   },
   deciders(s, step) {
     if (step === 'POLL' || step === 'BONUS') {
-      const h = humanOf(s);
-      if (!h) return [];
-      if (step === 'BONUS' && !st(s).bonus) return [];
-      return [h.id];
+      const humans = s.players.filter((p) => p.isHuman).map((p) => p.id);
+      if (step === 'BONUS') return humans.filter((id) => !!st(s).bonusBy?.[id]);
+      return humans;
     }
     return ids(s);
   },
@@ -292,10 +307,10 @@ export const level2: LevelDefinition = {
         revenue: leakyRevenue(t, Y, L2.KAPPA),
         leaked: t * Y * L2.KAPPA * t,
       };
-      const h = humanOf(s);
-      if (h) {
-        const others = pids.filter((id) => id !== h.id);
-        round.pollTarget = others.sort((a, b) => round.y[b] - round.y[a])[0];
+      const humans = s.players.filter((p) => p.isHuman).map((p) => p.id);
+      if (humans.length) {
+        round.pollTargets = {};
+        for (const h of humans) round.pollTargets[h] = pids.filter((id) => id !== h).sort((a, b) => round.y[b] - round.y[a])[0];
       }
       l.rounds.push(round);
       const richest = pids.slice().sort((a, b) => round.y[b] - round.y[a])[0];
@@ -308,21 +323,23 @@ export const level2: LevelDefinition = {
     }
     if (step === 'POLL') {
       const r = l.rounds[l.rounds.length - 1];
+      r.polls = {};
       for (const [pid, ans] of Object.entries(decisions)) {
-        void pid;
-        const target = r.pollTarget!;
+        const target = r.pollTargets![pid];
         const truth = Math.max(0, Math.min(1, r.eps[target] / r.y[target]));
-        r.poll = { target, answer: (ans as number) / 100, truth };
+        r.polls[pid] = { target, answer: (ans as number) / 100, truth };
       }
       return;
     }
     if (step === 'BONUS') {
-      const b = l.bonus;
-      if (!b || !Object.keys(decisions).length) return;
-      const share = (Object.values(decisions)[0] as number) / L2.BONUS_POT;
-      b.shareToA = share;
-      b.ideals = fairnessIdeals(b.a, b.b);
-      b.classification = classifyFairness(share, b.ideals);
+      for (const [pid, coins] of Object.entries(decisions)) {
+        const b = l.bonusBy?.[pid];
+        if (!b) continue;
+        const share = (coins as number) / L2.BONUS_POT;
+        b.shareToA = share;
+        b.ideals = fairnessIdeals(b.a, b.b);
+        b.classification = classifyFairness(share, b.ideals);
+      }
     }
   },
   talkMenu() {
@@ -384,31 +401,34 @@ export const level2: LevelDefinition = {
       cfW += sum(wealthL2(y0, e0, 0));
       cfGross += sum(y0);
     }
-    const polls = l.rounds
-      .map((r, i) => (r.poll ? { round: i + 1, ...r.poll } : null))
-      .filter((x): x is NonNullable<typeof x> => !!x);
     const selfishT = Object.fromEntries(pids.map((id, i) => [id, selfishPreferredT(talents, i)]));
-    const h = humanOf(s);
+    const byHuman: NonNullable<L2Debrief['byHuman']> = {};
+    for (const h of s.players.filter((p) => p.isHuman)) {
+      const polls = l.rounds
+        .map((r, i) => (r.polls?.[h.id] ? { round: i + 1, ...r.polls[h.id] } : null))
+        .filter((x): x is NonNullable<typeof x> => !!x);
+      byHuman[h.id] = {
+        polls,
+        rounds: l.rounds.map((r) => personalRound(r, h.id)),
+        bonus: l.bonusBy?.[h.id],
+        humanMeanLuckBelief: polls.length ? mean(polls.map((p) => p.answer)) : undefined,
+        humanMeanTaxVote: mean(l.rounds.map((r) => r.tVotes[h.id])),
+        cardBest: {
+          best: L2.TAX_OPTIONS[argmax(taxScores(n, idx(s, h.id), l.talents[h.id], h.values, 0, debriefRng(s, 'l2'), s.botSamples))],
+          chose: l.rounds[0].tVotes[h.id],
+        },
+      };
+    }
     const d: L2Debrief = {
       talents: { ...l.talents },
       rounds: l.rounds,
       variance: { talentEffort: te, luck: lu, interaction: 1 - te - lu },
       eStar,
-      polls,
+      polls: [],
       distortion: { realizedW, counterfactualW: cfW, realizedGross, counterfactualGross: cfGross },
-      bonus: l.bonus,
       selfishT,
       predictedT: lowerMedian(Object.values(selfishT)),
-      humanMeanLuckBelief: polls.length ? mean(polls.map((p) => p.answer)) : undefined,
-      humanMeanTaxVote: h ? mean(l.rounds.map((r) => r.tVotes[h.id])) : undefined,
-      cardBest: h
-        ? {
-            best: L2.TAX_OPTIONS[
-              argmax(taxScores(n, idx(s, h.id), l.talents[h.id], h.values, 0, debriefRng(s, 'l2'), s.botSamples))
-            ],
-            chose: l.rounds[0].tVotes[h.id],
-          }
-        : undefined,
+      byHuman,
     };
     l.debrief = d;
     return d;
@@ -421,8 +441,8 @@ export const level2: LevelDefinition = {
       myTalent: l.talents[viewer],
       talents: revealPrivate ? l.talents : undefined,
       current: { t: l.current.t, tVotes: l.current.t !== undefined ? l.current.tVotes : undefined },
-      rounds: l.rounds.map((r) => ({ ...r, effort: hide(r.effort), eps: hide(r.eps) })),
-      bonus: l.bonus,
+      rounds: l.rounds.map((r) => ({ ...personalRound(r, viewer), effort: hide(r.effort), eps: hide(r.eps) })),
+      bonus: l.bonusBy?.[viewer],
       debrief: revealPrivate ? l.debrief : undefined,
     };
   },

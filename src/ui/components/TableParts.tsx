@@ -7,7 +7,9 @@ import { hardshipPenalty } from '../../engine/scoring';
 import { useStore } from '../store';
 import { t } from '../i18n';
 import { actionName, cardName, coins, optionName } from '../labels';
-import { HUMAN_ID, currentRecord, headlineText, humanLevelScore, nameOf, renderMessage, shortName, type VPlayer } from '../game';
+import { currentRecord, headlineText, humanLevelScore, nameOf, renderMessage, shortName, useTalkFrom, useView, type VPlayer } from '../game';
+import { OnlineStatus, ReadyButton } from './Online';
+import { useRoom } from '../room';
 import { Avatar, FormCard, Shape, Tip, useMotionOff } from './common';
 
 /** True inside a combined results screen: the screen supplies one Continue button for everything. */
@@ -17,8 +19,9 @@ export const ResultsContext = createContext(false);
  * The main action bar. Fixed to the bottom on phones, inline on desktop. Its height is published
  * as --bar-h so the page can pad its bottom and nothing ends up hidden under the bar.
  */
-export function PrimaryBar({ children }: { children: ReactNode }) {
+export function PrimaryBar({ children, status = true }: { children: ReactNode; status?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
+  const v = useView();
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
@@ -38,7 +41,11 @@ export function PrimaryBar({ children }: { children: ReactNode }) {
       data-primary-bar
       className="fixed inset-x-0 bottom-0 z-20 border-t border-line bg-paper/95 px-4 py-3 backdrop-blur lg:static lg:mt-4 lg:border-0 lg:bg-transparent lg:px-0 lg:py-0 lg:backdrop-blur-none"
     >
-      <div className="mx-auto flex max-w-page flex-wrap justify-end gap-2">{children}</div>
+      <div className="mx-auto flex max-w-page flex-wrap items-center justify-end gap-2">
+        {/* Online: the screen's countdown and who is still choosing. */}
+        {status && v && <OnlineStatus v={v} />}
+        {children}
+      </div>
     </div>
   );
 }
@@ -99,12 +106,17 @@ function statusFor(v: ViewState, p: VPlayer): string[] {
 /** Compact row of players: avatar, short name, and level-specific badges. */
 export function PlayerStrip({ v }: { v: ViewState }) {
   const lv = v.levelView as Record<string, any>;
+  const online = useStore((s) => s.online);
+  const lockedIn = useRoom((s) => s.lockedIn);
+  const seats = useRoom((s) => s.seats);
   return (
     <ul className="grid grid-cols-4 gap-1.5" aria-label={t('ui.citizens')}>
       {v.players.map((p) => {
-        const me = p.id === HUMAN_ID;
+        const me = p.id === v.viewer;
         const group = v.levelIndex === 4 ? (lv?.groups?.[p.id] as 'CIRCLE' | 'SQUARE' | undefined) : undefined;
         const status = statusFor(v, p);
+        if (online && lockedIn.includes(p.id)) status.unshift(`✓ ${t('room.lockedIn')}`);
+        if (online && p.isHuman && seats.some((s) => s.seat === p.id && !s.connected)) status.unshift(t('room.offlineTag'));
         return (
           <li key={p.id} className={`form-card flex min-w-0 flex-col items-center gap-0.5 px-1 py-1.5 text-center ${me ? 'ring-2 ring-ink' : ''}`}>
             <Avatar bot={p.botKey} human={p.isHuman} size={26} />
@@ -138,7 +150,7 @@ export function ChatFeed({ v, onlyCurrent = false }: { v: ViewState; onlyCurrent
             key={m.id}
             initial={off ? false : { opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`rounded-md border p-2 ${m.from === HUMAN_ID ? 'border-ink bg-ink/5' : 'border-line bg-card'}`}
+            className={`rounded-md border p-2 ${m.from === v.viewer ? 'border-ink bg-ink/5' : 'border-line bg-card'}`}
           >
             <div className="flex items-center justify-between gap-2">
               <span className="font-semibold">{nameOf(v, m.from)}</span>
@@ -160,7 +172,7 @@ export function ChatFeed({ v, onlyCurrent = false }: { v: ViewState; onlyCurrent
 
 /** "What others said" strip at the top of a decision form, while the chat is open. */
 export function ChatStrip({ v, onReply }: { v: ViewState; onReply: () => void }) {
-  const talkFrom = useStore((s) => s.talkFrom);
+  const talkFrom = useTalkFrom();
   const msgs = v.messages.filter((m) => m.level === v.levelIndex && (talkFrom !== null ? m.id >= talkFrom : m.round === v.round));
   const left = TALK.MAX_MESSAGES - v.talkSent;
   return (
@@ -203,7 +215,7 @@ export function MessageComposer({ v }: { v: ViewState }) {
   const [type, setType] = useState<MsgType>(types[0]);
   const [option, setOption] = useState('');
   const [card, setCard] = useState<ValuesCard>('RAWLSIAN');
-  const others = v.players.filter((p) => p.id !== HUMAN_ID);
+  const others = v.players.filter((p) => p.id !== v.viewer);
   const [target, setTarget] = useState(others[0]?.id ?? '');
   const left = TALK.MAX_MESSAGES - v.talkSent;
   const opts = type === 'SUPPORT' ? menu.support : type === 'OPPOSE' ? menu.oppose : type === 'PROMISE' ? menu.promise : [];
@@ -215,7 +227,7 @@ export function MessageComposer({ v }: { v: ViewState }) {
     else if (type === 'CLAIM_VALUES') msg = { type, card };
     else if (type === 'ACCUSE') msg = { type, target, card };
     else msg = { type: 'FLAVOR' };
-    dispatch({ type: 'SEND_MESSAGE', from: HUMAN_ID, msg });
+    dispatch({ type: 'SEND_MESSAGE', from: v.viewer, msg });
   };
   return (
     <div>
@@ -312,13 +324,13 @@ export function Newsletter({ text }: { text: string }) {
 export function SummaryBlock({ v, showMoney = true }: { v: ViewState; showMoney?: boolean }) {
   const rec = currentRecord(v);
   if (!rec) return null;
-  const me = v.players.find((p) => p.id === HUMAN_ID);
+  const me = v.players.find((p) => p.id === v.viewer);
   const card = me?.values;
   const rows = v.players.slice().sort((a, b) => rec.W[b.id] - rec.W[a.id]);
-  const S = rec.S[HUMAN_ID] ?? 0;
+  const S = rec.S[v.viewer] ?? 0;
   // The engine's own numbers: S = 0.5 W + 0.5 k M. Rounded so the shown parts add up exactly.
   const egoist = card === 'EGOIST';
-  const W = rec.W[HUMAN_ID];
+  const W = rec.W[v.viewer];
   // Whole numbers: round the total, the money half, and the hardship penalty; the goal half is the
   // remainder, so the parts always add up exactly (D-39).
   const sShown = Math.round(S);
@@ -349,7 +361,7 @@ export function SummaryBlock({ v, showMoney = true }: { v: ViewState; showMoney?
           </thead>
           <tbody>
             {rows.map((p) => (
-              <tr key={p.id} className={p.id === HUMAN_ID ? 'font-semibold' : ''}>
+              <tr key={p.id} className={p.id === v.viewer ? 'font-semibold' : ''}>
                 <td>{nameOf(v, p.id)}</td>
                 <td className="num text-end">{coins(rec.W[p.id])}</td>
               </tr>
@@ -377,13 +389,12 @@ export function SummaryBlock({ v, showMoney = true }: { v: ViewState; showMoney?
 
 export function ContinueBar({ label }: { label?: string }) {
   const act = useStore((s) => s.act);
+  const v = useView();
   const inResults = useContext(ResultsContext);
-  if (inResults) return null;
+  if (inResults || !v) return null;
   return (
     <PrimaryBar>
-      <button type="button" className="btn-primary" onClick={() => act()}>
-        {label ?? t('app.continue')}
-      </button>
+      <ReadyButton v={v} label={label ?? t('app.continue')} onClick={() => act()} />
     </PrimaryBar>
   );
 }

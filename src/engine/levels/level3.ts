@@ -41,6 +41,8 @@ export interface L3Debrief {
   unraveled: boolean;
   /** Round 1 buy decision: the human's card's best choice (risk neutral apart from hardship) vs. theirs. */
   cardBest?: { best: boolean; chose: boolean };
+  /** Per human (D-43, D-62). visibleState merges the viewer's entry into the fields above. */
+  byHuman?: Record<PlayerId, { cardBest: { best: boolean; chose: boolean } }>;
 }
 
 export interface L3State {
@@ -409,7 +411,7 @@ export const level3: LevelDefinition = {
         if (c.gym) bucket[0]++;
       }
     const vol = l.rounds.filter((r) => r.regime === 'VOL');
-    const human = s.players.find((p) => p.isHuman);
+    const byHuman = Object.fromEntries(s.players.filter((p) => p.isHuman).map((h) => [h.id, { cardBest: cardBestBuy(s, h.id) }]));
     const d: L3Debrief = {
       types: { ...l.types },
       rounds: l.rounds,
@@ -424,7 +426,7 @@ export const level3: LevelDefinition = {
       regimeVotes: l.regimeVotes,
       regime: l.regime,
       bestRegimeForType: { LOW: best('LOW'), HIGH: best('HIGH') },
-      cardBest: human ? cardBestBuy(s, human.id) : undefined,
+      byHuman,
       unraveled: vol.slice(0, L3.VOLUNTARY_ROUNDS).some((r) => r.premium === null || pids.every((id) => !r.choices[id].buy)),
     };
     l.debrief = d;

@@ -2,9 +2,10 @@ import type { ReactNode } from 'react';
 import archives from '../copy/archives.json';
 import type { ViewState } from '../../engine/types';
 import { useStore } from '../store';
+import { OnlineStatus, ReadyButton } from './Online';
 import { t } from '../i18n';
 import { cardName, coins } from '../labels';
-import { HUMAN_ID, levelRounds, nameOf } from '../game';
+import { levelRounds, nameOf } from '../game';
 import { Collapsible, FormCard, Page, Stamp } from './common';
 
 export interface CompareRow {
@@ -42,14 +43,14 @@ export function DebriefShell({
   /** One plain sentence under the lesson. */
   lessonNote?: string;
 }) {
-  const { dispatch, replay, go, nextSingleLevel, progress, settings } = useStore();
+  const { dispatch, replay, go, nextSingleLevel, progress, settings, online, leaveOnline } = useStore();
   const rounds = levelRounds(v);
   const level = v.levelIndex;
   const score = (id: string) => v.scores[id]?.byLevel[level - 1] ?? 0;
   const players = v.players.slice().sort((a, b) => score(b.id) - score(a.id));
   const entries = archives.entries.filter((e) => archiveIds.includes(e.id));
   const refs = archives.refs as Record<string, string>;
-  const rel = v.reliability?.[HUMAN_ID];
+  const rel = v.reliability?.[v.viewer];
   const canNext = level < 5 && (settings.unlockAll || progress.unlocked > level);
   const row = compare?.[0];
   return (
@@ -104,7 +105,7 @@ export function DebriefShell({
             <h2 className="label mb-1">{t('debrief.scores')}</h2>
             <ol className="divide-y divide-line/60 rounded-md border border-line bg-card px-3 text-sm">
               {players.map((p) => (
-                <li key={p.id} className={`flex items-baseline justify-between gap-2 py-1 ${p.id === HUMAN_ID ? 'font-semibold' : ''}`}>
+                <li key={p.id} className={`flex items-baseline justify-between gap-2 py-1 ${p.id === v.viewer ? 'font-semibold' : ''}`}>
                   <span className="min-w-0 truncate">
                     {nameOf(v, p.id)}
                     {v.revealAll && p.values && <span className="font-normal text-soft"> · {cardName(p.values)}</span>}
@@ -121,9 +122,17 @@ export function DebriefShell({
       </div>
 
       <div className="mt-4 flex flex-wrap gap-2" data-debrief-actions>
+        <OnlineStatus v={v} />
         {v.mode === 'FULL_RUN' ? (
-          <button type="button" className="btn-primary w-full sm:w-auto" onClick={() => dispatch({ type: 'ADVANCE' })}>
-            {level < 5 ? t('debrief.next') : t('debrief.toRunDebrief')}
+          <ReadyButton
+            v={v}
+            className="btn-primary w-full sm:w-auto"
+            label={level < 5 ? t('debrief.next') : t('debrief.toRunDebrief')}
+            onClick={() => dispatch({ type: 'ADVANCE' })}
+          />
+        ) : online ? (
+          <button type="button" className="btn-primary w-full sm:w-auto" onClick={() => leaveOnline()}>
+            {t('debrief.menu')}
           </button>
         ) : (
           canNext && (
@@ -132,15 +141,19 @@ export function DebriefShell({
             </button>
           )
         )}
-        <button type="button" className="btn-ghost flex-1 px-2 text-sm sm:flex-none" onClick={() => replay(true)}>
-          {t('debrief.replaySame')}
-        </button>
-        <button type="button" className="btn-ghost flex-1 px-2 text-sm sm:flex-none" onClick={() => replay(false)}>
-          {t('debrief.replayNew')}
-        </button>
-        <button type="button" className="btn-ghost flex-1 px-2 text-sm sm:flex-none" onClick={() => go('title')}>
-          {t('debrief.menu')}
-        </button>
+        {!online && (
+          <>
+            <button type="button" className="btn-ghost flex-1 px-2 text-sm sm:flex-none" onClick={() => replay(true)}>
+              {t('debrief.replaySame')}
+            </button>
+            <button type="button" className="btn-ghost flex-1 px-2 text-sm sm:flex-none" onClick={() => replay(false)}>
+              {t('debrief.replayNew')}
+            </button>
+            <button type="button" className="btn-ghost flex-1 px-2 text-sm sm:flex-none" onClick={() => go('title')}>
+              {t('debrief.menu')}
+            </button>
+          </>
+        )}
       </div>
 
       <div className="mt-4">
@@ -175,7 +188,7 @@ export function DebriefShell({
                   </thead>
                   <tbody>
                     {players.map((p) => (
-                      <tr key={p.id} className={p.id === HUMAN_ID ? 'font-semibold' : ''}>
+                      <tr key={p.id} className={p.id === v.viewer ? 'font-semibold' : ''}>
                         <td>{nameOf(v, p.id)}</td>
                         {rounds.map((r) => (
                           <td key={r.round} className="num text-end">

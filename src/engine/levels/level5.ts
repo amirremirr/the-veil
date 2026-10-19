@@ -61,6 +61,8 @@ export interface L5Debrief {
   W: Record<PlayerId, number>;
   /** The human's paid veil submission vs. their card's best submission (risk neutral, no noise). */
   cardBest?: { best: Constitution; chose: Constitution };
+  /** Per human (D-43, D-62). visibleState merges the viewer's entry into the fields above. */
+  byHuman?: Record<PlayerId, { verdict: VerdictKey; cardBest: { best: Constitution; chose: Constitution } }>;
 }
 
 export interface L5State {
@@ -436,17 +438,20 @@ export const level5: LevelDefinition = {
         passed: am ? am.passed : false,
       });
     }
-    const human = s.players.find((p) => p.isHuman);
-    let verdict: VerdictKey | undefined;
-    if (human) {
-      const dt = deltaT[human.id];
-      const rich = rank[human.id] > pids.length / 2;
-      if (Math.abs(dt) <= L5.CONSISTENT_BAND + 1e-9) verdict = 'consistent';
-      else if (rich && dt < 0) verdict = dt <= -L5.STRONG_SHIFT + 1e-9 ? 'paydayStrong' : 'paydayMild';
-      else if (!rich && dt > 0) verdict = dt >= L5.STRONG_SHIFT - 1e-9 ? 'convenientStrong' : 'convenientMild';
-      else if (rich) verdict = 'selfTaxingRich';
-      else verdict = 'poorTaxCutter';
-    }
+    const verdictOf = (pid: PlayerId): VerdictKey => {
+      const dt = deltaT[pid];
+      const rich = rank[pid] > pids.length / 2;
+      if (Math.abs(dt) <= L5.CONSISTENT_BAND + 1e-9) return 'consistent';
+      if (rich && dt < 0) return dt <= -L5.STRONG_SHIFT + 1e-9 ? 'paydayStrong' : 'paydayMild';
+      if (!rich && dt > 0) return dt >= L5.STRONG_SHIFT - 1e-9 ? 'convenientStrong' : 'convenientMild';
+      return rich ? 'selfTaxingRich' : 'poorTaxCutter';
+    };
+    const byHuman: NonNullable<L5Debrief['byHuman']> = {};
+    for (const h of s.players.filter((p) => p.isHuman))
+      byHuman[h.id] = {
+        verdict: verdictOf(h.id),
+        cardBest: { best: ALL_CONSTITUTIONS[argmax(veilCE(pids.length, h.values, 0))], chose: l.veil![h.id] },
+      };
     const d: L5Debrief = {
       veil: l.veil!,
       proposals,
@@ -462,11 +467,8 @@ export const level5: LevelDefinition = {
       amendments: l.amendments,
       donations: Object.fromEntries(pids.map((id) => [id, { to: l.lobby![id].donateTo, amount: l.lobby![id].amount }])),
       boughtVotes,
-      verdict,
       W: l.W!,
-      cardBest: human
-        ? { best: ALL_CONSTITUTIONS[argmax(veilCE(pids.length, human.values, 0))], chose: l.veil![human.id] }
-        : undefined,
+      byHuman,
     };
     l.debrief = d;
     return d;
