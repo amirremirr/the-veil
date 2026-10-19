@@ -586,24 +586,29 @@
       "lessonNote": "Training is risky when failing leaves you in hardship, so fewer people train, and HireBot's belief falls for both groups. It falls faster for Squares, so the gap stays."
     },
     "l5": {
-      "predicted": "Before incomes are known, everyone is in the same position. Once incomes are known, the score pays richer players to want lower taxes, so their votes move. That is plain self-interest. The real question is whether their sense of what is fair moves too. Babcock and Loewenstein (1997) found that it does: people honestly come to believe that what helps them is also what is fair. So this level asked everyone twice, without pay, what tax they think is fair.",
-      "slope": "Across all players, each step up in income changed the tax they called fair by {slope} points. {sign}",
-      "slopeNeg": "The richer a player turned out, the lower the tax they called fair. That is the self-serving bias.",
-      "slopePos": "The richer players called higher taxes fair. The Ministry is surprised.",
-      "slopeZero": "Income did not change what anyone called fair. The Ministry is moved.",
+      "predicted": "Before incomes are known, everyone is in the same position. Once incomes are known, the score pays richer players to want lower taxes, so their votes move. That is plain self-interest. A different question is whether their sense of what is fair moves too. In bargaining experiments, Babcock and Loewenstein (1997) found that it often does: people honestly come to believe that what helps them is also what is fair. So this level asked everyone twice, without pay, what tax they think is fair.",
       "amendments": "Changes suggested: {n}. Passed: {p}.",
       "donations": "Coins given: {list}.",
       "noDonations": "Nobody gave any coins.",
       "bought": "{donor} gave {amount} coins to {to}, who then voted {vote} on the donor's change.",
-      "chartTitle": "Change in the tax people called fair, by income",
       "chartX": "Income rank (1 = poorest)",
       "chartY": "Change in fair tax (points)",
-      "lesson": "Once people know if they are rich or poor, their sense of a fair tax tends to move in their own favor, not just their vote.",
+      "lesson": "Research finds that once people know where they stand, their sense of a fair tax can drift toward their own interest. One game cannot show whether that happened to you.",
       "boughtYou": "You gave {amount} coins to {to}, who then voted {vote} on your change.",
       "boughtToYou": "{donor} gave you {amount} coins, and you then voted {vote} on their change.",
       "paidLine": "How your paid vote moved: behind the veil you picked {veil}. After learning your income you proposed {prop}. Change: {dt} points.",
       "paidLinePass": "How your paid vote moved: behind the veil you picked {veil}. After learning your income you did not propose a change.",
-      "fairLine": "How your sense of fairness moved: before you knew your income you said {f1} was fair. After learning you earn {inc} (number {rank} of {n}, from poorest to richest), you said {f2}. Change: {dt} points."
+      "fairLine": "Before you knew your income you said {f1} was fair. After learning you earn {inc} (number {rank} of {n}, from poorest to richest), you said {f2}.",
+      "ownShift": "Your idea of a fair tax moved by {dt} points after you learned your income.",
+      "ownShiftZero": "Your idea of a fair tax did not move after you learned your income.",
+      "ownShiftNote": "One person's change can have several causes: what you learned about your income, how the others voted, and the rules that were adopted. One game cannot tell which.",
+      "humanSlope": "Across the {k} people at this table, each step up in income went with a change of {slope} points in the tax they called fair. This describes this table only; it is far too small to show a bias.",
+      "botsProgrammed": "The computer players' fair-tax answers are programmed, not measured, so they are left out here. An Egoist computer player's \"fair\" tax is simply the one that pays it most; the other cards' answers drift toward their own money by a fixed amount.",
+      "chartTitleHumans": "Change in the tax people called fair, by income (people only)",
+      "chartTitleYou": "The tax you called fair, before and after learning your income",
+      "chartYouSummary": "Before: {f1}%. After: {f2}%.",
+      "chartBefore": "Before",
+      "chartAfter": "After"
     },
     "lesson": "The lesson",
     "vsTheory": "You vs. the theory",
@@ -622,15 +627,6 @@
       "trainNo": "not to train in round 1",
       "taxR1": "{t} in round 1"
     }
-  },
-  "verdicts": {
-    "consistent": "You did not change your mind. The Ministry finds this suspicious.",
-    "paydayStrong": "Fair-minded until you got rich.",
-    "paydayMild": "Fair-minded until you got a little rich.",
-    "convenientStrong": "Started loving taxes the moment you turned out poor.",
-    "convenientMild": "Liked taxes a bit more once you turned out poor.",
-    "selfTaxingRich": "Rich, and you voted to tax yourself more. Very generous. Slightly worrying.",
-    "poorTaxCutter": "Poor, and you voted to cut your own taxes. Optimistic."
   },
   "guess": {
     "title": "Who had which card?",
@@ -663,32 +659,18 @@
       "LIBERAL_EGALITARIAN": "rewarding work only",
       "none": "things working out somehow"
     },
-    "tails": {
-      "consistent": "and you kept believing it after you found out your income",
-      "paydayStrong": "until you got rich",
-      "paydayMild": "until you got a little rich",
-      "convenientStrong": "especially after you turned out poor",
-      "convenientMild": "a bit more after you turned out poor",
-      "selfTaxingRich": "even after you turned out rich, which is kind and a little alarming",
-      "poorTaxCutter": "and you cut your own taxes while poor, which the Ministry still does not understand",
-      "none": "probably"
-    },
     "labels": {
-      "consistent": "Principled (So Far)",
-      "paydayStrong": "Kind, With Conditions",
-      "paydayMild": "Kind, With Conditions",
-      "convenientStrong": "Team Player When It Pays",
-      "convenientMild": "Team Player When It Pays",
-      "selfTaxingRich": "Generous, Possibly Confused",
-      "poorTaxCutter": "Future Millionaire",
+      "EGALITARIAN": "Equal Shares Enthusiast",
+      "LIBERTARIAN": "Finders Keepers",
+      "MERITOCRATIC": "Talent-and-Work Fan",
+      "LIBERAL_EGALITARIAN": "Effort Over Everything",
       "none": "Hard to Say"
     },
     "pointsNote": "Each level counts the same: level points = 100 + 50 x (your level score - the table's average) / how widely scores usually spread in that level. A right guess adds 25.",
     "ideologyNote": "Built only from answers that did not affect your score.",
     "fairLine": "Asked what tax is fair, you said {f1} before you knew your income and {f2} after.",
     "bonusLine": "Splitting the bonus pot, you acted like someone who believes in {ideal}.",
-    "luckLine": "You guessed luck made up {belief}% of the top earner's income. It was really {truth}%.",
-    "ideologyLine2": "You believe in {ideal}, {tail}."
+    "luckLine": "You guessed luck made up {belief}% of the top earner's income. It was really {truth}%."
   },
   "archives": {
     "title": "Glossary",
@@ -784,12 +766,13 @@
       "gapSummary": "Beliefs {s}, childcare {c}, both {i}"
     },
     "l5": {
-      "cmpLabel": "Rich want less tax?",
-      "cmpBench": "yes (below 0)",
+      "cmpLabel": "Did your fair tax move after learning your income?",
+      "cmpBench": "It can drift toward what helps you (research finding, not something this game measures)",
       "cmpLab": "Babcock and Loewenstein",
       "pts": "{x} pts",
-      "ptsRank": "{x} pts per step",
-      "summary": "{name}: rank {rank}, change {dt}"
+      "summary": "{name}: rank {rank}, change {dt}",
+      "botsProgrammed": "programmed, left out",
+      "noBots": "none at this table"
     }
   },
   "flow": {

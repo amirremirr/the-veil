@@ -157,7 +157,7 @@ for (let g = 0; g < games; g++) {
   (agg.gapByPolicy[d4.policy] ??= []).push(mean(d4.meanByGroup.slice(3).map((m) => m.gap)));
   agg.piSquare.push(d4.piPath.SQUARE);
   if (d5.amendments.length > 0) agg.amend++;
-  agg.slopes.push(d5.slope);
+  agg.slopes.push(d5.slopes.everyone);
   const totals = s.players.map((p) => [p, totalScore(s, p.id)] as const);
   const best = Math.max(...totals.map((x) => x[1]));
   const winners = totals.filter((x) => Math.abs(x[1] - best) < 1e-9).map((x) => x[0]);
@@ -179,7 +179,7 @@ for (let g = 0; g < games; g++) {
       d4.policy,
       d4.piPath.SQUARE[d4.piPath.SQUARE.length - 1].toFixed(3),
       d5.amendments.length,
-      d5.slope.toFixed(4),
+      d5.slopes.everyone.toFixed(4),
       winners.map((w) => w.values).join('|'),
     ].join(','),
   );
@@ -216,7 +216,7 @@ lines.push(
   `L4 mean pi_Square path: ${Array.from({ length: piLen }, (_, k) => mean(agg.piSquare.map((p) => p[k])).toFixed(3)).join(' -> ')}`,
 );
 lines.push(`L5 at least one amendment proposed: ${pct(agg.amend / games)}   (target at least 90%)`);
-lines.push(`L5 mean slope of delta-t on income rank: ${mean(agg.slopes).toFixed(4)}   (target negative)`);
+lines.push(`L5 mean slope of fair-tax shift on income rank, bot answers (programmed: Egoist answers are own-money optimal, others drift by sigma; a check on the bot code, not a finding): ${mean(agg.slopes).toFixed(4)}   (design target negative)`);
 lines.push('Win rate by Values card, per seat holding it (ties split; parity is 1/players; target 15% to 35%):');
 for (const c of Object.keys(agg.wins) as ValuesCard[])
   lines.push(

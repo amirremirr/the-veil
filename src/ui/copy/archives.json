@@ -251,8 +251,8 @@
       "levels": [
         5
       ],
-      "body": "People tend to judge as fair whatever happens to benefit them, and they do it sincerely. Babcock and Loewenstein found that when bargainers get the same facts but different roles, each side's view of a fair settlement drifts toward its own interest, and this drift helps explain why talks break down. Konow found related patterns in allocation decisions. Level 5 separates this from plain self-interest. Your paid proposal can move simply because the score pays you to want lower or higher taxes. So the game also asks you twice, without pay, what tax you think is fair: once before you know your income and once after. The summary plots how much that unpaid answer moved against how rich you turned out.",
-      "formula": "self-serving shift = fair tax you named after the reveal - fair tax you named before it",
+      "body": "People tend to judge as fair whatever happens to benefit them, and they do it sincerely. Babcock and Loewenstein found that when bargainers get the same facts but different roles, each side's view of a fair settlement drifts toward its own interest, and this drift helps explain why talks break down. Konow found related patterns in allocation decisions. Level 5 separates this from plain self-interest. Your paid proposal can move simply because the score pays you to want lower or higher taxes. So the game also asks you twice, without pay, what tax you think is fair: once before you know your income and once after. The summary shows how much your unpaid answer moved. One person's change can have several causes (new information, the votes, the rules adopted), so the game does not diagnose it. With three or more human players it also plots everyone's shift against income; computer players' answers are programmed, so they are left out.",
+      "formula": "fair-tax shift = fair tax you named after the reveal - fair tax you named before it",
       "refs": [
         "babcock1997",
         "konow2000"

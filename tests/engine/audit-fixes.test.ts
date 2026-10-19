@@ -1,7 +1,9 @@
 // Fixes from the October 2026 audit (DECISIONS.md D-72 onward).
 import { describe, expect, it } from 'vitest';
-import { createInitialState, step } from '../../src/engine/engine';
+import { createInitialState, step, waitingOn } from '../../src/engine/engine';
 import { varianceShares, type L2Debrief } from '../../src/engine/levels/level2';
+import { MIN_HUMANS_FOR_SLOPE, olsSlope, type L5Debrief } from '../../src/engine/levels/level5';
+import en from '../../src/ui/copy/en.json';
 import type { GameState, LevelId } from '../../src/engine/types';
 
 function playBots(level: LevelId, seed: string, nPlayers: 2 | 3 | 4 = 4, botSamples = 8): GameState {
@@ -39,4 +41,60 @@ describe('D-72: Level 2 variance shares stay in [0, 100]', () => {
     }
     expect(checked).toBe(1000);
   }, 120_000);
+});
+
+function playL5Humans(nHumans: number, seed: string): GameState {
+  const humans = Array.from({ length: nHumans }, (_, i) => ({ id: `p${i + 1}`, name: `Player ${i + 1}` }));
+  const s = createInitialState({ mode: 'SINGLE_LEVEL', level: 5, nPlayers: 4, difficulty: 'NORMAL', seed, botSamples: 8, humans });
+  const fair2 = [0.1, 0.3, 0.5, 0.7];
+  for (let i = 0; i < 500 && s.phase.kind !== 'LEVEL_DEBRIEF'; i++) {
+    if (s.phase.kind !== 'DECIDE') {
+      step(s, { type: 'ADVANCE' });
+      continue;
+    }
+    const stepId = s.phase.step!;
+    for (const pid of waitingOn(s)) {
+      const k = humans.findIndex((h) => h.id === pid);
+      const decision =
+        stepId === 'VEIL' ? { t: 0.3, F: 25 }
+        : stepId === 'FAIR_1' ? 0.4
+        : stepId === 'FAIR_2' ? fair2[k]
+        : stepId === 'LOBBY' ? { donateTo: null, amount: 0, proposal: null }
+        : true;
+      expect(step(s, { type: 'SUBMIT_DECISION', from: pid, decision })).toBe(true);
+    }
+  }
+  return s;
+}
+
+describe('D-73: Level 5 measures use human answers only', () => {
+  it('with 1 or 2 humans there is no slope and no verdict; the bots-included slope stays internal', () => {
+    for (const n of [1, 2]) {
+      const s = playL5Humans(n, `h1-${n}`);
+      const d = s.levelResults[5] as L5Debrief;
+      expect(d.slopes.humans).toBeNull();
+      expect(Number.isFinite(d.slopes.everyone)).toBe(true);
+      expect(JSON.stringify(d)).not.toMatch(/verdict/);
+      for (const h of s.players.filter((p) => p.isHuman)) expect(d.deltaT[h.id]).toBeCloseTo(d.fair2[h.id] - d.fair1[h.id], 12);
+    }
+  });
+
+  it('with 3 or 4 humans the slope uses the humans only', () => {
+    for (const n of [3, 4]) {
+      const s = playL5Humans(n, `h1-${n}`);
+      const d = s.levelResults[5] as L5Debrief;
+      const hs = s.players.filter((p) => p.isHuman).map((p) => p.id);
+      expect(d.slopes.humans).toBeCloseTo(olsSlope(hs.map((id) => d.rank[id]), hs.map((id) => d.deltaT[id])), 12);
+    }
+    expect(MIN_HUMANS_FOR_SLOPE).toBe(3);
+  });
+
+  it('the copy makes no diagnosis or causal claim and labels bot answers as programmed', () => {
+    const all = JSON.stringify(en);
+    expect(all).not.toMatch(/That is the self-serving bias/);
+    expect((en as Record<string, unknown>).verdicts).toBeUndefined();
+    expect(en.debrief.l5.botsProgrammed).toMatch(/programmed/);
+    expect(en.debrief.l5.botsProgrammed).toMatch(/Egoist/);
+    expect(en.debrief.l5.ownShiftNote).toMatch(/several causes/);
+  });
 });

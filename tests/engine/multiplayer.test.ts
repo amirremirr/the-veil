@@ -205,9 +205,14 @@ describe('hidden information with several humans', () => {
     }
   });
 
-  it('Level 5 verdicts are per human', () => {
+  it('Level 5: per-human card lines, no verdict, and a human-only slope with 4 humans (D-73)', () => {
     const s = seen.find((x) => x.levelIndex === 5 && x.phase.kind === 'LEVEL_DEBRIEF' && x.players.filter((p) => p.isHuman).length === 4)!;
-    for (const id of ['p1', 'p2', 'p3', 'p4']) expect((visibleState(s, id).levelResults[5] as any).verdict).toBeTruthy();
+    for (const id of ['p1', 'p2', 'p3', 'p4']) {
+      const d = visibleState(s, id).levelResults[5] as any;
+      expect(d.cardBest.chose).toEqual(d.veil[id]);
+      expect(d.verdict).toBeUndefined();
+      expect(typeof d.slopes.humans).toBe('number');
+    }
   });
 });
 

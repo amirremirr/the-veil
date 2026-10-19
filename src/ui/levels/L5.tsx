@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { AmendmentRecord, Constitution, L5Debrief, Lobby } from '../../engine/levels/level5';
 import { constitutionWealth, supermajority } from '../../engine/levels/level5';
 import { orderedDraws } from '../../engine/core';
@@ -10,7 +10,7 @@ import { coins, constitutionLabel, signed } from '../labels';
 import { nameOf, shortName } from '../game';
 import { FlipCard, FormCard, Stamp, useMotionOff } from '../components/common';
 import { ContinueBar, PrimaryBar } from '../components/TableParts';
-import { ChartFrame, Scatter } from '../components/Charts';
+import { ChartFrame, GroupedBars, Scatter } from '../components/Charts';
 import { DebriefShell } from '../components/Debrief';
 import type { LevelUI } from './types';
 import { floorTopUpParts } from '../../engine/tax';
@@ -402,13 +402,46 @@ function Debrief({ v }: { v: ViewState }) {
   const d = (v.levelView as L5View).debrief ?? (v.levelResults[5] as L5Debrief);
   const n = v.players.length;
   const dtPts = (id: string) => d.deltaT[id] * 100;
-  const xs = v.players.map((p) => d.rank[p.id]);
-  const ys = v.players.map((p) => dtPts(p.id));
-  const mx = xs.reduce((a, b) => a + b, 0) / n;
-  const my = ys.reduce((a, b) => a + b, 0) / n;
-  const m = d.slope * 100;
-  const sign = Math.abs(m) < 0.5 ? t('debrief.l5.slopeZero') : m < 0 ? t('debrief.l5.slopeNeg') : t('debrief.l5.slopePos');
+  const mine = dtPts(v.viewer);
+  // D-73: only human answers are measured. A slope needs at least 3 of them; bots' answers are programmed.
+  const humans = v.players.filter((p) => p.isHuman);
+  const hasBots = humans.length < n;
+  const hs = d.slopes.humans;
+  const humanSlope = hs === null ? null : hs * 100;
   const donations = Object.entries(d.donations).filter(([, x]) => x.to && x.amount > 0);
+  let chart: ReactNode;
+  if (humanSlope !== null) {
+    const xs = humans.map((p) => d.rank[p.id]);
+    const ys = humans.map((p) => dtPts(p.id));
+    const mx = xs.reduce((a, b) => a + b, 0) / xs.length;
+    const my = ys.reduce((a, b) => a + b, 0) / ys.length;
+    chart = (
+      <ChartFrame
+        title={t('debrief.l5.chartTitleHumans')}
+        summary={humans.map((p) => t('ui.l5.summary', { name: nameOf(v, p.id), rank: d.rank[p.id], dt: dtPts(p.id).toFixed(0) })).join('; ')}
+      >
+        <Scatter
+          points={humans.map((p) => ({ x: d.rank[p.id], y: dtPts(p.id), label: nameOf(v, p.id), highlight: p.id === v.viewer }))}
+          xLabel={t('debrief.l5.chartX')}
+          yLabel={t('debrief.l5.chartY')}
+          slope={{ m: humanSlope, b: my - humanSlope * mx }}
+          format={(x) => x.toFixed(0)}
+        />
+      </ChartFrame>
+    );
+  } else {
+    const before = d.fair1[v.viewer] * 100;
+    const after = d.fair2[v.viewer] * 100;
+    chart = (
+      <ChartFrame title={t('debrief.l5.chartTitleYou')} summary={t('debrief.l5.chartYouSummary', { f1: before.toFixed(0), f2: after.toFixed(0) })}>
+        <GroupedBars
+          categories={[t('debrief.l5.chartBefore'), t('debrief.l5.chartAfter')]}
+          series={[{ name: nameOf(v, v.viewer), values: [before, after] }]}
+          format={(x) => `${x.toFixed(0)}%`}
+        />
+      </ChartFrame>
+    );
+  }
   return (
     <DebriefShell
       v={v}
@@ -420,12 +453,23 @@ function Debrief({ v }: { v: ViewState }) {
           label: t('ui.l5.cmpLabel'),
           benchmark: t('ui.l5.cmpBench'),
           lab: t('ui.l5.cmpLab'),
-          you: t('ui.l5.pts', { x: signed(dtPts(v.viewer)) }),
-          bots: t('ui.l5.ptsRank', { x: signed(m, 1) }),
+          you: t('ui.l5.pts', { x: signed(mine) }),
+          bots: hasBots ? t('ui.l5.botsProgrammed') : t('ui.l5.noBots'),
         },
       ]}
       did={
         <>
+          <p className="h-display text-xl">{Math.round(mine) === 0 ? t('debrief.l5.ownShiftZero') : t('debrief.l5.ownShift', { dt: signed(mine) })}</p>
+          <p>{t('debrief.l5.ownShiftNote')}</p>
+          <p>
+            {t('debrief.l5.fairLine', {
+              f1: `${Math.round(d.fair1[v.viewer] * 100)}%`,
+              f2: `${Math.round(d.fair2[v.viewer] * 100)}%`,
+              inc: d.incomes[v.viewer],
+              rank: d.rank[v.viewer],
+              n,
+            })}
+          </p>
           <p>
             {d.proposals[v.viewer]
               ? t('debrief.l5.paidLine', {
@@ -435,20 +479,8 @@ function Debrief({ v }: { v: ViewState }) {
                 })
               : t('debrief.l5.paidLinePass', { veil: constitutionLabel(d.veil[v.viewer]) })}
           </p>
-          <p className="font-semibold">
-            {t('debrief.l5.fairLine', {
-              f1: `${Math.round(d.fair1[v.viewer] * 100)}%`,
-              f2: `${Math.round(d.fair2[v.viewer] * 100)}%`,
-              inc: d.incomes[v.viewer],
-              rank: d.rank[v.viewer],
-              n,
-              dt: signed(dtPts(v.viewer)),
-            })}
-          </p>
-          {d.verdict && <p className="h-display text-xl">{t(`verdicts.${d.verdict}`)}</p>}
-          <p>
-            {t('debrief.l5.slope', { slope: signed(m, 1), sign })}
-          </p>
+          {humanSlope !== null && <p>{t('debrief.l5.humanSlope', { k: humans.length, slope: signed(humanSlope, 1) })}</p>}
+          {hasBots && <p className="text-soft">{t('debrief.l5.botsProgrammed')}</p>}
           <p>{t('debrief.l5.amendments', { n: d.amendments.length, p: d.amendments.filter((a) => a.passed).length })}</p>
           <p>
             {donations.length
@@ -467,17 +499,7 @@ function Debrief({ v }: { v: ViewState }) {
           ))}
         </>
       }
-      chart={
-        <ChartFrame title={t('debrief.l5.chartTitle')} summary={v.players.map((p) => t('ui.l5.summary', { name: nameOf(v, p.id), rank: d.rank[p.id], dt: dtPts(p.id).toFixed(0) })).join('; ')}>
-          <Scatter
-            points={v.players.map((p) => ({ x: d.rank[p.id], y: dtPts(p.id), label: nameOf(v, p.id), highlight: p.id === v.viewer }))}
-            xLabel={t('debrief.l5.chartX')}
-            yLabel={t('debrief.l5.chartY')}
-            slope={{ m, b: my - m * mx }}
-            format={(x) => x.toFixed(0)}
-          />
-        </ChartFrame>
-      }
+      chart={chart}
     />
   );
 }

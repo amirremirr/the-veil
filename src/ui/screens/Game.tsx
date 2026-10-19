@@ -318,13 +318,15 @@ function Guess({ v }: { v: ViewState }) {
   );
 }
 
-/** Built only from answers that never affected the score (D-42): fair-tax answers, Bonus Pot, luck guesses. */
+/**
+ * Built only from answers that never affected the score (D-42): fair-tax answers, Bonus Pot, luck guesses.
+ * It describes what you said; it does not diagnose why your fair-tax answer moved (D-73).
+ */
 function ideology(v: ViewState) {
   const d2 = v.levelResults[2] as L2Debrief | undefined;
   const d5 = v.levelResults[5] as L5Debrief | undefined;
   const ideal = d2?.bonus?.classification?.[0] ?? 'none';
-  const verdict = d5?.verdict ?? 'none';
-  const lines: string[] = [t('run.ideologyLine2', { ideal: t(`run.l2.${ideal}`), tail: t(`run.tails.${verdict}`) })];
+  const lines: string[] = [];
   if (d5?.fair1?.[v.viewer] !== undefined && d5.fair2?.[v.viewer] !== undefined)
     lines.push(t('run.fairLine', { f1: `${Math.round(d5.fair1[v.viewer] * 100)}%`, f2: `${Math.round(d5.fair2[v.viewer] * 100)}%` }));
   if (d2?.bonus?.classification?.length) lines.push(t('run.bonusLine', { ideal: t(`run.l2.${ideal}`) }));
@@ -333,7 +335,7 @@ function ideology(v: ViewState) {
     const truth = Math.round((d2.polls.reduce((x, p) => x + p.truth, 0) / d2.polls.length) * 100);
     lines.push(t('run.luckLine', { belief, truth }));
   }
-  return { lines, label: t(`run.labels.${verdict}`) };
+  return { lines, label: t(`run.labels.${ideal}`) };
 }
 
 function RunDebrief({ v }: { v: ViewState }) {

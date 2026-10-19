@@ -402,7 +402,7 @@ export function totalScore(s: GameState, pid: PlayerId): number {
 
 /**
  * Debrief data that differs per human (the card's best choice, Level 2 luck answers, the Level 5
- * verdict) is stored under `byHuman`. A viewer gets only their own entry, merged into the result,
+ * card's-best line) is stored under `byHuman`. A viewer gets only their own entry, merged into the result,
  * so the UI reads the same fields as in solo play and never sees another human's entry.
  */
 export function personalize<T>(result: T, viewer: PlayerId): T {
