@@ -570,21 +570,24 @@
       "gap": "Average money gap per round (Circles minus Squares): {gap} coins.",
       "punchline": "No player and no part of HireBot disliked any group. The gap came from old beliefs, incentives, and working hours.",
       "decompTitle": "What caused the gap?",
-      "decompExplain": "We replayed this level, changing one thing at a time: HireBot starting with the same belief about both groups (0.45), both groups having the same chance of childcare duty (50%), and both changes together. The second column averages {k} replays with different luck.",
+      "decompExplain": "We replayed this level with HireBot's rule kept at No Change in every replay, so the vote cannot change the answer, and changed one thing at a time: HireBot starting with the same belief about both groups (0.45), both groups having the same chance of childcare duty (50%), and both changes together. The last column averages {k} replays with different luck; ± is its standard error. The middle column is one example, the replay with your game's luck, so it is noisy.",
       "colChannel": "Cause",
-      "colSame": "Your game",
-      "colAvg": "Average of {k} replays",
+      "colSame": "One example (your game's luck)",
+      "colAvg": "Average of {k} replays (± SE)",
       "stereotype": "HireBot's starting beliefs",
       "care": "Childcare and long hours",
       "interaction": "Both together",
       "total": "Total gap explained",
-      "baselineGap": "Gap in the replay",
+      "baselineGap": "Gap with No Change all level",
       "realWorld": "Circles and Squares are made up. In real life, this is one way economists explain part of the pay gap between men and women: women do more of the caregiving, and some jobs pay much more for long, inflexible hours (Goldin 2014). Employers judging people by group averages adds to it (Phelps 1972; Arrow 1973).",
       "chartTitle": "How HireBot's beliefs changed",
       "chartGapTitle": "How much of the gap each cause explains",
       "you": "You were a {g}{care}. You trained in {k} of 5 rounds.",
       "lesson": "A gap can appear with nobody being prejudiced: old beliefs and childcare duties are enough.",
-      "lessonNote": "Training is risky when failing leaves you in hardship, so fewer people train, and HireBot's belief falls for both groups. It falls faster for Squares, so the gap stays."
+      "lessonNote": "Training is risky when failing leaves you in hardship, so fewer people train, and HireBot's belief falls for both groups. It falls faster for Squares, so the gap stays.",
+      "thisGame": "The gap in your game was {gap} coins per round{policyNote}.",
+      "thisGamePolicy": ", with the rule your table voted for in rounds 4 and 5",
+      "decompNote": "With 4 players, one history is mostly luck: a single replay's numbers often differ from the average by 20 coins or more."
     },
     "l5": {
       "predicted": "Before incomes are known, everyone is in the same position. Once incomes are known, the score pays richer players to want lower taxes, so their votes move. That is plain self-interest. A different question is whether their sense of what is fair moves too. In bargaining experiments, Babcock and Loewenstein (1997) found that it often does: people honestly come to believe that what helps them is also what is fair. So this level asked everyone twice, without pay, what tax they think is fair.",
@@ -764,7 +767,7 @@
       "flex": "Flexible",
       "careHolder": " with childcare duty",
       "summary": "HireBot's belief about Squares: {path}",
-      "gapSummary": "Beliefs {s}, childcare {c}, both {i}"
+      "gapSummary": "Beliefs {s} ± {ss}, childcare {c} ± {cs}, both {i} ± {is}"
     },
     "l5": {
       "cmpLabel": "Did your fair tax move after learning your income?",

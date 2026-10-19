@@ -165,14 +165,19 @@ export function pluralityWinnerDist(dists: number[][], nOptions: number): number
   return out;
 }
 
-/** Plurality count with uniform random tie-break. Returns winner index and whether a coin was flipped. */
+/**
+ * Plurality count with uniform random tie-break. Returns winner index and whether a coin was flipped.
+ * It always takes exactly one draw, tie or not (D-79), so two runs that differ only in whether a vote
+ * tied stay on the same random stream (the Level 4 counterfactual compares such runs).
+ */
 export function pluralityResolve(votes: number[], nOptions: number, rng: Rng): { winner: number; tie: boolean; counts: number[] } {
   const counts = new Array(nOptions).fill(0);
   for (const v of votes) counts[v]++;
   const max = Math.max(...counts);
   const tied: number[] = [];
   counts.forEach((c, i) => c === max && tied.push(i));
-  const winner = tied.length === 1 ? tied[0] : tied[rng.int(tied.length)];
+  const u = rng.next();
+  const winner = tied[Math.floor(u * tied.length)];
   return { winner, tie: tied.length > 1, counts };
 }
 

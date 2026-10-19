@@ -336,6 +336,9 @@ function Debrief({ v }: { v: ViewState }) {
       extra={
         cf && (
           <FormCard form={t('debrief.l4.decompTitle')}>
+            <p className="mb-2 text-sm">
+              {t('debrief.l4.thisGame', { gap: signed(d.gap), policyNote: d.policy !== 'A' ? t('debrief.l4.thisGamePolicy') : '' })}
+            </p>
             <p className="mb-3 text-sm">{t('debrief.l4.decompExplain', { k: cf.average.replays })}</p>
             <div className="overflow-x-auto">
               <table className="data-table">
@@ -350,22 +353,30 @@ function Debrief({ v }: { v: ViewState }) {
                   <tr>
                     <td>{t('debrief.l4.baselineGap')}</td>
                     <td className="num text-end">{signed(scen('BASELINE')?.gap ?? 0)}</td>
-                    <td className="num text-end">{signed(scen('BASELINE')?.avgGap ?? 0)}</td>
+                    <td className="num text-end">{pmSe(scen('BASELINE')?.avgGap ?? 0, scen('BASELINE')?.avgGapSe ?? 0)}</td>
                   </tr>
                   {(['stereotype', 'care', 'interaction', 'total'] as const).map((k) => (
                     <tr key={k} className={k === 'total' ? 'font-semibold' : ''}>
                       <td>{t(`debrief.l4.${k}`)}</td>
                       <td className="num text-end">{signed(cf.sameSeed[k])}</td>
-                      <td className="num text-end">{signed(cf.average[k])}</td>
+                      <td className="num text-end">{pmSe(cf.average[k], cf.average.se[k])}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+            <p className="mt-2 text-sm text-soft">{t('debrief.l4.decompNote')}</p>
             <div className="mt-4">
               <ChartFrame
                 title={t('debrief.l4.chartGapTitle')}
-                summary={t('ui.l4.gapSummary', { s: cf.average.stereotype.toFixed(1), c: cf.average.care.toFixed(1), i: cf.average.interaction.toFixed(1) })}
+                summary={t('ui.l4.gapSummary', {
+                  s: cf.average.stereotype.toFixed(1),
+                  ss: cf.average.se.stereotype.toFixed(1),
+                  c: cf.average.care.toFixed(1),
+                  cs: cf.average.se.care.toFixed(1),
+                  i: cf.average.interaction.toFixed(1),
+                  is: cf.average.se.interaction.toFixed(1),
+                })}
               >
                 <StackedBars
                   rows={(['stereotype', 'care', 'interaction'] as const).map((k) => ({ label: t(`debrief.l4.${k}`), parts: [cf.average[k]] }))}
@@ -379,6 +390,11 @@ function Debrief({ v }: { v: ViewState }) {
       }
     />
   );
+}
+
+/** "12 ± 3": a mean and its standard error, in whole coins. */
+function pmSe(x: number, se: number): string {
+  return `${signed(x)} ± ${Math.round(se)}`;
 }
 
 function Banner({ v, step }: { v: ViewState; step: string }) {

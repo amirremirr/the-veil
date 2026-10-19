@@ -170,7 +170,15 @@ export interface GameState {
     bots: Record<PlayerId, Record<PlayerId, ValuesCard>>;
   };
   /** Counterfactual overrides (Level 4 decomposition only). */
-  cf?: { priorCircle?: number; priorSquare?: number; careCircle?: number; careSquare?: number; fast?: boolean };
+  cf?: {
+    priorCircle?: number;
+    priorSquare?: number;
+    careCircle?: number;
+    careSquare?: number;
+    fast?: boolean;
+    /** The rule HireBot uses after the referendum, whatever the vote (D-79: the decomposition holds the rule at No Change). */
+    fixedPolicy?: 'A' | 'B' | 'C' | 'D';
+  };
   botSamples: number;
   /** Debrief data of each finished level (used by the run debrief). */
   levelResults: Partial<Record<LevelId, unknown>>;

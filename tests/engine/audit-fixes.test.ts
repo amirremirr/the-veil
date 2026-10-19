@@ -5,6 +5,10 @@ import { createInitialState, reduce, replay, step, waitingOn } from '../../src/e
 import { BOT, BOT_PROFILES, L4 } from '../../src/engine/params';
 import { ceOfLottery, certaintyEquivalent, utility } from '../../src/engine/bots/utility';
 import { roundScore } from '../../src/engine/scoring';
+import { pluralityResolve } from '../../src/engine/core';
+import { standalone } from '../../src/engine/rng';
+import { stdErr } from '../../src/engine/counterfactual';
+import type { L4Debrief } from '../../src/engine/levels/level4';
 import { RULES_HASH } from '../../src/engine/rules-hash';
 import { canResume, compareRules, currentRules, gameRecord, paramsHash, RulesMismatchError } from '../../src/engine/version';
 import { varianceShares, type L2Debrief } from '../../src/engine/levels/level2';
@@ -193,5 +197,49 @@ describe('D-77: bot utility is defined, increasing and concave over every reacha
     expect(roundScore('EGOIST', [-40, 100], 0, [0.5, 0.5])).toBe(-200);
     // Level 4: training at 60 and still getting a basic job.
     expect(roundScore('EGOIST', [-20, 40], 0, [1, 0])).toBe(-140);
+  });
+});
+
+describe('D-79: Level 4 decomposition holds the rule fixed, keeps streams aligned, and reports SE', () => {
+  it('a plurality vote takes exactly one draw, tie or not', () => {
+    for (const votes of [[0, 0, 1], [0, 1, 2, 3], [2, 2, 2, 2]]) {
+      const a = standalone(42);
+      pluralityResolve(votes, 4, a);
+      const b = standalone(42);
+      b.next();
+      expect(a.next()).toBe(b.next());
+    }
+  });
+
+  const play = (seed: string) => {
+    const s = createInitialState({ mode: 'SINGLE_LEVEL', level: 4, nPlayers: 4, difficulty: 'NORMAL', seed, botSamples: 20 });
+    for (let i = 0; i < 1000 && s.phase.kind !== 'LEVEL_DEBRIEF'; i++) {
+      if (s.phase.kind !== 'DECIDE') step(s, { type: 'ADVANCE' });
+      else {
+        const st = s.phase.step!;
+        step(s, { type: 'SUBMIT_DECISION', from: 'you', decision: st === 'INVEST' ? true : st === 'SCHEDULE' ? 'FLEX' : 'C' });
+      }
+    }
+    return s.levelResults[4] as L4Debrief;
+  };
+
+  it('every replay uses No Change; the baseline matches the real game before the referendum; SEs are reported', () => {
+    for (const seed of ['m3-a', 'm3-b']) {
+      const d = play(seed);
+      const cf = d.counterfactual!;
+      expect(cf.policy).toBe('A');
+      const base = cf.scenarios.find((x) => x.key === 'BASELINE')!;
+      for (let r = 0; r < 3; r++) expect(base.roundGaps[r]).toBeCloseTo(d.meanByGroup[r].gap, 9);
+      for (const k of ['stereotype', 'care', 'interaction', 'total'] as const) {
+        expect(Number.isFinite(cf.average.se[k])).toBe(true);
+        expect(cf.average.se[k]).toBeGreaterThanOrEqual(0);
+      }
+      expect(cf.average.total).toBeCloseTo(cf.average.stereotype + cf.average.care + cf.average.interaction, 9);
+    }
+  });
+
+  it('stdErr is the sample SD over the square root of n', () => {
+    expect(stdErr([1, 2, 3, 4])).toBeCloseTo(Math.sqrt(5 / 3) / 2, 12);
+    expect(stdErr([7])).toBe(0);
   });
 });
