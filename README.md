@@ -134,7 +134,7 @@ The room server listens on http://127.0.0.1:8787, and in development the site co
 | M8: visual design, copy, Archives, accessibility | Done, except a Lighthouse audit, which has not been run. Contrast checked by calculation; no horizontal scroll at 360 px in any phase. |
 | M9: deploy | Live on Vercel at https://the-veil-mauve.vercel.app. Pushes to `main` deploy automatically. Not yet checked on iOS Safari, Android Chrome, or Firefox. |
 | Multiplayer | Merged into `main`. Room server deployed with Wrangler 3 (3.114.17; version 4 is available) at https://the-veil-rooms.theveilgame.workers.dev. Vercel builds read it from `VITE_ROOM_SERVER_URL` (production and preview). The room server must be redeployed whenever the engine's rules change; a page and a server with different rules refuse to play together (D-75). |
-| Audit fixes (October 2026) | DECISIONS.md D-72 to D-81. |
-| Tests | 104 unit tests (Vitest) and 9 e2e tests (Playwright, plus 1 skipped by design: the three-player test runs once, on desktop) pass. |
+| Audit fixes (October 2026) | DECISIONS.md D-72 to D-82; post-merge review fixes D-83 to D-91. |
+| Tests | 117 unit tests (Vitest) and 12 e2e tests (Playwright, plus 4 skipped by design: the three-player and version-check tests run once, on desktop) pass. |
 
 Open items for the author: the final name, the hosting location, and whether to add opt-in result sharing in Phase 2. The About screen will link to the source repository once there is one.
