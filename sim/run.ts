@@ -140,8 +140,20 @@ function record(seed: string, s: GameState): Rec {
   };
 }
 
+/** The git commit this run used, and whether tracked files had uncommitted changes (D-88). */
+function codeRevision(): string {
+  try {
+    const head = execSync('git rev-parse --short=12 HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+    const dirty = execSync('git status --porcelain --untracked-files=no', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() !== '';
+    return dirty ? `${head} + uncommitted changes` : head;
+  } catch {
+    return 'unknown (not a git checkout)';
+  }
+}
+
 const recs: Rec[] = [];
 const t0 = Date.now();
+const revisionAtStart = codeRevision();
 for (let g = 0; g < games; g++) {
   const seed = `${seedBase}-${g}`;
   recs.push(record(seed, playOne(seed)));
@@ -208,22 +220,11 @@ const winRate = (card: ValuesCard): Stat =>
 
 // --- summary -----------------------------------------------------------------------------------
 
-/** The git commit this run used, and whether tracked files had uncommitted changes (D-88). */
-function codeRevision(): string {
-  try {
-    const head = execSync('git rev-parse --short=12 HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
-    const dirty = execSync('git status --porcelain --untracked-files=no', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() !== '';
-    return dirty ? `${head} + uncommitted changes` : head;
-  } catch {
-    return 'unknown (not a git checkout)';
-  }
-}
-
 const csvPath = `${outDir}/runs-${nPlayers}p-${difficulty}.csv`;
 const lines: string[] = [];
 const rules = currentRules();
 lines.push(`THE VEIL simulation: ${games} full runs, ${nPlayers} bots, ${difficulty}, ${samples} MC samples. Rules ${rules.rules}, params ${rules.params}.`);
-lines.push(`Seeds ${seedBase}-0 to ${seedBase}-${games - 1}. Code ${codeRevision()}.`);
+lines.push(`Seeds ${seedBase}-0 to ${seedBase}-${games - 1}. Code ${revisionAtStart} (at the start of the run).`);
 lines.push('BOT-ONLY TABLES: these numbers describe the bots, not people. Targets are design targets for the game, not findings (D-76).');
 lines.push(`Each value is mean ± bootstrap standard error over games (${BOOT} resamples).`);
 lines.push('');

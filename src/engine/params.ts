@@ -24,7 +24,7 @@ export const SCORE = {
    */
   LEVEL_POINTS_BASE: 100,
   LEVEL_POINTS_SPREAD: 50,
-  LEVEL_SD: [49.5, 57.2, 39.5, 115.1, 28.6],
+  LEVEL_SD: [49.5, 57.3, 39.7, 115.0, 28.6],
 };
 
 /**

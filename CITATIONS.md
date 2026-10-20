@@ -4,6 +4,8 @@ Every source the game cites, with the exact claims the game makes about it. Gene
 
 **Verification.** Every source below was checked against the original and marked verified on 2026-10-19. DECISIONS.md had flagged three of them as needing verification (Kahneman and Tversky 1979 and Tversky and Kahneman 1992 in D-39; Cutler and Reber 1998 in D-48).
 
+**Regenerated 2026-10-20 (DECISIONS.md D-89).** Every quote below was re-checked against the current `en.json`, `archives.json` and `DECISIONS.md` after the audit fixes and the post-merge review, and stale quotes were replaced with the current sentences. One claim changed in substance after verification: the Level 5 text no longer says Babcock and Loewenstein (1997) "found that it does"; it now says that "in bargaining experiments" they "found that it often does", a narrower claim than the one verified.
+
 **Changes made during verification (2026-10-19):**
 
 1. Glossary "Hardship line": "Kahneman and Tversky called this loss aversion" became "Kahneman and Tversky (1979) showed that losses loom larger than gains, a pattern now called loss aversion". The Tversky and Kahneman (1992) sentence about 2.25 is unchanged.
@@ -51,12 +53,13 @@ Places are the Glossary entry title, or the en.json key path. "(same author, no 
 - Listed as further reading in Glossary entries: Self-serving bias.
 - Claims in the game:
   - Glossary: Self-serving bias: "Babcock and Loewenstein found that when bargainers get the same facts but different roles, each side's view of a fair settlement drifts toward its own interest, and this drift helps explain why talks break down."
-  - en.json debrief.l5.predicted: "Babcock and Loewenstein (1997) found that it does: people honestly come to believe that what helps them is also what is fair."
-  - en.json about.methods: "In Level 5, the self-serving shift is measured on the unpaid answers given before and after incomes are revealed, following Babcock and Loewenstein's (1997) distinction between pursuing your interest and sincerely believing that what helps you is fair."
+  - en.json debrief.l5.predicted: "In bargaining experiments, Babcock and Loewenstein (1997) found that it often does: people honestly come to believe that what helps them is also what is fair."
+  - en.json about.methods: "In Level 5 each player sees how their own unpaid fair-tax answer moved after they learned their income, with no diagnosis: one person's change can come from new information, from the other players' votes, or from the rules adopted, as well as from the self-serving bias Babcock and Loewenstein (1997) describe."
   - en.json ui.l5.cmpLab: "Babcock and Loewenstein"
 - DECISIONS.md:
   - D-41: "proposal, if any) and "How your sense of fairness moved" (the two fair answers); the slope chart, the verdict and the Babcock and Loewenstein text use the fair answers."
   - D-41: "That is self-interest, not the self-serving bias Babcock and Loewenstein describe (sincere fairness judgments drifting toward self-interest)."
+  - D-73: "The lesson and the Babcock and Loewenstein text now present the bias as a research finding that one game cannot test."
 
 ## Buchanan, J., and Tullock, G. (1962). The Calculus of Consent: Logical Foundations of Constitutional Democracy. University of Michigan Press.
 
@@ -173,7 +176,7 @@ Places are the Glossary entry title, or the en.json key path. "(same author, no 
 - Listed as further reading in Glossary entries: Quantal response.
 - Claims in the game:
   - Glossary: Quantal response: "McKelvey and Palfrey used this logit form to define quantal response equilibrium, which often fits laboratory data better than exact best responses."
-  - en.json about.methods: "Bots choose by logit quantal response (McKelvey and Palfrey 1995) over certainty equivalents in coins."
+  - en.json about.methods: "Bots choose by logit quantal response (McKelvey and Palfrey 1995) over certainty equivalents measured in score points (a coin of own money is one point for an Egoist and half a point for the other cards)."
 
 ## Meltzer, A., and Richard, S. (1981). A rational theory of the size of government. Journal of Political Economy, 89(5).
 
@@ -224,7 +227,7 @@ Places are the Glossary entry title, or the en.json key path. "(same author, no 
   - en.json values.RAWLSIAN.name: "Rawlsian"
   - en.json values.RAWLSIAN.short: "Rawlsian: the poorest player's money"
   - en.json about.methods: "The four metrics are: Egoist, own money minus hardship; Rawlsian, the poorest player's money; Utilitarian, the average player's money; Meritocrat, average money reduced by how far each player's share of money departs from their share of effort."
-  - en.json about.methods: "k is 1.67 for the Rawlsian, 1.22 for the Meritocrat and 1 for the others, set in simulation so that each card's average metric matches average wealth."
+  - en.json about.methods: "k is 1.66 for the Rawlsian, 1.29 for the Meritocrat and 1 for the others, set in bot-only simulation so that each card's average metric matches average wealth."
 - DECISIONS.md:
   - D-10: "Dishonest: SUPPORT the second-best option, PROMISE an action it does not intend, or CLAIM a false card (Rawlsian, or Utilitarian if truly Rawlsian)."
   - D-12: "**D-12 Bot guesses** in the finale are the argmax of beliefs; ties go to the first card in Egoist, Rawlsian, Utilitarian, Meritocrat order."
