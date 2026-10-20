@@ -2,7 +2,10 @@ export type PlayerId = string;
 export type ValuesCard = 'EGOIST' | 'RAWLSIAN' | 'UTILITARIAN' | 'MERITOCRAT';
 export const VALUES_CARDS: ValuesCard[] = ['EGOIST', 'RAWLSIAN', 'UTILITARIAN', 'MERITOCRAT'];
 export type Difficulty = 'EASY' | 'NORMAL' | 'HARD';
-export type Mode = 'FULL_RUN' | 'SINGLE_LEVEL';
+/** Study modes: FULL_RUN, SINGLE_LEVEL. Play modes (Play spec 3.2): LIFE (five episodes, money carried over), EPISODE (one). */
+export type Mode = 'FULL_RUN' | 'SINGLE_LEVEL' | 'LIFE' | 'EPISODE';
+/** Study is today's game; Play is the same engine with Play overrides (Play spec 3.1). */
+export type Ruleset = 'STUDY' | 'PLAY';
 export type LevelId = 1 | 2 | 3 | 4 | 5;
 export type BotKey = 'chet' | 'marigold' | 'ugo' | 'dot';
 
@@ -55,6 +58,8 @@ export interface SetupConfig {
    */
   humans?: HumanSeat[];
   humanName?: string;
+  /** Absent means STUDY, so Study configs and states are byte-identical to before Play mode (D-93). */
+  ruleset?: Ruleset;
   /** Simulation only: every seat is a bot. */
   allBots?: boolean;
   /** Simulation only: override Monte Carlo sample count for speed. */
@@ -183,6 +188,10 @@ export interface GameState {
   /** Debrief data of each finished level (used by the run debrief). */
   levelResults: Partial<Record<LevelId, unknown>>;
   log: LoggedAction[];
+  /** Set only in Play games (absent means STUDY, D-93). */
+  ruleset?: Ruleset;
+  /** Play-mode state: banks, debt stress, events, episode guesses (src/engine/play). */
+  play?: import('./play/types').PlayState;
 }
 
 /** What a viewer is allowed to see. */
@@ -214,4 +223,6 @@ export interface ViewState {
   botBeliefs?: Record<PlayerId, Record<ValuesCard, number>>;
   guesses?: GameState['guesses'];
   revealAll: boolean;
+  /** Play games only: public banks and ranks, the event, the viewer's own mission (src/engine/play/view.ts). */
+  play?: import('./play/types').PlayView;
 }

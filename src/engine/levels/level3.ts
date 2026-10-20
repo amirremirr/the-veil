@@ -2,6 +2,8 @@
 import { BOT, L3 } from '../params';
 import { botParams, botRng, finishRound, gameRng, headline, ids, idx, playerOf, pluralityResolve } from '../core';
 import { equalShares, mean, ownNet, roundScore } from '../scoring';
+import { PLAY } from '../play/params';
+import { activeEvent, isPlay, playNet, playRoundValue } from '../play/rules';
 import { ceOfLottery, logitChoice, logitProbs } from '../bots/utility';
 import { flavorIndex } from '../rng';
 import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
@@ -25,6 +27,8 @@ export interface L3Round {
   eventCards: Record<PlayerId, number>;
   W: Record<PlayerId, number>;
   nextPremium: number | null;
+  /** Play only: the insurer's price this round before an event discount (D-98). */
+  listPrice?: number | null;
 }
 
 export interface L3Debrief {
@@ -60,15 +64,63 @@ export interface L3State {
 }
 
 const st = (s: GameState) => s.levelState as L3State;
-const pOf = (type: RiskType) => (type === 'HIGH' ? L3.P_HIGH : L3.P_LOW);
-const coverage = (r: Regime) => (r === 'M50' ? L3.COVERAGE_OPTIONS[0] : L3.COVERAGE_OPTIONS[1]);
 
-export function premiumFor(meanP: number): number {
-  return L3.LOADING * L3.LOSS * meanP;
+/**
+ * The Level 3 numbers in force (Play spec 3.1): Study's params, plus the Play overrides and this round's
+ * event in a Play game. The extra fields are neutral in Study (multiply by 1, add 0, no cap below 1).
+ */
+export type L3Params = typeof L3 & {
+  /** Event multiplier on every risk this round, and its cap (Storm Season). */
+  RISK_MULT: number;
+  RISK_CAP: number;
+  /** Event multiplier on the price charged this round (Price War). */
+  PREMIUM_MULT: number;
+  /** Event addition to the mandatory contribution (Paperwork Week). */
+  MANDATE_EXTRA: number;
+  /** The loss the insurer prices with: the level's loss, never an event's (D-98). */
+  PRICE_LOSS: number;
+};
+export const STUDY_L3: L3Params = { ...L3, RISK_MULT: 1, RISK_CAP: 1, PREMIUM_MULT: 1, MANDATE_EXTRA: 0, PRICE_LOSS: L3.LOSS };
+
+/**
+ * Everything a Level 3 calculation needs besides the state: the numbers, the score a player maximizes
+ * for one outcome, and the simple selfish value of `w` coins for player j (the model bots use for others).
+ */
+export interface L3Ctx {
+  p: L3Params;
+  score(card: ValuesCard, W: readonly number[], i: number, effortShares: readonly number[]): number;
+  net(j: number, w: number): number;
+}
+export const STUDY_CTX: L3Ctx = { p: STUDY_L3, score: roundScore, net: (_j, w) => ownNet(w) };
+
+/** Play's Episode 3 numbers, with this round's event when `withEvent` (D-94, D-98). */
+export function playL3Params(s: GameState, withEvent = true): L3Params {
+  const base: L3Params = { ...STUDY_L3, ...PLAY.L3, PRICE_LOSS: PLAY.L3.LOSS };
+  const ev = withEvent ? activeEvent(s) : null;
+  if (!ev) return base;
+  return { ...base, ...(PLAY.L3_EVENTS as Record<string, Partial<L3Params>>)[ev.id] };
 }
 
-export function mandatoryContribution(c: number, pEffAll: readonly number[]): number {
-  return L3.LOADING * c * L3.LOSS * mean(pEffAll);
+/** The context for the current state: Study's, or Play's with banks, debt stress and the event. */
+export function ctxOf(s: GameState, withEvent = true): L3Ctx {
+  if (!isPlay(s)) return STUDY_CTX;
+  return {
+    p: playL3Params(s, withEvent),
+    score: (card, W, i, eff) => playRoundValue(s, card, W, i, eff),
+    net: (j, w) => playNet(s, j, w),
+  };
+}
+
+const pOf = (type: RiskType, p: L3Params = STUDY_L3) => (type === 'HIGH' ? p.P_HIGH : p.P_LOW);
+const coverage = (r: Regime, p: L3Params = STUDY_L3) => (r === 'M50' ? p.COVERAGE_OPTIONS[0] : p.COVERAGE_OPTIONS[1]);
+
+export function premiumFor(meanP: number, p: L3Params = STUDY_L3): number {
+  return p.LOADING * p.PRICE_LOSS * meanP;
+}
+
+export function mandatoryContribution(c: number, pEffAll: readonly number[], p: L3Params = STUDY_L3): number {
+  const T = p.LOADING * c * p.LOSS * mean(pEffAll);
+  return p.MANDATE_EXTRA ? T + p.MANDATE_EXTRA : T;
 }
 
 export function wealthL3(
@@ -77,17 +129,18 @@ export function wealthL3(
   choices: readonly Choice[],
   pEff: readonly number[],
   events: readonly boolean[],
+  p: L3Params = STUDY_L3,
 ): { W: number[]; T?: number } {
   if (regime === 'VOL') {
     const W = choices.map((c, i) => {
       const buy = c.buy && premium !== null;
-      return L3.BASE_INCOME - (buy ? premium! : 0) - (c.gym ? L3.GYM_COST : 0) - (events[i] && !buy ? L3.LOSS : 0);
+      return p.BASE_INCOME - (buy ? premium! : 0) - (c.gym ? p.GYM_COST : 0) - (events[i] && !buy ? p.LOSS : 0);
     });
     return { W };
   }
-  const c = coverage(regime);
-  const T = mandatoryContribution(c, pEff);
-  const W = choices.map((ch, i) => L3.BASE_INCOME - T - (ch.gym ? L3.GYM_COST : 0) - (events[i] ? (1 - c) * L3.LOSS : 0));
+  const c = coverage(regime, p);
+  const T = mandatoryContribution(c, pEff, p);
+  const W = choices.map((ch, i) => p.BASE_INCOME - T - (ch.gym ? p.GYM_COST : 0) - (events[i] ? (1 - c) * p.LOSS : 0));
   return { W, T };
 }
 
@@ -95,32 +148,44 @@ export function wealthL3(
  * Expected own money minus hardship for one choice (risk neutral apart from the hardship line).
  * Under a mandate the contribution is estimated from the population average risk.
  */
-export function rnValue(type: RiskType, regime: Regime, premium: number | null, ch: Choice): number {
-  const pe = pOf(type) * (ch.gym ? L3.GYM_FACTOR : 1);
-  const gym = ch.gym ? L3.GYM_COST : 0;
+export function rnValue(type: RiskType, regime: Regime, premium: number | null, ch: Choice, ctx: L3Ctx = STUDY_CTX, j = -1): number {
+  const p = ctx.p;
+  const net = (w: number) => ctx.net(j, w);
+  const pe = pEffOf(type, ch.gym, p);
+  const gym = ch.gym ? p.GYM_COST : 0;
   if (regime === 'VOL') {
-    if (ch.buy && premium !== null) return ownNet(L3.BASE_INCOME - premium - gym);
-    return (1 - pe) * ownNet(L3.BASE_INCOME - gym) + pe * ownNet(L3.BASE_INCOME - gym - L3.LOSS);
+    if (ch.buy && premium !== null) return net(p.BASE_INCOME - premium - gym);
+    return (1 - pe) * net(p.BASE_INCOME - gym) + pe * net(p.BASE_INCOME - gym - p.LOSS);
   }
-  const c = coverage(regime);
-  const T = mandatoryContribution(c, [L3.P_BAR]);
-  return (1 - pe) * ownNet(L3.BASE_INCOME - T - gym) + pe * ownNet(L3.BASE_INCOME - T - gym - (1 - c) * L3.LOSS);
+  const c = coverage(regime, p);
+  const T = mandatoryContribution(c, [p.P_BAR], p);
+  return (1 - pe) * net(p.BASE_INCOME - T - gym) + pe * net(p.BASE_INCOME - T - gym - (1 - c) * p.LOSS);
 }
 
-/** Risk-neutral selfish choice for a type, counting the hardship line (the simple model bots use for others). */
-export function rnChoice(type: RiskType, regime: Regime, premium: number | null): Choice {
+/**
+ * Risk-neutral selfish choice for a type (the simple model bots use for others), counting the hardship
+ * line in Study and debt stress on player j's bank in Play.
+ */
+export function rnChoice(type: RiskType, regime: Regime, premium: number | null, ctx: L3Ctx = STUDY_CTX, j = -1): Choice {
   const opts: Choice[] = [
     { buy: false, gym: false },
     { buy: false, gym: true },
   ];
   if (regime === 'VOL' && premium !== null) opts.push({ buy: true, gym: false });
   let best = opts[0];
-  for (const o of opts) if (rnValue(type, regime, premium, o) > rnValue(type, regime, premium, best) + 1e-9) best = o;
+  for (const o of opts) if (rnValue(type, regime, premium, o, ctx, j) > rnValue(type, regime, premium, best, ctx, j) + 1e-9) best = o;
   return best;
 }
 
-function pEffOf(type: RiskType, gym: boolean): number {
-  return pOf(type) * (gym ? L3.GYM_FACTOR : 1);
+/** Effective risk this round (an event can raise it, up to its cap). */
+function pEffOf(type: RiskType, gym: boolean, p: L3Params = STUDY_L3): number {
+  const pe = pOf(type, p) * (gym ? p.GYM_FACTOR : 1);
+  return p.RISK_MULT === 1 ? pe : Math.min(p.RISK_CAP, pe * p.RISK_MULT);
+}
+
+/** Risk without this round's event: what the insurer prices next round from (D-98). Equal to pEffOf in Study. */
+function pBaseOf(type: RiskType, gym: boolean, p: L3Params = STUDY_L3): number {
+  return pOf(type, p) * (gym ? p.GYM_FACTOR : 1);
 }
 
 function optionsFor(regime: Regime, premium: number | null): Choice[] {
@@ -145,7 +210,9 @@ function choiceCE(
   rho: number,
   regime: Regime,
   premium: number | null,
+  ctx: L3Ctx = STUDY_CTX,
 ): { options: Choice[]; ce: number[] } {
+  const P = ctx.p;
   const options = optionsFor(regime, premium);
   const lotteries: Array<Array<[number, number]>> = options.map(() => []);
   const eq = equalShares(n);
@@ -156,13 +223,13 @@ function choiceCE(
     free.forEach((j, k) => {
       const high = (tm >> k) & 1;
       types[j] = high ? 'HIGH' : 'LOW';
-      pTypes *= high ? L3.P_HIGH_SHARE : 1 - L3.P_HIGH_SHARE;
+      pTypes *= high ? P.P_HIGH_SHARE : 1 - P.P_HIGH_SHARE;
     });
-    const others = types.map((t) => rnChoice(t, regime, premium));
+    const others = types.map((t, j) => rnChoice(t, regime, premium, ctx, j));
     options.forEach((opt, k) => {
       const choices = others.slice();
       choices[i] = opt;
-      const pEff = choices.map((c, j) => pEffOf(types[j], c.gym));
+      const pEff = choices.map((c, j) => pEffOf(types[j], c.gym, P));
       for (let em = 0; em < 1 << n; em++) {
         let p = pTypes;
         const events = pEff.map((pe, j) => {
@@ -171,24 +238,27 @@ function choiceCE(
           return ev;
         });
         if (p === 0) continue;
-        const { W } = wealthL3(regime, premium, choices, pEff, events);
-        lotteries[k].push([p, roundScore(card, W, i, eq)]);
+        const { W } = wealthL3(regime, premium, choices, pEff, events, P);
+        lotteries[k].push([p, ctx.score(card, W, i, eq)]);
       }
     });
   }
   return { options, ce: lotteries.map((lot) => ceOfLottery(lot, rho)) };
 }
 
-function currentPremium(s: GameState): number | null {
+/** The price charged now: the insurer's price, times this round's event multiplier in Play (Price War). */
+function currentPremium(s: GameState, ctx: L3Ctx = ctxOf(s)): number | null {
   const l = st(s);
-  return l.regime === 'VOL' && l.insurerActive ? l.nextPremium : null;
+  const price = l.regime === 'VOL' && l.insurerActive ? l.nextPremium : null;
+  return price === null || ctx.p.PREMIUM_MULT === 1 ? price : price * ctx.p.PREMIUM_MULT;
 }
 
 function regimeCE(s: GameState, n: number, i: number, myType: RiskType | null, card: ValuesCard, rho: number): number[] {
   const l = st(s);
+  const ctx = ctxOf(s);
   return REGIMES.map((r) => {
     const prem = r === 'VOL' && l.insurerActive ? l.nextPremium : null;
-    const { ce } = choiceCE(n, i, myType, card, rho, r, prem);
+    const { ce } = choiceCE(n, i, myType, card, rho, r, prem, ctx);
     return Math.max(...ce);
   });
 }
@@ -199,22 +269,23 @@ function regimeCE(s: GameState, n: number, i: number, myType: RiskType | null, c
  * current price set next round's price from their average risk, and if nobody buys the insurer leaves
  * for good. Deterministic: it uses the table's mix of types, not anyone's luck.
  */
-export function voluntaryPath(nHigh: number, n: number): Array<number | null> {
+export function voluntaryPath(nHigh: number, n: number, ctx: L3Ctx = STUDY_CTX): Array<number | null> {
+  const P = ctx.p;
   const out: Array<number | null> = [];
-  let premium: number | null = premiumFor(L3.P_BAR);
-  for (let r = 0; r < L3.ROUNDS; r++) {
+  let premium: number | null = premiumFor(P.P_BAR, P);
+  for (let r = 0; r < P.ROUNDS; r++) {
     out.push(premium);
     if (premium === null) continue;
     const counts: Record<RiskType, number> = { HIGH: nHigh, LOW: n - nHigh };
     let buyers = 0;
     let riskSum = 0;
     for (const type of ['LOW', 'HIGH'] as RiskType[]) {
-      const c = rnChoice(type, 'VOL', premium);
+      const c = rnChoice(type, 'VOL', premium, ctx);
       if (!c.buy || counts[type] === 0) continue;
       buyers += counts[type];
-      riskSum += counts[type] * pEffOf(type, c.gym);
+      riskSum += counts[type] * pEffOf(type, c.gym, P);
     }
-    premium = buyers ? premiumFor(riskSum / buyers) : null;
+    premium = buyers ? premiumFor(riskSum / buyers, P) : null;
   }
   return out;
 }
@@ -225,28 +296,29 @@ export function voluntaryPath(nHigh: number, n: number): Array<number | null> {
  * the opening price (D-80). With `net`, each outcome counts own money minus the hardship penalty (used to
  * pick a type's best regime).
  */
-export function expectedByType(nHigh: number, n: number, net = false): Record<Regime, Record<RiskType, number>> {
-  const f = net ? ownNet : (w: number) => w;
+export function expectedByType(nHigh: number, n: number, net = false, ctx: L3Ctx = STUDY_CTX): Record<Regime, Record<RiskType, number>> {
+  const P = ctx.p;
+  const f = net ? (w: number) => ctx.net(-1, w) : (w: number) => w;
   const highShare = n > 0 ? nHigh / n : 0;
-  const path = voluntaryPath(nHigh, n);
+  const path = voluntaryPath(nHigh, n, ctx);
   const volRound = (type: RiskType, prem: number | null) => {
-    const c = rnChoice(type, 'VOL', prem);
-    const gym = c.gym ? L3.GYM_COST : 0;
-    if (c.buy && prem !== null) return f(L3.BASE_INCOME - prem - gym);
-    const p = pEffOf(type, c.gym);
-    return (1 - p) * f(L3.BASE_INCOME - gym) + p * f(L3.BASE_INCOME - gym - L3.LOSS);
+    const c = rnChoice(type, 'VOL', prem, ctx);
+    const gym = c.gym ? P.GYM_COST : 0;
+    if (c.buy && prem !== null) return f(P.BASE_INCOME - prem - gym);
+    const p = pEffOf(type, c.gym, P);
+    return (1 - p) * f(P.BASE_INCOME - gym) + p * f(P.BASE_INCOME - gym - P.LOSS);
   };
   const vol = (type: RiskType) => mean(path.map((prem) => volRound(type, prem)));
   const mand = (r: Regime) => {
-    const cv = coverage(r);
-    const gymL = rnChoice('LOW', r, null).gym;
-    const gymH = rnChoice('HIGH', r, null).gym;
-    const meanP = highShare * pEffOf('HIGH', gymH) + (1 - highShare) * pEffOf('LOW', gymL);
-    const T = L3.LOADING * cv * L3.LOSS * meanP;
+    const cv = coverage(r, P);
+    const gymL = rnChoice('LOW', r, null, ctx).gym;
+    const gymH = rnChoice('HIGH', r, null, ctx).gym;
+    const meanP = highShare * pEffOf('HIGH', gymH, P) + (1 - highShare) * pEffOf('LOW', gymL, P);
+    const T = mandatoryContribution(cv, [meanP], P);
     const w = (type: RiskType, gym: boolean) => {
-      const base = L3.BASE_INCOME - T - (gym ? L3.GYM_COST : 0);
-      const p = pEffOf(type, gym);
-      return (1 - p) * f(base) + p * f(base - (1 - cv) * L3.LOSS);
+      const base = P.BASE_INCOME - T - (gym ? P.GYM_COST : 0);
+      const p = pEffOf(type, gym, P);
+      return (1 - p) * f(base) + p * f(base - (1 - cv) * P.LOSS);
     };
     return { LOW: w('LOW', gymL), HIGH: w('HIGH', gymH) };
   };
@@ -259,7 +331,7 @@ function cardBestBuy(s: GameState, pid: PlayerId): { best: boolean; chose: boole
   const me = playerOf(s, pid);
   const r1 = l.rounds[0];
   const premium = r1.premium;
-  const { options, ce } = choiceCE(s.players.length, idx(s, pid), l.types[pid], me.values, 0, 'VOL', premium);
+  const { options, ce } = choiceCE(s.players.length, idx(s, pid), l.types[pid], me.values, 0, 'VOL', premium, ctxOf(s, false));
   return { best: options[ce.indexOf(Math.max(...ce))].buy, chose: r1.choices[pid].buy };
 }
 
@@ -267,23 +339,25 @@ export const level3: LevelDefinition = {
   id: 3,
   rounds: L3.ROUNDS,
   init(s) {
+    const P = ctxOf(s, false).p;
     const g = gameRng(s);
     const types: Record<PlayerId, RiskType> = {};
     for (const p of s.players) {
-      types[p.id] = g.next() < L3.P_HIGH_SHARE ? 'HIGH' : 'LOW';
+      types[p.id] = g.next() < P.P_HIGH_SHARE ? 'HIGH' : 'LOW';
       p.privateInfo.riskType = types[p.id];
     }
     s.levelState = {
       types,
       regime: 'VOL',
       insurerActive: true,
-      nextPremium: premiumFor(L3.P_BAR),
+      nextPremium: premiumFor(P.P_BAR, P),
       rounds: [],
     } satisfies L3State;
   },
-  phases() {
+  phases(s) {
+    const P = ctxOf(s, false).p;
     const out: Phase[] = [];
-    for (let r = 1; r <= L3.ROUNDS; r++) {
+    for (let r = 1; r <= P.ROUNDS; r++) {
       out.push(
         { kind: 'BRIEFING', round: r },
         { kind: 'TALK', step: 'ROUND', round: r },
@@ -291,7 +365,7 @@ export const level3: LevelDefinition = {
         { kind: 'REVEAL', step: 'EVENTS', round: r },
         { kind: 'ROUND_SUMMARY', round: r },
       );
-      if (r === L3.VOLUNTARY_ROUNDS)
+      if (r === P.VOLUNTARY_ROUNDS)
         out.push(
           { kind: 'TALK', step: 'REGIME', round: r },
           { kind: 'DECIDE', step: 'REGIME', round: r },
@@ -320,7 +394,8 @@ export const level3: LevelDefinition = {
     const i = idx(s, botId);
     if (step === 'CHOICE') {
       const l = st(s);
-      const { options, ce } = choiceCE(n, i, l.types[botId], me.values, rho, l.regime, currentPremium(s));
+      const ctx = ctxOf(s);
+      const { options, ce } = choiceCE(n, i, l.types[botId], me.values, rho, l.regime, currentPremium(s, ctx), ctx);
       // Section 5.5: buy is a binary logit (each side valued at its best gym response),
       // then the gym is a binary logit given the purchase decision.
       const best = (buy: boolean) => Math.max(...options.map((o, k) => (o.buy === buy ? ce[k] : -Infinity)));
@@ -346,11 +421,15 @@ export const level3: LevelDefinition = {
       l.regime = REGIMES[winner];
       return;
     }
-    const premium = currentPremium(s);
+    const ctx = ctxOf(s);
+    const P = ctx.p;
+    const premium = currentPremium(s, ctx);
+    const listPrice = l.nextPremium;
     const choices = pids.map((id) => decisions[id] as Choice);
-    const pEff = pids.map((id, i) => pEffOf(l.types[id], choices[i].gym));
+    const pEff = pids.map((id, i) => pEffOf(l.types[id], choices[i].gym, P));
+    const pBase = pids.map((id, i) => pBaseOf(l.types[id], choices[i].gym, P));
     const events = pEff.map((p) => g.next() < p);
-    const { W, T } = wealthL3(l.regime, premium, choices, pEff, events);
+    const { W, T } = wealthL3(l.regime, premium, choices, pEff, events, P);
     const rec = <X>(xs: X[]) => Object.fromEntries(pids.map((id, i) => [id, xs[i]])) as Record<PlayerId, X>;
     let exited = false;
     const before = l.nextPremium;
@@ -360,7 +439,7 @@ export const level3: LevelDefinition = {
         l.insurerActive = false;
         l.nextPremium = null;
         exited = true;
-      } else l.nextPremium = premiumFor(mean(buyers.map((i) => pEff[i])));
+      } else l.nextPremium = premiumFor(mean(buyers.map((i) => pBase[i])), P);
     }
     const round: L3Round = {
       regime: l.regime,
@@ -372,6 +451,8 @@ export const level3: LevelDefinition = {
       eventCards: Object.fromEntries(pids.map((id) => [id, flavorIndex(s.seed, `l3-${s.round}-${id}`, 9973)])),
       W: rec(W),
       nextPremium: l.nextPremium,
+      // Play only: the insurer's price before an event's discount (E3 compares these, D-98).
+      ...(isPlay(s) ? { listPrice } : {}),
     };
     l.rounds.push(round);
     const nEvents = events.filter(Boolean).length;
@@ -411,9 +492,10 @@ export const level3: LevelDefinition = {
       return { support: order[0][0], decoy: order[1][0] };
     }
     const l = st(s);
-    const { options, ce } = choiceCE(n, i, l.types[botId], me.values, rho, l.regime, currentPremium(s));
+    const ctx = ctxOf(s);
+    const { options, ce } = choiceCE(n, i, l.types[botId], me.values, rho, l.regime, currentPremium(s, ctx), ctx);
     const best = options[ce.indexOf(Math.max(...ce))];
-    const menu = currentPremium(s) !== null ? ['BUY', 'GYM'] : ['GYM'];
+    const menu = currentPremium(s, ctx) !== null ? ['BUY', 'GYM'] : ['GYM'];
     const yes = menu.filter((a) => (a === 'BUY' ? best.buy : best.gym));
     return { promise: yes, falsePromise: menu.filter((a) => !yes.includes(a)) };
   },
@@ -432,8 +514,9 @@ export const level3: LevelDefinition = {
     const pids = ids(s);
     const nHigh = pids.filter((id) => l.types[id] === 'HIGH').length;
     const highShare = nHigh / pids.length;
-    const exp = expectedByType(nHigh, pids.length);
-    const expNet = expectedByType(nHigh, pids.length, true);
+    const dctx = ctxOf(s, false);
+    const exp = expectedByType(nHigh, pids.length, false, dctx);
+    const expNet = expectedByType(nHigh, pids.length, true, dctx);
     const best = (type: RiskType) => REGIMES.reduce((a, b) => (expNet[b][type] > expNet[a][type] + 1e-9 ? b : a), 'VOL' as Regime);
     const gym = { insured: [0, 0] as [number, number], uninsured: [0, 0] as [number, number], mandatory: [0, 0] as [number, number] };
     for (const r of l.rounds)
@@ -455,13 +538,13 @@ export const level3: LevelDefinition = {
       }),
       gym,
       expectedByType: exp,
-      volPath: voluntaryPath(nHigh, pids.length),
+      volPath: voluntaryPath(nHigh, pids.length, dctx),
       highShare,
       regimeVotes: l.regimeVotes,
       regime: l.regime,
       bestRegimeForType: { LOW: best('LOW'), HIGH: best('HIGH') },
       byHuman,
-      unraveled: vol.slice(0, L3.VOLUNTARY_ROUNDS).some((r) => r.premium === null || pids.every((id) => !r.choices[id].buy)),
+      unraveled: vol.slice(0, dctx.p.VOLUNTARY_ROUNDS).some((r) => r.premium === null || pids.every((id) => !r.choices[id].buy)),
     };
     l.debrief = d;
     return d;

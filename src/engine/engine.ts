@@ -16,6 +16,8 @@ import { botMessages } from './bots/messaging';
 import { LEVELS } from './levels';
 import { level4Counterfactual } from './counterfactual';
 import { assertSameRules, currentRules } from './version';
+import { initPlay, playApplyGuess, playBotGuesses, playDrawEvent, playStartEpisode, PLAYABLE_EPISODES } from './play/rules';
+import { playView } from './play/view';
 import { VALUES_CARDS } from './types';
 import type {
   Action,
@@ -41,18 +43,30 @@ export function humanSeats(config: SetupConfig): Array<{ id: PlayerId; name: str
 
 export const humanIds = (s: GameState): PlayerId[] => s.players.filter((p) => p.isHuman).map((p) => p.id);
 
+/** One level only: Study's SINGLE_LEVEL or Play's EPISODE. */
+export const isSingle = (mode: SetupConfig['mode']): boolean => mode === 'SINGLE_LEVEL' || mode === 'EPISODE';
+
+/** Study runs FULL_RUN and SINGLE_LEVEL; Play runs LIFE and EPISODE (Play spec 3.2). */
+function checkMode(config: SetupConfig): void {
+  const play = config.ruleset === 'PLAY';
+  if (play !== (config.mode === 'LIFE' || config.mode === 'EPISODE')) throw new Error(`mode ${config.mode} does not belong to ruleset ${config.ruleset ?? 'STUDY'}`);
+  if (config.mode === 'LIFE') throw new Error('LIFE mode is not built yet (milestone P3)');
+  if (config.mode === 'EPISODE' && !PLAYABLE_EPISODES.includes(config.level ?? 1)) throw new Error(`episode ${config.level ?? 1} is not built yet`);
+}
+
 export function createInitialState(config: SetupConfig): GameState {
+  checkMode(config);
   const seed = config.seed || 'meritopia';
   const s: GameState = {
     version: 1,
-    rules: currentRules(),
+    rules: currentRules(config.ruleset),
     seed,
     rng: initRng(seed),
     mode: config.mode,
     difficulty: config.difficulty,
     config,
     players: [],
-    levelIndex: config.mode === 'SINGLE_LEVEL' ? config.level ?? 1 : 1,
+    levelIndex: isSingle(config.mode) ? config.level ?? 1 : 1,
     round: 0,
     phase: { kind: 'VALUES_REVEAL', round: 0 },
     phaseQueue: [],
@@ -109,6 +123,11 @@ export function createInitialState(config: SetupConfig): GameState {
     s.reliability[p.id] = { made: 0, kept: 0 };
   }
   initBeliefs(s);
+  // Play state exists only in Play games, so a Study state has exactly the fields it had before (D-93).
+  if (config.ruleset === 'PLAY') {
+    s.ruleset = 'PLAY';
+    s.play = initPlay(s);
+  }
   const hasHuman = players.some((p) => p.isHuman);
   if (hasHuman) {
     s.phaseQueue = [{ kind: 'VALUES_REVEAL', round: 0 }];
@@ -136,8 +155,15 @@ function startLevel(s: GameState, level: LevelId): void {
   for (const p of s.players) p.privateInfo = {};
   for (const p of s.players) p.publicInfo = {};
   const d = LEVELS[level];
+  if (s.play) playStartEpisode(s, level);
   d.init(s);
-  s.phaseQueue = [{ kind: 'INTRO', round: 1 }, ...d.phases(s), { kind: 'LEVEL_DEBRIEF', round: d.rounds }];
+  if (s.play) {
+    // Play: the episode's own round count, and the card guess before the summary when humans play (Play spec 7.4).
+    const phases = d.phases(s);
+    const last = phases[phases.length - 1]?.round ?? d.rounds;
+    const guess: Phase[] = s.players.some((p) => p.isHuman) ? [{ kind: 'GUESS', step: 'EPISODE', round: last }] : [];
+    s.phaseQueue = [{ kind: 'INTRO', round: 1 }, ...phases, ...guess, { kind: 'LEVEL_DEBRIEF', round: last }];
+  } else s.phaseQueue = [{ kind: 'INTRO', round: 1 }, ...d.phases(s), { kind: 'LEVEL_DEBRIEF', round: d.rounds }];
   s.phaseIdx = 0;
   enterPhase(s);
 }
@@ -149,6 +175,8 @@ function enterPhase(s: GameState): void {
   s.pending = {};
   if (s.phase.kind === 'VALUES_REVEAL' || s.phase.kind === 'GUESS' || s.phase.kind === 'RUN_DEBRIEF' || s.phase.kind === 'END') return;
   const d = def(s);
+  // Play: an event card (or a quiet week) is drawn before every round (Play spec 6.1).
+  if (s.play && phase.kind === 'BRIEFING') playDrawEvent(s, gameRng(s));
   d.onEnter?.(s, phase);
   switch (phase.kind) {
     case 'TALK': {
@@ -172,7 +200,9 @@ function enterPhase(s: GameState): void {
     case 'LEVEL_DEBRIEF': {
       // Drop unchecked claims that never met their decision.
       for (const m of s.messages) if (m.level === s.levelIndex && !m.resolved) m.resolved = true;
-      awardLevelPoints(s);
+      // Play scores on banks (Play spec 4.3), not level points; bots make their card guess now (D-99).
+      if (s.play) playBotGuesses(s);
+      else awardLevelPoints(s);
       // Counterfactual sandboxes only read the rounds, so they skip the debrief (and its card's-best lines).
       if (s.cf) break;
       const result = d.debrief(s) as Record<string, unknown>;
@@ -356,6 +386,16 @@ export function step(s: GameState, action: Action): boolean {
       if (!from || !humans.includes(from) || from in s.pending) return false;
       const guesses = validGuesses(s, from, action.guesses);
       if (!guesses) return false;
+      if (s.play) {
+        // Play (Play spec 7.4): one guess about one contestant, scored at once; the last human closes the screen.
+        if (!playApplyGuess(s, from, guesses)) return false;
+        s.pending[from] = guesses;
+        if (humans.every((h) => h in s.pending)) {
+          s.phaseIdx++;
+          enterPhase(s);
+        }
+        return true;
+      }
       s.pending[from] = guesses;
       if (humans.every((h) => h in s.pending)) {
         applyGuesses(s, s.pending as Record<PlayerId, Record<PlayerId, ValuesCard>>);
@@ -431,7 +471,7 @@ export function visibleState(s: GameState, viewer: PlayerId, opts: ViewOptions =
   const revealValues =
     s.phase.kind === 'RUN_DEBRIEF' ||
     s.phase.kind === 'END' && s.mode === 'FULL_RUN' ||
-    (s.mode === 'SINGLE_LEVEL' && (s.phase.kind === 'LEVEL_DEBRIEF' || s.phase.kind === 'END'));
+    (isSingle(s.mode) && (s.phase.kind === 'LEVEL_DEBRIEF' || s.phase.kind === 'END'));
   const level = s.phase.kind === 'VALUES_REVEAL' ? null : LEVELS[s.levelIndex];
   const scoresVisible = revealPrivate;
   const history = s.history.map((r) => {
@@ -494,6 +534,7 @@ export function visibleState(s: GameState, viewer: PlayerId, opts: ViewOptions =
         : undefined,
     guesses,
     revealAll: revealValues,
+    ...(s.play ? { play: playView(s, viewer, revealValues) } : {}),
   };
 }
 

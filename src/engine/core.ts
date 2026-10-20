@@ -2,6 +2,7 @@
 import { BOT, BOT_PROFILES, DIFFICULTY, VALUES_PRIOR } from './params';
 import { roundScore, valuesMetric } from './scoring';
 import { flavorIndex, stream, type Rng, standalone, hashString } from './rng';
+import { missionValue, playFinishRound, playScore } from './play/rules';
 import type {
   BotKey,
   BotProfile,
@@ -56,6 +57,20 @@ export function finishRound(s: GameState, W: number[], effortShares: number[], h
     effortShares: {} as Record<PlayerId, number>,
     headline,
   };
+  if (s.play) {
+    // Play (Play spec 4): banks move, debt stress is taken; M is the mission on the banks and S the Play
+    // score so far. Level scores and the hardship line are Study's and are not used.
+    playFinishRound(s, W);
+    const banks = s.players.map((p) => s.play!.banks[p.id]);
+    s.players.forEach((p, i) => {
+      rec.W[p.id] = W[i];
+      rec.M[p.id] = missionValue(p.values, banks, i, effortShares);
+      rec.S[p.id] = playScore(s, p.id);
+      rec.effortShares[p.id] = effortShares[i];
+    });
+    s.history.push(rec);
+    return;
+  }
   s.players.forEach((p, i) => {
     rec.W[p.id] = W[i];
     rec.M[p.id] = valuesMetric(p.values, W, i, effortShares);
@@ -192,6 +207,8 @@ export function headline(s: GameState, key: string, vars: Headline['vars'] = {})
 }
 
 export function isRevealPrivate(phase: Phase): boolean {
+  // Play's end-of-episode guess (step EPISODE) comes before the summary, so it reveals nothing (D-99).
+  if (phase.kind === 'GUESS' && phase.step === 'EPISODE') return false;
   return ['LEVEL_DEBRIEF', 'GUESS', 'RUN_DEBRIEF', 'END'].includes(phase.kind);
 }
 
