@@ -198,6 +198,10 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
   else if (ch.buy && r.premium !== null) cost = t('play.stage.costCover', { p: fmt1(r.premium) });
   else if (ch.gym) cost = t('play.stage.costGym', { c: n.gymCost });
   else cost = t('play.stage.costNone');
+  // What you chose this round, next to the money it made (playtest note).
+  const bought = ch.buy && r.premium !== null;
+  const chose =
+    r.regime !== 'VOL' ? (ch.gym ? 'planGym' : 'plan') : bought && ch.gym ? 'both' : bought ? 'cover' : ch.gym ? 'gym' : r.premium === null ? 'noneClosed' : 'none';
   const broken = new Set(brokenPromises(v, 'CHOICE').map((b) => b.from));
   const outcome = roundOutcome(v, r);
   const subjectBot = v.players.find((p) => p.id === outcome.subject && !p.isHuman && p.botKey);
@@ -217,7 +221,7 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
     >
       <p className="text-center text-xs font-bold uppercase tracking-wider text-soft">{t('play.stage.resultsOf', { r: v.round })}</p>
       <h1 className="h-show mt-1 text-center text-3xl leading-tight">{t('play.l3.wheel')}</h1>
-      <div className="relative mx-auto mt-3 h-52 w-52">
+      <div className="relative mx-auto mt-2 h-44 w-44">
         <svg viewBox="0 0 100 100" className="h-full w-full" aria-hidden>
           <motion.g style={{ originX: '50px', originY: '50px' }} initial={{ rotate: 0 }} animate={{ rotate: done ? final : off ? final : [0, final] }} transition={{ duration: done || off ? 0 : spinMs / 1000, ease: 'easeOut' }}>
             <circle cx="50" cy="50" r={WHEEL_R} className="fill-good/80" />
@@ -237,7 +241,12 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
       </div>
       {done ? (
         <div className="mt-3 text-center" aria-live="polite">
-          <p className={`h-show text-5xl ${change < 0 ? 'text-stamp' : 'text-spot'}`}>{signed(Math.round(change))}</p>
+          <p className="flex items-baseline justify-center gap-3">
+            <span className={`h-show text-5xl ${change < 0 ? 'text-stamp' : 'text-spot'}`}>{signed(Math.round(change))}</span>
+            <span className="text-base font-semibold" data-chose>
+              {t(`play.stage.chose.${chose}`)}
+            </span>
+          </p>
           <p className="mt-1 text-sm text-soft">
             {t('play.stage.bankLine', { from: coins(from), to: coins(h.banks[me]) })} {cost}
           </p>

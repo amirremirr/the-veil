@@ -88,9 +88,13 @@ export function TopBar({ v, onMenu }: { v: ViewState; onMenu: () => void }) {
         {v.players.map((p) => (
           <li key={p.id} className="flex w-16 flex-col items-center" aria-label={t('play.a11y.bankOnly', { name: shortName(v, p.id), bank: coins(pl.banks[p.id]) })}>
             <span className={`rounded-full ${p.id === v.viewer ? 'ring-2 ring-spot' : ''}`} aria-hidden>
-              <Avatar bot={p.botKey} human={p.isHuman} size={30} />
+              <Avatar bot={p.botKey} human={p.isHuman} size={26} />
             </span>
-            <span className={`text-[11px] font-semibold ${pl.banks[p.id] < 0 ? 'text-stamp' : 'text-soft'}`} aria-hidden>
+            {/* The name under each icon, so a new player knows who is speaking (playtest note). */}
+            <span className="max-w-full truncate text-[11px] font-bold leading-tight" aria-hidden>
+              {shortName(v, p.id)}
+            </span>
+            <span className={`text-[11px] font-semibold leading-tight ${pl.banks[p.id] < 0 ? 'text-stamp' : 'text-soft'}`} aria-hidden>
               {coins(pl.banks[p.id])}
             </span>
           </li>

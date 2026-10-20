@@ -1302,7 +1302,16 @@
       "menuClose": "Close",
       "menuQuit": "Leave the show",
       "results": "Full results",
-      "ranking": "Final ranking"
+      "ranking": "Final ranking",
+      "chose": {
+        "cover": "You bought cover.",
+        "gym": "You hit the gym.",
+        "both": "You bought cover and hit the gym.",
+        "none": "You skipped cover and the gym.",
+        "noneClosed": "No cover on sale. You skipped the gym.",
+        "plan": "You were in the plan.",
+        "planGym": "You were in the plan and hit the gym."
+      }
     }
   }
 }
