@@ -5,6 +5,9 @@
 // targets are design targets chosen for the game, not findings. Each statistic is reported as
 // mean ± standard error, where the SE is a bootstrap over whole games (games are independent; players
 // within a game are not), with a fixed resampling seed so a rerun prints the same SEs.
+// Every design target is checked by code at the end (D-88): PASS, FAIL, or N/A when it cannot be
+// checked; a PASS within 2 SE of a bound is marked "at the bound". Any FAIL makes the exit code 1.
+import { execSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createInitialState, step, totalScore } from '../src/engine/engine';
 import { mean } from '../src/engine/scoring';
@@ -137,8 +140,20 @@ function record(seed: string, s: GameState): Rec {
   };
 }
 
+/** The git commit this run used, and whether tracked files had uncommitted changes (D-88). */
+function codeRevision(): string {
+  try {
+    const head = execSync('git rev-parse --short=12 HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+    const dirty = execSync('git status --porcelain --untracked-files=no', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() !== '';
+    return dirty ? `${head} + uncommitted changes` : head;
+  } catch {
+    return 'unknown (not a git checkout)';
+  }
+}
+
 const recs: Rec[] = [];
 const t0 = Date.now();
+const revisionAtStart = codeRevision();
 for (let g = 0; g < games; g++) {
   const seed = `${seedBase}-${g}`;
   recs.push(record(seed, playOne(seed)));
@@ -209,6 +224,7 @@ const csvPath = `${outDir}/runs-${nPlayers}p-${difficulty}.csv`;
 const lines: string[] = [];
 const rules = currentRules();
 lines.push(`THE VEIL simulation: ${games} full runs, ${nPlayers} bots, ${difficulty}, ${samples} MC samples. Rules ${rules.rules}, params ${rules.params}.`);
+lines.push(`Seeds ${seedBase}-0 to ${seedBase}-${games - 1}. Code ${revisionAtStart} (at the start of the run).`);
 lines.push('BOT-ONLY TABLES: these numbers describe the bots, not people. Targets are design targets for the game, not findings (D-76).');
 lines.push(`Each value is mean ± bootstrap standard error over games (${BOOT} resamples).`);
 lines.push('');
@@ -231,7 +247,7 @@ lines.push(`L3 regimes chosen: ${['VOL', 'M50', 'M100'].map((k) => `${k} ${pm(av
 lines.push(`L4 mean group gap: ${num(avg((r) => r.gap), 2)}; gap positive in ${pm(avg((r) => (r.gap > 0 ? 1 : 0)))}   (design target at least 80%)`);
 lines.push(`L4 policies chosen: ${['A', 'B', 'C', 'D'].map((k) => `${k} ${pm(avg((r) => (r.policy === k ? 1 : 0)))}`).join(', ')}`);
 lines.push(
-  `L4 mean gap in rounds 4-5 by policy (design target: some policy below Status Quo): ${['A', 'B', 'C', 'D']
+  `L4 mean gap in rounds 4-5 by the rule each table chose (conditional on the tables that chose it; No Change is rare, so its row is not a policy effect, D-87): ${['A', 'B', 'C', 'D']
     .map((k) => `${k} ${num((rs) => {
       const xs = rs.filter((r) => r.policy === k).map((r) => r.gapR45);
       return xs.length ? mean(xs) : NaN;
@@ -251,6 +267,60 @@ for (const c of VALUES_CARDS) lines.push(`  ${c}: ${pm(stdWinRate(c))}`);
 lines.push('Raw level scores per player (mean ± SE; lowest table average):');
 for (let L = 0; L < 5; L++)
   lines.push(`  L${L + 1}: ${num(avg((r) => mean(r.raw.map((x) => x[L]))), 1)}; lowest table average ${Math.min(...recs.map((r) => mean(r.raw.map((x) => x[L])))).toFixed(1)}`);
+
+// --- design targets, checked by code (D-88) -----------------------------------------------------
+
+interface Target {
+  name: string;
+  stat: Stat;
+  lo?: number;
+  hi?: number;
+  /** Shown with the result: what the check is conditional on. */
+  note?: string;
+}
+const share = (k: string): Stat => ratio((r) => r.votes[k], (r) => sum(Object.values(r.votes)));
+const gapByRule = (k: string): Stat => (rs) => {
+  const xs = rs.filter((r) => r.policy === k).map((r) => r.gapR45);
+  return xs.length ? mean(xs) : NaN;
+};
+const targets: Target[] = [
+  { name: 'L1 largest principle share', stat: (rs) => Math.max(...['P1', 'P2', 'P3', 'P4'].map((k) => share(k)(rs))), hi: 0.6 },
+  { name: 'L2 mean chosen tax', stat: avg((r) => r.meanT), lo: 0.2, hi: 0.5 },
+  { name: 'L2 mean absolute effort gap', stat: avg((r) => r.effortAbsGap), hi: 1 },
+  { name: 'L3 High / Low round-1 buying ratio', stat: (rs) => highR1(rs) / lowR1(rs), lo: 3 },
+  { name: 'L3 price rise, round 1 to 2, open markets', stat: (rs) => mean(open(rs).map((r) => r.r2Price)) / mean(open(rs).map((r) => r.r1Price)) - 1, lo: 0.15 },
+  { name: 'L3 market collapses by round 2', stat: avg((r) => (r.collapsed ? 1 : 0)), lo: 0.1 },
+  { name: 'L3 unanimous referendum', stat: avg((r) => (r.unanimous ? 1 : 0)), hi: 0.3 },
+  { name: 'L4 gap positive', stat: avg((r) => (r.gap > 0 ? 1 : 0)), lo: 0.8 },
+  {
+    name: 'L4 some chosen rule below No Change, rounds 4-5 (best other rule minus No Change)',
+    stat: (rs) => Math.min(...['B', 'C', 'D'].map((k) => gapByRule(k)(rs)).filter(Number.isFinite)) - gapByRule('A')(rs),
+    hi: 0,
+    note: `conditional on the ${recs.filter((r) => r.policy === 'A').length} tables that kept No Change; not a policy effect (D-87)`,
+  },
+  { name: 'L5 amendment proposed', stat: avg((r) => (r.amended ? 1 : 0)), lo: 0.9 },
+  { name: 'L5 bot slope negative (programmed check, D-73)', stat: avg((r) => r.slopeBots), hi: 0 },
+  ...VALUES_CARDS.map((c) => ({ name: `Win rate per seat, ${c}`, stat: winRate(c), lo: 0.15, hi: 0.35 })),
+];
+let failures = 0;
+lines.push('');
+lines.push('Design targets (bot-only; PASS / FAIL on the estimate; "at the bound" = within 2 SE of a bound):');
+for (const tg of targets) {
+  const v = tg.stat(recs);
+  const e = se(tg.stat);
+  const bound = `${tg.lo !== undefined ? `>= ${tg.lo}` : ''}${tg.lo !== undefined && tg.hi !== undefined ? ' and ' : ''}${tg.hi !== undefined ? `<= ${tg.hi}` : ''}`;
+  let status: string;
+  if (!Number.isFinite(v)) status = 'N/A (cannot be computed in this run)';
+  else {
+    const pass = (tg.lo === undefined || v >= tg.lo) && (tg.hi === undefined || v <= tg.hi);
+    if (!pass) failures++;
+    const margins = [tg.lo, tg.hi].filter((b): b is number => b !== undefined).map((b) => (e > 0 ? Math.abs(v - b) / e : v === b ? 0 : Infinity));
+    const near = Math.min(...margins);
+    status = pass ? (near < 2 ? `PASS, at the bound (${near.toFixed(1)} SE away)` : 'PASS') : `FAIL (${near.toFixed(1)} SE beyond the bound)`;
+  }
+  lines.push(`  ${status.padEnd(36)} ${tg.name}: ${Number.isFinite(v) ? v.toFixed(4) : 'n/a'} ± ${e.toFixed(4)} (target ${bound})${tg.note ? `; ${tg.note}` : ''}`);
+}
+lines.push(failures ? `${failures} design target(s) FAILED.` : 'All checkable design targets pass.');
 lines.push(`Time: ${((Date.now() - t0) / 1000).toFixed(1)}s. CSV: ${csvPath}`);
 
 const header = ['seed', 'l1_votes_P1', 'l1_votes_P2', 'l1_votes_P3', 'l1_votes_P4', 'l2_mean_t', 'l2_mean_effort_gap', 'l3_collapsed_by_r2', 'l3_regime', 'l3_regime_unanimous', 'l4_gap', 'l4_policy', 'l4_pi_square_final', 'l5_amended', 'l5_slope_bots', 'cards'];
@@ -264,3 +334,4 @@ writeFileSync(csvPath, rows.join('\n'));
 const summary = lines.join('\n');
 writeFileSync(`${outDir}/summary-${nPlayers}p-${difficulty}.txt`, summary);
 console.log(summary);
+if (failures) process.exitCode = 1;

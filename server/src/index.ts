@@ -61,7 +61,7 @@ export default {
       return new Response('Could not create a room, try again', { status: 503, headers: cors });
     }
 
-    const m = url.pathname.match(/^\/rooms\/([A-Za-z]{4})\/(ws|stats|reload)$/);
+    const m = url.pathname.match(/^\/rooms\/([A-Za-z]{4})\/(ws|stats|reload|outdate)$/);
     if (m) {
       const code = m[1].toUpperCase();
       if (!CODE_RE.test(code)) return new Response('No such room', { status: 404, headers: cors });

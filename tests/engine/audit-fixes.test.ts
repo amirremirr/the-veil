@@ -201,7 +201,7 @@ describe('D-77: bot utility is defined, increasing and concave over every reacha
   });
 });
 
-describe('D-79: Level 4 decomposition holds the rule fixed, keeps streams aligned, and reports SE', () => {
+describe('D-79, D-90: Level 4 decomposition holds the rule fixed, takes tie-break draws every time, and reports SE', () => {
   it('a plurality vote takes exactly one draw, tie or not', () => {
     for (const votes of [[0, 0, 1], [0, 1, 2, 3], [2, 2, 2, 2]]) {
       const a = standalone(42);

@@ -22,6 +22,8 @@ import {
 } from '../../src/shared/flow';
 import {
   LIMITS,
+  VERSION_MESSAGES,
+  joinRulesError,
   parseClientMessage,
   type ClientMessage,
   type ErrorCode,
@@ -86,17 +88,25 @@ export class Room extends DurableObject<Env> {
   /** Recent message times per connection (rate limit). Lost on hibernation, which is harmless. */
   private rate = new Map<WebSocket, number[]>();
   private lastLobby = '';
+  /**
+   * Set when this room was closed because a deploy changed the rules it started under (D-83). Only this
+   * marker is kept (24 hours), so anyone who comes back is told why instead of "no such room".
+   */
+  private closedByUpdate: number | null = null;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     this.sql = ctx.storage.sql;
-    ctx.blockConcurrencyWhile(async () => {
-      this.load();
-      // A deploy that changed the rules would replay this room's log into a different game (D-75):
-      // close the room instead of continuing it silently.
-      if (this.meta?.started && compareRules(this.meta.rules) === 'different') await this.close();
-      else if (this.meta?.started) this.rebuild();
-    });
+    ctx.blockConcurrencyWhile(async () => this.wake());
+  }
+
+  /** Load storage; a started room whose rules differ from this deploy's is closed with a marker (D-75, D-83). */
+  private async wake(): Promise<void> {
+    this.load();
+    // A deploy that changed the rules would replay this room's log into a different game: close the room
+    // instead of continuing it silently.
+    if (this.meta?.started && compareRules(this.meta.rules) === 'different') await this.closeForUpdate();
+    else if (this.meta?.started) this.rebuild();
   }
 
   // --- storage --------------------------------------------------------------------------------
@@ -106,6 +116,7 @@ export class Room extends DurableObject<Env> {
     this.sql.exec('CREATE TABLE IF NOT EXISTS log (i INTEGER PRIMARY KEY, a TEXT NOT NULL)');
     const kv = new Map<string, string>();
     for (const row of this.sql.exec<{ k: string; v: string }>('SELECT k, v FROM kv')) kv.set(row.k, row.v);
+    this.closedByUpdate = kv.has('closedByUpdate') ? Number(kv.get('closedByUpdate')) : null;
     if (!kv.has('meta')) return;
     this.meta = JSON.parse(kv.get('meta')!);
     this.seats = JSON.parse(kv.get('seats') ?? '[]');
@@ -149,6 +160,11 @@ export class Room extends DurableObject<Env> {
     if (url.pathname === '/init' && request.method === 'POST') {
       if (this.meta) return new Response('exists', { status: 409 });
       const { code, settings } = (await request.json()) as { code: string; settings: RoomSettings };
+      // A new room under a code whose old room was closed by an update replaces the marker.
+      if (this.closedByUpdate !== null) {
+        this.sql.exec("DELETE FROM kv WHERE k = 'closedByUpdate'");
+        this.closedByUpdate = null;
+      }
       const now = Date.now();
       this.meta = { code, createdAt: now, lastActivity: now, host: null, settings, started: false };
       this.save();
@@ -156,7 +172,8 @@ export class Room extends DurableObject<Env> {
       return new Response('created', { status: 201 });
     }
     if (url.pathname === '/ws') {
-      if (!this.meta) return new Response('No such room', { status: 404 });
+      // A room closed by an update still accepts the socket, so the first message can say why (D-83).
+      if (!this.meta && this.closedByUpdate === null) return new Response('No such room', { status: 404 });
       if (request.headers.get('Upgrade') !== 'websocket') return new Response('Expected a WebSocket', { status: 426 });
       const pair = new WebSocketPair();
       this.ctx.acceptWebSocket(pair[1]);
@@ -168,6 +185,14 @@ export class Room extends DurableObject<Env> {
       // Measurement only: rebuild from storage as a wake-up would.
       if (this.meta?.started) this.rebuild();
       return Response.json({ ok: true, logRows: this.savedLog });
+    }
+    if (this.env.DEV === '1' && url.pathname === '/outdate') {
+      // Tests only: pretend this room started under other rules, then wake up as after a deploy (D-83).
+      if (!this.meta?.started) return Response.json({ ok: false, reason: 'not started' }, { status: 409 });
+      this.meta.rules = { rules: 'outdated', params: 'outdated', commit: 'outdated' };
+      this.save();
+      await this.wake();
+      return Response.json({ ok: true, closedByUpdate: this.closedByUpdate !== null });
     }
     return new Response('Not found', { status: 404 });
   }
@@ -189,6 +214,15 @@ export class Room extends DurableObject<Env> {
   // --- WebSocket events -----------------------------------------------------------------------
 
   async webSocketMessage(ws: WebSocket, raw: string | ArrayBuffer): Promise<void> {
+    if (!this.meta && this.closedByUpdate !== null) {
+      this.send(ws, err('CLOSED_BY_UPDATE', VERSION_MESSAGES.CLOSED_BY_UPDATE));
+      try {
+        ws.close(4002, 'closed by update');
+      } catch {
+        // Already closed.
+      }
+      return;
+    }
     if (!this.meta) return this.send(ws, err('ROOM_CLOSED', 'This room has closed.'));
     if (!this.allow(ws)) return this.send(ws, err('RATE_LIMITED', 'Too many messages. Slow down a little.'));
     const m = parseClientMessage(raw);
@@ -227,7 +261,14 @@ export class Room extends DurableObject<Env> {
   }
 
   async alarm(): Promise<void> {
-    if (!this.meta) return;
+    if (!this.meta) {
+      // Only a closed-by-update marker is left; drop it after the usual room lifetime.
+      if (this.closedByUpdate !== null && Date.now() >= this.closedByUpdate + LIMITS.ROOM_TTL_MS) {
+        await this.ctx.storage.deleteAll();
+        this.closedByUpdate = null;
+      }
+      return;
+    }
     const now = Date.now();
     if (now >= this.meta.lastActivity + LIMITS.ROOM_TTL_MS) return this.close();
     if (this.table && this.flow.deadline !== null && now >= this.flow.deadline - 25) {
@@ -244,6 +285,9 @@ export class Room extends DurableObject<Env> {
 
   private async join(ws: WebSocket, m: Extract<ClientMessage, { type: 'JOIN' }>): Promise<void> {
     const meta = this.meta!;
+    // The page renders this server's views with its own engine, so both must run the same rules (D-83).
+    const mismatch = joinRulesError(m.rules, currentRules());
+    if (mismatch) return this.send(ws, err(mismatch, VERSION_MESSAGES[mismatch]));
     let seat: Seat | undefined;
     let token = m.token;
     if (token) {
@@ -392,6 +436,32 @@ export class Room extends DurableObject<Env> {
       this.flow.deadlineKey = key;
       this.flow.deadline = Date.now() + ms;
     }
+  }
+
+  /**
+   * Close a started room because this deploy runs other rules (D-83): tell connected players why, delete
+   * the room, and keep only a marker so later visitors are told why too. The marker goes after 24 hours.
+   */
+  private async closeForUpdate(): Promise<void> {
+    for (const ws of this.ctx.getWebSockets()) {
+      this.send(ws, err('CLOSED_BY_UPDATE', VERSION_MESSAGES.CLOSED_BY_UPDATE));
+      try {
+        ws.close(4002, 'closed by update');
+      } catch {
+        // Already closed.
+      }
+    }
+    await this.ctx.storage.deleteAlarm();
+    await this.ctx.storage.deleteAll();
+    this.meta = null;
+    this.seats = [];
+    this.table = null;
+    this.savedLog = 0;
+    const now = Date.now();
+    this.sql.exec('CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL)');
+    this.sql.exec("INSERT OR REPLACE INTO kv (k, v) VALUES ('closedByUpdate', ?)", String(now));
+    this.closedByUpdate = now;
+    await this.ctx.storage.setAlarm(now + LIMITS.ROOM_TTL_MS);
   }
 
   private async close(): Promise<void> {

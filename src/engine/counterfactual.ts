@@ -1,7 +1,11 @@
 // Level 4 counterfactual decomposition: re-run the level with altered parameters (Section 4, Level 4).
 // Every replay holds HireBot's rule at No Change (D-79), so a different referendum result cannot leak
-// into the belief or childcare channels. Scenarios share random streams (common random numbers), and
-// the average column reports the standard error of the paired differences.
+// into the belief or childcare channels. The scenarios of a replay start from the same random streams.
+// The game's draws (childcare odds, training costs, test results, tie-breaks) stay aligned across them;
+// the bots' draws only partly, because a bot draws for its schedule only when it holds a good job, and job
+// assignments differ between scenarios (in the review's check, 74 of 270 scenario pairs kept identical
+// bot draws; D-90). That adds noise to the paired differences, not bias. The average column reports the
+// standard error of the paired per-replay differences.
 import { L4 } from './params';
 import { initBeliefs } from './core';
 import { mean } from './scoring';
