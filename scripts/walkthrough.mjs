@@ -50,7 +50,11 @@ await page.evaluate(
 /** Measure the current screen. Runs in the page. */
 function measure() {
   const g = window.__veil.getState().game;
-  const root = document.querySelector('main') || document.getElementById('root');
+  // Play screens: the top bar is part of the screen, so count the whole page (D-108).
+  const root = (g.play ? document.getElementById('root') : document.querySelector('main')) || document.getElementById('root');
+  const beat = ['data-vote', 'data-event', 'data-poll', 'data-outcome', 'data-price']
+    .map((a) => (document.querySelector(`[${a}]`) ? a.slice(5) : ''))
+    .find(Boolean) || (document.querySelector('[data-beat-next]') ? 'beat' : '');
   const isVisible = (el) => {
     const r = el.getBoundingClientRect();
     const cs = getComputedStyle(el);
@@ -101,6 +105,9 @@ function measure() {
     round: g.round,
     kind: g.phase.kind,
     step: g.phase.step ?? '',
+    beat,
+    beatNext: !!document.querySelector('[data-beat-next]'),
+    tall: document.documentElement.scrollHeight > window.innerHeight,
     words,
     buttons,
     height: document.documentElement.scrollHeight,
@@ -118,11 +125,21 @@ for (let i = 0; i < 1000; i++) {
   const m = await page.evaluate(measure);
   if (m.kind === 'END') break;
   const group = ruleset === 'PLAY' ? `Ep${m.level}` : ['VALUES_REVEAL', 'GUESS', 'RUN_DEBRIEF'].includes(m.kind) ? 'Run' : `L${m.level}`;
-  const key = `${group}-${m.kind}-${m.step || 'x'}`;
+  const key = `${group}-${m.kind}-${m.step || 'x'}${m.beat ? `-${m.beat}` : ''}`;
   if (!seen.has(key)) {
     seen.add(key);
     await page.waitForTimeout(400);
     await page.screenshot({ path: `${outDir}/${String(seen.size).padStart(3, '0')}-${key}.png`, fullPage: true });
+  }
+  lines.push(
+    `${group.padEnd(4)} R${m.round} ${`${m.kind}:${m.step}${m.beat ? ` (${m.beat})` : ''}`.padEnd(32)} words=${String(m.words).padStart(4)} buttons=${String(m.buttons).padStart(2)} height=${String(m.height).padStart(5)}${m.hscroll ? ' HSCROLL' : ''}${ruleset === 'PLAY' && m.tall ? ' TALLER THAN VIEWPORT' : ''}`,
+  );
+  for (const o of m.overlaps) lines.push(`     OVERLAP: ${o}`);
+  // Play beats inside one engine screen: tap to the next beat (presentation only, no engine step).
+  if (ruleset === 'PLAY' && m.beatNext) {
+    rows.push({ ...m, group, decisions: 0 });
+    await page.click('[data-beat-next]');
+    continue;
   }
   // One human screen forward. Record which human submissions it produced.
   const added = await page.evaluate(() => {
@@ -133,10 +150,6 @@ for (let i = 0; i < 1000; i++) {
   });
   const decisions = added.filter((x) => x === 'SUBMIT_DECISION' || x === 'SUBMIT_GUESSES').length;
   rows.push({ ...m, group, decisions });
-  lines.push(
-    `${group.padEnd(4)} R${m.round} ${`${m.kind}:${m.step}`.padEnd(24)} words=${String(m.words).padStart(4)} buttons=${String(m.buttons).padStart(2)} height=${String(m.height).padStart(5)}${m.hscroll ? ' HSCROLL' : ''}`,
-  );
-  for (const o of m.overlaps) lines.push(`     OVERLAP: ${o}`);
 }
 
 const groups = [...new Set(rows.map((r) => r.group))];
@@ -157,8 +170,12 @@ for (const gname of groups) {
   table.push(`${gname.padEnd(6)} ${String(s).padStart(7)}  ${String(d).padStart(9)}  ${String(w).padStart(5)}  ${String(tall).padStart(11)}  ${String(o).padStart(8)}  ${String(h).padStart(7)}`);
 }
 table.push(`${'Total'.padEnd(6)} ${String(tot.s).padStart(7)}  ${String(tot.d).padStart(9)}  ${String(tot.w).padStart(5)}  ${''.padStart(11)}  ${String(tot.o).padStart(8)}  ${String(tot.h).padStart(7)}`);
+// Play screens must fit the viewport: one big element per screen, nothing to scroll (D-108).
+const tall = ruleset === 'PLAY' ? rows.filter((r) => r.tall).length : 0;
+if (ruleset === 'PLAY') table.push('', tall ? `FAIL: ${tall} Play screen(s) taller than ${width}x${height}.` : `PASS: every Play screen fits ${width}x${height}.`);
 const text = [...table, '', 'Screens:', ...lines].join('\n');
 console.log(text);
 if (save) writeFileSync(save, text);
+if (tall) process.exitCode = 1;
 await browser.close();
 await server.close();

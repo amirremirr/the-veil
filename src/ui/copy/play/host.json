@@ -135,5 +135,37 @@
     "Skipping the guess. Bold strategy, zero points.",
     "No guess. Your detective license is under review.",
     "You passed. Even the Wheel of Misfortune guessed."
+  ],
+  "priceUp": [
+    "Healthy people walked out. The price walked up.",
+    "SafeHands looked at its buyers and panicked. Prices up!",
+    "The safe folks left the pool. Guess who pays now?",
+    "Up, up and away! Risk is expensive, darling.",
+    "The price climbs. The healthy shrug and leave.",
+    "Our sponsor raised prices. Our sponsor would like you to stay calm."
+  ],
+  "priceDown": [
+    "Safe buyers came back. SafeHands is almost generous.",
+    "Prices down! Our sponsor is feeling brave.",
+    "Cheaper cover. Somebody check SafeHands for a fever.",
+    "The pool got safer. The price got friendlier.",
+    "A discount from SafeHands? Mark the calendar.",
+    "Lower prices, same fine print."
+  ],
+  "priceSame": [
+    "Same price, same pool, same suspicious smile.",
+    "SafeHands holds steady. Riveting television.",
+    "No change on the board. The ticker is napping.",
+    "The price stays put. The drama does not.",
+    "Steady as she goes. For now.",
+    "Same number. Our graphics team is relieved."
+  ],
+  "priceGone": [
+    "Nobody bought. SafeHands packed its bags.",
+    "SafeHands has left the building. And the town.",
+    "No buyers, no insurer. Economics is brutal.",
+    "Our sponsor just exited stage left.",
+    "The cover market is closed. Forever, probably.",
+    "SafeHands waved goodbye. The fine print stayed."
   ]
 }
