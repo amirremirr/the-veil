@@ -2,6 +2,7 @@
 // and size before the room looks at it; anything else is rejected. No DOM, no Worker APIs, so the
 // root test suite can import it.
 import type { Difficulty, LevelId, Mode, RulesVersion, StructuredMessage, ValuesCard, ViewState } from '../../src/engine/types';
+import { compareRules } from '../../src/engine/version';
 
 export const PROTOCOL_VERSION = 1;
 
@@ -31,7 +32,8 @@ export interface RoomSettings {
 }
 
 export type ClientMessage =
-  | { v: 1; type: 'JOIN'; name: string; token?: string }
+  /** `rules`: the page's engine rules (D-83). The server refuses a JOIN whose rules differ from its own. */
+  | { v: 1; type: 'JOIN'; name: string; token?: string; rules?: RulesVersion }
   | { v: 1; type: 'START'; mode: Mode; level?: LevelId; difficulty: Difficulty; nPlayers?: 2 | 3 | 4 }
   | { v: 1; type: 'SEND_MESSAGE'; msg: StructuredMessage }
   | { v: 1; type: 'SUBMIT_DECISION'; decision: unknown }
@@ -76,7 +78,11 @@ export type ErrorCode =
   | 'NOT_HOST'
   | 'NOT_STARTED'
   | 'INVALID_ACTION'
-  | 'ROOM_CLOSED';
+  | 'ROOM_CLOSED'
+  /** The page and the server run different game rules (D-83). */
+  | 'VERSION_MISMATCH'
+  /** The room was closed because a deploy changed the rules it started under (D-83). */
+  | 'CLOSED_BY_UPDATE';
 
 const MODES: Mode[] = ['FULL_RUN', 'SINGLE_LEVEL'];
 const DIFFICULTIES: Difficulty[] = ['EASY', 'NORMAL', 'HARD'];
@@ -84,6 +90,30 @@ const CARDS: ValuesCard[] = ['EGOIST', 'RAWLSIAN', 'UTILITARIAN', 'MERITOCRAT'];
 const SHORT = /^[A-Za-z0-9_]{1,20}$/;
 
 const isObj = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
+const HASH = /^[A-Za-z0-9._-]{1,64}$/;
+
+/** A rules version as sent by a client: three short strings, nothing else (D-83). */
+function rulesVersion(x: unknown): RulesVersion | null {
+  if (!isObj(x) || !Object.keys(x).every((k) => ['rules', 'params', 'commit'].includes(k))) return null;
+  const { rules, params, commit } = x;
+  return typeof rules === 'string' && HASH.test(rules) && typeof params === 'string' && HASH.test(params) && typeof commit === 'string' && HASH.test(commit)
+    ? { rules, params, commit }
+    : null;
+}
+
+/**
+ * The server's answer to a JOIN's rules (D-83): null to let it in, or VERSION_MISMATCH when the page runs
+ * other rules or parameters, or sent none (a page built before D-83). A different commit alone is fine.
+ */
+export function joinRulesError(client: RulesVersion | undefined, server: RulesVersion): 'VERSION_MISMATCH' | null {
+  return compareRules(client, server) === 'different' ? 'VERSION_MISMATCH' : null;
+}
+
+/** What players see for the version errors (the client shows its own copy of the same text). */
+export const VERSION_MESSAGES = {
+  VERSION_MISMATCH: 'The game was updated. Reload the page to play.',
+  CLOSED_BY_UPDATE: 'This room closed because the game was updated.',
+} as const;
 const onlyKeys = (o: Record<string, unknown>, keys: string[]) => Object.keys(o).every((k) => keys.includes(k));
 
 /** Strip control characters (C0, DEL, C1, and bidi/format controls), collapse spaces, trim. */
@@ -140,11 +170,13 @@ export function parseClientMessage(raw: string | ArrayBuffer): ClientMessage | {
   const bad = { error: 'BAD_MESSAGE' as const };
   switch (m.type) {
     case 'JOIN': {
-      if (!onlyKeys(m, ['v', 'type', 'name', 'token'])) return bad;
+      if (!onlyKeys(m, ['v', 'type', 'name', 'token', 'rules'])) return bad;
       const name = cleanName(m.name);
       if (!name) return bad;
       if (m.token !== undefined && (typeof m.token !== 'string' || !TOKEN_RE.test(m.token))) return bad;
-      return { v: 1, type: 'JOIN', name, ...(m.token ? { token: m.token as string } : {}) };
+      const rules = m.rules === undefined ? undefined : rulesVersion(m.rules);
+      if (rules === null) return bad;
+      return { v: 1, type: 'JOIN', name, ...(m.token ? { token: m.token as string } : {}), ...(rules ? { rules } : {}) };
     }
     case 'START': {
       if (!onlyKeys(m, ['v', 'type', 'mode', 'level', 'difficulty', 'nPlayers'])) return bad;

@@ -5,7 +5,8 @@ import { create } from 'zustand';
 import type { Difficulty, LevelId, Mode, StructuredMessage, ValuesCard, ViewState } from '../engine/types';
 import type { LobbySeat, RoomSettings, ServerMessage } from '../../server/src/protocol';
 import { screenDecisionPhase } from '../shared/flow';
-import { compareRules } from '../engine/version';
+import { compareRules, currentRules } from '../engine/version';
+import type { RulesVersion } from '../engine/types';
 
 export const ROOM_SERVER: string | undefined =
   (import.meta.env.VITE_ROOM_SERVER_URL as string | undefined) || (import.meta.env.DEV ? 'http://127.0.0.1:8787' : undefined);
@@ -112,6 +113,16 @@ function sendAction(m: object): boolean {
   return true;
 }
 
+/**
+ * Dev and e2e only (D-83): pretend this page runs other rules. `send` replaces the rules sent in JOIN
+ * (tests the server's check); `expect` replaces the rules this page compares the server's WELCOME with
+ * (tests the page's check). Production builds never call it.
+ */
+let devRules: { send?: RulesVersion; expect?: RulesVersion } = {};
+export function devSetRules(r: { send?: RulesVersion; expect?: RulesVersion }): void {
+  devRules = r;
+}
+
 /** Dev and e2e only: hold every incoming message this long before handling it (a slow server). */
 let devDelayMs = 0;
 export function devDelayMessages(ms: number): void {
@@ -122,8 +133,9 @@ function onMessage(m: ServerMessage): void {
   const r = useRoom.getState();
   switch (m.type) {
     case 'WELCOME':
-      // The server runs the engine and this page renders its views: both must use the same rules (D-75).
-      if (compareRules(m.rules) === 'different') {
+      // The server runs the engine and this page renders its views: both must use the same rules (D-75, D-83).
+      // The server also checks the rules this page sends with JOIN; this covers a server built from other rules.
+      if (compareRules(m.rules, devRules.expect ?? currentRules()) === 'different') {
         leaving = true;
         useRoom.setState({ fatal: 'VERSION_MISMATCH', status: 'closed' });
         ws?.close();
@@ -160,7 +172,14 @@ function onMessage(m: ServerMessage): void {
       return;
     }
     case 'ERROR':
-      if (m.code === 'BAD_TOKEN' || m.code === 'GAME_STARTED' || m.code === 'ROOM_FULL' || m.code === 'ROOM_CLOSED') {
+      if (
+        m.code === 'BAD_TOKEN' ||
+        m.code === 'GAME_STARTED' ||
+        m.code === 'ROOM_FULL' ||
+        m.code === 'ROOM_CLOSED' ||
+        m.code === 'VERSION_MISMATCH' ||
+        m.code === 'CLOSED_BY_UPDATE'
+      ) {
         if (m.code === 'BAD_TOKEN' && r.code) saveToken(r.code, null);
         leaving = true;
         useRoom.setState({ fatal: m.code, status: 'closed' });
@@ -183,7 +202,7 @@ function open(code: string): void {
     const was = useRoom.getState().wasOpen;
     useRoom.setState({ status: 'open', wasOpen: true, restoredAt: was ? Date.now() : null });
     const token = savedToken(code);
-    send({ type: 'JOIN', name, ...(token ? { token } : {}) });
+    send({ type: 'JOIN', name, ...(token ? { token } : {}), rules: devRules.send ?? currentRules() });
   };
   sock.onmessage = (e) => {
     const handle = () => {

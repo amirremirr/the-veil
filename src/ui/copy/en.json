@@ -862,7 +862,8 @@
       "ROOM_CLOSED": "This room has closed. Rooms close 24 hours after the last move.",
       "badCode": "A room code is four letters.",
       "badName": "Enter a name of 1 to 20 characters.",
-      "VERSION_MISMATCH": "The room server runs a different version of the game rules than this page, so you cannot play together. Reload the page, or try again after both are updated."
+      "VERSION_MISMATCH": "The game was updated. Reload the page to play.",
+      "CLOSED_BY_UPDATE": "This room closed because the game was updated."
     },
     "thinking": "Thinking..."
   }

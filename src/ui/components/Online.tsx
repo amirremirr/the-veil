@@ -178,7 +178,15 @@ export function ConnectionBanner() {
     const id = setTimeout(() => tick((x) => x + 1), 3500);
     return () => clearTimeout(id);
   }, [restoredAt]);
+  const fatal = useRoom((s) => s.fatal);
   if (!online) return null;
+  // A room that ended for good (closed, or closed by a game update, D-83) says so on every screen.
+  if (fatal)
+    return (
+      <div role="alert" data-fatal={fatal} className="fixed inset-x-0 top-0 z-[60] bg-stamp px-4 py-2 text-center text-sm font-semibold text-paper">
+        {t(`room.errors.${fatal}`)}
+      </div>
+    );
   const lost = status === 'lost' || status === 'connecting';
   const restored = !lost && restoredAt !== null && Date.now() - restoredAt < 3000;
   if (!lost && !restored) return null;

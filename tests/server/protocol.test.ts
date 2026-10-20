@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { CODE_ALPHABET, CODE_RE, cleanName, makeCode, originAllowed, parseClientMessage } from '../../server/src/protocol';
+import { CODE_ALPHABET, CODE_RE, VERSION_MESSAGES, cleanName, joinRulesError, makeCode, originAllowed, parseClientMessage } from '../../server/src/protocol';
+import { compareRules } from '../../src/engine/version';
+import en from '../../src/ui/copy/en.json';
 
 const ORIGINS =
   'https://the-veil-mauve.vercel.app,https://the-veil-*-amirrezaakhavan2003-4212s-projects.vercel.app,http://localhost:*,http://127.0.0.1:*';
@@ -64,5 +66,33 @@ describe('room protocol', () => {
     expect(originAllowed('https://the-veil-mauve.vercel.app.evil.example', ORIGINS)).toBe(false);
     expect(originAllowed('http://localhost.evil.example', ORIGINS)).toBe(false);
     expect(originAllowed(null, ORIGINS)).toBe(false);
+  });
+});
+
+describe('rules version on JOIN (D-83)', () => {
+  const server = { rules: 'aaaa1111', params: 'bbbb2222', commit: 'unknown' };
+  it('JOIN carries the page rules; malformed rules are refused', () => {
+    expect(ok({ v: 1, type: 'JOIN', name: 'Ana', rules: server })).toEqual({ v: 1, type: 'JOIN', name: 'Ana', rules: server });
+    for (const rules of ['x', { rules: 'a', params: 'b' }, { ...server, extra: 'y' }, { ...server, rules: 'has space' }, { ...server, params: 'p'.repeat(65) }])
+      expect(ok({ v: 1, type: 'JOIN', name: 'Ana', rules })).toEqual({ error: 'BAD_MESSAGE' });
+  });
+  it('the server refuses other rules or parameters and pages that send none; another commit alone is fine', () => {
+    expect(joinRulesError(server, server)).toBeNull();
+    expect(joinRulesError({ ...server, commit: '9f8e7d6c5b4a' }, server)).toBeNull();
+    expect(joinRulesError({ ...server, rules: 'cccc3333' }, server)).toBe('VERSION_MISMATCH');
+    expect(joinRulesError({ ...server, params: 'dddd4444' }, server)).toBe('VERSION_MISMATCH');
+    expect(joinRulesError(undefined, server)).toBe('VERSION_MISMATCH');
+  });
+  it('the page refuses a server with other rules, or one that sends none', () => {
+    expect(compareRules(server, server)).toBe('same');
+    expect(compareRules({ ...server, params: 'dddd4444' }, server)).toBe('different');
+    expect(compareRules(undefined, server)).toBe('different');
+  });
+  it('players are told to reload, or that the room closed because of an update', () => {
+    expect(VERSION_MESSAGES.VERSION_MISMATCH).toBe('The game was updated. Reload the page to play.');
+    expect(VERSION_MESSAGES.CLOSED_BY_UPDATE).toBe('This room closed because the game was updated.');
+    expect(en.room.errors.VERSION_MISMATCH).toBe(VERSION_MESSAGES.VERSION_MISMATCH);
+    expect(en.room.errors.CLOSED_BY_UPDATE).toBe(VERSION_MESSAGES.CLOSED_BY_UPDATE);
+    expect(en.room.errors.UNREACHABLE).toMatch(/Check the code/);
   });
 });
