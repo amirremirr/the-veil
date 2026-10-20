@@ -866,5 +866,383 @@
       "CLOSED_BY_UPDATE": "This room closed because the game was updated."
     },
     "thinking": "Thinking..."
+  },
+  "play": {
+    "show": "THE VEIL: LIVE",
+    "tagline": "One life. One season. No refunds.",
+    "hostName": "Dash Fortuna",
+    "hostLabel": "Your host",
+    "onAir": "ON AIR",
+    "disclaimer": "Play mode exaggerates the numbers for drama. The mechanisms are real.",
+    "choose": {
+      "title": "How do you want to play?",
+      "fun": "Quick and fun",
+      "funDesc": "A whole life in about 20 minutes. Big swings, drama, secret missions.",
+      "econ": "With the economics",
+      "econDesc": "The exact models, formulas and research behind each level.",
+      "resumePlay": "Continue your show",
+      "resumeStudy": "Continue your economics game"
+    },
+    "modes": {
+      "title": "Pick your show",
+      "life": "Live a whole life",
+      "lifeDesc": "Five episodes, one bank, no refunds.",
+      "episode": "Play one episode",
+      "episodeDesc": "Jump into any episode. Everyone starts with {bank} coins.",
+      "soon": "Coming in a later update",
+      "ep": "Episode {n}"
+    },
+    "setup": {
+      "title": "Casting call",
+      "players": "Contestants",
+      "name": "Your stage name",
+      "difficulty": "How sharp are the other contestants?",
+      "seed": "Show code (optional)",
+      "start": "Go live"
+    },
+    "episodes": {
+      "1": {
+        "name": "Born",
+        "pitch": "You vote on sharing before you know your income."
+      },
+      "2": {
+        "name": "First Hustle",
+        "pitch": "Effort, luck and a jackpot. Nobody can tell which is which."
+      },
+      "3": {
+        "name": "Bad Luck Season",
+        "sponsor": "Sponsored by SafeHands Mutual",
+        "pitch": "Disasters, cover and a price board that only goes one way.",
+        "how": [
+          "Earn {income} a round. Living costs {living}.",
+          "The Wheel of Misfortune can take {loss}. Cover pays it.",
+          "After round 2, vote on mandatory cover."
+        ],
+        "type": {
+          "LOW": "Your file says: low risk. The Wheel hits you {p} of the time.",
+          "HIGH": "Your file says: high risk. The Wheel hits you {p} of the time."
+        },
+        "typeNote": "Only you can see this."
+      },
+      "4": {
+        "name": "The Hiring Round",
+        "pitch": "HireBot 3000 judges. Old beliefs do the rest."
+      },
+      "5": {
+        "name": "Grand Finale: Rewrite the Rules",
+        "pitch": "Write the rules, then find out where you stand."
+      }
+    },
+    "missions": {
+      "EGOIST": {
+        "name": "Get rich",
+        "line": "Only your own bank counts."
+      },
+      "RAWLSIAN": {
+        "name": "Protect the poorest",
+        "line": "You win when the lowest bank at the table is high."
+      },
+      "UTILITARIAN": {
+        "name": "Grow the pie",
+        "line": "You win when the average bank is high."
+      },
+      "MERITOCRAT": {
+        "name": "Reward hard work",
+        "line": "You win when money follows effort. With no work this episode, that means equal banks."
+      }
+    },
+    "values": {
+      "title": "Your secret mission",
+      "score": "Your score is half your bank, half your mission. Debt costs points.",
+      "private": "Nobody knows your mission. Keep it secret, or lie about it.",
+      "accept": "Accept the mission"
+    },
+    "bar": {
+      "round": "Round {r} of {n}",
+      "bank": "Bank",
+      "you": "You",
+      "rank": "#{n}",
+      "rankLabel": "Rank {n}",
+      "mission": "Mission",
+      "missionBar": "{name}: {value} of {goal}",
+      "chat": "Chat ({n})",
+      "menu": "Menu",
+      "ranking": "Live ranking",
+      "danger": {
+        "green": "Safe",
+        "amber": "Getting tight",
+        "red": "In debt"
+      },
+      "debtNote": "In debt: you lose 1 point per coin owed each round, at most {cap}."
+    },
+    "events": {
+      "title": "Event card",
+      "L3": {
+        "QUIET": {
+          "name": "Quiet week",
+          "text": "No twist. The writers are on a break.",
+          "effect": "Nothing changes this round."
+        },
+        "STORM": {
+          "name": "Storm Season",
+          "text": "The weather department has filed a complaint against the weather.",
+          "effect": "Every risk is 1.5 times higher this round (at most 90%)."
+        },
+        "GYM_SALE": {
+          "name": "Gym Sale",
+          "text": "SweatCo is clearing out its treadmills. Sweat is half price.",
+          "effect": "The gym costs {gym} coins instead of {base} this round."
+        },
+        "PRICE_WAR": {
+          "name": "Price War",
+          "text": "A rival insurer mocked SafeHands on the radio. SafeHands panicked.",
+          "effect": "Cover costs 20% less this round. Next round's price is still set from buyers."
+        },
+        "BREAKTHROUGH": {
+          "name": "Medical Breakthrough",
+          "text": "Scientists fixed the thing. The billing department is devastated.",
+          "effect": "Bad luck costs {loss} coins instead of {base} this round."
+        },
+        "PAPERWORK": {
+          "name": "Paperwork Week",
+          "text": "The mandatory plan found a new form. It comes with a fee.",
+          "effect": "The mandatory payment is {extra} coins higher this round."
+        }
+      },
+      "L1": {
+        "BOOM": {
+          "name": "Economic Boom",
+          "text": "Everyone feels rich. Some of them are.",
+          "effect": "Every income is 1.2 times higher this round."
+        },
+        "CRASH": {
+          "name": "Market Crash",
+          "text": "The market fell down the stairs. It is fine, mostly.",
+          "effect": "Every income is 0.8 times this round."
+        },
+        "TAX_STRIKE": {
+          "name": "Tax Office on Strike",
+          "text": "The tax office went home early. The forms did not.",
+          "effect": "Twice as much tax leaks away this round."
+        },
+        "INHERITANCE": {
+          "name": "Surprise Inheritance",
+          "text": "A distant aunt left a will and a strongly worded letter.",
+          "effect": "One random contestant gets 60 coins after taxes."
+        },
+        "LOTTERY": {
+          "name": "Lottery Fever",
+          "text": "Someone bought a ticket. The ticket bought a yacht.",
+          "effect": "The top income card is worth 400 this round."
+        }
+      },
+      "L2": {
+        "LUCKY": {
+          "name": "Lucky Week",
+          "text": "Four-leaf clovers are on sale everywhere.",
+          "effect": "Every luck value is 1.5 times bigger this round."
+        },
+        "OVERTIME": {
+          "name": "Overtime Bonanza",
+          "text": "The boss discovered coffee. Everyone works harder.",
+          "effect": "Talent pays 5 coins per effort point instead of 4."
+        },
+        "BURNOUT": {
+          "name": "Burnout Season",
+          "text": "Everyone is tired. The motivational posters are tired too.",
+          "effect": "Effort costs 0.6 per point instead of 0.4 this round."
+        },
+        "VIRAL": {
+          "name": "Viral Video",
+          "text": "A cat video went viral. Somebody owns the cat.",
+          "effect": "One random contestant gets 80 extra luck."
+        },
+        "BAD_WIFI": {
+          "name": "Bad Wi-Fi Week",
+          "text": "The router is blinking. Nobody knows why.",
+          "effect": "Every luck value is half as big this round."
+        }
+      },
+      "L4": {
+        "SPREE": {
+          "name": "Hiring Spree",
+          "text": "HireBot is in a generous mood. It will pass.",
+          "effect": "HireBot hires at 50% confidence instead of 60%."
+        },
+        "RECESSION": {
+          "name": "Recession",
+          "text": "The economy is taking a nap. A long one.",
+          "effect": "Long hours pay 140 instead of 180 this round."
+        },
+        "GRANT": {
+          "name": "Training Grant",
+          "text": "The Ministry found money behind the sofa.",
+          "effect": "Every training costs 15 coins less this round (never below 0)."
+        },
+        "HIREBOT_UPDATE": {
+          "name": "HireBot Update",
+          "text": "HireBot installed a patch. The patch has opinions.",
+          "effect": "HireBot's beliefs move 0.3 per result instead of 0.2 this round."
+        },
+        "OFFICE_PARTY": {
+          "name": "Office Party",
+          "text": "There is cake. There is always cake.",
+          "effect": "Flexible hours pay 20 more this round."
+        }
+      },
+      "L5": {
+        "LOBBYISTS": {
+          "name": "Lobbyist Convention",
+          "text": "The hotel is full of people in very shiny shoes.",
+          "effect": "You can donate up to 60 instead of 40."
+        },
+        "LEAKED": {
+          "name": "Leaked Receipts",
+          "text": "Someone left the donation book on the photocopier.",
+          "effect": "Every donation is shown before the amendment votes."
+        },
+        "PANIC": {
+          "name": "Constitutional Panic",
+          "text": "The founding documents are sweating.",
+          "effect": "Amendments need every vote but one."
+        },
+        "QUIET_FINALE": {
+          "name": "Quiet Finale",
+          "text": "No twist. Just you and the rules.",
+          "effect": "Nothing changes."
+        }
+      }
+    },
+    "l3": {
+      "choiceTitle": "Your move",
+      "choiceDecide": "Pick any, both or neither.",
+      "buy": "Buy SafeHands cover for {p} coins. It pays the whole loss.",
+      "gym": "Go to the gym for {c} coins. It halves your risk.",
+      "mandatory": "Cover is mandatory now. Everyone pays {T} coins, roughly. It covers {c}% of a loss.",
+      "noInsurer": "SafeHands has left the building. No cover this round.",
+      "submit": "Lock it in",
+      "regimeTitle": "The big vote",
+      "regimeDecide": "Round 3 runs under the rule with the most votes.",
+      "regimes": {
+        "VOL": {
+          "name": "Keep the market",
+          "desc": "Buy cover if you want, at SafeHands' price."
+        },
+        "M50": {
+          "name": "Half cover for all",
+          "desc": "Everyone pays in and gets half of any loss back."
+        },
+        "M100": {
+          "name": "Full cover for all",
+          "desc": "Everyone pays in and gets every loss back."
+        }
+      },
+      "regimeSubmit": "Cast my vote",
+      "regimeResult": "The vote is in: {name}.",
+      "regimeVotes": "Votes",
+      "ticker": "SafeHands Mutual",
+      "tickerLabel": "Price of cover",
+      "tickerClosed": "Closed",
+      "tickerMandate": "Mandatory plan",
+      "reasonFirst": "Opening price, set from the average risk.",
+      "reasonUp": "Last round's buyers were mostly high risk.",
+      "reasonDown": "Last round's buyers were mostly low risk.",
+      "reasonSame": "Same mix of buyers as last round.",
+      "reasonGone": "Nobody bought. SafeHands left town.",
+      "reasonMandate": "Everyone pays in now. The price board is off.",
+      "discount": "Price War: {p} this round only.",
+      "wheel": "Wheel of Misfortune",
+      "skip": "Skip",
+      "safe": "Safe this round",
+      "hit": "Bad luck: {loss} coins",
+      "covered": "Covered: SafeHands pays",
+      "halfCovered": "Half covered by the plan",
+      "oddsYou": "Your odds: {p}",
+      "oddsOthers": "Wheels show the table's average odds. Real odds are secret.",
+      "insured": "Covered",
+      "gymTag": "Gym",
+      "money": "Money this round",
+      "bankChange": "Bank {from} to {to}"
+    },
+    "reactions": {
+      "label": "React",
+      "laugh": "Laugh",
+      "gasp": "Gasp",
+      "angry": "Angry",
+      "clap": "Clap",
+      "eyeroll": "Eye roll",
+      "botReacted": "{name} reacted: {reaction}",
+      "note": "Reactions are just for fun and change nothing."
+    },
+    "poll": "The audience thinks {name} is out to {mission} ({pct}).",
+    "pollYou": "The audience thinks you are out to {mission} ({pct}).",
+    "pollTitle": "Audience poll",
+    "broken": "{name} promised to {action}. It didn't happen.",
+    "brokenYou": "You promised to {action}. It didn't happen.",
+    "promises": {
+      "BUY": "buy cover",
+      "GYM": "hit the gym",
+      "VOTE": "vote {option}"
+    },
+    "confessional": "Confessional",
+    "guess": {
+      "title": "Guess a mission",
+      "intro": "Pick one contestant and guess their mission. Right is worth {pts} points.",
+      "pick": "Who?",
+      "mission": "Their mission",
+      "submit": "Lock in my guess",
+      "skip": "No guess"
+    },
+    "summary": {
+      "title": "Episode summary",
+      "winner": "Episode winner: {name}",
+      "winnerYou": "You won the episode!",
+      "moment": "Biggest moment",
+      "momentEvent": "Round {r}: {event}.",
+      "momentSwing": "Round {r}: {name} {change} coins.",
+      "momentSwingYou": "Round {r}: you {change} coins.",
+      "bankChange": "Your bank: {from} to {to}",
+      "mission": "Your mission: {name}",
+      "missionDone": "Mission complete",
+      "missionMissed": "Mission not complete",
+      "guess": "Your guess: {name} is out to {mission}.",
+      "guessRight": "Correct, +{pts} points.",
+      "guessWrong": "Wrong. {name} was out to {mission}.",
+      "noGuess": "You made no guess.",
+      "results": "Full results",
+      "colName": "Contestant",
+      "colMission": "Mission",
+      "colBank": "Bank",
+      "colScore": "Score",
+      "scoreNote": "Score = half the bank + half the mission (x {k} for this mission) - debt points + guess points.",
+      "again": "Play again",
+      "menu": "Main menu",
+      "seed": "Show code: {seed}"
+    },
+    "really": {
+      "button": "What was really going on?",
+      "close": "Close",
+      "L3": [
+        "SafeHands priced each round from the last round's buyers.",
+        "Low-risk people stopped buying, so the pool got riskier and the price climbed. That's adverse selection.",
+        "A mandate keeps everyone in the pool, so the price stops climbing."
+      ],
+      "link": "See the exact model in the economics version"
+    },
+    "intro": {
+      "go": "Roll the cameras",
+      "rules": "How it works"
+    },
+    "settings": {
+      "ruleset": "Default way to play",
+      "fun": "Quick and fun",
+      "econ": "With the economics",
+      "note": "A game in progress keeps its own mode."
+    },
+    "a11y": {
+      "bankOf": "{name}: bank {bank}, rank {rank}",
+      "missionProgress": "Mission progress",
+      "bankOnly": "{name}: bank {bank}"
+    }
   }
 }

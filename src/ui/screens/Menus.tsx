@@ -7,8 +7,11 @@ import { t } from '../i18n';
 import { FormCard, Page, Stamp } from '../components/common';
 
 export function Title() {
-  const { go, game, online, staleSave } = useStore();
+  const { go, game, shelf, resumeShelf, online, staleSave } = useStore();
   const resumable = game && game.phase.kind !== 'END';
+  const shelved = shelf && shelf.phase.kind !== 'END';
+  // With a saved game of each ruleset, each resume button says which one it is (D-93).
+  const resumeLabel = (g: typeof game) => (!shelved ? t('app.resume') : g?.ruleset === 'PLAY' ? t('play.choose.resumePlay') : t('play.choose.resumeStudy'));
   const openFriends = () => {
     useStore.setState({ friendsFor: { tab: 'create' } });
     go('friends');
@@ -30,10 +33,15 @@ export function Title() {
         <nav className="mt-10 flex flex-col gap-3 sm:max-w-xs" aria-label={t('ui.mainMenu')}>
           {resumable && (
             <button type="button" className="btn-primary" onClick={() => go('game')}>
-              {t('app.resume')}
+              {resumeLabel(game)}
             </button>
           )}
-          <button type="button" className={resumable ? 'btn-ghost' : 'btn-primary'} onClick={() => go('mode')}>
+          {shelved && (
+            <button type="button" className="btn-ghost" onClick={resumeShelf}>
+              {resumeLabel(shelf)}
+            </button>
+          )}
+          <button type="button" className={resumable ? 'btn-ghost' : 'btn-primary'} onClick={() => go('howPlay')}>
             {t('app.begin')}
           </button>
           {ROOM_SERVER && (
@@ -61,7 +69,7 @@ export function ModeSelect() {
   const unlocked = settings.unlockAll ? 5 : progress.unlocked;
   return (
     <Page narrow>
-      <BackLink onClick={() => go('title')} />
+      <BackLink onClick={() => go('howPlay')} />
       <h1 className="h-display mb-4 text-3xl">{t('mode.title')}</h1>
       <div className="space-y-4">
         <button type="button" className="choice block p-4" onClick={() => chooseMode('FULL_RUN')}>
@@ -261,6 +269,17 @@ export function SettingsScreen() {
               ))}
             </div>
           </fieldset>
+          <fieldset>
+            <legend className="label mb-1">{t('play.settings.ruleset')}</legend>
+            <div className="grid grid-cols-2 gap-2" role="group" aria-label={t('play.settings.ruleset')}>
+              {(['PLAY', 'STUDY'] as const).map((r) => (
+                <button key={r} type="button" aria-pressed={settings.ruleset === r} className="choice justify-center text-sm" onClick={() => updateSettings({ ruleset: r })}>
+                  {t(r === 'PLAY' ? 'play.settings.fun' : 'play.settings.econ')}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1 text-xs text-soft">{t('play.settings.note')}</p>
+          </fieldset>
           <Toggle k="unlockAll" label={t('settings.unlockAll')} />
           <button
             type="button"
@@ -305,6 +324,7 @@ export function About() {
             .map((para) => (
               <p key={para.slice(0, 24)}>{para}</p>
             ))}
+          <p className="font-semibold">{t('play.disclaimer')}</p>
           <p className="text-soft">{t('about.noTracking')}</p>
           <p className="text-soft">{t('about.rooms')}</p>
         </div>

@@ -1,0 +1,139 @@
+{
+  "_note": "Dash Fortuna's lines (Play spec 7.3). At most 15 words each. Keys ending in .you are used when the subject is the viewer (D-38).",
+  "welcome": [
+    "Welcome back to The Veil: Live! One life, one season, no refunds.",
+    "Good evening, contestants! Tonight, fate sponsors the show. SafeHands pays for the snacks.",
+    "Lights, cameras, coins! Welcome to the only show where money is the plot.",
+    "Hello, Meritopia! I am Dash Fortuna, and I understand money. Mostly.",
+    "Welcome, everyone! Our lawyers say this is entertainment. Our accountants disagree.",
+    "It's showtime! Grab your coins, hide your secrets, smile for camera two."
+  ],
+  "eventIntro": [
+    "Breaking news, folks: {event}. Our sponsors had nothing to do with it.",
+    "This week's twist: {event}. I read the cards, I don't write them.",
+    "Hold on to your coins. It's {event}!",
+    "The producers just handed me this: {event}. Lovely.",
+    "Ladies, gentlemen and accountants: {event}!",
+    "Turn up the drama dial! This round brings {event}."
+  ],
+  "quietWeek": [
+    "A quiet week. Suspiciously quiet. I don't trust it.",
+    "No twist this round. The writers are on a coffee break.",
+    "Quiet week, folks. Enjoy it, it never lasts.",
+    "Nothing new this week. Even the sponsors look bored.",
+    "No event card. Just you, your coins and fate.",
+    "The twist this week is that there is no twist."
+  ],
+  "disaster": [
+    "Ouch! {name} just met the Wheel of Misfortune. The paperwork is brutal.",
+    "{name} skipped the fine print and got the bill.",
+    "Bad luck for {name}! SafeHands sends its thoughts and no money.",
+    "{name} rolled the dice uncovered. The dice won.",
+    "Somebody call legal! {name} has a claim and no policy.",
+    "{name} just learned why insurance exists. Live, on air."
+  ],
+  "disaster.you": [
+    "Ouch! You just met the Wheel of Misfortune. The paperwork is brutal.",
+    "You skipped the fine print and got the bill.",
+    "Bad luck for you! SafeHands sends its thoughts and no money.",
+    "You rolled the dice uncovered. The dice won.",
+    "Somebody call legal! You have a claim and no policy.",
+    "You just learned why insurance exists. Live, on air."
+  ],
+  "betrayal": [
+    "Scandal! {name} made a promise and broke it before the commercial.",
+    "{name} said one thing and did another. Television gold.",
+    "Promises, promises. {name} keeps none of them.",
+    "The audience gasps! {name} just changed the script.",
+    "{name} fibbed on live TV. Ratings are through the roof.",
+    "Trust is a renewable resource, right, {name}?"
+  ],
+  "betrayal.you": [
+    "Scandal! You made a promise and broke it before the commercial.",
+    "You said one thing and did another. Television gold.",
+    "Promises, promises. You keep none of them.",
+    "The audience gasps! You just changed the script.",
+    "You fibbed on live TV. Ratings are through the roof.",
+    "Trust is a renewable resource, right? You certainly think so."
+  ],
+  "debt": [
+    "{name} is in the red! The collection agency sends its love.",
+    "Uh oh. {name} owes money now. Our legal team is thrilled.",
+    "{name} just went into debt. Stay tuned for the payment plan.",
+    "Red numbers for {name}! Debt costs points on this show.",
+    "{name} is broke, folks. Broke but photogenic.",
+    "The bank account of {name} is officially a hole."
+  ],
+  "debt.you": [
+    "You are in the red! The collection agency sends its love.",
+    "Uh oh. You owe money now. Our legal team is thrilled.",
+    "You just went into debt. Stay tuned for the payment plan.",
+    "Red numbers for you! Debt costs points on this show.",
+    "You are broke, folks. Broke but photogenic.",
+    "Your bank account is officially a hole."
+  ],
+  "comeback": [
+    "From last place to the spotlight! {name} is climbing.",
+    "Never count out {name}. The underdog bites back.",
+    "{name} just crawled out of the basement. The crowd goes wild.",
+    "What a turnaround! {name} is back in the game.",
+    "Last week nobody believed in {name}. Now everybody pretends they did.",
+    "{name} climbs the ranking. My hair stays perfect."
+  ],
+  "comeback.you": [
+    "From last place to the spotlight! You are climbing.",
+    "Never count yourself out. The underdog bites back.",
+    "You just crawled out of the basement. The crowd goes wild.",
+    "What a turnaround! You are back in the game.",
+    "Last week nobody believed in you. Now everybody pretends they did.",
+    "You climb the ranking. My hair stays perfect."
+  ],
+  "jackpot": [
+    "Jackpot! {name} is swimming in coins.",
+    "{name} hits it big! Somebody get this contestant a sponsor.",
+    "Cha-ching! {name} just had the best round of the season.",
+    "{name} is rich, folks. For now.",
+    "Money rain for {name}! Our accountants are weeping.",
+    "{name} wins big. Act humble, it plays well on camera."
+  ],
+  "jackpot.you": [
+    "Jackpot! You are swimming in coins.",
+    "You hit it big! Somebody get this contestant a sponsor.",
+    "Cha-ching! You just had the best round of the season.",
+    "You are rich, folks. For now.",
+    "Money rain for you! Our accountants are weeping.",
+    "You win big. Act humble, it plays well on camera."
+  ],
+  "quiet": [
+    "Nobody got hurt. Boring for TV, great for you.",
+    "A calm round. Our ratings are crying.",
+    "Everyone survived. The Wheel of Misfortune is sulking.",
+    "No disasters this round. Please act surprised anyway.",
+    "Smooth sailing. The storm writers have been fired.",
+    "Clean round, folks. Enjoy it while it lasts."
+  ],
+  "guessRight": [
+    "Correct! You read {name} like a cheap paperback.",
+    "Nailed it! {name} never stood a chance against your eyebrows.",
+    "Right on the money! {name} is shaking.",
+    "Detective of the year! You cracked {name}.",
+    "Bingo! {name} has been exposed on national TV.",
+    "Spot on! {name} would like a word with their poker face."
+  ],
+  "guessWrong": [
+    "Swing and a miss! {name} fooled you completely.",
+    "Not even close, darling. {name} is laughing backstage.",
+    "Wrong! {name} deserves an acting award.",
+    "Oh no. {name} played you like a fiddle.",
+    "Nope! Better luck reading people next episode.",
+    "Wrong card! Our audience saw that one coming."
+  ],
+  "guessNone": [
+    "No guess? Playing it safe. Very SafeHands of you.",
+    "You kept your guess to yourself. Mysterious. Pointless, but mysterious.",
+    "No guess tonight. The audience is mildly disappointed.",
+    "Skipping the guess. Bold strategy, zero points.",
+    "No guess. Your detective license is under review.",
+    "You passed. Even the Wheel of Misfortune guessed."
+  ]
+}

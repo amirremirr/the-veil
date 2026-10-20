@@ -30,7 +30,9 @@ export function autoplay(stopAt: (g: GameState) => boolean): string {
     if (stopAt(g)) return `${g.phase.kind}:${g.phase.step ?? ''}:L${g.levelIndex}:R${g.round}`;
     if (g.phase.kind === 'END') return 'END';
     if (g.phase.kind === 'GUESS') {
-      const guesses = Object.fromEntries(g.players.filter((p) => !p.isHuman).map((p) => [p.id, 'EGOIST' as const]));
+      // Play guesses one contestant per episode (Play spec 7.4); Study guesses everyone.
+      const others = g.players.filter((p) => !p.isHuman);
+      const guesses = Object.fromEntries((g.play ? others.slice(0, 1) : others).map((p) => [p.id, 'EGOIST' as const]));
       st.getState().act(undefined, guesses);
       continue;
     }

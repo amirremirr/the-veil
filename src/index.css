@@ -43,6 +43,60 @@
   color-scheme: dark;
 }
 
+/* Play mode's studio look (Play spec 7.8): deep stage blue, spotlight yellow, hot pink. Same token names,
+   so every shared component switches with it. Contrast pairs are checked in DECISIONS.md D-104. */
+:root {
+  --spot: 250 204 21;
+}
+:root[data-ruleset='play'] {
+  --paper: 243 242 252;
+  --card: 255 255 255;
+  --ink: 22 27 77;
+  --soft: 72 78 128;
+  --line: 203 204 232;
+  --stamp: 190 24 93;
+  --teal: 14 116 144;
+  --amber: 146 84 0;
+  --good: 21 128 61;
+  --spot: 250 204 21;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-ruleset='play']:not([data-theme='light']) {
+    --paper: 11 14 46;
+    --card: 22 27 77;
+    --ink: 240 240 255;
+    --soft: 182 186 226;
+    --line: 52 60 122;
+    --stamp: 244 114 182;
+    --teal: 45 212 191;
+    --amber: 250 204 21;
+    --good: 134 239 172;
+    --spot: 250 204 21;
+    color-scheme: dark;
+  }
+}
+:root[data-ruleset='play'][data-theme='dark'] {
+  --paper: 11 14 46;
+  --card: 22 27 77;
+  --ink: 240 240 255;
+  --soft: 182 186 226;
+  --line: 52 60 122;
+  --stamp: 244 114 182;
+  --teal: 45 212 191;
+  --amber: 250 204 21;
+  --good: 134 239 172;
+  --spot: 250 204 21;
+  color-scheme: dark;
+}
+html[data-ruleset='play'] body {
+  background-image:
+    radial-gradient(ellipse 60% 40% at 15% 0%, rgb(var(--spot) / 0.18), transparent 70%),
+    radial-gradient(ellipse 50% 35% at 90% 5%, rgb(var(--stamp) / 0.12), transparent 70%);
+  background-size: auto;
+  background-attachment: fixed;
+}
+
 #root {
   overflow-x: clip;
 }
@@ -104,6 +158,12 @@ body {
   }
   .h-display {
     @apply font-display font-bold tracking-tight;
+  }
+  /* Play's bold display face. */
+  .h-show {
+    font-family: 'Bricolage Grotesque', 'Arial Black', system-ui, sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.01em;
   }
   .num {
     @apply font-mono tabular-nums;

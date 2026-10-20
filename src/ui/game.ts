@@ -44,9 +44,11 @@ export function renderMessage(v: ViewState, m: Message): string {
   const msg = m.msg;
   const level = m.level as LevelId;
   const vars: Record<string, string> = {};
-  if (msg.type === 'SUPPORT' || msg.type === 'OPPOSE') vars.option = optionName(level, msg.option);
-  if (msg.type === 'PROMISE') vars.action = actionName(level, msg.action);
-  if (msg.type === 'CLAIM_VALUES' || msg.type === 'ACCUSE') vars.cardName = cardName(msg.card);
+  // Play uses mission and Play option names in the same message templates.
+  const play = !!v.play;
+  if (msg.type === 'SUPPORT' || msg.type === 'OPPOSE') vars.option = optionName(level, msg.option, play);
+  if (msg.type === 'PROMISE') vars.action = actionName(level, msg.action, play);
+  if (msg.type === 'CLAIM_VALUES' || msg.type === 'ACCUSE') vars.cardName = cardName(msg.card, play);
   if (msg.type === 'ACCUSE') vars.target = nameOf(v, msg.target);
   const aboutHuman = msg.type === 'ACCUSE' && msg.target === v.viewer;
   const text =

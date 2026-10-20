@@ -1,5 +1,6 @@
 // Phone-width walkthrough of a full run, one human screen at a time.
 // Usage: npm run walkthrough -- [--width 375] [--seed playtest-1] [--save walkthrough-after.txt]
+//        npm run walkthrough -- --ruleset PLAY --episode 3   (a Play episode; P1 has Episode 3 only)
 // Uses an installed browser via PW_CHANNEL (default msedge) when Playwright's bundled Chromium is missing.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'vite';
@@ -13,7 +14,9 @@ const width = Number(arg('width', '375'));
 const height = Number(arg('height', '760'));
 const seed = arg('seed', 'playtest-1');
 const save = arg('save', '');
-const outDir = 'walkthrough-out';
+const ruleset = arg('ruleset', 'STUDY');
+const episode = Number(arg('episode', '3'));
+const outDir = ruleset === 'PLAY' ? 'walkthrough-out/play' : 'walkthrough-out';
 mkdirSync(outDir, { recursive: true });
 
 const server = await createServer({ server: { port: 5188, strictPort: false }, logLevel: 'error' });
@@ -34,11 +37,15 @@ await page.goto(url);
 await page.evaluate(() => localStorage.clear());
 await page.reload();
 await page.waitForFunction(() => '__autoplay' in window);
-await page.evaluate((s) => {
-  const st = window.__veil.getState();
-  st.updateSettings({ reducedMotion: true });
-  st.start({ mode: 'FULL_RUN', nPlayers: 4, difficulty: 'NORMAL', seed: s });
-}, seed);
+await page.evaluate(
+  ([s, rs, ep]) => {
+    const st = window.__veil.getState();
+    st.updateSettings({ reducedMotion: true });
+    if (rs === 'PLAY') st.start({ mode: 'EPISODE', level: ep, ruleset: 'PLAY', nPlayers: 4, difficulty: 'NORMAL', seed: s });
+    else st.start({ mode: 'FULL_RUN', nPlayers: 4, difficulty: 'NORMAL', seed: s });
+  },
+  [seed, ruleset, episode],
+);
 
 /** Measure the current screen. Runs in the page. */
 function measure() {
@@ -110,7 +117,7 @@ for (let i = 0; i < 1000; i++) {
   await page.waitForTimeout(120);
   const m = await page.evaluate(measure);
   if (m.kind === 'END') break;
-  const group = ['VALUES_REVEAL', 'GUESS', 'RUN_DEBRIEF'].includes(m.kind) ? 'Run' : `L${m.level}`;
+  const group = ruleset === 'PLAY' ? `Ep${m.level}` : ['VALUES_REVEAL', 'GUESS', 'RUN_DEBRIEF'].includes(m.kind) ? 'Run' : `L${m.level}`;
   const key = `${group}-${m.kind}-${m.step || 'x'}`;
   if (!seen.has(key)) {
     seen.add(key);
@@ -134,7 +141,7 @@ for (let i = 0; i < 1000; i++) {
 
 const groups = [...new Set(rows.map((r) => r.group))];
 const table = [];
-table.push(`Walkthrough: seed ${seed}, ${width}x${height}, FULL_RUN, 4 players, Normal`);
+table.push(`Walkthrough: seed ${seed}, ${width}x${height}, ${ruleset === 'PLAY' ? `PLAY EPISODE ${episode}` : 'FULL_RUN'}, 4 players, Normal`);
 table.push('');
 table.push('Group  Screens  Decisions  Words  Tallest(px)  Overlaps  HScroll');
 let tot = { s: 0, d: 0, w: 0, o: 0, h: 0 };
