@@ -1,0 +1,18 @@
+Walkthrough: seed playtest-1, 375x760, PLAY EPISODE 3, 4 players, Normal
+
+Group  Screens  Decisions  Words  Tallest(px)  Overlaps  HScroll
+Ep3         11          5   1221         1221         0        0
+Total       11          5   1221                      0        0
+
+Screens:
+Ep3  R0 VALUES_REVEAL:           words=  44 buttons= 1 height=  760
+Ep3  R1 INTRO:                   words=  74 buttons= 1 height=  760
+Ep3  R1 TALK:ROUND               words= 116 buttons= 6 height=  886
+Ep3  R1 REVEAL:EVENTS            words= 126 buttons= 8 height= 1155
+Ep3  R2 TALK:ROUND               words= 146 buttons= 6 height= 1049
+Ep3  R2 REVEAL:EVENTS            words= 137 buttons= 8 height= 1221
+Ep3  R2 TALK:REGIME              words= 121 buttons= 7 height=  882
+Ep3  R3 TALK:ROUND               words= 198 buttons= 5 height= 1160
+Ep3  R3 REVEAL:EVENTS            words= 137 buttons= 8 height= 1187
+Ep3  R3 GUESS:EPISODE            words=  38 buttons=11 height=  760
+Ep3  R3 LEVEL_DEBRIEF:           words=  84 buttons= 4 height=  760
