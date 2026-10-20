@@ -350,6 +350,7 @@ function Debrief({ v }: { v: ViewState }) {
               lu: 100 - Math.round(d.variance.talentEffort * 100),
             })}
           </p>
+          <p className="text-soft">{t('debrief.l2.varianceNote')}</p>
           <p>{belief !== undefined ? t('debrief.l2.poll', { belief: Math.round(belief), truth: Math.round(truth!) }) : t('debrief.l2.pollNone')}</p>
           {aa && <p>{aa}</p>}
           <p>{t('debrief.l2.effort', { pairs })}</p>

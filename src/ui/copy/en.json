@@ -36,7 +36,7 @@
     "NORMALDesc": "The standard game.",
     "HARDDesc": "Computer players are smarter and lie more.",
     "seed": "Game code (optional)",
-    "seedHint": "Leave this empty for a random game. Use the same code to replay the exact same game.",
+    "seedHint": "Leave this empty for a random game. Use the same code to replay the exact same game in this version.",
     "name": "Your name (optional)",
     "submit": "Start"
   },
@@ -527,7 +527,7 @@
     "l2": {
       "predicted": "A selfish player works less when taxes are high, because they keep less of what they earn. Players who expect to earn less than average want higher taxes, so the middle voter decides (Meltzer and Richard 1981). People who believe income is mostly luck usually vote for more sharing (Alesina and Angeletos 2005).",
       "predictedT": "Selfish players in this game would have chosen a {t}% tax. The real taxes were {actual}.",
-      "variance": "Where income differences came from: {te}% from talent and work, {lu}% from luck.",
+      "variance": "Of the income spread these rules tend to produce, about {te}% comes from talent and work and {lu}% from luck.",
       "poll": "On average, you guessed that luck was {belief}% of the top earner's income. The real number was {truth}%.",
       "pollNone": "You did not answer the luck question.",
       "effort": "Your work each round, compared with what a selfish player would choose: {pairs}.",
@@ -549,7 +549,8 @@
         "MERITOCRATIC": "Reward talent and work, but not luck",
         "LIBERAL_EGALITARIAN": "Reward work only, not talent or luck"
       },
-      "lesson": "People who think income is mostly luck vote for more tax, and higher taxes make people work less."
+      "lesson": "People who think income is mostly luck vote for more tax, and higher taxes make people work less.",
+      "varianceNote": "Talent is dealt, not chosen, so \"talent and work\" mixes luck of birth with effort. These shares describe the spread the rules tend to produce. This game's actual spread can differ, because in a few draws talent-and-work and luck can happen to line up or cancel out."
     },
     "l3": {
       "predicted": "Low-risk players should skip insurance, because it costs more than their risk. So mostly high-risk players buy it. Once insured, they stop going to the gym, so they get even riskier. The company raises the price, and then even high-risk players stop buying. The market collapses. Making insurance compulsory stops this. With full cover nobody goes to the gym. With half cover, high-risk players still go.",

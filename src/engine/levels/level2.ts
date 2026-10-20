@@ -210,10 +210,13 @@ function variance(xs: number[]): number {
 }
 
 /**
- * Where income differences came from (D-72). Gross income is base + talent-and-work + luck, and luck is
- * drawn independently after effort is chosen, so the two parts have zero covariance by construction; the
- * sample covariance is only noise and is left out. Each share is that part's variance over the sum of the
- * two, so both lie in [0, 1] and add to 1. With no variation at all the split is even.
+ * How much of the income spread the rules tend to produce comes from each part (D-72, D-85). Gross income
+ * is base + talent-and-work + luck, and luck is drawn independently after effort is chosen, so in
+ * expectation the two parts do not covary. Each share is that part's sample variance over the sum of the
+ * two parts' variances: an estimate of the expected split under independence, not a breakdown of this
+ * game's realized variance, which also contains 2 x the sample covariance (it can be much larger or
+ * smaller, even zero when the parts happen to cancel). Both shares lie in [0, 1] and add to 1; with no
+ * variation in either part the split is even by convention.
  */
 export function varianceShares(talentWork: readonly number[], luck: readonly number[]): { talentEffort: number; luck: number } {
   const vx = variance(talentWork.slice());
