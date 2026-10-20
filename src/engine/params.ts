@@ -36,7 +36,7 @@ export const METRIC_SCALE: Record<ValuesCard, number> = {
   EGOIST: 1,
   RAWLSIAN: 1.66,
   UTILITARIAN: 1,
-  MERITOCRAT: 1.27,
+  MERITOCRAT: 1.29,
 };
 
 /**
