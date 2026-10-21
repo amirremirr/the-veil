@@ -1,18 +1,19 @@
-// Episode 3, "Bad Luck Season" (Play spec 5), redesigned as one beat per screen (D-108). Same Level 3
-// rules as Study; the wheel and the price board only animate outcomes the engine already decided.
+// Episode 3, "Bad Luck Season", rebuilt as The Pool (PLAY_V2_SPEC.md Section 4): claim, then the move
+// (the Bar and cover), then the wheel and the price board; the risk cards flip at the end. One beat per
+// screen (D-108). Same premium formula as Study; every screen only shows outcomes the engine decided.
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import type { Choice, L3Round, Regime, RiskType } from '../../engine/levels/level3';
-import type { ViewState } from '../../engine/types';
+import type { Message, ViewState } from '../../engine/types';
 import { PLAY } from '../../engine/play/params';
 import { useStore } from '../store';
 import { t } from '../i18n';
 import { coins, pct, signed } from '../labels';
 import { nameOf, shortName, useTalkFrom } from '../game';
-import { useMotionOff } from '../components/common';
+import { Avatar, useMotionOff } from '../components/common';
 import { fmt1 } from '../components/Money';
 import { BigButton, Bubble, Stage } from './OnAir';
-import { brokenPromises, confessional, hostLine, pick, roundOutcome } from './logic';
+import { confessional, hostLine, pick, roundOutcome } from './logic';
 import { renderMessage } from '../game';
 
 export type L3View = {
@@ -24,6 +25,12 @@ export type L3View = {
   regimeCounts?: number[];
   regimeTie?: boolean;
   rounds: L3Round[];
+  /** Public once leaked or at the end reveal. */
+  types?: Record<string, RiskType>;
+  leaked?: number | null;
+  cardsRevealed?: boolean;
+  /** Last round's pool members, who vote on the bar this round. */
+  members?: string[];
 };
 const REGIMES: Regime[] = ['VOL', 'M50', 'M100'];
 export const regimeName = (r: Regime) => t(`play.l3.regimes.${r}.name`);
@@ -66,37 +73,137 @@ function Tile({ on, title, desc, onClick, disabled = false }: { on: boolean; tit
   );
 }
 
-export function ChoiceScreen({ v }: { v: ViewState }) {
+/** Whether this round had a claim screen (a pool to get into, and risk types still secret). */
+export const claimsOpen = (v: ViewState) => {
+  const lv = lv3(v);
+  return lv.regime === 'VOL' && lv.insurerActive && !lv.leaked;
+};
+
+/** This round's claims, by speaker (public messages). */
+export function roundClaims(v: ViewState, round = v.round): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const m of v.messages as Message[]) if (m.level === v.levelIndex && m.round === round && m.msg.type === 'CLAIM') out[m.from] = m.msg.value;
+  return out;
+}
+
+const claimShort = (value: string | undefined) => (value ? t(`play.claim.short.${value}`) : t('play.claim.short.SILENT'));
+
+/** v2 3.1, CLAIM: tell the pool how risky you are, truthfully or not, or say nothing. */
+export function ClaimScreen({ v }: { v: ViewState }) {
+  const act = useStore((s) => s.act);
+  const lv = lv3(v);
+  const [x, setX] = useState<string | null>(null);
+  const opts = ['LOW', 'HIGH', 'SILENT'];
+  return (
+    <Stage v={v} chatFirst footer={<BigButton disabled={!x} onClick={() => act(x)}>{t('play.claim.submit')}</BigButton>}>
+      <h1 className="h-show text-4xl leading-tight">{t('play.claim.title')}</h1>
+      <div className="mt-3 rounded-2xl bg-card p-3">
+        <p className="text-base font-semibold">{t(`play.claim.you.${lv.myType}`, { p: pct(myOdds(v, false)) })}</p>
+        <p className="mt-1 text-xs text-soft">{t('play.claim.note')}</p>
+      </div>
+      <div className="mt-auto space-y-2 pt-3" role="group" aria-label={t('play.claim.title')}>
+        {opts.map((o) => (
+          <button key={o} type="button" aria-pressed={x === o} onClick={() => setX(o)} className={`block w-full rounded-2xl p-3 text-start ${x === o ? 'bg-spot text-onspot' : 'bg-card'}`}>
+            <span className="h-show block text-xl leading-tight">{t(`play.claim.opts.${o}.title`)}</span>
+            <span className="block text-xs">{t(`play.claim.opts.${o}.desc`)}</span>
+          </button>
+        ))}
+      </div>
+    </Stage>
+  );
+}
+
+/** The beat after the claims: everyone's claim, one row each. */
+export function ClaimsBeat({ v, next }: { v: ViewState; next: () => void }) {
+  const claims = roundClaims(v);
+  return (
+    <Stage v={v} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
+      <div className="my-auto" data-claims>
+        <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.claim.inLabel', { r: v.round })}</p>
+        <h1 className="h-show mt-1 text-4xl leading-tight text-spot">{t('play.claim.inTitle')}</h1>
+        <ul className="mt-4 space-y-2">
+          {v.players.map((p) => (
+            <li key={p.id} className="flex items-center gap-3 rounded-2xl bg-card px-3 py-2">
+              <Avatar bot={p.botKey} human={p.isHuman} size={32} />
+              <span className="w-20 truncate text-sm font-bold">{shortName(v, p.id)}</span>
+              <span className={`h-show flex-1 text-lg leading-tight ${claims[p.id] ? '' : 'text-soft'}`}>{claimShort(claims[p.id])}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-3 text-sm text-soft">{t('play.claim.inNote')}</p>
+      </div>
+    </Stage>
+  );
+}
+
+/**
+ * v2 3.2 and 3.3: the move. READ: everyone's claim and the audience poll; a pool member may vote to bar
+ * one applicant. ACT: cover and the gym (the gym is public).
+ */
+export function MoveScreen({ v }: { v: ViewState }) {
   const lv = lv3(v);
   const n = v.play!.l3!;
   const act = useStore((s) => s.act);
   const [buy, setBuy] = useState(false);
   const [gym, setGym] = useState(false);
+  const [bar, setBar] = useState<string | null>(null);
   const mandatory = lv.regime !== 'VOL';
   const canBuy = !mandatory && lv.premium !== null;
-  const decision: Choice = { buy: canBuy && buy, gym };
+  const members = lv.members ?? [];
+  const member = members.includes(v.viewer);
+  const decision: Choice = { buy: canBuy && buy, gym, bar: member ? bar : null };
   const cover = lv.regime === 'M50' ? 50 : 100;
   const T = n.loading * (cover / 100) * n.loss * n.pBar + n.mandateExtra;
-  // Insured or under a full plan, a disaster costs you nothing; the chance shown is still the Wheel's.
+  const claims = roundClaims(v);
+  const poll = v.play!.poll ?? {};
+  const others = v.players.filter((p) => p.id !== v.viewer);
+  const showRead = canBuy && v.round > 1;
   return (
-    <Stage
-      v={v}
-      chatFirst
-      footer={
-        <BigButton onClick={() => act(decision)}>{t('play.stage.lock')}</BigButton>
-      }
-    >
-      <div className="mt-2 text-center">
-        <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.stage.chance')}</p>
-        <p className="h-show text-8xl leading-none text-spot" aria-live="polite">
-          {pct(myOdds(v, gym))}
+    <Stage v={v} chatFirst footer={<BigButton onClick={() => act(decision)}>{t('play.stage.lock')}</BigButton>}>
+      <div className="flex items-baseline justify-between">
+        <h1 className="h-show text-3xl leading-tight">{t('play.l3.choiceTitle')}</h1>
+        <p className="text-sm">
+          {t('play.move.risk')} <span className="h-show text-2xl text-spot" aria-live="polite">{pct(myOdds(v, gym))}</span>
         </p>
-        <p className="mt-2 text-sm">{t('play.stage.chanceNote', { loss: n.loss })}</p>
       </div>
-      <div className="mt-4">
-        <LatestMessage v={v} />
-      </div>
-      <div className="mt-auto grid grid-cols-2 gap-3 pt-4">
+      {showRead && (
+        <section className="mt-2" aria-labelledby="bar-title">
+          <h2 id="bar-title" className="text-sm font-bold">
+            {member ? t('play.move.barTitle') : t('play.move.readTitle')}
+          </h2>
+          <p className="text-xs text-soft">{member ? t('play.move.barNote') : t('play.move.notMember', { n: members.length })}</p>
+          <ul className="mt-2 space-y-1.5" role={member ? 'group' : undefined} aria-label={member ? t('play.move.barTitle') : undefined}>
+            {others.map((p) => {
+              const share = poll[p.id];
+              const body = (
+                <>
+                  <Avatar bot={p.botKey} human={p.isHuman} size={24} />
+                  <span className="w-16 truncate text-sm font-bold">{shortName(v, p.id)}</span>
+                  <span className="flex-1 truncate text-xs">{t('play.move.said', { claim: claimShort(claims[p.id]) })}</span>
+                  {share !== undefined && (
+                    <span className="text-xs font-semibold" aria-label={t('play.move.pollLabel', { p: pct(share), name: nameOf(v, p.id) })}>
+                      {t('play.move.poll', { p: pct(share) })}
+                    </span>
+                  )}
+                </>
+              );
+              return (
+                <li key={p.id}>
+                  {member ? (
+                    <button type="button" aria-pressed={bar === p.id} onClick={() => setBar(bar === p.id ? null : p.id)} className={`flex min-h-[40px] w-full items-center gap-2 rounded-xl px-2 text-start ${bar === p.id ? 'bg-stamp text-onspot' : 'bg-card'}`}>
+                      {body}
+                    </button>
+                  ) : (
+                    <div className="flex min-h-[36px] items-center gap-2 rounded-xl bg-card px-2">{body}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          {member && <p className="mt-1 text-xs font-semibold">{bar ? t('play.move.barPick', { name: shortName(v, bar) }) : t('play.move.barNone')}</p>}
+        </section>
+      )}
+      <div className="mt-auto grid grid-cols-2 gap-3 pt-3">
         {canBuy ? (
           <Tile on={buy} title={t('play.stage.buyTitle')} desc={t('play.stage.buyDesc', { p: fmt1(lv.premium!) })} onClick={() => setBuy(!buy)} />
         ) : mandatory ? (
@@ -105,6 +212,95 @@ export function ChoiceScreen({ v }: { v: ViewState }) {
           <Tile on={false} disabled title={t('play.stage.noCoverTitle')} desc={t('play.stage.noCoverDesc')} />
         )}
         <Tile on={gym} title={t('play.stage.gymTitle')} desc={t('play.stage.gymDesc', { c: n.gymCost })} onClick={() => setGym(!gym)} />
+      </div>
+    </Stage>
+  );
+}
+
+/** The Bar's result, its own beat before the wheel. */
+export function BarBeat({ v, next }: { v: ViewState; next: () => void }) {
+  const lv = lv3(v);
+  const r = lv.rounds[lv.rounds.length - 1];
+  const b = r.bar!;
+  const you = b.barred === v.viewer;
+  const head = !b.barred ? t('play.barBeat.none') : t(you ? 'play.barBeat.barredYou' : 'play.barBeat.barred', { name: nameOf(v, b.barred) });
+  const sub = b.barred && b.refused ? t(you ? 'play.barBeat.refusedYou' : 'play.barBeat.refused', { name: shortName(v, b.barred) }) : b.barred ? t('play.barBeat.notApplied') : '';
+  return (
+    <Stage v={v} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
+      <div className="my-auto text-center" data-bar={b.barred ?? 'none'}>
+        <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.barBeat.label')}</p>
+        <p className={`h-show mt-2 text-5xl leading-tight ${b.barred ? 'text-stamp' : 'text-spot'}`}>{head}</p>
+        {sub && <p className="mt-3 text-base">{sub}</p>}
+        <p className="mt-4 text-sm text-soft">
+          {b.members.map((m) => t('play.barBeat.vote', { name: shortName(v, m), target: b.votes[m] ? shortName(v, b.votes[m]!) : t('play.barBeat.noOne') })).join(' · ')}
+        </p>
+      </div>
+    </Stage>
+  );
+}
+
+/** One contestant's checked claims of this episode, in order. */
+function checkedClaims(v: ViewState, id: string): Array<{ round: number; value: string; kept: boolean }> {
+  return (v.messages as Message[])
+    .filter((m) => m.level === v.levelIndex && m.from === id && m.msg.type === 'CLAIM' && m.resolved)
+    .map((m) => ({ round: m.round, value: (m.msg as { value: string }).value, kept: !!m.kept }));
+}
+
+/**
+ * v2 3.4, the end reveal and the episode's peak: every risk card flips, one contestant at a time, starting
+ * with the most surprising (most lies, then the audience's biggest wrong read), each claim stamped.
+ */
+export function CardsReveal({ v }: { v: ViewState }) {
+  const act = useStore((s) => s.act);
+  const lv = lv3(v);
+  const off = useMotionOff();
+  const types = lv.types ?? {};
+  const poll = v.play!.poll ?? {};
+  const rows = v.players.map((p) => {
+    const cl = checkedClaims(v, p.id);
+    const lies = cl.filter((c) => !c.kept).length;
+    const wrong = poll[p.id] === undefined ? 0 : Math.abs(poll[p.id] - (types[p.id] === 'HIGH' ? 1 : 0));
+    return { p, cl, lies, wrong };
+  });
+  rows.sort((a, b) => b.lies - a.lies || b.wrong - a.wrong);
+  const top = rows[0];
+  const line = top.lies
+    ? t(top.p.id === v.viewer ? 'play.cards.peakLieYou' : 'play.cards.peakLie', { name: nameOf(v, top.p.id), n: top.lies, truth: t(`play.cards.${types[top.p.id]}`).toLowerCase() })
+    : t('play.cards.peakHonest');
+  return (
+    <Stage v={v} footer={<BigButton onClick={() => act()}>{t('play.stage.tap')}</BigButton>}>
+      <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.cards.label')}</p>
+      <h1 className="h-show mt-1 text-3xl leading-tight text-spot">{t('play.cards.title')}</h1>
+      <ul className="mt-2 space-y-1.5" data-cards>
+        {rows.map(({ p, cl }, k) => (
+          <motion.li
+            key={p.id}
+            className="rounded-2xl bg-card px-3 py-1.5"
+            initial={off ? false : { opacity: 0, rotateY: 90 }}
+            animate={{ opacity: 1, rotateY: 0 }}
+            transition={{ delay: off ? 0 : 0.6 * k, duration: off ? 0 : 0.35 }}
+          >
+            <div className="flex items-center gap-2">
+              <Avatar bot={p.botKey} human={p.isHuman} size={28} />
+              <span className="flex-1 truncate text-sm font-bold">{shortName(v, p.id)}</span>
+              <span className={`h-show rounded-md px-2 text-base ${types[p.id] === 'HIGH' ? 'bg-stamp text-onspot' : 'bg-good text-onspot'}`}>{t(`play.cards.${types[p.id]}`)}</span>
+            </div>
+            <p className="mt-1 flex flex-wrap gap-1 text-[10px]">
+              {cl.length ? (
+                cl.map((c) => (
+                  <span key={c.round} className={`rounded px-1 py-0.5 font-bold ${c.kept ? 'bg-paper text-ink' : 'bg-stamp text-onspot'}`}>
+                    {t('play.cards.stamp', { r: c.round, claim: t(`play.cards.word.${c.value}`), stamp: t(c.kept ? 'play.cards.TRUE' : 'play.cards.LIE') })}
+                  </span>
+                ))
+              ) : (
+                <span className="text-soft">{t('play.cards.noClaims')}</span>
+              )}
+            </p>
+          </motion.li>
+        ))}
+      </ul>
+      <div className="mt-auto pt-3">
+        <Bubble who="Dash" host text={line} />
       </div>
     </Stage>
   );
@@ -200,9 +396,9 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
   else cost = t('play.stage.costNone');
   // What you chose this round, next to the money it made (playtest note).
   const bought = ch.buy && r.premium !== null;
+  const refused = !!r.applied?.[me] && !bought;
   const chose =
-    r.regime !== 'VOL' ? (ch.gym ? 'planGym' : 'plan') : bought && ch.gym ? 'both' : bought ? 'cover' : ch.gym ? 'gym' : r.premium === null ? 'noneClosed' : 'none';
-  const broken = new Set(brokenPromises(v, 'CHOICE').map((b) => b.from));
+    r.regime !== 'VOL' ? (ch.gym ? 'planGym' : 'plan') : refused ? 'refused' : bought && ch.gym ? 'both' : bought ? 'cover' : ch.gym ? 'gym' : r.premium === null ? 'noneClosed' : 'none';
   const outcome = roundOutcome(v, r);
   const subjectBot = v.players.find((p) => p.id === outcome.subject && !p.isHuman && p.botKey);
   const voice = subjectBot
@@ -261,7 +457,6 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
                     <span className={`block text-xs ${o.kind === 'HIT' ? 'text-stamp' : 'text-good'}`}>
                       {o.kind === 'HIT' ? t('play.stage.hit', { n: `−${coins(o.lost)}` }) : o.kind === 'COVERED' ? t('play.stage.covered') : t('play.stage.safe')}
                     </span>
-                    {broken.has(p.id) && <span className="block text-[10px] font-bold text-stamp">{t('play.stage.brokePromise')}</span>}
                   </li>
                 );
               })}
@@ -294,7 +489,7 @@ export function PriceBeat({ v, next, onReally }: { v: ViewState; next: () => voi
   const to = r.nextPremium;
   const kind = to === null ? 'Gone' : to > from + 1e-9 ? 'Up' : to < from - 1e-9 ? 'Down' : 'Same';
   const change = to === null ? 0 : (to - from) / from;
-  const voteNext = v.round === 2;
+  const voteNext = v.round === PLAY.L3.VOLUNTARY_ROUNDS;
   return (
     <Stage
       v={v}

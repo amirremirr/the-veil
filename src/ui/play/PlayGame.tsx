@@ -7,15 +7,16 @@ import { VALUES_CARDS } from '../../engine/types';
 import { PLAY } from '../../engine/play/params';
 import { useStore } from '../store';
 import { t } from '../i18n';
-import { coins, pct, signed } from '../labels';
+import { coins, pct } from '../labels';
 import { nameOf, shortName, useView } from '../game';
 import { Avatar, FlipCard, useMotionOff } from '../components/common';
 import { Sheet as TableSheet } from '../components/TableParts';
 import { LockedInPanel, useOnline, useWaiting } from '../components/Online';
 import { screenDecisionPhase } from '../../shared/flow';
 import { BigButton, Bubble, Stage } from './OnAir';
-import { ChoiceScreen, PriceBeat, RegimeScreen, VoteInBeat, WheelBeat, hasPriceBeat, type L3View } from './Episode3';
-import { biggestMoment, eventText, hostLine, missionName, pick } from './logic';
+import { BarBeat, CardsReveal, ClaimScreen, ClaimsBeat, MoveScreen, PriceBeat, RegimeScreen, VoteInBeat, WheelBeat, claimsOpen, hasPriceBeat, regimeName, roundClaims, type L3View } from './Episode3';
+import { eventText, hostLine, missionName, pick } from './logic';
+import type { NearMiss } from '../../engine/play/types';
 
 
 /** "What was really going on?": three lines on the mechanism (Play spec 7.5). */
@@ -25,7 +26,7 @@ function ReallySheet({ v, onClose }: { v: ViewState; onClose: () => void }) {
   return (
     <TableSheet title={t('play.really.button')} closeLabel={t('play.really.close')} onClose={onClose}>
       <ul className="space-y-2" data-really>
-        {[0, 1, 2].map((i) => (
+        {[0, 1, 2, 3].map((i) => (
           <li key={i}>{t(`play.really.L${v.levelIndex}.${i}`)}</li>
         ))}
       </ul>
@@ -81,7 +82,7 @@ function EpisodeIntro({ v }: { v: ViewState }) {
       </p>
       <h1 className="h-show mt-1 text-5xl leading-none text-spot">{t(`play.episodes.${v.levelIndex}.name`)}</h1>
       <ol className="mt-5 space-y-3">
-        {[0, 1, 2].map((i) => (
+        {[0, 1, 2, 3].map((i) => (
           <li key={i} className="flex gap-3 text-base leading-snug">
             <span className="h-show text-2xl text-stamp">{i + 1}</span>
             <span>{t(`play.episodes.3.how.${i}`, { income: n.baseIncome, living: n.livingCost, loss: n.loss })}</span>
@@ -113,42 +114,32 @@ function EventBeat({ v, next }: { v: ViewState; next: () => void }) {
   );
 }
 
-function PollBeat({ v, next }: { v: ViewState; next: () => void }) {
-  const poll = v.play!.poll!;
-  const you = poll.target === v.viewer;
-  return (
-    <Stage v={v} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
-      <div className="my-auto text-center" data-poll>
-        <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.stage.pollLabel')}</p>
-        <p className="h-show mt-2 text-8xl leading-none text-spot">{pct(poll.share)}</p>
-        <p className="mt-3 text-lg">{t(you ? 'play.stage.pollLineYou' : 'play.stage.pollLine', { name: nameOf(v, poll.target), mission: missionName(poll.card) })}</p>
-      </div>
-    </Stage>
-  );
-}
-
-/** The pre-decision beats of a round (vote result, event card, audience poll), then the decision itself. */
+/**
+ * The beats before a decision, then the decision. The round's first screen (the claim, or the move when
+ * there is nothing to claim) carries the vote result and the event card; the move carries the claims.
+ */
 function DecisionFlow({ v }: { v: ViewState }) {
   const dp = screenDecisionPhase(v, v.queue);
   const dv = dp && dp !== v.phase ? { ...v, phase: dp } : v;
   const online = useOnline();
   const { done } = useWaiting(v);
-  const regimeVote = dv.phase.step === 'REGIME';
+  const stepId = dv.phase.step;
   const lv = v.levelView as L3View;
   const ev = v.play!.event;
-  const beats: Array<'vote' | 'event' | 'poll'> = [];
-  if (!regimeVote) {
-    if (v.round === 3 && lv.regimeVotes) beats.push('vote');
+  const first = stepId === 'CLAIM' || (stepId === 'CHOICE' && !claimsOpen(v));
+  const beats: Array<'vote' | 'event' | 'claims'> = [];
+  if (first) {
+    if (v.round === PLAY.L3.VOLUNTARY_ROUNDS + 1 && lv.regimeVotes) beats.push('vote');
     if (ev && ev.id !== 'QUIET' && ev.round === v.round && ev.level === v.levelIndex) beats.push('event');
-    if (v.round === PLAY.POLL_FROM_ROUND && v.play!.poll) beats.push('poll');
   }
+  if (stepId === 'CHOICE' && Object.keys(roundClaims(v)).length) beats.push('claims');
   const [k, setK] = useState(0);
   const next = () => setK((x) => x + 1);
   if (k < beats.length) {
     const b = beats[k];
     if (b === 'vote') return <VoteInBeat v={v} next={next} />;
     if (b === 'event') return <EventBeat v={v} next={next} />;
-    return <PollBeat v={v} next={next} />;
+    return <ClaimsBeat v={v} next={next} />;
   }
   if (online && done)
     return (
@@ -156,15 +147,20 @@ function DecisionFlow({ v }: { v: ViewState }) {
         <LockedInPanel v={v} />
       </Stage>
     );
-  return regimeVote ? <RegimeScreen v={dv} /> : <ChoiceScreen v={dv} />;
+  if (stepId === 'REGIME') return <RegimeScreen v={dv} />;
+  if (stepId === 'CLAIM') return <ClaimScreen v={dv} />;
+  return <MoveScreen v={dv} />;
 }
 
-/** A round's results as beats: the wheel (with everyone else in one row), then the price, if any. */
+/** A round's results as beats: the Bar (if it voted), the wheel (everyone else in one row), then the price. */
 function ResultsFlow({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
   const price = hasPriceBeat(v);
-  const [k, setK] = useState(0);
+  const lv = v.levelView as L3View;
+  const bar = !!lv.rounds[lv.rounds.length - 1]?.bar;
+  const [k, setK] = useState(bar ? -1 : 0);
   const [really, setReally] = useState(false);
+  if (k === -1) return <BarBeat v={v} next={() => setK(0)} />;
   if (k === 0) return <WheelBeat v={v} last={!price} next={() => (price ? setK(1) : act())} />;
   return (
     <>
@@ -217,29 +213,102 @@ function EpisodeGuess({ v }: { v: ViewState }) {
   );
 }
 
-/** Section 7.6: one short screen; the only place the ranking appears. */
-function EpisodeSummary({ v }: { v: ViewState }) {
-  const { go, replay, online, leaveOnline, act } = useStore();
+/** v2 Section 10 fix 3: after the card guess, its result, then every mission flips with the ranking. */
+function MissionsBeat({ v, next }: { v: ViewState; next: () => void }) {
   const pl = v.play!;
-  const [sheet, setSheet] = useState<null | 'really'>(null);
   const scores = pl.finalScores ?? {};
   const ranked = v.players.slice().sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0));
-  const winner = ranked[0];
-  const moment = biggestMoment(pl, v.levelIndex);
-  const m = pl.mission!;
-  const complete = m.scale * m.value >= m.goal;
   const myGuess = pl.guesses[v.levelIndex]?.[v.viewer];
   const guessLine = myGuess
     ? hostLine(myGuess.correct ? 'guessRight' : 'guessWrong', pick(v, 'guess', 6), { name: nameOf(v, myGuess.target) })
     : hostLine('guessNone', pick(v, 'guess', 6));
-  let momentText = '';
-  if (moment?.kind === 'event') momentText = t('play.summary.momentEvent', { r: moment.round, event: eventText(v.levelIndex, moment.id).name });
-  else if (moment) momentText = t(moment.who === v.viewer ? 'play.summary.momentSwingYou' : 'play.summary.momentSwing', { r: moment.round, name: nameOf(v, moment.who), change: signed(moment.change) });
+  return (
+    <Stage v={v} bar={false} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
+      <div className="my-auto" data-missions>
+        <Bubble who="Dash" host text={guessLine} />
+        <p className="mt-5 text-xs font-bold uppercase tracking-wider text-soft">{t('play.summary.missionsLabel')}</p>
+        <h1 className="h-show mt-1 text-3xl leading-tight text-spot">{ranked[0].id === v.viewer ? t('play.summary.winnerYou') : t('play.summary.winner', { name: shortName(v, ranked[0].id) })}</h1>
+        <ol className="mt-3 space-y-1.5" aria-label={t('play.stage.ranking')}>
+          {ranked.map((p, i) => (
+            <li key={p.id} className={`flex items-center gap-2 rounded-xl px-2 py-1.5 ${p.id === v.viewer ? 'bg-spot text-onspot' : 'bg-card'}`}>
+              <span className="h-show w-5 text-lg">{i + 1}</span>
+              <span className="w-20 truncate text-sm font-bold">{shortName(v, p.id)}</span>
+              <span className="flex-1 truncate text-sm">{p.values ? missionName(p.values) : ''}</span>
+              <span className="h-show w-10 text-end">{coins(scores[p.id] ?? 0)}</span>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </Stage>
+  );
+}
+
+/** The near miss as one sentence (v2 Section 6.1): your own change only. */
+function nearMissText(v: ViewState, nm: NearMiss): string {
+  let change = '';
+  if (nm.kind === 'CHOICE') {
+    const from = nm.from as { buy: boolean; gym: boolean };
+    const to = nm.to as { buy: boolean; gym: boolean };
+    const parts: string[] = [];
+    if (from.buy !== to.buy) parts.push(t(to.buy ? 'play.nm.buy' : 'play.nm.out'));
+    if (from.gym !== to.gym) parts.push(t(to.gym ? 'play.nm.gym' : 'play.nm.noGym'));
+    change = parts.length === 2 ? t('play.nm.and', { a: parts[0], b: parts[1].charAt(0).toLowerCase() + parts[1].slice(1) }) : parts[0];
+  } else if (nm.kind === 'BAR') change = nm.to ? t('play.nm.bar', { name: nameOf(v, nm.to as string) }) : t('play.nm.barNone');
+  else if (nm.kind === 'CLAIM') change = nm.to === 'SILENT' ? t('play.nm.silent') : t('play.nm.claim', { claim: t(`play.claims.RISK.${nm.to as string}`) });
+  else change = t('play.nm.regime', { name: regimeName(nm.to as 'VOL' | 'M50' | 'M100') });
+  return t('play.nm.line', { change, r: nm.round, n: nm.gain });
+}
+
+/** v2 Section 6.3: one screen, no tables. Biggest lie, biggest wrong read, your bank, mission, near miss. */
+function EpisodeSummary({ v }: { v: ViewState }) {
+  const { go, replay, online, leaveOnline, act } = useStore();
+  const pl = v.play!;
+  const [sheet, setSheet] = useState<null | 'really'>(null);
+  const [k, setK] = useState(0);
+  const lv = v.levelView as L3View;
+  const types = lv.types ?? {};
+  const m = pl.mission!;
+  const complete = m.scale * m.value >= m.goal;
+  const res = v.levelResults[v.levelIndex] as { nearMiss?: NearMiss | null } | undefined;
+  const nm = res?.nearMiss ?? null;
+  // Biggest lie: the contestant with the most claims stamped LIE. Biggest wrong read: the audience's
+  // final belief furthest from the truth.
+  const lies = v.players
+    .map((p) => {
+      const ms = v.messages.filter((x) => x.level === v.levelIndex && x.from === p.id && x.msg.type === 'CLAIM' && x.resolved && x.kept === false);
+      return { id: p.id, n: ms.length, value: ms[0]?.msg.type === 'CLAIM' ? ms[0].msg.value : '' };
+    })
+    .sort((a, b) => b.n - a.n)[0];
+  const poll = pl.poll ?? {};
+  const read = v.players
+    .filter((p) => poll[p.id] !== undefined)
+    .map((p) => ({ id: p.id, b: poll[p.id], wrong: Math.abs(poll[p.id] - (types[p.id] === 'HIGH' ? 1 : 0)) }))
+    .sort((a, b) => b.wrong - a.wrong)[0];
+  const lieText =
+    lies && lies.n
+      ? t(lies.id === v.viewer ? 'play.summary.lieYou' : 'play.summary.lie', { name: nameOf(v, lies.id), claim: t(`play.claim.short.${lies.value}`).toLowerCase(), n: lies.n, truth: t(`play.cards.${types[lies.id]}`).toLowerCase() })
+      : t('play.summary.noLie');
+  const readText =
+    read && read.wrong >= 0.5
+      ? t(read.id === v.viewer ? 'play.summary.readYou' : 'play.summary.read', {
+          name: nameOf(v, read.id),
+          p: pct(read.b >= 0.5 ? read.b : 1 - read.b),
+          said: t(read.b >= 0.5 ? 'play.cards.HIGH' : 'play.cards.LOW').toLowerCase(),
+          truth: t(`play.cards.${types[read.id]}`).toLowerCase(),
+        })
+      : t('play.summary.noRead');
   const menu = () => {
     if (online) return leaveOnline();
     if (v.phase.kind === 'LEVEL_DEBRIEF') act();
     go('title');
   };
+  if (k === 0) return <MissionsBeat v={v} next={() => setK(1)} />;
+  const row = (label: string, text: string, cls = '') => (
+    <div>
+      <dt className="text-xs font-bold uppercase tracking-wider text-soft">{label}</dt>
+      <dd className={`text-base font-semibold leading-snug ${cls}`}>{text}</dd>
+    </div>
+  );
   return (
     <Stage
       v={v}
@@ -257,38 +326,15 @@ function EpisodeSummary({ v }: { v: ViewState }) {
         </div>
       }
     >
-      <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.summary.title')}</p>
-      <h1 className="h-show mt-1 text-3xl leading-tight text-spot">{winner.id === v.viewer ? t('play.summary.winnerYou') : t('play.summary.winner', { name: shortName(v, winner.id) })}</h1>
-      <ol className="mt-3 space-y-1" aria-label={t('play.stage.ranking')}>
-        {ranked.map((p, i) => (
-          <li key={p.id} className={`flex items-center gap-2 rounded-xl px-2 py-1 ${p.id === v.viewer ? 'bg-spot text-onspot' : 'bg-card'}`}>
-            <span className="h-show w-5 text-lg">{i + 1}</span>
-            <span className="flex-1 truncate text-sm font-bold">{shortName(v, p.id)}</span>
-            <span className="truncate text-xs">{p.values ? missionName(p.values) : ''}</span>
-            <span className="h-show w-10 text-end">{coins(scores[p.id] ?? 0)}</span>
-          </li>
-        ))}
-      </ol>
-      <dl className="mt-3 space-y-1 text-sm">
-        {momentText && (
-          <div className="flex gap-2">
-            <dt className="text-soft">{t('play.summary.moment')}:</dt>
-            <dd className="font-semibold">{momentText}</dd>
-          </div>
-        )}
-        <div className="flex gap-2">
-          <dt className="text-soft">{t('play.bar.bank')}:</dt>
-          <dd className="font-semibold">{t('play.summary.bankChange', { from: coins(pl.startingBank), to: coins(pl.banks[v.viewer]) })}</dd>
-        </div>
-        <div className="flex gap-2">
-          <dt className="text-soft">{missionName(m.card)}:</dt>
-          <dd className={`font-semibold ${complete ? 'text-good' : 'text-stamp'}`}>{complete ? t('play.summary.missionDone') : t('play.summary.missionMissed')}</dd>
-        </div>
+      <h1 className="h-show text-3xl leading-tight text-spot">{t('play.summary.title')}</h1>
+      <dl className="mt-3 space-y-3" data-summary>
+        {row(t('play.summary.lieLabel'), lieText)}
+        {row(t('play.summary.readLabel'), readText)}
+        {row(t('play.bar.bank'), t('play.summary.bankChange', { from: coins(pl.startingBank), to: coins(pl.banks[v.viewer]) }))}
+        {row(missionName(m.card), complete ? t('play.summary.missionDone') : t('play.summary.missionMissed'), complete ? 'text-good' : 'text-stamp')}
+        {row(t('play.summary.nearMiss'), nm ? nearMissText(v, nm) : t('play.summary.nearMissNone'))}
       </dl>
-      <div className="mt-3">
-        <Bubble who="Dash" host text={guessLine} />
-      </div>
-      <button type="button" className="mt-3 self-start text-sm font-semibold underline" onClick={() => setSheet('really')}>
+      <button type="button" className="mt-4 self-start text-sm font-semibold underline" onClick={() => setSheet('really')}>
         {t('play.really.button')}
       </button>
       {v.seed && <p className="mt-2 text-[11px] text-soft">{t('play.summary.seed', { seed: v.seed })}</p>}
@@ -312,6 +358,7 @@ export function PlayGameScreen() {
   if (k === 'LEVEL_DEBRIEF' || k === 'END') return <EpisodeSummary v={v} />;
   if (k === 'TALK' || k === 'DECIDE') return <DecisionFlow key={`${v.levelIndex}-${v.phaseIdx}`} v={v} />;
   if (k === 'REVEAL' && next?.kind === 'ROUND_SUMMARY') return <ResultsFlow key={`${v.levelIndex}-${v.phaseIdx}`} v={v} />;
+  if (k === 'REVEAL' && v.phase.step === 'CARDS') return <CardsReveal v={v} />;
   return null;
 }
 

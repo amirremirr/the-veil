@@ -11,6 +11,7 @@ const SCRIPT: Record<string, unknown> = {
   POLL: 40,
   BONUS: 60,
   CHOICE: { buy: true, gym: false },
+  CLAIM: 'LOW',
   REGIME: 'M50',
   INVEST: true,
   SCHEDULE: 'GREEDY',

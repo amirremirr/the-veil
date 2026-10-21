@@ -1,12 +1,12 @@
-// Play mode, Episode 3, solo, through the real UI (PLAY_MODE_SPEC.md milestone P1, redesign D-108): from
-// the title to the episode summary, tapping through every beat. No screen may scroll, sideways or down.
+// Play mode, Episode 3 (The Pool, PLAY_V2_SPEC.md Q1), solo, through the real UI: from the title to the
+// episode summary, tapping through every beat. No screen may scroll, sideways or down.
 import { expect, test, type Page } from '@playwright/test';
 
 async function fits(page: Page) {
   const d = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, sh: document.documentElement.scrollHeight, ih: window.innerHeight }));
   expect(d.sw).toBeLessThanOrEqual(d.cw);
   // Only phones get the one-screen rule; desktop windows are taller anyway.
-  if (d.cw < 768) expect(d.sh).toBeLessThanOrEqual(d.ih);
+  if (d.cw < 768) expect(d.sh, (await page.locator('body').innerText()).slice(0, 300)).toBeLessThanOrEqual(d.ih);
 }
 
 test.beforeEach(async ({ page }) => {
@@ -31,6 +31,8 @@ test('plays Episode 3 from the title to the episode summary', async ({ page }) =
   await page.getByRole('button', { name: 'Roll the cameras' }).click();
   let wheels = 0;
   let prices = 0;
+  let claims = 0;
+  let cards = 0;
   for (let i = 0; i < 40; i++) {
     await page.waitForTimeout(50);
     await fits(page);
@@ -38,8 +40,16 @@ test('plays Episode 3 from the title to the episode summary', async ({ page }) =
     if (await page.locator('[data-beat-next]').count()) {
       if (await page.locator('[data-outcome]').count()) wheels++;
       await page.locator('[data-beat-next]').click();
+    } else if (await page.getByRole('button', { name: 'Say it' }).count()) {
+      claims++;
+      await expect(page.getByText(/You are (low|high) risk/)).toBeVisible();
+      await page.getByRole('button', { name: /low risk/ }).click();
+      await page.getByRole('button', { name: 'Say it' }).click();
+    } else if (await page.locator('[data-cards]').count()) {
+      cards++;
+      await page.getByRole('button', { name: 'Tap to continue' }).click();
     } else if (await page.getByRole('button', { name: 'Lock it in' }).count()) {
-      await expect(page.getByText('Your chance of disaster')).toBeVisible();
+      await expect(page.getByText(/^Your risk/)).toBeVisible();
       const buy = page.getByRole('button', { name: /Buy cover/ });
       if (await buy.count()) await buy.click();
       await page.getByRole('button', { name: 'Lock it in' }).click();
@@ -57,8 +67,12 @@ test('plays Episode 3 from the title to the episode summary', async ({ page }) =
       await page.getByRole('button', { name: 'Lock in my guess' }).click();
     } else throw new Error(`unknown screen: ${(await page.locator('body').innerText()).slice(0, 200)}`);
   }
-  expect(wheels).toBe(3);
+  expect(wheels).toBe(4);
   expect(prices).toBeGreaterThanOrEqual(1);
+  expect(claims).toBeGreaterThanOrEqual(1);
+  expect(cards).toBe(1);
+  await expect(page.getByText('Biggest lie')).toBeVisible();
+  await expect(page.getByText('Near miss')).toBeVisible();
   await expect(page.getByText('Episode summary')).toBeVisible();
   await page.getByRole('button', { name: 'What was really going on?' }).click();
   await expect(page.getByText("That's adverse selection.", { exact: false })).toBeVisible();
