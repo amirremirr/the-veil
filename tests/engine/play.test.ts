@@ -106,7 +106,8 @@ describe('bank and debt stress', () => {
         for (const p of s.players) {
           banks[p.id] += h.W[p.id] - PLAY.LIVING_COST;
           expect(h.banks[p.id]).toBeCloseTo(banks[p.id], 9);
-          expect(h.stress[p.id]).toBe(debtStressFor(banks[p.id]));
+          const worry = (s.levelState as { worry: Record<string, string> }).worry[p.id];
+          expect(h.stress[p.id]).toBe((worry === 'WORRIER' ? PLAY.WORRIER_STRESS_MULT : 1) * debtStressFor(banks[p.id]));
           stress[p.id] += h.stress[p.id];
         }
       for (const p of s.players) expect(pl.debtStress[p.id]).toBeCloseTo(stress[p.id], 9);
@@ -234,7 +235,13 @@ describe('privacy', () => {
       if (lv?.leaked || lv?.cardsRevealed) expect(lv.types).toEqual((s.levelState as { types: unknown }).types);
       else expect(lv?.types).toBeUndefined();
       // Honesty traits, bots' own beliefs and the claim log (it holds the truth) never reach a view.
-      expect(Object.keys(v.play!).filter((k) => ['honesty', 'belief', 'claimLog'].includes(k))).toEqual([]);
+      expect(Object.keys(v.play!).filter((k) => ['honesty', 'belief', 'belief2', 'joint', 'claimLog', 'barReads'].includes(k))).toEqual([]);
+      // D-128: your own worry card only, until the cards flip (a leak never shows worry).
+      const lw = v.levelView as { myWorry?: string; worry?: unknown; cardsRevealed?: boolean } | null;
+      if (lw && s.levelState) {
+        expect(lw.myWorry).toBe((s.levelState as { worry: Record<string, string> }).worry[HUMAN_ID]);
+        if (!lw.cardsRevealed) expect(lw.worry).toBeUndefined();
+      }
       for (const r of lv?.rounds ?? []) expect(Object.keys(r.pEff)).toEqual([HUMAN_ID]);
       expect(v.botBeliefs).toBeUndefined();
     }
@@ -426,5 +433,41 @@ describe('Q1 review fixes (D-120 to D-122)', () => {
     expect(futureStress(s, -100, drift)).toBeCloseTo(debtStressFor(-68.5) + debtStressFor(-37), 9);
     expect(futureStress(s, 50, drift)).toBe(0);
     expect(futureStress(s, -100, null)).toBe(0);
+  });
+});
+
+describe('the worry card (D-128)', () => {
+  const games = Array.from({ length: 30 }, (_, k) => botsOnly(`worry-${k}`));
+  it('half the table are Worriers, dealt from their own deck', () => {
+    let worrierHigh = 0;
+    for (const s of games) {
+      const l = s.levelState as { worry: Record<string, string>; types: Record<string, string> };
+      expect(Object.values(l.worry).filter((w) => w === 'WORRIER')).toHaveLength(2);
+      worrierHigh += Object.keys(l.worry).filter((id) => l.worry[id] === 'WORRIER' && l.types[id] === 'HIGH').length;
+    }
+    // Independent of risk: some Worriers are high risk and some low.
+    expect(worrierHigh).toBeGreaterThan(0);
+    expect(worrierHigh).toBeLessThan(60);
+  });
+  it('bots hold a joint belief consistent with both decks', () => {
+    const s = createInitialState({ ...cfg('worry-belief'), allBots: true });
+    step(s, { type: 'ADVANCE' });
+    const l = s.levelState as { worry: Record<string, string> };
+    for (const [obs, m] of Object.entries(s.play!.belief2)) expect(Object.values(m).reduce((a, b) => a + b, 0)).toBeCloseTo(l.worry[obs] === 'WORRIER' ? 1 : 2, 9);
+    for (const j of Object.values(s.play!.joint)) expect(j.states).toHaveLength(9);
+  });
+  it('the debt stress of a Worrier in the score is WORRIER_STRESS_MULT times the Calm amount', () => {
+    expect(PLAY.WORRIER_STRESS_MULT).toBe(3);
+    let checked = 0;
+    for (const s of games) {
+      const l = s.levelState as { worry: Record<string, string> };
+      for (const h of s.play!.bankHistory)
+        for (const p of s.players)
+          if (h.banks[p.id] < 0) {
+            checked++;
+            expect(h.stress[p.id]).toBe((l.worry[p.id] === 'WORRIER' ? 3 : 1) * debtStressFor(h.banks[p.id]));
+          }
+    }
+    expect(checked).toBeGreaterThan(0);
   });
 });

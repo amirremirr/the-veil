@@ -37,6 +37,11 @@ export const PLAY = {
   L3_DECK: ['STORM', 'GYM_SALE', 'PRICE_WAR', 'BREAKTHROUGH', 'LEAKED'] as string[],
   /** D-121: round 1 of Episode 3 is a launch round: SafeHands signs everyone up at the pooled price. */
   L3_LAUNCH: true,
+  /**
+   * D-128: Episode 3's second hidden card. Half the table are Worriers (dealt like the risk cards); a
+   * Worrier's debt stress is multiplied by this. Calm players are unchanged. The author's range: 1.5 to 4.
+   */
+  WORRIER_STRESS_MULT: 3,
   /** D-122: bots count the debt stress a bank will still cost in the episode's later rounds. */
   DEBT_HORIZON: true,
   /** v2 Section 5: Leaked Medical Files shows every risk type, only from this round of Episode 3. */

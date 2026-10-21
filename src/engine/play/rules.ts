@@ -18,7 +18,7 @@ export const PLAYABLE_EPISODES: LevelId[] = [3];
 export function initPlay(s: GameState): PlayState {
   const start = s.mode === 'EPISODE' ? PLAY.EPISODE_STARTING_BANK : PLAY.STARTING_BANK;
   const per = <X>(x: X) => Object.fromEntries(s.players.map((p) => [p.id, x])) as Record<PlayerId, X>;
-  return { banks: per(start), debtStress: per(0), guessPoints: per(0), event: null, events: [], bankHistory: [], episodeStart: {}, guesses: {}, honesty: {}, belief: {}, joint: {}, claimLog: [] };
+  return { banks: per(start), debtStress: per(0), guessPoints: per(0), event: null, events: [], bankHistory: [], episodeStart: {}, guesses: {}, honesty: {}, belief: {}, belief2: {}, joint: {}, claimLog: [], barReads: [] };
 }
 
 /** Section 4.2: points lost at the end of a round with this bank. */
@@ -58,11 +58,28 @@ export function playScore(s: GameState, pid: PlayerId): number {
  * if the game ended after this round, given this round's money W for everyone (seat order). The bank
  * moves by W minus living cost and this round's debt stress counts, so a player near debt is risk averse.
  */
-export function playRoundValue(s: GameState, card: ValuesCard, W: readonly number[], i: number, effortShares: readonly number[], drift: number | null = null): number {
+export function playRoundValue(
+  s: GameState,
+  card: ValuesCard,
+  W: readonly number[],
+  i: number,
+  effortShares: readonly number[],
+  drift: number | null = null,
+  mult: number = stressMult(s, s.players[i].id),
+): number {
   const pl = s.play!;
   const banks = s.players.map((p, j) => pl.banks[p.id] + W[j] - PLAY.LIVING_COST);
   const id = s.players[i].id;
-  return scoreOnBanks(card, banks, i, effortShares, pl.debtStress[id] + debtStressFor(banks[i])) - futureStress(s, banks[i], drift);
+  return scoreOnBanks(card, banks, i, effortShares, pl.debtStress[id] + mult * debtStressFor(banks[i])) - mult * futureStress(s, banks[i], drift);
+}
+
+/**
+ * D-128: a contestant's debt-stress multiplier now: WORRIER_STRESS_MULT for a Worrier in Episode 3, else 1.
+ * Worry is private, so only the contestant's own valuation and the scoring read it.
+ */
+export function stressMult(s: GameState, pid: PlayerId): number {
+  const worry = s.levelIndex === 3 ? (s.levelState as { worry?: Record<PlayerId, string> } | null)?.worry : undefined;
+  return worry?.[pid] === 'WORRIER' ? PLAY.WORRIER_STRESS_MULT : 1;
 }
 
 /** The episode's rounds still to come after the current one. */
@@ -87,11 +104,11 @@ export function futureStress(s: GameState, bank: number, drift: number | null): 
  * others, replacing Study's hardship-adjusted own money): money minus the debt stress it would cause.
  * `j < 0` uses the table's average bank.
  */
-export function playNet(s: GameState, j: number, w: number, drift: number | null = null): number {
+export function playNet(s: GameState, j: number, w: number, drift: number | null = null, mult = 1): number {
   const pl = s.play!;
   const bank = j >= 0 ? pl.banks[s.players[j].id] : bankList(s).reduce((a, b) => a + b, 0) / s.players.length;
   const after = bank + w - PLAY.LIVING_COST;
-  return w - debtStressFor(after) - futureStress(s, after, drift);
+  return w - mult * (debtStressFor(after) + futureStress(s, after, drift));
 }
 
 /** Ranks by Play score (1 = leading; ties share the better rank). */
@@ -106,7 +123,7 @@ export function playFinishRound(s: GameState, W: readonly number[]): void {
   const rec = { level: s.levelIndex, round: s.round, W: {} as Record<PlayerId, number>, banks: {} as Record<PlayerId, number>, stress: {} as Record<PlayerId, number>, ranks: {} as Record<PlayerId, number> };
   s.players.forEach((p, i) => {
     pl.banks[p.id] += W[i] - PLAY.LIVING_COST;
-    const st = debtStressFor(pl.banks[p.id]);
+    const st = stressMult(s, p.id) * debtStressFor(pl.banks[p.id]);
     pl.debtStress[p.id] += st;
     rec.W[p.id] = W[i];
     rec.banks[p.id] = pl.banks[p.id];

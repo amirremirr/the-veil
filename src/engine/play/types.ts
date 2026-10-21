@@ -52,12 +52,19 @@ export interface PlayState {
    */
   belief: Record<PlayerId, Record<PlayerId, number>>;
   /**
-   * D-120: the joint belief behind `belief`. Each bot weighs every set of other contestants the fact could
-   * be true of, given how many it is true of (Episode 3: exactly two are high risk).
+   * D-120, D-128: the joint belief behind `belief` and `belief2`. Each bot weighs every pair of sets of
+   * other contestants (who is high risk, who is a Worrier) with the dealt sizes (two of four each).
    */
-  joint: Record<PlayerId, { sets: PlayerId[][]; w: number[] }>;
+  joint: Record<PlayerId, { states: Array<{ a: PlayerId[]; b: PlayerId[] }>; w: number[] }>;
+  /** D-128: each bot's belief that each other contestant holds the second hidden trait (Episode 3: Worrier). Private. */
+  belief2: Record<PlayerId, Record<PlayerId, number>>;
   /** Every claim decision of the life, silence included (private: `lieGain` and `truth` reveal types). */
   claimLog: ClaimRecord[];
+  /**
+   * Simulator only (D-130, contested decisions): at each bar vote, each member's belief that each other
+   * applicant is high risk (a human member's is the audience poll). Private: beliefs are never in a view.
+   */
+  barReads: Array<{ level: LevelId; round: number; member: PlayerId; target: PlayerId; belief: number }>;
 }
 
 /** One claim decision (v2 Section 3), kept for the simulator's S-a and S-b and for the near miss. */
