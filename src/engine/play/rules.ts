@@ -18,7 +18,7 @@ export const PLAYABLE_EPISODES: LevelId[] = [3];
 export function initPlay(s: GameState): PlayState {
   const start = s.mode === 'EPISODE' ? PLAY.EPISODE_STARTING_BANK : PLAY.STARTING_BANK;
   const per = <X>(x: X) => Object.fromEntries(s.players.map((p) => [p.id, x])) as Record<PlayerId, X>;
-  return { banks: per(start), debtStress: per(0), guessPoints: per(0), event: null, events: [], bankHistory: [], episodeStart: {}, guesses: {}, honesty: {}, belief: {}, claimLog: [] };
+  return { banks: per(start), debtStress: per(0), guessPoints: per(0), event: null, events: [], bankHistory: [], episodeStart: {}, guesses: {}, honesty: {}, belief: {}, joint: {}, claimLog: [] };
 }
 
 /** Section 4.2: points lost at the end of a round with this bank. */
@@ -58,11 +58,28 @@ export function playScore(s: GameState, pid: PlayerId): number {
  * if the game ended after this round, given this round's money W for everyone (seat order). The bank
  * moves by W minus living cost and this round's debt stress counts, so a player near debt is risk averse.
  */
-export function playRoundValue(s: GameState, card: ValuesCard, W: readonly number[], i: number, effortShares: readonly number[]): number {
+export function playRoundValue(s: GameState, card: ValuesCard, W: readonly number[], i: number, effortShares: readonly number[], drift: number | null = null): number {
   const pl = s.play!;
   const banks = s.players.map((p, j) => pl.banks[p.id] + W[j] - PLAY.LIVING_COST);
   const id = s.players[i].id;
-  return scoreOnBanks(card, banks, i, effortShares, pl.debtStress[id] + debtStressFor(banks[i]));
+  return scoreOnBanks(card, banks, i, effortShares, pl.debtStress[id] + debtStressFor(banks[i])) - futureStress(s, banks[i], drift);
+}
+
+/** The episode's rounds still to come after the current one. */
+export function roundsLeft(s: GameState): number {
+  return Math.max(0, Math.max(...s.phaseQueue.map((p) => p.round)) - s.round);
+}
+
+/**
+ * D-122: the debt stress a bank of `bank` after this round will still cost in the episode's later rounds,
+ * if it moves by `drift` each round: the sum over k = 1..roundsLeft of debtStressFor(bank + k x drift).
+ * Zero without a drift (DEBT_HORIZON off).
+ */
+export function futureStress(s: GameState, bank: number, drift: number | null): number {
+  if (drift === null) return 0;
+  let out = 0;
+  for (let k = 1; k <= roundsLeft(s); k++) out += debtStressFor(bank + k * drift);
+  return out;
 }
 
 /**
@@ -70,10 +87,11 @@ export function playRoundValue(s: GameState, card: ValuesCard, W: readonly numbe
  * others, replacing Study's hardship-adjusted own money): money minus the debt stress it would cause.
  * `j < 0` uses the table's average bank.
  */
-export function playNet(s: GameState, j: number, w: number): number {
+export function playNet(s: GameState, j: number, w: number, drift: number | null = null): number {
   const pl = s.play!;
   const bank = j >= 0 ? pl.banks[s.players[j].id] : bankList(s).reduce((a, b) => a + b, 0) / s.players.length;
-  return w - debtStressFor(bank + w - PLAY.LIVING_COST);
+  const after = bank + w - PLAY.LIVING_COST;
+  return w - debtStressFor(after) - futureStress(s, after, drift);
 }
 
 /** Ranks by Play score (1 = leading; ties share the better rank). */

@@ -5,7 +5,7 @@ import { createInitialState, reduce, replay, step, visibleState, waitingOn, HUMA
 import { autoDecision } from '../../src/engine/auto';
 import { act, newTable, screenKind, tableStep, type Table } from '../../src/shared/flow';
 import { PLAY } from '../../src/engine/play/params';
-import { debtStressFor, playScore } from '../../src/engine/play/rules';
+import { debtStressFor, futureStress, playScore, roundsLeft } from '../../src/engine/play/rules';
 import { baselineBanks } from '../../src/engine/play/nearMiss';
 import { canResume, currentRules, gameRecord, paramsHash, RulesMismatchError } from '../../src/engine/version';
 import type { L3Debrief } from '../../src/engine/levels/level3';
@@ -375,5 +375,56 @@ describe('near misses (PLAY_V2_SPEC.md Section 6.1)', () => {
       expect('nearMiss' in (debrief.levelResults[3] as object)).toBe(false);
     }
     expect(found).toBeGreaterThan(0);
+  });
+});
+
+describe('Q1 review fixes (D-120 to D-122)', () => {
+  it('risk types are dealt from a deck: exactly two of four are high risk', () => {
+    for (let k = 0; k < 40; k++) {
+      const s = createInitialState({ ...cfg(`deal-${k}`), allBots: true });
+      step(s, { type: 'ADVANCE' });
+      const types = Object.values((s.levelState as { types: Record<string, string> }).types);
+      expect(types.filter((t) => t === 'HIGH')).toHaveLength(2);
+    }
+  });
+  it('a bot starts at 1/3 for each other player if it is high risk, 2/3 if low, and stays consistent with two highs', () => {
+    const s = createInitialState(cfg('prior'));
+    const g = act(s, HUMAN_ID);
+    const types = (g.levelState as { types: Record<string, string> }).types;
+    for (const [obs, m] of Object.entries(g.play!.belief)) {
+      for (const b of Object.values(m)) expect(b).toBeCloseTo(types[obs] === 'HIGH' ? 1 / 3 : 2 / 3, 9);
+      expect(Object.values(m).reduce((a, b) => a + b, 0)).toBeCloseTo(types[obs] === 'HIGH' ? 1 : 2, 9);
+    }
+    // Later, after claims and results, the marginals still add up to the highs left among the others.
+    const done = botsOnly('prior-2');
+    const t2 = (done.levelState as { types: Record<string, string> }).types;
+    for (const [obs, m] of Object.entries(done.play!.belief)) expect(Object.values(m).reduce((a, b) => a + b, 0)).toBeCloseTo(t2[obs] === 'HIGH' ? 1 : 2, 1);
+  });
+  it('the launch round signs everyone up at the pooled price; no bar until round 2, when every round-1 player is a member', () => {
+    expect(PLAY.L3_LAUNCH).toBe(true);
+    for (let k = 0; k < 20; k++) {
+      const s = botsOnly(`launch-${k}`);
+      const d = s.levelResults[3] as L3Debrief;
+      const r1 = d.rounds[0];
+      expect(r1.launch).toBe(true);
+      expect(r1.bar).toBeUndefined();
+      for (const p of s.players) expect(r1.choices[p.id].buy).toBe(true);
+      if (d.rounds[1].bar) expect(d.rounds[1].bar.members).toEqual(s.players.map((p) => p.id));
+    }
+    const states = playSolo('launch-human');
+    const atChoice = states.find((x) => x.phase.kind === 'DECIDE' && x.phase.step === 'CHOICE' && x.round === 1)!;
+    const n = reduce(atChoice, { type: 'SUBMIT_DECISION', from: HUMAN_ID, decision: { buy: false, gym: false } });
+    expect((n.levelState as { rounds: Array<{ choices: Record<string, { buy: boolean }> }> }).rounds[0].choices[HUMAN_ID].buy).toBe(true);
+  });
+  it('debt horizon: the stress of later rounds, on a bank that drifts by income minus living cost minus the pooled price', () => {
+    expect(PLAY.DEBT_HORIZON).toBe(true);
+    const s = createInitialState({ ...cfg('horizon'), allBots: true });
+    step(s, { type: 'ADVANCE' });
+    while (s.round < 2) step(s, { type: 'ADVANCE' });
+    expect(roundsLeft(s)).toBe(2);
+    const drift = 31.5;
+    expect(futureStress(s, -100, drift)).toBeCloseTo(debtStressFor(-68.5) + debtStressFor(-37), 9);
+    expect(futureStress(s, 50, drift)).toBe(0);
+    expect(futureStress(s, -100, null)).toBe(0);
   });
 });

@@ -8,7 +8,7 @@ export const PLAY = {
   /** Section 4.1: every contestant starts a life with this many coins. */
   STARTING_BANK: 100,
   /** Section 4.4: the starting bank of a single episode. Spec guess 100; tuned to 20 so one loss means debt (D-97). */
-  EPISODE_STARTING_BANK: 20,
+  EPISODE_STARTING_BANK: 10,
   /** Section 4.1: bank = bank + W - LIVING_COST after every round. */
   LIVING_COST: 30,
   /** Section 4.2: points lost per coin of debt at the end of a round, capped per round. */
@@ -35,18 +35,22 @@ export const PLAY = {
    * games it changed no bot's choice in any of its 81 draws (D-115). Its numbers stay in L3_EVENTS.
    */
   L3_DECK: ['STORM', 'GYM_SALE', 'PRICE_WAR', 'BREAKTHROUGH', 'LEAKED'] as string[],
+  /** D-121: round 1 of Episode 3 is a launch round: SafeHands signs everyone up at the pooled price. */
+  L3_LAUNCH: true,
+  /** D-122: bots count the debt stress a bank will still cost in the episode's later rounds. */
+  DEBT_HORIZON: true,
   /** v2 Section 5: Leaked Medical Files shows every risk type, only from this round of Episode 3. */
   LEAKED_FROM_ROUND: 2,
   /**
    * v2 Section 3.5: each bot's honesty trait, drawn once per life from the bot stream, uniform in its
    * personality's range. A seat played by the timeout rule uses the AUTO range (D-111).
    */
-  HONESTY_RANGE: { chet: [0.3, 0.5], marigold: [0.85, 1], ugo: [0.4, 0.9], dot: [0.7, 0.9], AUTO: [0.7, 0.9] } as Record<string, [number, number]>,
+  HONESTY_RANGE: { chet: [0.3, 0.5], marigold: [0.85, 1], ugo: [0.55, 0.8], dot: [0.7, 0.9], AUTO: [0.7, 0.9] } as Record<string, [number, number]>,
   /**
    * v2 Section 3.5: coins a contestant gives up per unit of track record (share of claims true). A bot
    * lies when gain x (1 - honesty) exceeds CREDIBILITY_VALUE x the record it loses when caught (D-112).
    */
-  CREDIBILITY_VALUE: 3,
+  CREDIBILITY_VALUE: 6,
   /** v2 Section 3.5: how far one claim moves a listener's belief, times the speaker's record (as Study's CLAIM_BELIEF_WEIGHT). */
   CLAIM_WEIGHT: 0.5,
   /** Beliefs about a hidden fact are kept inside these bounds (as Study's BELIEF_FLOOR). */

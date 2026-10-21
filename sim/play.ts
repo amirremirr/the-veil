@@ -87,6 +87,9 @@ interface Rec {
   r3Price: number | null;
   /** Bot claim decisions where the lie would gain coins, and how many of them lied (S-a). */
   lieChances: number;
+  lieGains: number[];
+  byBot: Record<string, [number, number]>;
+  open3: boolean;
   lies: number;
   /** Lies where the lie gained nothing over the truth (a bot rarely tells one). */
   otherLies: number;
@@ -115,11 +118,14 @@ interface Rec {
 function record(s: GameState, watch: Watch): Rec {
   const d = s.levelResults[3] as L3Debrief;
   const pl = s.play!;
-  const r1 = d.rounds[0];
-  const r2 = d.rounds[1];
+  // The first voluntary round: round 2 after a launch round (D-121), else round 1. Buyers are those who
+  // applied for cover (self-selection; a barred applicant still chose to buy).
+  const f = PLAY.L3_LAUNCH ? 2 : 1;
+  const r1 = d.rounds[f - 1];
+  const r2 = d.rounds[f];
   let high = 0;
   let low = 0;
-  for (const p of s.players) if (r1.premium !== null && r1.choices[p.id].buy) d.types[p.id] === 'HIGH' ? high++ : low++;
+  for (const p of s.players) if (r1.regime === 'VOL' && r1.premium !== null && (r1.applied?.[p.id] ?? r1.choices[p.id].buy)) d.types[p.id] === 'HIGH' ? high++ : low++;
   // Leader after each round, by the Play score at that moment (history S; ties go to the first seat).
   const lead = pl.bankHistory.map((_, k) => {
     const S = s.history[k].S;
@@ -140,11 +146,25 @@ function record(s: GameState, watch: Watch): Rec {
   const bars = d.rounds.map((r) => r.bar?.barred).filter((x): x is string => !!x);
   const r3 = d.rounds[2];
   const chances = pl.claimLog.filter((c) => c.lieGain !== null && c.lieGain > 0.01);
+  const open = (r: (typeof d.rounds)[number] | undefined) => !!r && r.regime === 'VOL' && r.premium !== null;
+  // New F-d (author, v2 8.2): a liar who got in, in a round where the bar voted.
+  const liarIn = pl.claimLog.some((c) => c.lied && d.rounds[c.round - 1]?.bar && d.rounds[c.round - 1].choices[c.pid].buy);
+  const byBot: Record<string, [number, number]> = {};
+  for (const c of chances) {
+    const key = s.players.find((p) => p.id === c.pid)!.botProfile!.key;
+    byBot[key] ??= [0, 0];
+    byBot[key][0]++;
+    if (c.lied) byBot[key][1]++;
+  }
   return {
     watch,
     barHigh: bars.filter((b) => d.types[b] === 'HIGH').length,
     barLow: bars.filter((b) => d.types[b] === 'LOW').length,
-    r3Price: r3 && r3.regime === 'VOL' && r3.premium !== null ? r3.listPrice ?? r3.premium : null,
+    // E3d: the price round 3's pool sets (after the last voluntary round), against the first voluntary round's.
+    r3Price: open(r3) && r3.nextPremium !== null ? r3.nextPremium : null,
+    open3: open(r3),
+    lieGains: chances.map((c) => c.lieGain!),
+    byBot,
     lieChances: chances.length,
     lies: chances.filter((c) => c.lied).length,
     otherLies: pl.claimLog.filter((c) => c.lied && !(c.lieGain !== null && c.lieGain > 0.01)).length,
@@ -154,12 +174,12 @@ function record(s: GameState, watch: Watch): Rec {
     lowBuyersR1: low,
     r1Price: r1.listPrice ?? r1.premium ?? 0,
     r2Price: r2.listPrice ?? r2.premium ?? 0,
-    r2Open: r2.regime === 'VOL' && r2.premium !== null,
+    r2Open: open(r2),
     collapsed: r2.premium === null || Object.values(r2.choices).every((c) => !c.buy),
     anyDebt: pl.bankHistory.some((h) => Object.values(h.banks).some((b) => b < 0)),
     leadChanges: changes,
     close: sorted.length > 1 && best - sorted[1] <= 0.15 * Math.abs(best),
-    bigMoment: anyEvent || maxSwing >= 80,
+    bigMoment: anyEvent || maxSwing >= 80 || bars.length > 0 || liarIn,
     anyEvent,
     maxSwing,
     cards: s.players.map((p) => p.values),
@@ -232,18 +252,18 @@ interface Target {
   gate: boolean;
   note?: string;
 }
+const FV = PLAY.L3_LAUNCH ? 2 : 1;
 const targets: Target[] = [
-  { name: 'E3a round-1 High-risk buyers / Low-risk buyers', stat: buyerRatio, lo: 2, gate: true },
-  { name: 'E3b mean round-2 price over round 1, open markets', stat: priceRise, lo: 0.15, gate: true, note: `${open(recs).length} of ${recs.length} games open; insurer's price before any Price War discount` },
+  { name: `E3a round-${FV} High-risk / Low-risk applicants (first voluntary round)`, stat: buyerRatio, lo: 2, gate: true },
+  { name: `E3b mean round-${FV + 1} price over round ${FV}, open markets`, stat: priceRise, lo: 0.15, gate: true, note: `${open(recs).length} of ${recs.length} games open; insurer's price before any Price War discount` },
   { name: 'E3c share of bars that hit a high-risk contestant', stat: barHighShare, lo: 0.5, gate: true, note: `${sum(recs.map((r) => r.barHigh + r.barLow))} bars in ${recs.length} games; the bar screens somewhat` },
-  { name: 'E3d mean round-3 price over round 1, markets open in round 3', stat: priceRise3, lo: 0, gate: true, note: `${open3(recs).length} of ${recs.length} games open in round 3; screening does not fully fix it` },
+  { name: `E3d price set by round 3's pool over round ${FV}, markets open in round 3`, stat: priceRise3, lo: 0, gate: true, note: `${open3(recs).length} of ${recs.length} games; screening does not fully fix it` },
   { name: 'S-a bots lie where lying would pay', stat: lieShare, lo: 0.15, hi: 0.5, gate: false, note: `${sum(recs.map((r) => r.lieChances))} bot claim decisions where the lie gains coins` },
   { name: 'S-b a reader using the audience belief judges a claim TRUE or LIE correctly', stat: readAcc, lo: 0.55, hi: 0.8, gate: false, note: `${sum(recs.map((r) => r.watch.reads.length))} claims, judged right after their round's results` },
   { name: 'F-f some contestant goes into debt', stat: avg((r) => (r.anyDebt ? 1 : 0)), lo: 0.3, hi: 0.7, gate: true, note: 'per episode (per life from P3)' },
   { name: 'F-a lead changes', stat: avg((r) => r.leadChanges), lo: 2, gate: false, note: 'per episode, not per life (4 rounds allow at most 3)' },
   { name: 'F-c close finish, top two within 15%', stat: avg((r) => (r.close ? 1 : 0)), lo: 0.4, gate: false, note: 'per episode' },
-  { name: 'F-d big moment (an event or an 80+ bank swing)', stat: avg((r) => (r.bigMoment ? 1 : 0)), lo: 0.9, gate: false },
-  { name: 'F-d with v2 moments (also a bar or a lie stamped at the reveal)', stat: avg((r) => (r.bigMoment || r.barHigh + r.barLow > 0 || r.lies + r.otherLies > 0 ? 1 : 0)), lo: 0.9, gate: false, note: 'not the spec definition; shown for comparison' },
+  { name: 'F-d big moment (an event, an 80+ swing, a bar, or a liar who got in)', stat: avg((r) => (r.bigMoment ? 1 : 0)), lo: 0.9, gate: false },
   ...VALUES_CARDS.map((c) => ({ name: `F-e mission win share, ${c}`, stat: winRate(c), lo: 0.15, hi: 0.35, gate: false, note: 'per seat, per episode' })),
 ];
 
@@ -254,8 +274,8 @@ lines.push(`Seeds ${seedBase}-0 to ${seedBase}-${games - 1}. Code ${revision}.${
 lines.push('BOT-ONLY TABLES: these numbers describe the bots, not people. Targets are design targets, not findings (D-76).');
 lines.push(`Each value is mean ± bootstrap SE over games (${BOOT} resamples).`);
 lines.push('');
-lines.push(`Round-1 buyers per game: High ${avg((r) => r.highBuyersR1)(recs).toFixed(3)}, Low ${avg((r) => r.lowBuyersR1)(recs).toFixed(3)}`);
-lines.push(`Mean list price: round 1 ${mean(recs.map((r) => r.r1Price)).toFixed(2)}, round 2 (open) ${mean(open(recs).map((r) => r.r2Price)).toFixed(2)}; market collapsed by round 2 in ${(avg((r) => (r.collapsed ? 1 : 0))(recs) * 100).toFixed(1)}%`);
+lines.push(`Round-${FV} applicants per game: High ${avg((r) => r.highBuyersR1)(recs).toFixed(3)}, Low ${avg((r) => r.lowBuyersR1)(recs).toFixed(3)}`);
+lines.push(`Mean list price: round ${FV} ${mean(recs.map((r) => r.r1Price)).toFixed(2)}, round ${FV + 1} (open) ${mean(open(recs).map((r) => r.r2Price)).toFixed(2)}; market closed by round ${FV + 1} in ${(avg((r) => (r.collapsed ? 1 : 0))(recs) * 100).toFixed(1)}%`);
 lines.push(`Events: at least one card in ${(avg((r) => (r.anyEvent ? 1 : 0))(recs) * 100).toFixed(1)}% of episodes; largest single-round bank swing ${mean(recs.map((r) => r.maxSwing)).toFixed(1)} on average`);
 lines.push(`Mean final bank ${mean(recs.flatMap((r) => r.banks)).toFixed(1)}; mean final score ${mean(recs.flatMap((r) => r.final)).toFixed(1)}`);
 lines.push(`Mission value / mean bank (MISSION_SCALE calibration, D-96): ${VALUES_CARDS.map((c) => `${c} ${missionRatio(c)(recs).toFixed(3)} ± ${se(missionRatio(c)).toFixed(3)} (scale ${(1 / missionRatio(c)(recs)).toFixed(3)})`).join(', ')}`);
@@ -279,6 +299,17 @@ for (const tg of targets) {
 }
 lines.push('  N/A [reported]                         F-b comeback from last after Episode 2: needs Episode 2 (P2)');
 lines.push('');
+lines.push(`Market still open in round 3 (SafeHands offers cover): ${(avg((r) => (r.open3 ? 1 : 0))(recs) * 100).toFixed(1)}% ± ${(se(avg((r) => (r.open3 ? 1 : 0))) * 100).toFixed(1)}`);
+const gains = recs.flatMap((r) => r.lieGains).sort((a, b) => a - b);
+const q = (x: number) => (gains.length ? gains[Math.floor(x * (gains.length - 1))].toFixed(2) : 'n/a');
+lines.push(`Lie gain (coins, claim decisions where lying would pay): median ${q(0.5)}, 90th percentile ${q(0.9)}`);
+const bots: Record<string, [number, number]> = {};
+for (const r of recs) for (const [k, [c, l]] of Object.entries(r.byBot)) {
+  bots[k] ??= [0, 0];
+  bots[k][0] += c;
+  bots[k][1] += l;
+}
+lines.push(`Lie rate per bot (lies / chances): ${['chet', 'ugo', 'dot', 'marigold'].map((k) => `${k} ${bots[k] ? ((100 * bots[k][1]) / bots[k][0]).toFixed(1) : 'n/a'}% (${bots[k]?.[1] ?? 0}/${bots[k]?.[0] ?? 0})`).join(', ')}`);
 lines.push(`Claims: ${sum(recs.map((r) => r.claims))} made, ${sum(recs.map((r) => r.silences))} silences, ${sum(recs.map((r) => r.lies + r.otherLies))} lies (bots).`);
 lines.push('Deck trim rule (v2 Section 5): share of draws in which the card changes no bot\'s best cover or gym choice (cut above 90%):');
 for (const id of [...new Set(recs.flatMap((r) => r.watch.cards.map((c) => c.id)))].sort()) {

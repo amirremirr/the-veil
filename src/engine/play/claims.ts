@@ -27,35 +27,97 @@ export function honestyOf(s: GameState, pid: PlayerId): number {
   return (lo + hi) / 2;
 }
 
-/** At an episode start: every bot believes the hidden fact of every other contestant with this prior. */
-export function initFactBeliefs(s: GameState, prior: number): void {
-  const b: Record<PlayerId, Record<PlayerId, number>> = {};
+/** Every way to pick k of the given players, in seat order. */
+function combinations(xs: PlayerId[], k: number): PlayerId[][] {
+  if (k === 0) return [[]];
+  if (k > xs.length) return [];
+  const [h, ...rest] = xs;
+  return [...combinations(rest, k - 1).map((c) => [h, ...c]), ...combinations(rest, k)];
+}
+
+/**
+ * At an episode start (D-120): the hidden fact is true of exactly `count` contestants (Episode 3: two are
+ * high risk). Each bot knows its own fact, so it holds a joint belief over which of the others it is true
+ * of, uniform at first: with 2 of 4 high, a high bot gives each other player 1/3, a low bot 2/3.
+ */
+export function initFactBeliefs(s: GameState, count: number, holds: (pid: PlayerId) => boolean): void {
+  const pl = s.play!;
+  pl.belief = {};
+  pl.joint = {};
   for (const obs of s.players) {
     if (obs.isHuman) continue;
-    b[obs.id] = {};
-    for (const o of s.players) if (o.id !== obs.id) b[obs.id][o.id] = prior;
+    const others = s.players.filter((o) => o.id !== obs.id).map((o) => o.id);
+    const sets = combinations(others, count - (holds(obs.id) ? 1 : 0));
+    pl.joint[obs.id] = { sets, w: sets.map(() => 1 / sets.length) };
+    refresh(s, obs.id);
   }
-  s.play!.belief = b;
 }
 
-const clamp = (x: number) => Math.min(1 - PLAY.BELIEF_FLOOR, Math.max(PLAY.BELIEF_FLOOR, x));
-
-/** A belief after a claim: mixed toward the claim by CLAIM_WEIGHT x the speaker's record (as Study's rule). */
-export function mixClaim(b: number, claimTrue: boolean, reliability: number): number {
-  const w = PLAY.CLAIM_WEIGHT * reliability;
-  return clamp((1 - w) * b + w * (claimTrue ? 1 : 0));
+/** Normalize the joint weights, keep each at least BELIEF_FLOOR, and recompute the marginals. */
+function settle(s: GameState, obs: PlayerId, w: number[]): void {
+  const j = s.play!.joint[obs];
+  let z = w.reduce((a, b) => a + b, 0);
+  if (!(z > 0)) return;
+  let n = w.map((x) => Math.max(PLAY.BELIEF_FLOOR, x / z));
+  z = n.reduce((a, b) => a + b, 0);
+  n = n.map((x) => x / z);
+  j.w = n;
+  refresh(s, obs);
 }
 
-/** Bayes' rule on a belief that the fact is true, given the likelihood of what was seen under each case. */
-export function bayes(b: number, likTrue: number, likFalse: number): number {
-  const num = b * likTrue;
-  const den = num + (1 - b) * likFalse;
-  return den > 0 ? clamp(num / den) : b;
+function marginal(sets: PlayerId[][], w: number[], target: PlayerId): number {
+  return sets.reduce((a, set, i) => (set.includes(target) ? a + w[i] : a), 0);
 }
 
-/** Update every bot's belief about `target` with a function of the old belief. */
-export function updateBeliefs(s: GameState, target: PlayerId, f: (b: number, observer: PlayerId) => number): void {
-  for (const [obs, m] of Object.entries(s.play!.belief)) if (obs !== target && m[target] !== undefined) m[target] = f(m[target], obs);
+function refresh(s: GameState, obs: PlayerId): void {
+  const pl = s.play!;
+  const j = pl.joint[obs];
+  pl.belief[obs] = {};
+  for (const o of s.players) if (o.id !== obs) pl.belief[obs][o.id] = marginal(j.sets, j.w, o.id);
+}
+
+/** Bayes' rule on every bot's joint belief, given the likelihood of what `target` did if the fact is true or false of it. */
+export function observe(s: GameState, target: PlayerId, likTrue: number, likFalse: number): void {
+  for (const [obs, j] of Object.entries(s.play!.joint)) {
+    if (obs === target) continue;
+    settle(s, obs, j.w.map((x, i) => x * (j.sets[i].includes(target) ? likTrue : likFalse)));
+  }
+}
+
+/**
+ * A claim (Study's rule on a joint belief): mix the belief toward the same belief conditioned on the claim
+ * being true, with weight CLAIM_WEIGHT x the speaker's record.
+ */
+function claimWeights(w: number[], sets: PlayerId[][], target: PlayerId, claimTrue: boolean, reliability: number): number[] | null {
+  const cond = w.map((x, i) => (sets[i].includes(target) === claimTrue ? x : 0));
+  const z = cond.reduce((a, b) => a + b, 0);
+  if (!(z > 0)) return null;
+  const k = PLAY.CLAIM_WEIGHT * reliability;
+  return w.map((x, i) => (1 - k) * x + (k * cond[i]) / z);
+}
+
+export function claimUpdate(s: GameState, target: PlayerId, claimTrue: boolean, reliability: number): void {
+  for (const [obs, j] of Object.entries(s.play!.joint)) {
+    if (obs === target) continue;
+    const w = claimWeights(j.w, j.sets, target, claimTrue, reliability);
+    if (w) settle(s, obs, w);
+  }
+}
+
+/** What `obs` would believe of `target` after this claim (nothing changes). */
+export function beliefAfterClaim(s: GameState, obs: PlayerId, target: PlayerId, claimTrue: boolean, reliability: number): number {
+  const j = s.play!.joint[obs];
+  const w = claimWeights(j.w, j.sets, target, claimTrue, reliability) ?? j.w;
+  const z = w.reduce((a, b) => a + b, 0);
+  return marginal(j.sets, w.map((x) => x / z), target);
+}
+
+/** Every fact becomes public (Leaked Medical Files): every bot's belief settles on the truth. */
+export function revealFacts(s: GameState, holds: (pid: PlayerId) => boolean): void {
+  for (const [obs, j] of Object.entries(s.play!.joint)) {
+    const truth = s.players.filter((p) => p.id !== obs && holds(p.id)).map((p) => p.id);
+    settle(s, obs, j.sets.map((set) => (set.length === truth.length && set.every((x) => truth.includes(x)) ? 1 : 0)));
+  }
 }
 
 /** The audience poll (v2 3.2): the average belief of every bot except the contestant itself. */
@@ -107,7 +169,7 @@ export function postClaims(
       resolved: false,
     };
     s.messages.push(m);
-    updateBeliefs(s, p.id, (b) => mixClaim(b, isTrueFact(value), rel[p.id]));
+    claimUpdate(s, p.id, isTrueFact(value), rel[p.id]);
   }
 }
 

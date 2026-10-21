@@ -51,6 +51,11 @@ export interface PlayState {
    * (Episode 3: P(high risk)). Reset when an episode starts. Private; the view shows only the average.
    */
   belief: Record<PlayerId, Record<PlayerId, number>>;
+  /**
+   * D-120: the joint belief behind `belief`. Each bot weighs every set of other contestants the fact could
+   * be true of, given how many it is true of (Episode 3: exactly two are high risk).
+   */
+  joint: Record<PlayerId, { sets: PlayerId[][]; w: number[] }>;
   /** Every claim decision of the life, silence included (private: `lieGain` and `truth` reveal types). */
   claimLog: ClaimRecord[];
 }
