@@ -31,6 +31,9 @@ export type L3View = {
   cardsRevealed?: boolean;
   /** Last round's pool members, who vote on the bar this round. */
   members?: string[];
+  /** D-128: your own worry card, and everyone's once the cards flip. */
+  myWorry?: 'WORRIER' | 'CALM';
+  worry?: Record<string, 'WORRIER' | 'CALM'>;
 };
 const REGIMES: Regime[] = ['VOL', 'M50', 'M100'];
 export const regimeName = (r: Regime) => t(`play.l3.regimes.${r}.name`);
@@ -104,7 +107,7 @@ export function ClaimScreen({ v }: { v: ViewState }) {
     <Stage v={v} chatFirst footer={<BigButton disabled={!x} onClick={() => act(x)}>{t('play.claim.submit')}</BigButton>}>
       <h1 className="h-show text-4xl leading-tight">{t('play.claim.title')}</h1>
       <div className="mt-3 rounded-2xl bg-card p-3">
-        <p className="h-show text-2xl leading-tight">{t(`play.claim.you.${lv.myType}`, { p: pct(myOdds(v, false)) })}</p>
+        <p className="h-show text-2xl leading-tight">{t(`play.claim.you.${lv.myType}`, { p: pct(myOdds(v, false)), worry: t(`play.myCards.worry.${lv.myWorry ?? 'CALM'}`) })}</p>
         <p className="mt-1 text-base">{t('play.claim.two')}</p>
       </div>
       <div className="mt-auto space-y-2 pt-3" role="group" aria-label={t('play.claim.title')}>
@@ -113,6 +116,31 @@ export function ClaimScreen({ v }: { v: ViewState }) {
             <span className="h-show block text-xl leading-tight">{t(`play.claim.opts.${o}.title`)}</span>
           </button>
         ))}
+      </div>
+    </Stage>
+  );
+}
+
+/** D-128: before the first claim, your two private cards and what they mean. */
+export function MyCardsBeat({ v, next }: { v: ViewState; next: () => void }) {
+  const lv = lv3(v);
+  const worry = lv.myWorry ?? 'CALM';
+  return (
+    <Stage v={v} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
+      <div className="my-auto" data-mycards>
+        <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.myCards.label')}</p>
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <div className={`rounded-2xl p-3 ${lv.myType === 'HIGH' ? 'bg-stamp text-onspot' : 'bg-good text-onspot'}`}>
+            <p className="h-show text-2xl leading-tight">{t(`play.cards.${lv.myType}`)}</p>
+            <p className="mt-1 text-sm">{t('play.myCards.riskLine', { p: pct(myOdds(v, false)) })}</p>
+          </div>
+          <div className={`rounded-2xl p-3 ${worry === 'WORRIER' ? 'bg-spot text-onspot' : 'bg-card'}`}>
+            <p className="h-show text-2xl leading-tight">{t(`play.myCards.worry.${worry}`)}</p>
+            <p className="mt-1 text-sm">{t(`play.myCards.worryLine.${worry}`, { m: PLAY.WORRIER_STRESS_MULT })}</p>
+          </div>
+        </div>
+        <p className="mt-4 text-base">{t('play.myCards.two')}</p>
+        <p className="mt-2 text-sm text-soft">{t('play.myCards.note')}</p>
       </div>
     </Stage>
   );
@@ -263,7 +291,18 @@ export function CardsReveal({ v }: { v: ViewState }) {
   const lv = lv3(v);
   const off = useMotionOff();
   const types = lv.types ?? {};
+  const worry = lv.worry ?? {};
   const poll = v.play!.poll ?? {};
+  // D-128 stamps: a low-risk Worrier who applied or was barred, and a high-risk Calm player who never applied.
+  const voluntary = lv.rounds.filter((r) => r.regime === 'VOL' && r.premium !== null && !r.launch);
+  const appliedEver = (id: string) => voluntary.some((r) => r.applied?.[id]);
+  const barredEver = (id: string) => lv.rounds.some((r) => r.bar?.barred === id);
+  const note = (id: string) =>
+    types[id] === 'LOW' && worry[id] === 'WORRIER' && (appliedEver(id) || barredEver(id))
+      ? t('play.cards.justWorrier')
+      : types[id] === 'HIGH' && worry[id] === 'CALM' && voluntary.length && !appliedEver(id)
+        ? t('play.cards.tooCalm')
+        : '';
   const rows = v.players.map((p) => {
     const cl = checkedClaims(v, p.id);
     const lies = cl.filter((c) => !c.kept).length;
@@ -291,8 +330,10 @@ export function CardsReveal({ v }: { v: ViewState }) {
             <div className="flex items-center gap-2">
               <Avatar bot={p.botKey} human={p.isHuman} size={28} />
               <span className="flex-1 truncate text-sm font-bold">{shortName(v, p.id)}</span>
+              {worry[p.id] && <span className={`rounded-md px-1.5 text-xs font-bold ${worry[p.id] === 'WORRIER' ? 'bg-spot text-onspot' : 'bg-paper text-ink'}`}>{t(`play.myCards.worry.${worry[p.id]}`)}</span>}
               <span className={`h-show rounded-md px-2 text-base ${types[p.id] === 'HIGH' ? 'bg-stamp text-onspot' : 'bg-good text-onspot'}`}>{t(`play.cards.${types[p.id]}`)}</span>
             </div>
+            {note(p.id) && <p className="mt-0.5 text-xs font-bold text-spot">{note(p.id)}</p>}
             <p className="mt-1 flex flex-wrap gap-1 text-[10px]">
               {cl.length ? (
                 cl.map((c) => (

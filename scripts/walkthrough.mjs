@@ -52,7 +52,7 @@ function measure() {
   const g = window.__veil.getState().game;
   // Play screens: the top bar is part of the screen, so count the whole page (D-108).
   const root = (g.play ? document.getElementById('root') : document.querySelector('main')) || document.getElementById('root');
-  const beat = ['data-vote', 'data-event', 'data-claims', 'data-bar', 'data-outcome', 'data-price', 'data-cards', 'data-missions']
+  const beat = ['data-mycards', 'data-vote', 'data-event', 'data-claims', 'data-bar', 'data-outcome', 'data-price', 'data-cards', 'data-missions']
     .map((a) => (document.querySelector(`[${a}]`) ? a.slice(5) : ''))
     .find(Boolean) || (document.querySelector('[data-beat-next]') ? 'beat' : '');
   const isVisible = (el) => {

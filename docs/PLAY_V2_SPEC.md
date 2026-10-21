@@ -124,6 +124,8 @@ Each episode keeps its Study level's rules and v1's Play overrides except where 
 **Rounds:** 4. Round 1 is the launch round; rounds 2 and 3 are voluntary; the regime vote after round 3; round 4 under the chosen regime. Episode starting bank 10, loss 140 (DECISIONS.md D-97, D-123).
 **Risk types:** dealt from a deck of exactly 2 HIGH and 2 LOW (half the table, rounded), shuffled on the game stream. Every claim and move screen says "Two of you are high risk." Bots' beliefs know it: from its own type, a bot starts at 1/3 that a given other player is high (if it is high) or 2/3 (if low), and keeps a joint belief over the possible assignments (D-120).
 
+**Worry cards:** a second card from its own deck, half the table WORRIER and half CALM (2 of 4), independent of risk, shuffled on the game stream. A Worrier's debt stress is multiplied by `PLAY.WORRIER_STRESS_MULT` (3). Worry is private, never claimed, and revealed at the end with the risk card. It makes applying for cover ambiguous: careful people buy too (Finkelstein and McGarry 2006, "Multiple dimensions of private information"). Bots hold a joint belief over risk and worry and read applying and the gym through the choice model of all four combinations (D-128, D-129).
+
 SafeHands Mutual runs a pool. The price formula is Study's: `price = LOADING x LOSS x mean risk of last round's members` (premiumFor). Only who may join changes.
 
 **Round 1, the launch round:** "SafeHands signs everyone up for the launch season. After that, it's your choice." Everyone is covered at the pooled price. Each contestant still claims and chooses the gym. Every round-1 player is a member in round 2 (D-121).
@@ -136,9 +138,9 @@ SafeHands Mutual runs a pool. The price formula is Study's: `price = LOADING x L
 
 Bots value debt over the episode's remaining rounds, not only the current one (D-122).
 
-**Peak moment:** round 4's result under the voted regime, then risk cards flip with the claims stamped TRUE or LIE.
+**Peak moment:** round 4's result under the voted regime, then risk and worry cards flip with the claims stamped TRUE or LIE (and "Low risk. Just a Worrier." or "High risk. Too calm to buy." where it fits).
 **Why this teaches:** players do adverse selection to each other. Safe players leave because the price is too high, risky players lie to stay in, and the bar is screening, which is what real insurers try with underwriting. The mandate vote ends the game of chicken.
-**Mechanism check E3 (updated for the launch round):** in round 2 (the first voluntary round), high-risk buyers outnumber low-risk buyers at least 2 to 1 (E3a), and the mean round-3 price is at least 15% above round 2 when the market is open (E3b). The bar targets a high-risk contestant more often than a low-risk one (E3c: screening works somewhat), and the price round 3's pool sets is still above the round-2 price with the bar active (E3d: screening doesn't fully fix it).
+**Mechanism check E3 (updated for the launch round):** in round 2 (the first voluntary round), high-risk buyers outnumber low-risk buyers at least 2 to 1 (E3a), and the mean round-3 price is at least 15% above round 2 when the market is open (E3b). The bar targets a high-risk contestant more often than a low-risk one (E3c: at least 50%, reported with no upper bound: bars should be accurate), and the price round 3's pool sets is still above the round-2 price with the bar active (E3d: screening doesn't fully fix it).
 
 ### Episode 4: "The Hiring Round" (you are HireBot)
 **Mechanism:** old beliefs plus incentives create a gap with no prejudiced player.
@@ -218,6 +220,8 @@ E1 to E5 as updated in Section 4.
 - S-a: bots lie in 15% to 50% of claims where lying would pay (lies exist but aren't constant).
 - S-b: a reader using the bots' beliefs judges a claim TRUE or LIE correctly 55% to 80% of the time (interpretable, not solved).
 - S-c: in Episodes 2 to 5, the targeted action (bar, prize, hire, bribe) goes to a different contestant than it would under full information in 20% to 50% of episodes (reading matters).
+- S-e (Episode 3): low-risk players are 20% to 40% of round-2 applicants (applying is ambiguous).
+- Reported for Episode 3 (D-130): lie success (the share of risk lies whose teller bought cover that round or the next), bar recall (the share of high-risk applicants barred), contested decisions (the share of members' reads at bar votes between 0.35 and 0.65).
 - S-d: the honest bot (Marigold) and the liar (Chet) each win a life between 15% and 40% of the time (honesty isn't dominant either way).
 - v1's F-a to F-f stay, except F-d, redefined by the author after Q1: a big moment is an event card, an 80+ coin swing, a bar, or a lie stamped at the reveal that changed someone's outcome (a liar who got in, or an honest player who was barred). Target unchanged: at least 90% of episodes.
 

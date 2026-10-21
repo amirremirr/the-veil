@@ -1,0 +1,39 @@
+Walkthrough: seed playtest-3, 375x760, PLAY EPISODE 3, 4 players, Normal
+
+Group  Screens  Decisions  Words  Tallest(px)  Overlaps  HScroll
+Ep3         30          8   1611          760         0        0
+Total       30          8   1611                      0        0
+
+PASS: every Play screen fits 375x760.
+
+Screens:
+Ep3  R0 VALUES_REVEAL:                   words=  34 buttons= 1 height=  760
+Ep3  R1 INTRO:                           words=  96 buttons= 2 height=  760
+Ep3  R1 DECIDE:CLAIM (mycards)           words=  62 buttons= 2 height=  760
+Ep3  R1 DECIDE:CLAIM (event)             words=  55 buttons= 2 height=  760
+Ep3  R1 DECIDE:CLAIM                     words=  40 buttons= 5 height=  760
+Ep3  R1 DECIDE:CHOICE (claims)           words=  49 buttons= 2 height=  760
+Ep3  R1 DECIDE:CHOICE                    words=  53 buttons= 4 height=  760
+Ep3  R1 REVEAL:EVENTS (outcome)          words=  55 buttons= 2 height=  760
+Ep3  R1 REVEAL:EVENTS (price)            words=  49 buttons= 2 height=  760
+Ep3  R2 DECIDE:CLAIM (event)             words=  59 buttons= 2 height=  760
+Ep3  R2 DECIDE:CLAIM                     words=  40 buttons= 5 height=  760
+Ep3  R2 DECIDE:CHOICE (claims)           words=  49 buttons= 2 height=  760
+Ep3  R2 DECIDE:CHOICE                    words=  58 buttons= 7 height=  760
+Ep3  R2 REVEAL:EVENTS (bar)              words=  37 buttons= 2 height=  760
+Ep3  R2 REVEAL:EVENTS (outcome)          words=  54 buttons= 2 height=  760
+Ep3  R2 REVEAL:EVENTS (price)            words=  38 buttons= 2 height=  760
+Ep3  R3 DECIDE:CHOICE (event)            words=  61 buttons= 2 height=  760
+Ep3  R3 DECIDE:CHOICE                    words=  58 buttons= 7 height=  760
+Ep3  R3 REVEAL:EVENTS (bar)              words=  37 buttons= 2 height=  760
+Ep3  R3 REVEAL:EVENTS (outcome)          words=  54 buttons= 2 height=  760
+Ep3  R3 REVEAL:EVENTS (price)            words=  48 buttons= 2 height=  760
+Ep3  R3 DECIDE:REGIME                    words=  70 buttons= 5 height=  760
+Ep3  R4 DECIDE:CHOICE (vote)             words=  51 buttons= 2 height=  760
+Ep3  R4 DECIDE:CHOICE (event)            words=  59 buttons= 2 height=  760
+Ep3  R4 DECIDE:CHOICE                    words=  47 buttons= 4 height=  760
+Ep3  R4 REVEAL:EVENTS (outcome)          words=  58 buttons= 2 height=  760
+Ep3  R4 REVEAL:CARDS (cards)             words=  82 buttons= 2 height=  760
+Ep3  R4 GUESS:EPISODE                    words=  52 buttons=10 height=  760
+Ep3  R4 LEVEL_DEBRIEF: (missions)        words=  41 buttons= 1 height=  760
+Ep3  R4 LEVEL_DEBRIEF:                   words=  65 buttons= 3 height=  760

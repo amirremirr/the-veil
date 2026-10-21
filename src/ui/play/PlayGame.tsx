@@ -14,7 +14,7 @@ import { Sheet as TableSheet } from '../components/TableParts';
 import { LockedInPanel, useOnline, useWaiting } from '../components/Online';
 import { screenDecisionPhase } from '../../shared/flow';
 import { BigButton, Bubble, Stage } from './OnAir';
-import { BarBeat, CardsReveal, ClaimScreen, ClaimsBeat, MoveScreen, PriceBeat, RegimeScreen, VoteInBeat, WheelBeat, claimsOpen, hasPriceBeat, regimeName, roundClaims, type L3View } from './Episode3';
+import { BarBeat, CardsReveal, ClaimScreen, ClaimsBeat, MoveScreen, MyCardsBeat, PriceBeat, RegimeScreen, VoteInBeat, WheelBeat, claimsOpen, hasPriceBeat, regimeName, roundClaims, type L3View } from './Episode3';
 import { eventText, hostLine, missionName, pick } from './logic';
 import type { NearMiss } from '../../engine/play/types';
 
@@ -26,7 +26,7 @@ function ReallySheet({ v, onClose }: { v: ViewState; onClose: () => void }) {
   return (
     <TableSheet title={t('play.really.button')} closeLabel={t('play.really.close')} onClose={onClose}>
       <ul className="space-y-2" data-really>
-        {[0, 1, 2, 3].map((i) => (
+        {[0, 1, 2, 3, 4].map((i) => (
           <li key={i}>{t(`play.really.L${v.levelIndex}.${i}`)}</li>
         ))}
       </ul>
@@ -127,7 +127,8 @@ function DecisionFlow({ v }: { v: ViewState }) {
   const lv = v.levelView as L3View;
   const ev = v.play!.event;
   const first = stepId === 'CLAIM' || (stepId === 'CHOICE' && !claimsOpen(v));
-  const beats: Array<'vote' | 'event' | 'claims'> = [];
+  const beats: Array<'cards' | 'vote' | 'event' | 'claims'> = [];
+  if (first && v.round === 1) beats.push('cards');
   if (first) {
     if (v.round === PLAY.L3.VOLUNTARY_ROUNDS + 1 && lv.regimeVotes) beats.push('vote');
     if (ev && ev.id !== 'QUIET' && ev.round === v.round && ev.level === v.levelIndex) beats.push('event');
@@ -137,6 +138,7 @@ function DecisionFlow({ v }: { v: ViewState }) {
   const next = () => setK((x) => x + 1);
   if (k < beats.length) {
     const b = beats[k];
+    if (b === 'cards') return <MyCardsBeat v={v} next={next} />;
     if (b === 'vote') return <VoteInBeat v={v} next={next} />;
     if (b === 'event') return <EventBeat v={v} next={next} />;
     return <ClaimsBeat v={v} next={next} />;

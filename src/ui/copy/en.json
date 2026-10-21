@@ -1240,7 +1240,8 @@
         "SafeHands priced each round from the last round's buyers.",
         "Low-risk people stopped buying, so the pool got riskier and the price climbed. That's adverse selection.",
         "A mandate keeps everyone in the pool, so the price stops climbing.",
-        "The Bar is underwriting: real insurers check who is risky. Here the only check was what people said."
+        "The Bar is underwriting: real insurers check who is risky. Here the only check was what people said.",
+        "People who buy insurance aren't only the risky ones. Careful people buy too. That's why insurers can't just read you from your order."
       ],
       "link": "See the exact model in the economics version"
     },
@@ -1339,8 +1340,8 @@
     "claim": {
       "title": "Your claim",
       "you": {
-        "LOW": "Your risk: low, {p}.",
-        "HIGH": "Your risk: high, {p}."
+        "LOW": "Your risk: low, {p}. {worry}.",
+        "HIGH": "Your risk: high, {p}. {worry}."
       },
       "opts": {
         "LOW": {
@@ -1399,7 +1400,9 @@
       "word": {
         "LOW": "Low",
         "HIGH": "High"
-      }
+      },
+      "justWorrier": "Low risk. Just a Worrier.",
+      "tooCalm": "High risk. Too calm to buy."
     },
     "nm": {
       "line": "{change} in round {r} would have left you {n} coins richer.",
@@ -1413,6 +1416,20 @@
       "claim": "Saying \"{claim}\"",
       "silent": "Saying nothing",
       "regime": "Voting {name}"
+    },
+    "myCards": {
+      "label": "Your private cards",
+      "riskLine": "The Wheel hits you {p} of the time.",
+      "worry": {
+        "WORRIER": "Worrier",
+        "CALM": "Calm"
+      },
+      "worryLine": {
+        "WORRIER": "Debt stress counts {m} times over for you.",
+        "CALM": "Debt stress counts normally for you."
+      },
+      "two": "Two of you are high risk. Two of you are Worriers.",
+      "note": "Only you see these. Both flip at the end."
     }
   }
 }
