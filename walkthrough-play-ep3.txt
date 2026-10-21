@@ -1,25 +1,37 @@
 Walkthrough: seed playtest-1, 375x760, PLAY EPISODE 3, 4 players, Normal
 
 Group  Screens  Decisions  Words  Tallest(px)  Overlaps  HScroll
-Ep3         16          5    881          760         0        0
-Total       16          5    881                      0        0
+Ep3         28          9   1602          760         0        0
+Total       28          9   1602                      0        0
 
 PASS: every Play screen fits 375x760.
 
 Screens:
 Ep3  R0 VALUES_REVEAL:                   words=  30 buttons= 1 height=  760
-Ep3  R1 INTRO:                           words=  70 buttons= 2 height=  760
-Ep3  R1 TALK:ROUND                       words=  64 buttons= 4 height=  760
-Ep3  R1 REVEAL:EVENTS (outcome)          words=  56 buttons= 2 height=  760
+Ep3  R1 INTRO:                           words=  83 buttons= 2 height=  760
+Ep3  R1 DECIDE:CLAIM                     words=  75 buttons= 5 height=  760
+Ep3  R1 DECIDE:CHOICE (claims)           words=  49 buttons= 2 height=  760
+Ep3  R1 DECIDE:CHOICE                    words=  47 buttons= 4 height=  760
+Ep3  R1 REVEAL:EVENTS (outcome)          words=  55 buttons= 2 height=  760
 Ep3  R1 REVEAL:EVENTS (price)            words=  45 buttons= 2 height=  760
-Ep3  R2 TALK:ROUND (poll)                words=  31 buttons= 2 height=  760
-Ep3  R2 TALK:ROUND                       words=  70 buttons= 4 height=  760
-Ep3  R2 REVEAL:EVENTS (outcome)          words=  57 buttons= 2 height=  760
-Ep3  R2 REVEAL:EVENTS (price)            words=  38 buttons= 2 height=  760
-Ep3  R2 TALK:REGIME                      words=  74 buttons= 5 height=  760
-Ep3  R3 TALK:ROUND (vote)                words=  50 buttons= 2 height=  760
-Ep3  R3 TALK:ROUND (event)               words=  57 buttons= 2 height=  760
-Ep3  R3 TALK:ROUND                       words=  65 buttons= 4 height=  760
-Ep3  R3 REVEAL:EVENTS (outcome)          words=  58 buttons= 2 height=  760
-Ep3  R3 GUESS:EPISODE                    words=  52 buttons=10 height=  760
-Ep3  R3 LEVEL_DEBRIEF:                   words=  64 buttons= 3 height=  760
+Ep3  R2 DECIDE:CLAIM                     words=  75 buttons= 5 height=  760
+Ep3  R2 DECIDE:CHOICE (claims)           words=  49 buttons= 2 height=  760
+Ep3  R2 DECIDE:CHOICE                    words=  95 buttons= 7 height=  760
+Ep3  R2 REVEAL:EVENTS (bar)              words=  28 buttons= 2 height=  760
+Ep3  R2 REVEAL:EVENTS (outcome)          words=  59 buttons= 2 height=  760
+Ep3  R2 REVEAL:EVENTS (price)            words=  37 buttons= 2 height=  760
+Ep3  R3 DECIDE:CLAIM                     words=  75 buttons= 5 height=  760
+Ep3  R3 DECIDE:CHOICE (claims)           words=  49 buttons= 2 height=  760
+Ep3  R3 DECIDE:CHOICE                    words=  95 buttons= 7 height=  760
+Ep3  R3 REVEAL:EVENTS (bar)              words=  28 buttons= 2 height=  760
+Ep3  R3 REVEAL:EVENTS (outcome)          words=  57 buttons= 2 height=  760
+Ep3  R3 REVEAL:EVENTS (price)            words=  39 buttons= 2 height=  760
+Ep3  R3 DECIDE:REGIME                    words=  74 buttons= 5 height=  760
+Ep3  R4 DECIDE:CHOICE (vote)             words=  50 buttons= 2 height=  760
+Ep3  R4 DECIDE:CHOICE (event)            words=  55 buttons= 2 height=  760
+Ep3  R4 DECIDE:CHOICE                    words=  48 buttons= 4 height=  760
+Ep3  R4 REVEAL:EVENTS (outcome)          words=  57 buttons= 2 height=  760
+Ep3  R4 REVEAL:CARDS (cards)             words=  83 buttons= 2 height=  760
+Ep3  R4 GUESS:EPISODE                    words=  52 buttons=10 height=  760
+Ep3  R4 LEVEL_DEBRIEF: (missions)        words=  41 buttons= 1 height=  760
+Ep3  R4 LEVEL_DEBRIEF:                   words=  72 buttons= 3 height=  760
