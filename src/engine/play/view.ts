@@ -2,30 +2,26 @@
 // Banks, debt stress and events are public (it is TV). Ranks are shown, never exact scores, until every
 // card is public. The mission bar is the viewer's own. The audience poll aggregates bot beliefs, which
 // bots form from public actions and messages only.
-import { VALUES_CARDS, type GameState, type PlayerId, type ValuesCard } from '../types';
-import { flavorIndex } from '../rng';
+import type { GameState, PlayerId } from '../types';
+import { audienceBelief } from './claims';
 import { PLAY } from './params';
 import { missionValue, playEffortShares, playRanks, playScore } from './rules';
 import type { PlayView } from './types';
 import { playL3Params } from '../levels/level3';
 
-/** Section 7.3: once per episode, the table's average bot belief about one contestant (D-100). */
+/**
+ * v2 Section 3.2: the audience poll, every contestant's average belief among the other bots that the
+ * episode's hidden fact is true (Episode 3: high risk). Bots form it from public claims and actions only.
+ * Shown from the first decision of an episode (null before, and in a table with no bots).
+ */
 export function audiencePoll(s: GameState): PlayView['poll'] {
-  if (s.round < PLAY.POLL_FROM_ROUND && !['LEVEL_DEBRIEF', 'GUESS', 'END'].includes(s.phase.kind)) return null;
-  if (s.phase.kind === 'INTRO') return null;
-  const bots = s.players.filter((p) => !p.isHuman);
-  if (!bots.length) return null;
-  const k = flavorIndex(s.seed, `poll-${s.levelIndex}-${s.levelsPlayed.length}`, s.players.length);
-  // Rotate until the target is someone at least one bot holds beliefs about (a lone bot never polls itself).
-  for (let a = 0; a < s.players.length; a++) {
-    const target = s.players[(k + a) % s.players.length];
-    const judges = bots.filter((b) => b.id !== target.id && s.botBeliefs[b.id]?.[target.id]);
-    if (!judges.length) continue;
-    const avg = Object.fromEntries(VALUES_CARDS.map((c) => [c, judges.reduce((x, b) => x + s.botBeliefs[b.id][target.id][c], 0) / judges.length])) as Record<ValuesCard, number>;
-    const card = VALUES_CARDS.reduce((x, c) => (avg[c] > avg[x] + 1e-12 ? c : x), VALUES_CARDS[0]);
-    return { target: target.id, card, share: avg[card] };
+  if (s.phase.kind === 'INTRO' || s.phase.kind === 'VALUES_REVEAL' || !Object.keys(s.play!.belief).length) return null;
+  const out: Record<PlayerId, number> = {};
+  for (const p of s.players) {
+    const b = audienceBelief(s, p.id);
+    if (b !== null) out[p.id] = b;
   }
-  return null;
+  return out;
 }
 
 export function playView(s: GameState, viewer: PlayerId, revealAll: boolean): PlayView {
@@ -63,6 +59,7 @@ export function playView(s: GameState, viewer: PlayerId, revealAll: boolean): Pl
     ranks: pl.bankHistory.some((h) => h.level === s.levelIndex) ? playRanks(s) : null,
     mission,
     poll: audiencePoll(s),
+    record: structuredClone(s.reliability),
     guesses,
     finalScores: revealAll ? Object.fromEntries(s.players.map((p) => [p.id, playScore(s, p.id)])) : null,
     startingBank: s.mode === 'EPISODE' ? PLAY.EPISODE_STARTING_BANK : PLAY.STARTING_BANK,

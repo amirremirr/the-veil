@@ -18,6 +18,8 @@ import { level4Counterfactual } from './counterfactual';
 import { assertSameRules, currentRules } from './version';
 import { initPlay, playApplyGuess, playBotGuesses, playDrawEvent, playStartEpisode, PLAYABLE_EPISODES } from './play/rules';
 import { playView } from './play/view';
+import { drawHonesty } from './play/claims';
+import { nearMisses } from './play/nearMiss';
 import { VALUES_CARDS } from './types';
 import type {
   Action,
@@ -127,6 +129,8 @@ export function createInitialState(config: SetupConfig): GameState {
   if (config.ruleset === 'PLAY') {
     s.ruleset = 'PLAY';
     s.play = initPlay(s);
+    // v2 Section 3.5: honesty traits, once per life, from the bot stream.
+    s.play.honesty = drawHonesty(s, botRng(s));
   }
   const hasHuman = players.some((p) => p.isHuman);
   if (hasHuman) {
@@ -207,6 +211,13 @@ function enterPhase(s: GameState): void {
       if (s.cf) break;
       const result = d.debrief(s) as Record<string, unknown>;
       if (s.levelIndex === 4 && !s.cf && !s.config.skipCounterfactual) result.counterfactual = level4Counterfactual(s);
+      // Play v2 Section 6.1: each human's near miss, by replaying the episode with one decision changed.
+      if (s.play && !s.config.skipCounterfactual) {
+        const nm = nearMisses(s);
+        const byHuman = (result.byHuman ?? {}) as Record<PlayerId, Record<string, unknown>>;
+        for (const [h, x] of Object.entries(nm)) byHuman[h] = { ...(byHuman[h] ?? {}), nearMiss: x };
+        result.byHuman = byHuman;
+      }
       s.levelResults[s.levelIndex] = result;
       break;
     }

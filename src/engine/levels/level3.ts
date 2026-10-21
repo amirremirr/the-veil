@@ -4,6 +4,8 @@ import { botParams, botRng, finishRound, gameRng, headline, ids, idx, playerOf, 
 import { equalShares, mean, ownNet, roundScore } from '../scoring';
 import { PLAY } from '../play/params';
 import { activeEvent, isPlay, playNet, playRoundValue } from '../play/rules';
+import { audienceBelief, bayes, checkClaims, chooseClaim, initFactBeliefs, mixClaim, postClaims, SILENT, updateBeliefs } from '../play/claims';
+import { reliabilityOf } from '../core';
 import { ceOfLottery, logitChoice, logitProbs } from '../bots/utility';
 import { flavorIndex } from '../rng';
 import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
@@ -15,6 +17,17 @@ export type RiskType = 'LOW' | 'HIGH';
 export interface Choice {
   buy: boolean;
   gym: boolean;
+  /** Play v2 only, on the decision: a pool member's bar vote (an applicant, or null for no one). */
+  bar?: PlayerId | null;
+}
+
+/** Play v2 Section 4, the Bar: last round's members vote to bar one applicant (majority of members). */
+export interface L3Bar {
+  members: PlayerId[];
+  votes: Record<PlayerId, PlayerId | null>;
+  barred: PlayerId | null;
+  /** The barred contestant had applied for cover and was turned away. */
+  refused: boolean;
 }
 
 export interface L3Round {
@@ -29,6 +42,10 @@ export interface L3Round {
   nextPremium: number | null;
   /** Play only: the insurer's price this round before an event discount (D-98). */
   listPrice?: number | null;
+  /** Play v2 only: the bar vote of this round (absent when no bar was possible). */
+  bar?: L3Bar;
+  /** Play v2 only: who applied for cover (a barred applicant applied but is not covered). */
+  applied?: Record<PlayerId, boolean>;
 }
 
 export interface L3Debrief {
@@ -61,6 +78,10 @@ export interface L3State {
   regimeTie?: boolean;
   rounds: L3Round[];
   debrief?: L3Debrief;
+  /** Play v2: the round Leaked Medical Files made every risk type public (absent if it never drew). */
+  leaked?: number;
+  /** Play v2: the end reveal has flipped every risk card. */
+  cardsRevealed?: boolean;
 }
 
 const st = (s: GameState) => s.levelState as L3State;
@@ -335,6 +356,130 @@ function cardBestBuy(s: GameState, pid: PlayerId): { best: boolean; chose: boole
   return { best: options[ce.indexOf(Math.max(...ce))].buy, chose: r1.choices[pid].buy };
 }
 
+// ---- Play v2 (PLAY_V2_SPEC.md Section 4, The Pool). Study never reaches these. ----
+
+/** The market is open for voluntary cover now. */
+const marketOpen = (s: GameState) => st(s).regime === 'VOL' && st(s).insurerActive;
+
+/** Last round's pool members, who vote on the bar this round (none in round 1 or once the market closed). */
+export function membersOf(s: GameState): PlayerId[] {
+  const l = st(s);
+  if (!isPlay(s) || !marketOpen(s) || !l.rounds.length) return [];
+  const last = l.rounds[l.rounds.length - 1];
+  if (last.regime !== 'VOL' || last.premium === null) return [];
+  return ids(s).filter((id) => last.choices[id].buy);
+}
+
+const playPrior = (s: GameState) => ctxOf(s, false).p.P_HIGH_SHARE;
+
+/** A voter's belief that `j` is high risk: a bot's own, or (a human seat) the audience poll. */
+function voterBelief(s: GameState, voter: PlayerId, j: PlayerId): number {
+  return s.play!.belief[voter]?.[j] ?? audienceBelief(s, j) ?? playPrior(s);
+}
+
+/** D-113: a member's bar options (no one, then every other contestant) and their values in coins. */
+function barOptions(s: GameState, voter: PlayerId, belief: (j: PlayerId) => number): { options: Array<PlayerId | null>; u: number[] } {
+  const others = ids(s).filter((id) => id !== voter);
+  return { options: [null, ...others], u: [0, ...others.map((j) => PLAY.BAR_VALUE * (belief(j) - PLAY.BAR_THRESHOLD))] };
+}
+
+function botBarVote(s: GameState, voter: PlayerId): PlayerId | null {
+  if (!membersOf(s).includes(voter)) return null;
+  const { options, u } = barOptions(s, voter, (j) => voterBelief(s, voter, j));
+  return options[logitChoice(u, botParams(s, voter).lambda, botRng(s))];
+}
+
+/**
+ * The chance `target` is barred this round if every member's belief about it were `beliefOf(member)`:
+ * each member votes by the logit rule (a human seat with the belief model's lambda), a strict majority bars.
+ */
+function barChance(s: GameState, members: PlayerId[], target: PlayerId, beliefOf: (m: PlayerId) => number): number {
+  let dist = [1];
+  for (const m of members) {
+    let q = 0;
+    if (m !== target) {
+      const { options, u } = barOptions(s, m, (j) => (j === target ? beliefOf(m) : voterBelief(s, m, j)));
+      const lam = playerOf(s, m).isHuman ? BOT.BELIEF_LAMBDA : botParams(s, m).lambda;
+      q = logitProbs(u, lam)[options.indexOf(target)];
+    }
+    const next: number[] = new Array(dist.length + 1).fill(0);
+    dist.forEach((p, k) => {
+      next[k] += p * (1 - q);
+      next[k + 1] += p * q;
+    });
+    dist = next;
+  }
+  return dist.reduce((a, p, k) => (k * 2 > members.length ? a + p : a), 0);
+}
+
+/**
+ * D-112: what a claim is worth to `pid` this round, before credibility: minus the chance of being barred
+ * after it times the value of cover (best plan with cover minus best without, as the bot values it). In
+ * round 1 there are no members yet, so the claim is valued against the bar it will face next round, as if
+ * every other contestant were a member.
+ */
+function claimGainFn(s: GameState, pid: PlayerId): (value: string) => number {
+  const l = st(s);
+  const premium = currentPremium(s);
+  if (!marketOpen(s) || premium === null) return () => 0;
+  let members = membersOf(s);
+  if (!l.rounds.length) members = ids(s).filter((id) => id !== pid);
+  if (!members.some((m) => m !== pid)) return () => 0;
+  const { rho } = botParams(s, pid);
+  const ctx = ctxOf(s);
+  const { options, ce } = choiceCE(s.players.length, idx(s, pid), l.types[pid], playerOf(s, pid).values, rho, l.regime, premium, ctx);
+  const best = (buy: boolean) => Math.max(...options.map((o, k) => (o.buy === buy ? ce[k] : -Infinity)));
+  const cover = Math.max(0, best(true) - best(false));
+  if (cover <= 0) return () => 0;
+  const rel = reliabilityOf(s, pid);
+  return (value) =>
+    -cover *
+    barChance(s, members, pid, (m) => {
+      const b = voterBelief(s, m, pid);
+      return value === SILENT ? b : mixClaim(b, value === 'HIGH', rel);
+    });
+}
+
+function botClaim(s: GameState, pid: PlayerId): { value: string; lieGain: number } {
+  const type = st(s).types[pid];
+  return chooseClaim(s, pid, type, type === 'HIGH' ? 'LOW' : 'HIGH', claimGainFn(s, pid));
+}
+
+/**
+ * D-110: what a finished round tells every bot about each contestant's risk. Buying (applying for cover),
+ * the gym when uninsured, and the wheel's result are each read by Bayes' rule, with the public model of a
+ * contestant's choice (the logit rule on rnValue, with the belief lambda) and the true odds of the wheel.
+ */
+function readRound(s: GameState, r: L3Round): void {
+  const l = st(s);
+  if (l.leaked) return;
+  const ctx = ctxOf(s);
+  const P = ctx.p;
+  const lam = BOT.BELIEF_LAMBDA;
+  ids(s).forEach((id, j) => {
+    const lik = { HIGH: 1, LOW: 1 } as Record<RiskType, number>;
+    const ch = r.choices[id];
+    for (const type of ['HIGH', 'LOW'] as RiskType[]) {
+      if (r.regime === 'VOL' && r.premium !== null) {
+        const vNo = Math.max(rnValue(type, 'VOL', r.premium, { buy: false, gym: false }, ctx, j), rnValue(type, 'VOL', r.premium, { buy: false, gym: true }, ctx, j));
+        const vBuy = rnValue(type, 'VOL', r.premium, { buy: true, gym: false }, ctx, j);
+        const pBuy = logitProbs([vNo, vBuy], lam)[1];
+        lik[type] *= r.applied?.[id] ? pBuy : 1 - pBuy;
+      }
+      const insured = (r.regime === 'VOL' && r.premium !== null && ch.buy) || r.regime === 'M100';
+      if (!insured) {
+        const prem = r.regime === 'VOL' ? r.premium : null;
+        const g = [false, true].map((gym) => rnValue(type, r.regime, prem, { buy: false, gym }, ctx, j));
+        const pGym = logitProbs(g, lam)[1];
+        lik[type] *= ch.gym ? pGym : 1 - pGym;
+      }
+      const pe = pEffOf(type, ch.gym, P);
+      lik[type] *= r.events[id] ? pe : 1 - pe;
+    }
+    updateBeliefs(s, id, (b) => bayes(b, lik.HIGH, lik.LOW));
+  });
+}
+
 export const level3: LevelDefinition = {
   id: 3,
   rounds: L3.ROUNDS,
@@ -353,10 +498,27 @@ export const level3: LevelDefinition = {
       nextPremium: premiumFor(P.P_BAR, P),
       rounds: [],
     } satisfies L3State;
+    if (isPlay(s)) initFactBeliefs(s, P.P_HIGH_SHARE);
   },
   phases(s) {
     const P = ctxOf(s, false).p;
     const out: Phase[] = [];
+    if (isPlay(s)) {
+      // Play v2 Section 4: claim, then the move (bar and cover), then the wheel; the regime vote after round 3;
+      // the end reveal of every risk card with the claims stamped. No talk phases: claims are the talk (D-110).
+      for (let r = 1; r <= P.ROUNDS; r++) {
+        out.push(
+          { kind: 'BRIEFING', round: r },
+          { kind: 'DECIDE', step: 'CLAIM', round: r },
+          { kind: 'DECIDE', step: 'CHOICE', round: r },
+          { kind: 'REVEAL', step: 'EVENTS', round: r },
+          { kind: 'ROUND_SUMMARY', round: r },
+        );
+        if (r === P.VOLUNTARY_ROUNDS) out.push({ kind: 'DECIDE', step: 'REGIME', round: r }, { kind: 'REVEAL', step: 'REGIME', round: r });
+      }
+      out.push({ kind: 'REVEAL', step: 'CARDS', round: P.ROUNDS });
+      return out;
+    }
     for (let r = 1; r <= P.ROUNDS; r++) {
       out.push(
         { kind: 'BRIEFING', round: r },
@@ -374,15 +536,37 @@ export const level3: LevelDefinition = {
     }
     return out;
   },
-  deciders(s) {
+  deciders(s, step) {
+    // Play v2: claims only while there is a pool to get into, and not once every risk type is public.
+    if (step === 'CLAIM') return marketOpen(s) && !st(s).leaked ? ids(s) : [];
     return ids(s);
   },
-  validate(s, step, _pid, d) {
+  onEnter(s, phase) {
+    if (!isPlay(s)) return;
+    const l = st(s);
+    if (phase.kind === 'BRIEFING' && activeEvent(s)?.id === 'LEAKED' && !l.leaked) {
+      // v2 Section 5: everyone's risk type is shown, so every belief becomes (almost) certain.
+      l.leaked = s.round;
+      for (const id of ids(s)) updateBeliefs(s, id, () => (l.types[id] === 'HIGH' ? 1 - PLAY.BELIEF_FLOOR : PLAY.BELIEF_FLOOR));
+    }
+    if (phase.kind === 'REVEAL' && phase.step === 'CARDS') {
+      checkClaims(s, (pid) => l.types[pid]);
+      l.cardsRevealed = true;
+    }
+  },
+  validate(s, step, pid, d) {
     if (step === 'REGIME') return REGIMES.includes(d as Regime) ? d : null;
+    if (step === 'CLAIM') return d === 'LOW' || d === 'HIGH' || d === SILENT ? d : null;
     if (step === 'CHOICE') {
       const c = d as Choice;
       if (!c || typeof c.buy !== 'boolean' || typeof c.gym !== 'boolean') return null;
-      return { buy: c.buy && currentPremium(s) !== null, gym: c.gym };
+      const out: Choice = { buy: c.buy && currentPremium(s) !== null, gym: c.gym };
+      if (isPlay(s)) {
+        // A bar vote counts only from a member, against someone else at the table.
+        const ok = typeof c.bar === 'string' && c.bar !== pid && membersOf(s).includes(pid) && ids(s).includes(c.bar);
+        out.bar = ok ? c.bar! : null;
+      }
+      return out;
     }
     return null;
   },
@@ -392,6 +576,7 @@ export const level3: LevelDefinition = {
     const rng = botRng(s);
     const n = s.players.length;
     const i = idx(s, botId);
+    if (step === 'CLAIM') return botClaim(s, botId).value;
     if (step === 'CHOICE') {
       const l = st(s);
       const ctx = ctxOf(s);
@@ -403,6 +588,7 @@ export const level3: LevelDefinition = {
       const buy = canBuy ? logitChoice([best(false), best(true)], lambda, rng) === 1 : false;
       const gymCE = [false, true].map((gym) => ce[options.findIndex((o) => o.buy === buy && o.gym === gym)]);
       const gym = logitChoice(gymCE, lambda, rng) === 1;
+      if (isPlay(s)) return { buy, gym, bar: botBarVote(s, botId) };
       return { buy, gym };
     }
     const ce = regimeCE(s, n, i, st(s).types[botId], me.values, rho);
@@ -421,11 +607,33 @@ export const level3: LevelDefinition = {
       l.regime = REGIMES[winner];
       return;
     }
+    if (step === 'CLAIM') {
+      const said = decisions as Record<PlayerId, string>;
+      const gains = Object.fromEntries(pids.filter((id) => id in said).map((id) => [id, playerOf(s, id).isHuman ? null : botClaim(s, id).lieGain]));
+      postClaims(s, 'RISK', said, (pid) => l.types[pid], (v) => v === 'HIGH', gains);
+      return;
+    }
     const ctx = ctxOf(s);
     const P = ctx.p;
     const premium = currentPremium(s, ctx);
     const listPrice = l.nextPremium;
-    const choices = pids.map((id) => decisions[id] as Choice);
+    let choices = pids.map((id) => decisions[id] as Choice);
+    // Play v2, the Bar: a strict majority of last round's members bars one applicant, who gets no cover.
+    let bar: L3Bar | undefined;
+    let applied: Record<PlayerId, boolean> | undefined;
+    if (isPlay(s)) {
+      applied = Object.fromEntries(pids.map((id, i) => [id, choices[i].buy]));
+      const members = membersOf(s);
+      if (members.length) {
+        const votes = Object.fromEntries(members.map((m) => [m, (decisions[m] as Choice).bar ?? null])) as Record<PlayerId, PlayerId | null>;
+        const counts: Record<PlayerId, number> = {};
+        for (const v of Object.values(votes)) if (v) counts[v] = (counts[v] ?? 0) + 1;
+        const barred = pids.find((j) => (counts[j] ?? 0) * 2 > members.length) ?? null;
+        const refused = !!barred && choices[pids.indexOf(barred)].buy;
+        bar = { members, votes, barred, refused };
+      }
+      choices = choices.map((c, i) => ({ buy: c.buy && pids[i] !== bar?.barred, gym: c.gym }));
+    }
     const pEff = pids.map((id, i) => pEffOf(l.types[id], choices[i].gym, P));
     const pBase = pids.map((id, i) => pBaseOf(l.types[id], choices[i].gym, P));
     const events = pEff.map((p) => g.next() < p);
@@ -452,9 +660,10 @@ export const level3: LevelDefinition = {
       W: rec(W),
       nextPremium: l.nextPremium,
       // Play only: the insurer's price before an event's discount (E3 compares these, D-98).
-      ...(isPlay(s) ? { listPrice } : {}),
+      ...(isPlay(s) ? { listPrice, applied, ...(bar ? { bar } : {}) } : {}),
     };
     l.rounds.push(round);
+    if (isPlay(s)) readRound(s, round);
     const nEvents = events.filter(Boolean).length;
     let key = 'l3.quiet';
     if (exited) key = 'l3.exit';
@@ -553,7 +762,9 @@ export const level3: LevelDefinition = {
     const l = st(s);
     return {
       myType: l.types[viewer],
-      types: revealPrivate ? l.types : undefined,
+      // Play v2: every risk type is public once leaked, and at the end reveal.
+      types: revealPrivate || l.leaked || l.cardsRevealed ? l.types : undefined,
+      ...(isPlay(s) ? { leaked: l.leaked ?? null, cardsRevealed: !!l.cardsRevealed, members: membersOf(s) } : {}),
       regime: l.regime,
       insurerActive: l.insurerActive,
       premium: currentPremium(s),
@@ -565,3 +776,20 @@ export const level3: LevelDefinition = {
     };
   },
 };
+
+/**
+ * Simulator only (v2 Section 5, the deck trim rule): each bot's best cover and gym choice now (its highest
+ * certainty equivalent), with this round's event or without it.
+ */
+export function bestOwnChoices(s: GameState, withEvent: boolean): Record<PlayerId, Choice> {
+  const l = st(s);
+  const ctx = ctxOf(s, withEvent);
+  const out: Record<PlayerId, Choice> = {};
+  for (const p of s.players) {
+    if (p.isHuman) continue;
+    const { rho } = botParams(s, p.id);
+    const { options, ce } = choiceCE(s.players.length, idx(s, p.id), l.types[p.id], p.values, rho, l.regime, currentPremium(s, ctx), ctx);
+    out[p.id] = options[ce.indexOf(Math.max(...ce))];
+  }
+  return out;
+}

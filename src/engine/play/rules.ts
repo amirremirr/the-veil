@@ -4,13 +4,13 @@ import { valuesMetric, equalShares } from '../scoring';
 import { argmaxCard } from '../bots/beliefs';
 import type { Rng } from '../rng';
 import type { GameState, LevelId, PlayerId, ValuesCard } from '../types';
-import { PLAY, L3_EVENT_IDS } from './params';
+import { PLAY } from './params';
 import type { PlayEvent, PlayState } from './types';
 
 export const isPlay = (s: Pick<GameState, 'play'>): boolean => !!s.play;
 
-/** Event decks built so far (P1: Episode 3). The other episodes' decks arrive with their episodes. */
-export const EVENT_DECKS: Partial<Record<LevelId, readonly string[]>> = { 3: L3_EVENT_IDS };
+/** Event decks built so far (Episode 3; v2 Section 5 trims them). The other episodes' decks arrive with their episodes. */
+export const eventDeck = (level: LevelId): readonly string[] => (level === 3 ? PLAY.L3_DECK : []);
 
 /** Episodes playable in this build (P1: Episode 3 only). */
 export const PLAYABLE_EPISODES: LevelId[] = [3];
@@ -18,7 +18,7 @@ export const PLAYABLE_EPISODES: LevelId[] = [3];
 export function initPlay(s: GameState): PlayState {
   const start = s.mode === 'EPISODE' ? PLAY.EPISODE_STARTING_BANK : PLAY.STARTING_BANK;
   const per = <X>(x: X) => Object.fromEntries(s.players.map((p) => [p.id, x])) as Record<PlayerId, X>;
-  return { banks: per(start), debtStress: per(0), guessPoints: per(0), event: null, events: [], bankHistory: [], episodeStart: {}, guesses: {} };
+  return { banks: per(start), debtStress: per(0), guessPoints: per(0), event: null, events: [], bankHistory: [], episodeStart: {}, guesses: {}, honesty: {}, belief: {}, claimLog: [] };
 }
 
 /** Section 4.2: points lost at the end of a round with this bank. */
@@ -112,12 +112,15 @@ export function playStartEpisode(s: GameState, level: LevelId): void {
  */
 export function playDrawEvent(s: GameState, rng: Rng): void {
   const pl = s.play!;
-  const deck = EVENT_DECKS[s.levelIndex] ?? [];
+  const deck = eventDeck(s.levelIndex);
   const u = rng.next();
   const v = rng.next();
   let id = deck.length && u < PLAY.EVENT_CHANCE ? deck[Math.floor(v * deck.length)] : 'QUIET';
   let fallback: string | undefined;
-  if (s.levelIndex === 3 && id === 'PAPERWORK' && (s.levelState as { regime?: string }).regime === 'VOL') {
+  const l3 = s.levelState as { regime?: string; insurerActive?: boolean };
+  // Paperwork Week needs a mandate; Leaked Medical Files needs a pool with a bar (v2 Section 5: only from round 2).
+  const noBar = l3.regime !== 'VOL' || !l3.insurerActive || s.round < PLAY.LEAKED_FROM_ROUND;
+  if (s.levelIndex === 3 && ((id === 'PAPERWORK' && l3.regime === 'VOL') || (id === 'LEAKED' && noBar))) {
     fallback = id;
     id = 'QUIET';
   }

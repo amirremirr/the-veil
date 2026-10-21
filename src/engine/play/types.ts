@@ -44,6 +44,40 @@ export interface PlayState {
   episodeStart: Partial<Record<LevelId, Record<PlayerId, number>>>;
   /** End-of-episode card guesses, per episode and guesser. */
   guesses: Partial<Record<LevelId, Record<PlayerId, EpisodeGuess>>>;
+  /** v2 Section 3.5: each bot's honesty trait for this life (private; never in a view). */
+  honesty: Record<PlayerId, number>;
+  /**
+   * v2 Section 3.5: each bot's belief that the episode's hidden fact is true of each other contestant
+   * (Episode 3: P(high risk)). Reset when an episode starts. Private; the view shows only the average.
+   */
+  belief: Record<PlayerId, Record<PlayerId, number>>;
+  /** Every claim decision of the life, silence included (private: `lieGain` and `truth` reveal types). */
+  claimLog: ClaimRecord[];
+}
+
+/** One claim decision (v2 Section 3), kept for the simulator's S-a and S-b and for the near miss. */
+export interface ClaimRecord {
+  pid: PlayerId;
+  level: LevelId;
+  round: number;
+  topic: string;
+  /** What the contestant said ('SILENT' for no claim) and the truth. */
+  said: string;
+  truth: string;
+  lied: boolean;
+  /** Bots only: coins the lie would gain over the best honest option, before its credibility cost. */
+  lieGain: number | null;
+}
+
+/** v2 Section 6.1: the one change to your own decisions that would have left you richest. */
+export interface NearMiss {
+  kind: 'CLAIM' | 'CHOICE' | 'BAR' | 'REGIME';
+  round: number;
+  /** The decision you made and the one that would have paid more (CHOICE: {buy, gym}; BAR: target or null). */
+  from: unknown;
+  to: unknown;
+  /** Coins more in your final bank. */
+  gain: number;
 }
 
 export interface PlayView {
@@ -61,8 +95,13 @@ export interface PlayView {
   /** The viewer's own mission and its progress. */
   /** `goal`: the mission bar's full mark, k x mission value (D-102). */
   mission: { card: ValuesCard; value: number; score: number; scale: number; bankPart: number; missionPart: number; stress: number; guessPoints: number; goal: number } | null;
-  /** Section 7.3: the table's aggregated bot beliefs about one contestant (null until it is shown). */
-  poll: { target: PlayerId; card: ValuesCard; share: number } | null;
+  /**
+   * v2 Section 3.2: the audience poll on READ screens, the average over the other bots of their belief that
+   * each contestant's hidden fact is true (Episode 3: high risk). Null when the episode has no poll now.
+   */
+  poll: Record<PlayerId, number> | null;
+  /** v2 Section 3.4: every contestant's public honesty record (claims checked so far, how many were true). */
+  record: Record<PlayerId, { made: number; kept: number }>;
   /** The viewer's own card guesses; others' guesses only once every card is public. */
   guesses: Partial<Record<LevelId, Record<PlayerId, EpisodeGuess>>>;
   /** Final scores of everyone, once every card is public. */

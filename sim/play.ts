@@ -1,4 +1,4 @@
-// Play-mode simulation (PLAY_MODE_SPEC.md Section 10), bot-only. Reached from sim/run.ts with
+// Play-mode simulation (PLAY_MODE_SPEC.md Section 10, PLAY_V2_SPEC.md Section 8), bot-only. Reached from sim/run.ts with
 // `--ruleset PLAY`:  npm run sim -- --ruleset PLAY --mode EPISODE --episode 3 --games 2000
 // Every table is bots only: these numbers describe the bots, not people (D-76). Each statistic is the
 // mean ± a bootstrap SE over games. Mechanism checks (E*) and the debt target F-f decide the exit code;
@@ -11,7 +11,9 @@ import { mean } from '../src/engine/scoring';
 import { standalone } from '../src/engine/rng';
 import { PLAY } from '../src/engine/play/params';
 import { missionValue, playEffortShares, playScore } from '../src/engine/play/rules';
-import type { L3Debrief } from '../src/engine/levels/level3';
+import { bestOwnChoices, type L3Debrief } from '../src/engine/levels/level3';
+import { activeEvent } from '../src/engine/play/rules';
+import { audienceBelief } from '../src/engine/play/claims';
 import type { Difficulty, GameState, LevelId, ValuesCard } from '../src/engine/types';
 import { VALUES_CARDS } from '../src/engine/types';
 import { currentRules } from '../src/engine/version';
@@ -42,14 +44,54 @@ const BOOT = Number(arg('boot', '400'));
 const overrides = JSON.parse(arg('play', '{}')) as Record<string, unknown>;
 Object.assign(PLAY, overrides);
 
-function playOne(seed: string): GameState {
+/** What the run watches while a game plays: event cards' effect on choices, and the reader's beliefs. */
+interface Watch {
+  /** Per drawn card: did it change at least one bot's best cover or gym choice (v2 Section 5 trim rule)? */
+  cards: Array<{ id: string; changed: boolean }>;
+  /** Per claim: the audience belief that it is true, right after that round's results (S-b). */
+  reads: Array<{ lied: boolean; pTrue: number }>;
+}
+
+function playOne(seed: string): { s: GameState; w: Watch } {
   const s = createInitialState({ mode: 'EPISODE', level: episode, ruleset: 'PLAY', nPlayers, difficulty, seed, allBots: true, botSamples: samples });
+  const w: Watch = { cards: [], reads: [] };
   let guard = 0;
-  while (s.phase.kind !== 'END' && guard++ < 10000) if (!step(s, { type: 'ADVANCE' })) throw new Error(`stuck ${s.phase.kind}`);
-  return s;
+  while (s.phase.kind !== 'END' && guard++ < 10000) {
+    if (!step(s, { type: 'ADVANCE' })) throw new Error(`stuck ${s.phase.kind}`);
+    const ph = s.phase;
+    if (ph.kind === 'BRIEFING') {
+      const ev = activeEvent(s);
+      // Leaked Medical Files changes the bar, not cover or the gym, and is the spec's own new card: not trimmed.
+      if (ev && ev.id !== 'LEAKED') {
+        const a = bestOwnChoices(s, true);
+        const b = bestOwnChoices(s, false);
+        w.cards.push({ id: ev.id, changed: Object.keys(a).some((id) => a[id].buy !== b[id].buy || a[id].gym !== b[id].gym) });
+      }
+    }
+    if (ph.kind === 'REVEAL' && ph.step === 'EVENTS')
+      for (const c of s.play!.claimLog) {
+        if (c.level !== s.levelIndex || c.round !== s.round || c.said === 'SILENT') continue;
+        const b = audienceBelief(s, c.pid) ?? 0.5;
+        w.reads.push({ lied: c.lied, pTrue: c.said === 'HIGH' ? b : 1 - b });
+      }
+  }
+  return { s, w };
 }
 
 interface Rec {
+  watch: Watch;
+  /** Bars: how many hit a high-risk and a low-risk contestant. */
+  barHigh: number;
+  barLow: number;
+  /** List price in round 3 (null if the market was closed by then). */
+  r3Price: number | null;
+  /** Bot claim decisions where the lie would gain coins, and how many of them lied (S-a). */
+  lieChances: number;
+  lies: number;
+  /** Lies where the lie gained nothing over the truth (a bot rarely tells one). */
+  otherLies: number;
+  claims: number;
+  silences: number;
   highBuyersR1: number;
   lowBuyersR1: number;
   r1Price: number;
@@ -70,7 +112,7 @@ interface Rec {
   final: number[];
 }
 
-function record(s: GameState): Rec {
+function record(s: GameState, watch: Watch): Rec {
   const d = s.levelResults[3] as L3Debrief;
   const pl = s.play!;
   const r1 = d.rounds[0];
@@ -95,7 +137,19 @@ function record(s: GameState): Rec {
   const anyEvent = pl.events.some((e) => e.id !== 'QUIET');
   const banks = s.players.map((p) => pl.banks[p.id]);
   const eff = playEffortShares(s);
+  const bars = d.rounds.map((r) => r.bar?.barred).filter((x): x is string => !!x);
+  const r3 = d.rounds[2];
+  const chances = pl.claimLog.filter((c) => c.lieGain !== null && c.lieGain > 0.01);
   return {
+    watch,
+    barHigh: bars.filter((b) => d.types[b] === 'HIGH').length,
+    barLow: bars.filter((b) => d.types[b] === 'LOW').length,
+    r3Price: r3 && r3.regime === 'VOL' && r3.premium !== null ? r3.listPrice ?? r3.premium : null,
+    lieChances: chances.length,
+    lies: chances.filter((c) => c.lied).length,
+    otherLies: pl.claimLog.filter((c) => c.lied && !(c.lieGain !== null && c.lieGain > 0.01)).length,
+    claims: pl.claimLog.filter((c) => c.said !== 'SILENT').length,
+    silences: pl.claimLog.filter((c) => c.said === 'SILENT').length,
     highBuyersR1: high,
     lowBuyersR1: low,
     r1Price: r1.listPrice ?? r1.premium ?? 0,
@@ -130,7 +184,8 @@ const t0 = Date.now();
 const revision = codeRevision();
 const recs: Rec[] = [];
 for (let g = 0; g < games; g++) {
-  recs.push(record(playOne(`${seedBase}-${g}`)));
+  const { s, w } = playOne(`${seedBase}-${g}`);
+  recs.push(record(s, w));
   if ((g + 1) % Math.max(1, Math.floor(games / 10)) === 0) process.stderr.write(`  ${g + 1}/${games} episodes (${((Date.now() - t0) / 1000).toFixed(1)}s)\n`);
 }
 
@@ -149,6 +204,14 @@ function se(stat: Stat): number {
 }
 
 const open = (rs: Rec[]) => rs.filter((r) => r.r2Open);
+const open3 = (rs: Rec[]) => rs.filter((r) => r.r3Price !== null);
+const barHighShare: Stat = (rs) => sum(rs.map((r) => r.barHigh)) / sum(rs.map((r) => r.barHigh + r.barLow));
+const priceRise3: Stat = (rs) => mean(open3(rs).map((r) => r.r3Price!)) / mean(open3(rs).map((r) => r.r1Price)) - 1;
+const lieShare: Stat = (rs) => sum(rs.map((r) => r.lies)) / sum(rs.map((r) => r.lieChances));
+const readAcc: Stat = (rs) => {
+  const reads = rs.flatMap((r) => r.watch.reads);
+  return mean(reads.map((x) => ((x.pTrue >= 0.5) === !x.lied ? 1 : 0)));
+};
 const buyerRatio: Stat = (rs) => sum(rs.map((r) => r.highBuyersR1)) / sum(rs.map((r) => r.lowBuyersR1));
 const priceRise: Stat = (rs) => mean(open(rs).map((r) => r.r2Price)) / mean(open(rs).map((r) => r.r1Price)) - 1;
 const winRate = (card: ValuesCard): Stat => (rs) => {
@@ -172,10 +235,15 @@ interface Target {
 const targets: Target[] = [
   { name: 'E3a round-1 High-risk buyers / Low-risk buyers', stat: buyerRatio, lo: 2, gate: true },
   { name: 'E3b mean round-2 price over round 1, open markets', stat: priceRise, lo: 0.15, gate: true, note: `${open(recs).length} of ${recs.length} games open; insurer's price before any Price War discount` },
+  { name: 'E3c share of bars that hit a high-risk contestant', stat: barHighShare, lo: 0.5, gate: true, note: `${sum(recs.map((r) => r.barHigh + r.barLow))} bars in ${recs.length} games; the bar screens somewhat` },
+  { name: 'E3d mean round-3 price over round 1, markets open in round 3', stat: priceRise3, lo: 0, gate: true, note: `${open3(recs).length} of ${recs.length} games open in round 3; screening does not fully fix it` },
+  { name: 'S-a bots lie where lying would pay', stat: lieShare, lo: 0.15, hi: 0.5, gate: false, note: `${sum(recs.map((r) => r.lieChances))} bot claim decisions where the lie gains coins` },
+  { name: 'S-b a reader using the audience belief judges a claim TRUE or LIE correctly', stat: readAcc, lo: 0.55, hi: 0.8, gate: false, note: `${sum(recs.map((r) => r.watch.reads.length))} claims, judged right after their round's results` },
   { name: 'F-f some contestant goes into debt', stat: avg((r) => (r.anyDebt ? 1 : 0)), lo: 0.3, hi: 0.7, gate: true, note: 'per episode (per life from P3)' },
-  { name: 'F-a lead changes', stat: avg((r) => r.leadChanges), lo: 2, gate: false, note: 'per episode, not per life (3 rounds allow at most 2)' },
+  { name: 'F-a lead changes', stat: avg((r) => r.leadChanges), lo: 2, gate: false, note: 'per episode, not per life (4 rounds allow at most 3)' },
   { name: 'F-c close finish, top two within 15%', stat: avg((r) => (r.close ? 1 : 0)), lo: 0.4, gate: false, note: 'per episode' },
   { name: 'F-d big moment (an event or an 80+ bank swing)', stat: avg((r) => (r.bigMoment ? 1 : 0)), lo: 0.9, gate: false },
+  { name: 'F-d with v2 moments (also a bar or a lie stamped at the reveal)', stat: avg((r) => (r.bigMoment || r.barHigh + r.barLow > 0 || r.lies + r.otherLies > 0 ? 1 : 0)), lo: 0.9, gate: false, note: 'not the spec definition; shown for comparison' },
   ...VALUES_CARDS.map((c) => ({ name: `F-e mission win share, ${c}`, stat: winRate(c), lo: 0.15, hi: 0.35, gate: false, note: 'per seat, per episode' })),
 ];
 
@@ -210,7 +278,15 @@ for (const tg of targets) {
   lines.push(`  ${status.padEnd(38)} ${tg.name}: ${Number.isFinite(v) ? v.toFixed(4) : 'n/a'} ± ${e.toFixed(4)} (target ${bound})${tg.note ? `; ${tg.note}` : ''}`);
 }
 lines.push('  N/A [reported]                         F-b comeback from last after Episode 2: needs Episode 2 (P2)');
-lines.push(failures ? `${failures} gating target(s) FAILED.` : 'All gating targets pass (E3, F-f).');
+lines.push('');
+lines.push(`Claims: ${sum(recs.map((r) => r.claims))} made, ${sum(recs.map((r) => r.silences))} silences, ${sum(recs.map((r) => r.lies + r.otherLies))} lies (bots).`);
+lines.push('Deck trim rule (v2 Section 5): share of draws in which the card changes no bot\'s best cover or gym choice (cut above 90%):');
+for (const id of [...new Set(recs.flatMap((r) => r.watch.cards.map((c) => c.id)))].sort()) {
+  const cs = recs.flatMap((r) => r.watch.cards.filter((c) => c.id === id));
+  const none = cs.filter((c) => !c.changed).length / cs.length;
+  lines.push(`  ${id.padEnd(13)} ${String(cs.length).padStart(5)} draws, no change in ${(none * 100).toFixed(1)}%${none > 0.9 ? '  CUT' : ''}`);
+}
+lines.push(failures ? `${failures} gating target(s) FAILED.` : 'All gating targets pass (E3a to E3d, F-f).');
 lines.push(`Time: ${((Date.now() - t0) / 1000).toFixed(1)}s.`);
 const summary = lines.join('\n');
 mkdirSync(outDir, { recursive: true });

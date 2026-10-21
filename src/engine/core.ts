@@ -228,6 +228,9 @@ export function messageAllowed(menu: TalkMenu, msg: StructuredMessage, s: GameSt
       return msg.target !== from && idx(s, msg.target) >= 0 && VALUES_CARDS.includes(msg.card);
     case 'FLAVOR':
       return true;
+    case 'CLAIM':
+      // Play claims are decisions (a CLAIM step), never talk messages.
+      return false;
   }
 }
 

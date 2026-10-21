@@ -6,6 +6,7 @@ import { autoDecision } from '../../src/engine/auto';
 import { act, newTable, screenKind, tableStep, type Table } from '../../src/shared/flow';
 import { PLAY } from '../../src/engine/play/params';
 import { debtStressFor, playScore } from '../../src/engine/play/rules';
+import { baselineBanks } from '../../src/engine/play/nearMiss';
 import { canResume, currentRules, gameRecord, paramsHash, RulesMismatchError } from '../../src/engine/version';
 import type { L3Debrief } from '../../src/engine/levels/level3';
 import type { GameState, SetupConfig } from '../../src/engine/types';
@@ -49,13 +50,19 @@ describe('ruleset plumbing', () => {
     expect(() => createInitialState({ ...cfg('x'), mode: 'LIFE' })).toThrow(/P3/);
     expect(() => createInitialState({ ...cfg('x'), level: 2 })).toThrow(/not built/);
   });
-  it('Episode 3 has 3 rounds, the regime vote after round 2, and a card guess before the summary', () => {
+  it('Episode 3 (The Pool) has 4 rounds of claim then move, the regime vote after round 3, the card reveal, then the guess', () => {
     const s = createInitialState(cfg('phases'));
     const g = act(s, HUMAN_ID);
     const q = g.phaseQueue;
-    expect(Math.max(...q.map((p) => p.round))).toBe(3);
-    expect(q.findIndex((p) => p.step === 'REGIME')).toBeGreaterThan(q.findIndex((p) => p.kind === 'ROUND_SUMMARY' && p.round === 2));
-    expect(q.slice(-2).map((p) => p.kind)).toEqual(['GUESS', 'LEVEL_DEBRIEF']);
+    expect(Math.max(...q.map((p) => p.round))).toBe(4);
+    expect(q.some((p) => p.kind === 'TALK')).toBe(false);
+    for (let r = 1; r <= 4; r++) {
+      const claim = q.findIndex((p) => p.step === 'CLAIM' && p.round === r);
+      expect(q[claim + 1]).toEqual({ kind: 'DECIDE', step: 'CHOICE', round: r });
+    }
+    expect(q.findIndex((p) => p.step === 'REGIME')).toBeGreaterThan(q.findIndex((p) => p.kind === 'ROUND_SUMMARY' && p.round === 3));
+    expect(q.findIndex((p) => p.step === 'REGIME')).toBeLessThan(q.findIndex((p) => p.kind === 'BRIEFING' && p.round === 4));
+    expect(q.slice(-3).map((p) => `${p.kind}:${p.step ?? ''}`)).toEqual(['REVEAL:CARDS', 'GUESS:EPISODE', 'LEVEL_DEBRIEF:']);
   });
 });
 
@@ -94,7 +101,7 @@ describe('bank and debt stress', () => {
       const pl = s.play!;
       let banks = { ...pl.episodeStart[3]! };
       let stress = Object.fromEntries(s.players.map((p) => [p.id, 0]));
-      expect(pl.bankHistory).toHaveLength(3);
+      expect(pl.bankHistory).toHaveLength(4);
       for (const h of pl.bankHistory)
         for (const p of s.players) {
           banks[p.id] += h.W[p.id] - PLAY.LIVING_COST;
@@ -121,8 +128,18 @@ describe('events', () => {
   const games = Array.from({ length: 40 }, (_, k) => botsOnly(`ev-${k}`));
   it('one event or quiet week is drawn and recorded before every round', () => {
     for (const s of games) {
-      expect(s.play!.events.map((e) => e.round)).toEqual([1, 2, 3]);
-      for (const e of s.play!.events) expect(['QUIET', 'STORM', 'GYM_SALE', 'PRICE_WAR', 'BREAKTHROUGH', 'PAPERWORK']).toContain(e.id);
+      expect(s.play!.events.map((e) => e.round)).toEqual([1, 2, 3, 4]);
+      for (const e of s.play!.events) expect(['QUIET', ...PLAY.L3_DECK]).toContain(e.id);
+    }
+  });
+  it('the event chance is 0.4 and Leaked Medical Files only draws from round 2, into an open pool', () => {
+    expect(PLAY.EVENT_CHANCE).toBe(0.4);
+    for (const s of games) {
+      const d = s.levelResults[3] as L3Debrief;
+      for (const e of s.play!.events) if (e.id === 'LEAKED') {
+        expect(e.round).toBeGreaterThanOrEqual(PLAY.LEAKED_FROM_ROUND);
+        expect(d.rounds[e.round - 1].regime).toBe('VOL');
+      }
     }
   });
   it('Paperwork Week only happens under a mandate', () => {
@@ -212,16 +229,151 @@ describe('privacy', () => {
       // Ranks are whole numbers only.
       for (const r of Object.values(v.play!.ranks ?? {})) expect(Number.isInteger(r)).toBe(true);
       if (!s.play!.bankHistory.some((h) => h.level === s.levelIndex)) expect(v.play!.ranks).toBeNull();
-      const lv = v.levelView as { types?: unknown; rounds: Array<{ pEff: Record<string, number> }> } | null;
-      expect(lv?.types).toBeUndefined();
+      const lv = v.levelView as { types?: unknown; leaked?: number | null; cardsRevealed?: boolean; rounds: Array<{ pEff: Record<string, number> }> } | null;
+      // Risk types are public only once leaked (v2 Section 5) or at the end reveal (v2 Section 3.4).
+      if (lv?.leaked || lv?.cardsRevealed) expect(lv.types).toEqual((s.levelState as { types: unknown }).types);
+      else expect(lv?.types).toBeUndefined();
+      // Honesty traits, bots' own beliefs and the claim log (it holds the truth) never reach a view.
+      expect(Object.keys(v.play!).filter((k) => ['honesty', 'belief', 'claimLog'].includes(k))).toEqual([]);
       for (const r of lv?.rounds ?? []) expect(Object.keys(r.pEff)).toEqual([HUMAN_ID]);
       expect(v.botBeliefs).toBeUndefined();
     }
   });
-  it('the audience poll is shown from round 2 and only names a card share', () => {
-    const shown = states.map((s) => visibleState(s, HUMAN_ID).play!.poll).filter(Boolean);
+  it('the audience poll is the other bots\' average belief that each contestant is high risk', () => {
+    const shown = states.filter((s) => visibleState(s, HUMAN_ID).play!.poll);
     expect(shown.length).toBeGreaterThan(0);
-    for (const p of shown) expect(Object.keys(p!).sort()).toEqual(['card', 'share', 'target']);
-    for (const s of states.filter((x) => x.round === 1 && x.phase.kind !== 'LEVEL_DEBRIEF')) expect(visibleState(s, HUMAN_ID).play!.poll).toBeNull();
+    for (const s of shown) {
+      const poll = visibleState(s, HUMAN_ID).play!.poll!;
+      expect(Object.keys(poll).sort()).toEqual(s.players.map((p) => p.id).sort());
+      for (const p of s.players) {
+        const judges = Object.entries(s.play!.belief).filter(([b]) => b !== p.id).map(([, m]) => m[p.id]);
+        expect(poll[p.id]).toBeCloseTo(judges.reduce((a, b) => a + b, 0) / judges.length, 12);
+      }
+    }
+    for (const s of states.filter((x) => x.phase.kind === 'INTRO')) expect(visibleState(s, HUMAN_ID).play!.poll).toBeNull();
+  });
+});
+
+describe('v2 spine: claims, honesty and beliefs (PLAY_V2_SPEC.md Section 3)', () => {
+  const games = Array.from({ length: 30 }, (_, k) => botsOnly(`spine-${k}`));
+  it('honesty traits are drawn once per life inside each personality\'s range, the same for the same seed', () => {
+    for (const s of games)
+      for (const p of s.players) {
+        const [lo, hi] = PLAY.HONESTY_RANGE[p.botProfile!.key];
+        expect(s.play!.honesty[p.id]).toBeGreaterThanOrEqual(lo);
+        expect(s.play!.honesty[p.id]).toBeLessThanOrEqual(hi);
+      }
+    expect(botsOnly('spine-0').play!.honesty).toEqual(games[0].play!.honesty);
+    const human = createInitialState(cfg('h'));
+    expect(Object.keys(human.play!.honesty)).not.toContain(HUMAN_ID);
+  });
+  it('claims are messages from the CLAIM step, stamped TRUE or LIE at the end reveal, and feed the public record', () => {
+    let lies = 0;
+    for (const s of games) {
+      const types = (s.levelState as { types: Record<string, string> }).types;
+      const claims = s.messages.filter((m) => m.msg.type === 'CLAIM');
+      for (const m of claims) {
+        expect(m.resolved).toBe(true);
+        expect(m.kept).toBe((m.msg as { value: string }).value === types[m.from]);
+        if (!m.kept) lies++;
+      }
+      for (const p of s.players) {
+        const mine = claims.filter((m) => m.from === p.id);
+        expect(s.reliability[p.id]).toEqual({ made: mine.length, kept: mine.filter((m) => m.kept).length });
+      }
+      // Every claim decision (silence too) is in the private log; only real claims are messages.
+      expect(s.play!.claimLog.filter((c) => c.said !== 'SILENT')).toHaveLength(claims.length);
+    }
+    expect(lies).toBeGreaterThan(0);
+  });
+  it('a lie only happens where the rule says it pays: gain x (1 - honesty) above the credibility cost', () => {
+    for (const s of games) for (const c of s.play!.claimLog) if (c.lied) expect(c.lieGain! * (1 - s.play!.honesty[c.pid])).toBeGreaterThan(0);
+  });
+  it('the human claims through a logged SUBMIT_DECISION, and LOW, HIGH or SILENT are the only answers', () => {
+    const states = playSolo('claim-human');
+    const g = states[states.length - 1];
+    const atClaim = states.find((x) => x.phase.kind === 'DECIDE' && x.phase.step === 'CLAIM')!;
+    expect(reduce(atClaim, { type: 'SUBMIT_DECISION', from: HUMAN_ID, decision: 'MAYBE' })).toBe(atClaim);
+    const ok = reduce(atClaim, { type: 'SUBMIT_DECISION', from: HUMAN_ID, decision: 'LOW' });
+    expect(ok.messages.some((m) => m.from === HUMAN_ID && m.msg.type === 'CLAIM' && m.round === atClaim.round)).toBe(true);
+    expect(g.log.some(({ action }) => action.type === 'SUBMIT_DECISION' && action.from === HUMAN_ID && ['LOW', 'HIGH', 'SILENT'].includes(action.decision as string))).toBe(true);
+  });
+});
+
+describe('The Pool: the Bar and Leaked Medical Files (PLAY_V2_SPEC.md Sections 4 and 5)', () => {
+  const games = Array.from({ length: 40 }, (_, k) => botsOnly(`pool-${k}`));
+  it('only last round\'s members vote; a strict majority bars one applicant, who gets no cover', () => {
+    let bars = 0;
+    for (const s of games) {
+      const d = s.levelResults[3] as L3Debrief;
+      d.rounds.forEach((r, k) => {
+        if (!r.bar) return;
+        const prev = d.rounds[k - 1];
+        expect(r.bar.members).toEqual(s.players.map((p) => p.id).filter((id) => prev.choices[id].buy));
+        const counts: Record<string, number> = {};
+        for (const v of Object.values(r.bar.votes)) if (v) counts[v] = (counts[v] ?? 0) + 1;
+        const winner = Object.keys(counts).find((j) => counts[j] * 2 > r.bar!.members.length) ?? null;
+        expect(r.bar.barred).toBe(winner);
+        for (const [m, v] of Object.entries(r.bar.votes)) expect(v).not.toBe(m);
+        if (r.bar.barred) {
+          bars++;
+          expect(r.choices[r.bar.barred].buy).toBe(false);
+          expect(r.bar.refused).toBe(r.applied![r.bar.barred]);
+        }
+      });
+      expect(d.rounds[0].bar).toBeUndefined();
+    }
+    expect(bars).toBeGreaterThan(0);
+  });
+  it('a bar vote from a non-member is dropped', () => {
+    const states = playSolo('bar-member');
+    for (const g of states.filter((x) => x.phase.kind === 'DECIDE' && x.phase.step === 'CHOICE' && x.round > 1)) {
+      const d = reduce(g, { type: 'SUBMIT_DECISION', from: HUMAN_ID, decision: { buy: false, gym: false, bar: g.players[1].id } });
+      if (d === g) continue;
+      const r = (d.levelState as { rounds: Array<{ bar?: { votes: Record<string, string | null> } }> }).rounds[g.round - 1];
+      const member = !!r.bar && HUMAN_ID in r.bar.votes;
+      if (member) expect(r.bar!.votes[HUMAN_ID]).toBe(g.players[1].id);
+      else expect(r.bar?.votes[HUMAN_ID]).toBeUndefined();
+    }
+  });
+  it('once files leak, every risk type is public, beliefs match the truth and nobody claims', () => {
+    const leaked = Array.from({ length: 120 }, (_, k) => `leak-${k}`)
+      .map((seed) => botsOnly(seed))
+      .filter((s) => s.play!.events.some((e) => e.id === 'LEAKED'));
+    expect(leaked.length).toBeGreaterThan(0);
+    for (const s of leaked) {
+      const at = s.play!.events.find((e) => e.id === 'LEAKED')!.round;
+      const types = (s.levelState as { types: Record<string, string>; leaked?: number }).types;
+      expect((s.levelState as { leaked?: number }).leaked).toBe(at);
+      for (const c of s.play!.claimLog) expect(c.round).toBeLessThan(at);
+      for (const [, m] of Object.entries(s.play!.belief)) for (const [t, b] of Object.entries(m)) expect(b > 0.5).toBe(types[t] === 'HIGH');
+    }
+  });
+});
+
+describe('near misses (PLAY_V2_SPEC.md Section 6.1)', () => {
+  it('the summary names one change to your own decisions and the coins it would have kept', () => {
+    let found = 0;
+    for (const seed of ['nm-1', 'nm-2', 'nm-3']) {
+      const states = playSolo(seed);
+      const debrief = states.find((x) => x.phase.kind === 'LEVEL_DEBRIEF')!;
+      const v = visibleState(debrief, HUMAN_ID);
+      const nm = (v.levelResults[3] as { nearMiss?: { kind: string; round: number; gain: number; from: unknown } | null }).nearMiss;
+      expect(nm === null || typeof nm === 'object').toBe(true);
+      if (!nm) continue;
+      found++;
+      expect(Number.isInteger(nm.gain)).toBe(true);
+      expect(nm.gain).toBeGreaterThanOrEqual(1);
+      const l = debrief.levelState as { rounds: Array<{ choices: Record<string, { buy: boolean; gym: boolean }>; applied?: Record<string, boolean> }> };
+      if (nm.kind === 'CHOICE') {
+        const r = l.rounds[nm.round - 1];
+        expect(nm.from).toEqual({ buy: r.applied?.[HUMAN_ID] ?? r.choices[HUMAN_ID].buy, gym: r.choices[HUMAN_ID].gym });
+      }
+      // The sandbox with nothing changed replays the real episode exactly.
+      expect(baselineBanks(debrief)).toEqual(debrief.play!.banks);
+      // Another viewer never sees it (it is personal), and the debrief state holds it only under byHuman.
+      expect('nearMiss' in (debrief.levelResults[3] as object)).toBe(false);
+    }
+    expect(found).toBeGreaterThan(0);
   });
 });

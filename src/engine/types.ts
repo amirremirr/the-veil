@@ -79,7 +79,12 @@ export type StructuredMessage =
   | { type: 'CLAIM_VALUES'; card: ValuesCard }
   | { type: 'PROMISE'; action: string }
   | { type: 'ACCUSE'; target: PlayerId; card: ValuesCard }
-  | { type: 'FLAVOR' };
+  | { type: 'FLAVOR' }
+  /**
+   * Play v2 Section 3.1: a preset public claim about a hidden fact ('RISK' in Episode 3: 'LOW' or 'HIGH').
+   * Made only through a CLAIM decision step, so it is a logged action; checked when the fact is revealed.
+   */
+  | { type: 'CLAIM'; topic: 'RISK'; value: string };
 
 export interface Message {
   id: number;
