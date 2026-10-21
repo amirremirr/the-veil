@@ -64,7 +64,13 @@ function Tile({ on, title, desc, onClick, disabled = false }: { on: boolean; tit
       onClick={onClick}
       className={`flex min-h-[112px] flex-col justify-between rounded-2xl p-3 text-start transition-colors disabled:cursor-default ${on ? 'bg-spot text-onspot' : 'bg-card text-ink'}`}
     >
-      <span className={`text-[10px] font-bold uppercase tracking-wider ${on ? '' : 'text-soft'}`}>{onClick ? (on ? t('play.stage.selected') : t('play.stage.tapToAdd')) : ' '}</span>
+      <span aria-hidden className={`grid h-6 w-6 place-items-center rounded-full border-2 ${onClick ? '' : 'invisible'} ${on ? 'border-onspot bg-onspot' : 'border-soft'}`}>
+        {on && (
+          <svg viewBox="0 0 12 12" className="h-3 w-3">
+            <path d="M2 6.5 L5 9 L10 3" fill="none" strokeWidth="2" className="stroke-spot" />
+          </svg>
+        )}
+      </span>
       <span>
         <span className="h-show block text-xl leading-tight">{title}</span>
         <span className="mt-1 block text-xs leading-snug">{desc}</span>
@@ -98,14 +104,13 @@ export function ClaimScreen({ v }: { v: ViewState }) {
     <Stage v={v} chatFirst footer={<BigButton disabled={!x} onClick={() => act(x)}>{t('play.claim.submit')}</BigButton>}>
       <h1 className="h-show text-4xl leading-tight">{t('play.claim.title')}</h1>
       <div className="mt-3 rounded-2xl bg-card p-3">
-        <p className="text-base font-semibold">{t(`play.claim.you.${lv.myType}`, { p: pct(myOdds(v, false)) })}</p>
-        <p className="mt-1 text-xs text-soft">{t('play.claim.note')}</p>
+        <p className="h-show text-2xl leading-tight">{t(`play.claim.you.${lv.myType}`, { p: pct(myOdds(v, false)) })}</p>
+        <p className="mt-1 text-base">{t('play.claim.two')}</p>
       </div>
       <div className="mt-auto space-y-2 pt-3" role="group" aria-label={t('play.claim.title')}>
         {opts.map((o) => (
           <button key={o} type="button" aria-pressed={x === o} onClick={() => setX(o)} className={`block w-full rounded-2xl p-3 text-start ${x === o ? 'bg-spot text-onspot' : 'bg-card'}`}>
             <span className="h-show block text-xl leading-tight">{t(`play.claim.opts.${o}.title`)}</span>
-            <span className="block text-xs">{t(`play.claim.opts.${o}.desc`)}</span>
           </button>
         ))}
       </div>
@@ -158,20 +163,21 @@ export function MoveScreen({ v }: { v: ViewState }) {
   const poll = v.play!.poll ?? {};
   const others = v.players.filter((p) => p.id !== v.viewer);
   const showRead = canBuy && v.round > 1;
+  // D-121: in the launch round SafeHands has already signed everyone up.
+  const launch = PLAY.L3_LAUNCH && v.round === 1 && canBuy;
   return (
     <Stage v={v} chatFirst footer={<BigButton onClick={() => act(decision)}>{t('play.stage.lock')}</BigButton>}>
-      <div className="flex items-baseline justify-between">
-        <h1 className="h-show text-3xl leading-tight">{t('play.l3.choiceTitle')}</h1>
-        <p className="text-sm">
+      <p className="text-base leading-snug">
+        {t('play.claim.two')}{' '}
+        <span className="font-semibold">
           {t('play.move.risk')} <span className="h-show text-2xl text-spot" aria-live="polite">{pct(myOdds(v, gym))}</span>
-        </p>
-      </div>
+        </span>
+      </p>
       {showRead && (
         <section className="mt-2" aria-labelledby="bar-title">
           <h2 id="bar-title" className="text-sm font-bold">
-            {member ? t('play.move.barTitle') : t('play.move.readTitle')}
+            {member ? t('play.move.barTitle') : t('play.move.notMember')}
           </h2>
-          <p className="text-xs text-soft">{member ? t('play.move.barNote') : t('play.move.notMember', { n: members.length })}</p>
           <ul className="mt-2 space-y-1.5" role={member ? 'group' : undefined} aria-label={member ? t('play.move.barTitle') : undefined}>
             {others.map((p) => {
               const share = poll[p.id];
@@ -179,7 +185,7 @@ export function MoveScreen({ v }: { v: ViewState }) {
                 <>
                   <Avatar bot={p.botKey} human={p.isHuman} size={24} />
                   <span className="w-16 truncate text-sm font-bold">{shortName(v, p.id)}</span>
-                  <span className="flex-1 truncate text-xs">{t('play.move.said', { claim: claimShort(claims[p.id]) })}</span>
+                  <span className="flex-1 truncate text-xs">{claimShort(claims[p.id])}</span>
                   {share !== undefined && (
                     <span className="text-xs font-semibold" aria-label={t('play.move.pollLabel', { p: pct(share), name: nameOf(v, p.id) })}>
                       {t('play.move.poll', { p: pct(share) })}
@@ -200,11 +206,13 @@ export function MoveScreen({ v }: { v: ViewState }) {
               );
             })}
           </ul>
-          {member && <p className="mt-1 text-xs font-semibold">{bar ? t('play.move.barPick', { name: shortName(v, bar) }) : t('play.move.barNone')}</p>}
+          {member && bar && <p className="mt-1 text-xs font-semibold">{t('play.move.barPick', { name: shortName(v, bar) })}</p>}
         </section>
       )}
       <div className="mt-auto grid grid-cols-2 gap-3 pt-3">
-        {canBuy ? (
+        {launch ? (
+          <Tile on disabled title={t('play.stage.launchTitle')} desc={t('play.stage.launchDesc', { p: fmt1(lv.premium!) })} />
+        ) : canBuy ? (
           <Tile on={buy} title={t('play.stage.buyTitle')} desc={t('play.stage.buyDesc', { p: fmt1(lv.premium!) })} onClick={() => setBuy(!buy)} />
         ) : mandatory ? (
           <Tile on={false} disabled title={t('play.stage.mandateTitle')} desc={t('play.stage.mandateDesc', { T: coins(T), c: cover })} />
@@ -398,7 +406,7 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
   const bought = ch.buy && r.premium !== null;
   const refused = !!r.applied?.[me] && !bought;
   const chose =
-    r.regime !== 'VOL' ? (ch.gym ? 'planGym' : 'plan') : refused ? 'refused' : bought && ch.gym ? 'both' : bought ? 'cover' : ch.gym ? 'gym' : r.premium === null ? 'noneClosed' : 'none';
+    r.regime !== 'VOL' ? (ch.gym ? 'planGym' : 'plan') : r.launch ? (ch.gym ? 'launchGym' : 'launch') : refused ? 'refused' : bought && ch.gym ? 'both' : bought ? 'cover' : ch.gym ? 'gym' : r.premium === null ? 'noneClosed' : 'none';
   const outcome = roundOutcome(v, r);
   const subjectBot = v.players.find((p) => p.id === outcome.subject && !p.isHuman && p.botKey);
   const voice = subjectBot
@@ -487,7 +495,7 @@ export function PriceBeat({ v, next, onReally }: { v: ViewState; next: () => voi
   const r = lv.rounds[lv.rounds.length - 1];
   const from = r.listPrice ?? r.premium!;
   const to = r.nextPremium;
-  const kind = to === null ? 'Gone' : to > from + 1e-9 ? 'Up' : to < from - 1e-9 ? 'Down' : 'Same';
+  const kind = to === null ? 'Gone' : r.launch ? 'Launch' : to > from + 1e-9 ? 'Up' : to < from - 1e-9 ? 'Down' : 'Same';
   const change = to === null ? 0 : (to - from) / from;
   const voteNext = v.round === PLAY.L3.VOLUNTARY_ROUNDS;
   return (
@@ -514,7 +522,7 @@ export function PriceBeat({ v, next, onReally }: { v: ViewState; next: () => voi
         </p>
         {to !== null && (
           <span className="mt-2 inline-block rounded-md bg-onspot px-2 py-0.5 text-sm font-bold text-spot">
-            {kind === 'Same' ? t('play.stage.same') : t(kind === 'Up' ? 'play.stage.up' : 'play.stage.down', { p: pct(Math.abs(change)) })}
+            {kind === 'Same' || kind === 'Launch' ? t('play.stage.same') : t(kind === 'Up' ? 'play.stage.up' : 'play.stage.down', { p: pct(Math.abs(change)) })}
           </span>
         )}
         <p className="h-show mt-4 text-2xl leading-tight">{t(`play.stage.head${kind}`)}</p>

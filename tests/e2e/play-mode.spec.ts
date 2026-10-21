@@ -42,17 +42,18 @@ test('plays Episode 3 from the title to the episode summary', async ({ page }) =
       await page.locator('[data-beat-next]').click();
     } else if (await page.getByRole('button', { name: 'Say it' }).count()) {
       claims++;
-      await expect(page.getByText(/You are (low|high) risk/)).toBeVisible();
+      await expect(page.getByText(/Your risk: (low|high)/)).toBeVisible();
+      await expect(page.getByText('Two of you are high risk.')).toBeVisible();
       await page.getByRole('button', { name: /low risk/ }).click();
       await page.getByRole('button', { name: 'Say it' }).click();
     } else if (await page.locator('[data-cards]').count()) {
       cards++;
       await page.getByRole('button', { name: 'Tap to continue' }).click();
-    } else if (await page.getByRole('button', { name: 'Lock it in' }).count()) {
+    } else if (await page.getByRole('button', { name: 'Lock in', exact: true }).count()) {
       await expect(page.getByText(/^Your risk/)).toBeVisible();
       const buy = page.getByRole('button', { name: /Buy cover/ });
       if (await buy.count()) await buy.click();
-      await page.getByRole('button', { name: 'Lock it in' }).click();
+      await page.getByRole('button', { name: 'Lock in', exact: true }).click();
     } else if (await page.getByRole('button', { name: 'Cast my vote' }).count()) {
       await page.getByRole('button', { name: /Full cover for all/ }).click();
       await page.getByRole('button', { name: 'Cast my vote' }).click();

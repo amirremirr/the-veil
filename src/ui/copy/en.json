@@ -916,8 +916,8 @@
         "how": [
           "Earn {income} a round. Living costs {living}.",
           "The Wheel of Misfortune can take {loss}. Cover pays it.",
-          "Say how risky you are. Pool members can bar people they doubt.",
-          "After round 3, vote on mandatory cover."
+          "Round 1 is the launch: SafeHands signs everyone up. After that, it's your choice.",
+          "Claim your risk. Pool members can bar people they doubt. After round 3, vote on mandatory cover."
         ],
         "type": {
           "LOW": "Your file says: low risk. The Wheel hits you {p} of the time.",
@@ -1262,17 +1262,15 @@
     "stage": {
       "chance": "Your chance of disaster",
       "chanceNote": "A disaster costs {loss}. Only you see this.",
-      "selected": "Selected",
-      "tapToAdd": "Tap to add",
       "buyTitle": "Buy cover",
-      "buyDesc": "{p} coins. Pays the whole loss.",
+      "buyDesc": "{p} coins, covers all.",
       "gymTitle": "Hit the gym",
-      "gymDesc": "{c} coins. Halves your risk.",
+      "gymDesc": "{c} coins, halves risk.",
       "noCoverTitle": "No cover",
       "noCoverDesc": "SafeHands left town.",
       "mandateTitle": "Mandatory plan",
       "mandateDesc": "Everyone pays about {T}. It covers {c}% of a loss.",
-      "lock": "Lock it in",
+      "lock": "Lock in",
       "reply": "Reply",
       "tap": "Tap to continue",
       "resultsOf": "Round {r} results",
@@ -1323,8 +1321,14 @@
         "noneClosed": "No cover on sale. You skipped the gym.",
         "plan": "You were in the plan.",
         "planGym": "You were in the plan and hit the gym.",
-        "refused": "You applied for cover and were barred."
-      }
+        "refused": "You applied for cover and were barred.",
+        "launch": "SafeHands signed you up.",
+        "launchGym": "SafeHands signed you up. You hit the gym."
+      },
+      "launchTitle": "Launch cover",
+      "launchDesc": "SafeHands signs everyone up for the launch season, at {p} coins. After that, it's your choice.",
+      "headLaunch": "Everyone was in the pool, so the price is the average.",
+      "subLaunch": "From now on, buying cover is your choice."
     },
     "claims": {
       "RISK": {
@@ -1333,24 +1337,20 @@
       }
     },
     "claim": {
-      "title": "What do you tell the pool?",
+      "title": "Your claim",
       "you": {
-        "LOW": "You are low risk. The Wheel hits you {p} of the time.",
-        "HIGH": "You are high risk. The Wheel hits you {p} of the time."
+        "LOW": "Your risk: low, {p}.",
+        "HIGH": "Your risk: high, {p}."
       },
-      "note": "Only you know. Claims can be false. Every card flips at the end.",
       "opts": {
         "LOW": {
-          "title": "I'm low risk",
-          "desc": "Members are less likely to bar you."
+          "title": "I'm low risk"
         },
         "HIGH": {
-          "title": "I'm high risk",
-          "desc": "Honest people get believed later."
+          "title": "I'm high risk"
         },
         "SILENT": {
-          "title": "Say nothing",
-          "desc": "No claim, nothing to check."
+          "title": "Say nothing"
         }
       },
       "submit": "Say it",
@@ -1362,19 +1362,16 @@
       "record": "{kept} of {made} true",
       "inLabel": "Round {r} claims",
       "inTitle": "The claims are in",
-      "inNote": "Anyone could be lying. The cards flip at the end."
+      "inNote": "Anyone could be lying. The cards flip at the end.",
+      "two": "Two of you are high risk."
     },
     "move": {
-      "risk": "Your risk",
-      "barTitle": "Bar one applicant?",
-      "barNote": "You were in last round's pool. A majority of members bars someone.",
-      "readTitle": "The table",
-      "notMember": "Last round's {n} pool members can bar one applicant.",
-      "said": "Said: {claim}",
-      "poll": "{p} think risky",
+      "risk": "Your risk:",
+      "barTitle": "Bar one?",
+      "notMember": "Members can bar one.",
+      "poll": "{p} risky",
       "pollLabel": "Audience on {name}: {p} think high risk",
-      "barPick": "You vote to bar {name}.",
-      "barNone": "Tap a name to vote to bar them. Or bar no one."
+      "barPick": "You vote to bar {name}."
     },
     "barBeat": {
       "label": "The Bar",

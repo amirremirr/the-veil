@@ -121,19 +121,24 @@ Each episode keeps its Study level's rules and v1's Play overrides except where 
 
 ### Episode 3: "Bad Luck Season" (rebuilt as The Pool)
 **Mechanism:** the price rises because mostly risky people buy; a mandate stops the spiral.
-**Rounds:** 4. Rounds 1 to 3 voluntary; the regime vote after round 3; round 4 under the chosen regime. Bank, loss (140) and starting bank (20) as tuned in D-97; retune if the extra round moves E3 or F-f.
+**Rounds:** 4. Round 1 is the launch round; rounds 2 and 3 are voluntary; the regime vote after round 3; round 4 under the chosen regime. Episode starting bank 10, loss 140 (DECISIONS.md D-97, D-123).
+**Risk types:** dealt from a deck of exactly 2 HIGH and 2 LOW (half the table, rounded), shuffled on the game stream. Every claim and move screen says "Two of you are high risk." Bots' beliefs know it: from its own type, a bot starts at 1/3 that a given other player is high (if it is high) or 2/3 (if low), and keeps a joint belief over the possible assignments (D-120).
 
 SafeHands Mutual runs a pool. The price formula is Study's: `price = LOADING x LOSS x mean risk of last round's members` (premiumFor). Only who may join changes.
 
-**Each round:**
+**Round 1, the launch round:** "SafeHands signs everyone up for the launch season. After that, it's your choice." Everyone is covered at the pooled price. Each contestant still claims and chooses the gym. Every round-1 player is a member in round 2 (D-121).
+
+**Rounds 2 to 4, each round** (two screens: the claim, then the move; D-110):
 1. CLAIM: "I'm low risk" / "I'm high risk" / silent.
-2. READ: **The Bar.** From round 2, last round's members vote on whether to bar one applicant from joining this round (majority of members; one bar per round). The audience poll shows the table's belief about each contestant's risk.
+2. READ: **The Bar.** Last round's members vote on whether to bar one applicant from joining this round (strict majority of members; one bar per round). The audience poll shows the table's belief about each contestant's risk. Cast on the move screen, together with ACT.
 3. ACT: buy cover or not; gym or not (gym is public).
 4. REVEAL: the Wheel of Misfortune for each contestant (v1), then the price board: "38 to 62. Last round's pool was mostly risky people."
 
+Bots value debt over the episode's remaining rounds, not only the current one (D-122).
+
 **Peak moment:** round 4's result under the voted regime, then risk cards flip with the claims stamped TRUE or LIE.
 **Why this teaches:** players do adverse selection to each other. Safe players leave because the price is too high, risky players lie to stay in, and the bar is screening, which is what real insurers try with underwriting. The mandate vote ends the game of chicken.
-**Mechanism check E3 (updated):** round-1 high-risk buyers outnumber low-risk buyers at least 2 to 1, and the mean round-2 price is at least 15% above round 1 when the market is open (unchanged). **Added:** the bar targets a high-risk contestant more often than a low-risk one (screening works somewhat), and the price still rises across rounds 1 to 3 with the bar active (screening doesn't fully fix it).
+**Mechanism check E3 (updated for the launch round):** in round 2 (the first voluntary round), high-risk buyers outnumber low-risk buyers at least 2 to 1 (E3a), and the mean round-3 price is at least 15% above round 2 when the market is open (E3b). The bar targets a high-risk contestant more often than a low-risk one (E3c: screening works somewhat), and the price round 3's pool sets is still above the round-2 price with the bar active (E3d: screening doesn't fully fix it).
 
 ### Episode 4: "The Hiring Round" (you are HireBot)
 **Mechanism:** old beliefs plus incentives create a gap with no prejudiced player.
@@ -214,7 +219,7 @@ E1 to E5 as updated in Section 4.
 - S-b: a reader using the bots' beliefs judges a claim TRUE or LIE correctly 55% to 80% of the time (interpretable, not solved).
 - S-c: in Episodes 2 to 5, the targeted action (bar, prize, hire, bribe) goes to a different contestant than it would under full information in 20% to 50% of episodes (reading matters).
 - S-d: the honest bot (Marigold) and the liar (Chet) each win a life between 15% and 40% of the time (honesty isn't dominant either way).
-- v1's F-a to F-f stay.
+- v1's F-a to F-f stay, except F-d, redefined by the author after Q1: a big moment is an event card, an 80+ coin swing, a bar, or a lie stamped at the reveal that changed someone's outcome (a liar who got in, or an honest player who was barred). Target unchanged: at least 90% of episodes.
 
 ### 8.3 Human playtest checks (the gates)
 Run on 3 to 5 people who haven't seen the game. Don't explain anything. Record:
