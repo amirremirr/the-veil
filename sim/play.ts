@@ -80,6 +80,8 @@ function playOne(seed: string): { s: GameState; w: Watch } {
 
 interface Rec {
   watch: Watch;
+  /** D-141: every contestant was dealt the same risk card (which one), or null. */
+  allSame: 'HIGH' | 'LOW' | null;
   /** Bars: how many hit a high-risk and a low-risk contestant. */
   barHigh: number;
   barLow: number;
@@ -190,6 +192,7 @@ function record(s: GameState, watch: Watch): Rec {
   }
   return {
     watch,
+    allSame: new Set(Object.values(d.types)).size === 1 ? Object.values(d.types)[0] : null,
     liesTold: lies.length,
     liesCovered: lies.filter((x) => bought(x.k, x.c.pid)).length,
     liesUnjudged: judged.length - lies.length,
@@ -343,6 +346,18 @@ lines.push('  N/A [reported]                         F-b comeback from last afte
 lines.push('');
 lines.push(`Bar recall (high-risk applicants barred, rounds with a bar vote): ${(100 * sum(recs.map((r) => r.highBarred)) / sum(recs.map((r) => r.highApplicants))).toFixed(1)}% ± ${(100 * se((rs) => sum(rs.map((r) => r.highBarred)) / sum(rs.map((r) => r.highApplicants)))).toFixed(1)} of ${sum(recs.map((r) => r.highApplicants))}`);
 lines.push(`Contested bar decisions (member's belief about an applicant between 0.35 and 0.65): ${(100 * sum(recs.map((r) => r.contested)) / sum(recs.map((r) => r.reads))).toFixed(1)}% ± ${(100 * se((rs) => sum(rs.map((r) => r.contested)) / sum(rs.map((r) => r.reads)))).toFixed(1)} of ${sum(recs.map((r) => r.reads))} reads`);
+// D-141: tables where everyone holds the same risk card, against the rest.
+{
+  const same = recs.filter((r) => r.allSame);
+  const mixed = recs.filter((r) => !r.allSame);
+  const lieOk: Stat = (rs) => sum(rs.map((r) => r.liesCovered)) / sum(rs.map((r) => r.liesTold));
+  const recall: Stat = (rs) => sum(rs.map((r) => r.highBarred)) / sum(rs.map((r) => r.highApplicants));
+  const f = (x: number) => (Number.isFinite(x) ? `${(100 * x).toFixed(1)}%` : 'n/a');
+  lines.push(`All-same tables (every risk card the same): ${f(same.length / recs.length)} of games (${same.filter((r) => r.allSame === 'HIGH').length} all high, ${same.filter((r) => r.allSame === 'LOW').length} all low)`);
+  lines.push(`  lie success: all-same ${f(lieOk(same))} (${sum(same.map((r) => r.liesTold))} lies), mixed ${f(lieOk(mixed))} (${sum(mixed.map((r) => r.liesTold))} lies)`);
+  lines.push(`  bar recall: all-same ${f(recall(same))} (${sum(same.map((r) => r.highApplicants))} high applicants), mixed ${f(recall(mixed))} (${sum(mixed.map((r) => r.highApplicants))})`);
+  lines.push(`  mixed tables only: E3a ${buyerRatio(mixed).toFixed(3)}, E3b ${priceRise(mixed).toFixed(4)}, E3c ${barHighShare(mixed).toFixed(4)}, E3d ${priceRise3(mixed).toFixed(4)}`);
+}
 lines.push(`At least one buyer in round 3: ${(avg((r) => (r.collapsed ? 0 : 1))(recs) * 100).toFixed(1)}% ± ${(se(avg((r) => (r.collapsed ? 0 : 1))) * 100).toFixed(1)}`);
 lines.push(`Market still open in round 3 (SafeHands offers cover): ${(avg((r) => (r.open3 ? 1 : 0))(recs) * 100).toFixed(1)}% ± ${(se(avg((r) => (r.open3 ? 1 : 0))) * 100).toFixed(1)}`);
 const gains = recs.flatMap((r) => r.lieGains).sort((a, b) => a - b);

@@ -85,6 +85,7 @@ export function PlayModeSelect() {
 
 export function PlaySetup() {
   const { go, start, setupFor, settings } = useStore();
+  const [n, setN] = useState<2 | 3 | 4>(PLAY.DEFAULT_SEATS);
   const [difficulty, setDifficulty] = useState<Difficulty>(settings.difficulty);
   const [name, setName] = useState('');
   const [seed, setSeed] = useState('');
@@ -101,18 +102,32 @@ export function PlaySetup() {
           className="mt-3 space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
-            start({ mode: 'EPISODE', level: setupFor.level ?? 3, ruleset: 'PLAY', nPlayers: PLAY.SEATS, difficulty, seed, humanName: name.trim() || undefined });
+            start({ mode: 'EPISODE', level: setupFor.level ?? 3, ruleset: 'PLAY', nPlayers: n, difficulty, seed, humanName: name.trim() || undefined });
           }}
         >
+          <fieldset>
+            <legend className="label mb-1">{t('play.setup.players')}</legend>
+            <div className="grid grid-cols-3 gap-2" role="group" aria-label={t('play.setup.players')}>
+              {([2, 3, 4] as const).map((k) => (
+                <button key={k} type="button" aria-pressed={n === k} className="choice justify-center" onClick={() => setN(k)} data-seats={k}>
+                  <span className="num text-lg">{k}</span>
+                </button>
+              ))}
+            </div>
+          </fieldset>
           <fieldset>
             <legend className="label mb-1">{t('play.setup.difficulty')}</legend>
             <div className="grid grid-cols-3 gap-2" role="group" aria-label={t('play.setup.difficulty')}>
               {(['EASY', 'NORMAL', 'HARD'] as Difficulty[]).map((d) => (
-                <button key={d} type="button" aria-pressed={difficulty === d} className="choice justify-center text-sm" onClick={() => setDifficulty(d)}>
+                <button key={d} type="button" aria-pressed={difficulty === d} className="choice justify-center text-sm" onClick={() => setDifficulty(d)} data-difficulty={d}>
                   {t(`setup.${d}`)}
                 </button>
               ))}
             </div>
+            {/* D-145: one line per level, for the level picked. */}
+            <p className="mt-1 text-sm text-soft" aria-live="polite" data-difficulty-line>
+              {t(`play.setup.levels.${difficulty}`)}
+            </p>
           </fieldset>
           <label className="block">
             <span className="label">{t('play.setup.name')}</span>
@@ -120,7 +135,10 @@ export function PlaySetup() {
           </label>
           <label className="block">
             <span className="label">{t('play.setup.seed')}</span>
-            <input className="num mt-1 min-h-[44px] w-full rounded-md border-2 border-line bg-card px-3" value={seed} maxLength={64} onChange={(e) => setSeed(e.target.value)} />
+            <input className="num mt-1 min-h-[44px] w-full rounded-md border-2 border-line bg-card px-3" value={seed} maxLength={64} onChange={(e) => setSeed(e.target.value)} aria-describedby="seed-hint" />
+            <span id="seed-hint" className="mt-1 block text-xs text-soft">
+              {t('play.setup.seedHint')}
+            </span>
           </label>
           <div className="flex justify-end">
             <button type="submit" className="btn-primary">

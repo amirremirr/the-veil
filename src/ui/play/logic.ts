@@ -10,24 +10,6 @@ import host from '../copy/play/host.json';
 import confessionals from '../copy/play/confessionals.json';
 import wheel from '../copy/play/wheel.json';
 import { fill, t } from '../i18n';
-import { highCountOf, STUDY_L3, type L3Params } from '../../engine/levels/level3';
-
-/**
- * D-140: how many of the table hold each Episode 3 card, from the same rule the engine deals with (half the
- * table, rounded), so the text can never disagree with the deal. `short` is the claim and move screens' line.
- */
-export function dealtCounts(n: number): { n: number; high: number; worriers: number } {
-  // Episode 3's own numbers (Study's Level 3 with the Play overrides), as the engine deals with.
-  const h = highCountOf(n, { ...STUDY_L3, ...PLAY.L3 } as L3Params);
-  return { n, high: h, worriers: h };
-}
-
-export function dealtLine(n: number, short = false): string {
-  const c = dealtCounts(n);
-  if (short) return t(c.high === 1 ? 'play.claim.twoOne' : 'play.claim.two', { high: c.high });
-  return `${t(c.high === 1 ? 'play.myCards.countsOne' : 'play.myCards.counts', { high: c.high, n: c.n })} ${t(c.worriers === 1 ? 'play.myCards.worriersOne' : 'play.myCards.worriers', { w: c.worriers })}`;
-}
-
 export type OutcomeKey = 'jackpot' | 'disaster' | 'betrayal' | 'debt' | 'comeback' | 'quiet';
 export const OUTCOME_KEYS: OutcomeKey[] = ['jackpot', 'disaster', 'betrayal', 'debt', 'comeback', 'quiet'];
 

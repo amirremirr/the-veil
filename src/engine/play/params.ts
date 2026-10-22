@@ -38,18 +38,21 @@ export const PLAY = {
   /** D-121: round 1 of Episode 3 is a launch round: SafeHands signs everyone up at the pooled price. */
   L3_LAUNCH: true,
   /**
-   * D-128: Episode 3's second hidden card. Half the table are Worriers (dealt like the risk cards); a
-   * Worrier's debt stress is multiplied by this. Calm players are unchanged. The author's range: 1.5 to 4.
+   * D-128: Episode 3's second hidden card. A Worrier's debt stress is multiplied by this (the per-round cap
+   * too, D-141). Calm players are unchanged. The author's range: 1.5 to 4.
    */
   WORRIER_STRESS_MULT: 3,
+  /** D-141: each seat is a Worrier with this chance, drawn on its own (like the risk card, 50/50). */
+  WORRIER_SHARE: 0.5,
+  /**
+   * D-141, a hidden rule: at 3 or 4 seats, Episode 3's risk cards are redrawn until at least one HIGH and one
+   * LOW are dealt. Never shown in play; About mentions it.
+   */
+  L3_MIXED_DEAL: false,
   /** D-122: bots count the debt stress a bank will still cost in the episode's later rounds. */
   DEBT_HORIZON: true,
-  /**
-   * D-140: every Play table seats this many contestants (bots fill the empty seats). Every Play target was
-   * tuned on 4, and with 2 your own cards tell you the other player's. The engine still accepts other sizes
-   * for the simulator and tests; the solo store always starts Play with this many.
-   */
-  SEATS: 4 as 2 | 3 | 4,
+  /** D-141: the seat count the Play setup screen starts on (2, 3 or 4 can be picked; bots fill the rest). */
+  DEFAULT_SEATS: 4 as 2 | 3 | 4,
   /** v2 Section 5: Leaked Medical Files shows every risk type, only from this round of Episode 3. */
   LEAKED_FROM_ROUND: 2,
   /**

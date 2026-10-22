@@ -897,8 +897,14 @@
       "players": "Contestants",
       "name": "Your stage name",
       "difficulty": "How sharp are the other contestants?",
-      "seed": "Show code (optional)",
-      "start": "Go live"
+      "seed": "Challenge code (optional)",
+      "start": "Go live",
+      "seedHint": "Same code, same game. Use it to play the exact game a friend played.",
+      "levels": {
+        "EASY": "See what the audience thinks. Bots are mostly honest.",
+        "NORMAL": "The standard game.",
+        "HARD": "No audience poll. Bots lie more and bar harder."
+      }
     },
     "episodes": {
       "1": {
@@ -1358,9 +1364,7 @@
       "record": "{kept} of {made} true",
       "inLabel": "Round {r} claims",
       "inTitle": "The claims are in",
-      "inNote": "Anyone could be lying. The cards flip at the end.",
-      "two": "{high} of you are high risk.",
-      "twoOne": "{high} of you is high risk."
+      "inNote": "Anyone could be lying. The cards flip at the end."
     },
     "move": {
       "risk": "Your risk:",
@@ -1424,14 +1428,11 @@
         "CALM": "Calm"
       },
       "worryLine": {
-        "WORRIER": "Debt stress counts {m} times over for you.",
-        "CALM": "Debt stress counts normally for you."
+        "WORRIER": "In debt at the end of a round? You lose {m} points for every coin you owe (at most {cap}).",
+        "CALM": "In debt at the end of a round? You lose 1 point for every coin you owe (at most {cap})."
       },
       "note": "Only you see these. Both flip at the end.",
-      "counts": "{high} of the {n} of you are high risk.",
-      "countsOne": "{high} of the {n} of you is high risk.",
-      "worriers": "{w} are Worriers.",
-      "worriersOne": "{w} is a Worrier."
+      "unknown": "Nobody knows how many players are high risk or Worriers. Not even the host."
     },
     "opening": {
       "skip": "Skip",

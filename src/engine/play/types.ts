@@ -52,10 +52,11 @@ export interface PlayState {
    */
   belief: Record<PlayerId, Record<PlayerId, number>>;
   /**
-   * D-120, D-128: the joint belief behind `belief` and `belief2`. Each bot weighs every pair of sets of
-   * other contestants (who is high risk, who is a Worrier) with the dealt sizes (two of four each).
+   * D-141: the beliefs behind `belief` and `belief2`. Each bot keeps, for every other contestant, a table
+   * over that contestant's two hidden cards (HIGH+Worrier, HIGH+Calm, LOW+Worrier, LOW+Calm), independent
+   * across contestants because every card is dealt independently.
    */
-  joint: Record<PlayerId, { states: Array<{ a: PlayerId[]; b: PlayerId[] }>; w: number[] }>;
+  joint: Record<PlayerId, Record<PlayerId, number[]>>;
   /** D-128: each bot's belief that each other contestant holds the second hidden trait (Episode 3: Worrier). Private. */
   belief2: Record<PlayerId, Record<PlayerId, number>>;
   /** Every claim decision of the life, silence included (private: `lieGain` and `truth` reveal types). */

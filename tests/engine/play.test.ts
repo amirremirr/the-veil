@@ -5,6 +5,7 @@ import { createInitialState, reduce, replay, step, visibleState, waitingOn, HUMA
 import { autoDecision } from '../../src/engine/auto';
 import { act, newTable, screenKind, tableStep, type Table } from '../../src/shared/flow';
 import { PLAY } from '../../src/engine/play/params';
+import { observe } from '../../src/engine/play/claims';
 import { debtStressFor, futureStress, playScore, roundsLeft } from '../../src/engine/play/rules';
 import { baselineBanks } from '../../src/engine/play/nearMiss';
 import { canResume, currentRules, gameRecord, paramsHash, RulesMismatchError } from '../../src/engine/version';
@@ -386,26 +387,14 @@ describe('near misses (PLAY_V2_SPEC.md Section 6.1)', () => {
 });
 
 describe('Q1 review fixes (D-120 to D-122)', () => {
-  it('risk types are dealt from a deck: exactly two of four are high risk', () => {
-    for (let k = 0; k < 40; k++) {
-      const s = createInitialState({ ...cfg(`deal-${k}`), allBots: true });
-      step(s, { type: 'ADVANCE' });
-      const types = Object.values((s.levelState as { types: Record<string, string> }).types);
-      expect(types.filter((t) => t === 'HIGH')).toHaveLength(2);
-    }
-  });
-  it('a bot starts at 1/3 for each other player if it is high risk, 2/3 if low, and stays consistent with two highs', () => {
-    const s = createInitialState(cfg('prior'));
-    const g = act(s, HUMAN_ID);
-    const types = (g.levelState as { types: Record<string, string> }).types;
-    for (const [obs, m] of Object.entries(g.play!.belief)) {
-      for (const b of Object.values(m)) expect(b).toBeCloseTo(types[obs] === 'HIGH' ? 1 / 3 : 2 / 3, 9);
-      expect(Object.values(m).reduce((a, b) => a + b, 0)).toBeCloseTo(types[obs] === 'HIGH' ? 1 : 2, 9);
-    }
-    // Later, after claims and results, the marginals still add up to the highs left among the others.
-    const done = botsOnly('prior-2');
-    const t2 = (done.levelState as { types: Record<string, string> }).types;
-    for (const [obs, m] of Object.entries(done.play!.belief)) expect(Object.values(m).reduce((a, b) => a + b, 0)).toBeCloseTo(t2[obs] === 'HIGH' ? 1 : 2, 1);
+  it('a bot reads each contestant on their own: what one does never moves its belief about another (D-141)', () => {
+    const s = createInitialState({ ...cfg('prior'), allBots: true });
+    step(s, { type: 'ADVANCE' });
+    const [a, b, c] = s.players.map((p) => p.id);
+    const before = s.play!.belief[a][c];
+    observe(s, b, (high) => (high ? 0.9 : 0.1));
+    expect(s.play!.belief[a][b]).toBeGreaterThan(0.85);
+    expect(s.play!.belief[a][c]).toBeCloseTo(before, 12);
   });
   it('the launch round signs everyone up at the pooled price; no bar until round 2, when every round-1 player is a member', () => {
     expect(PLAY.L3_LAUNCH).toBe(true);
@@ -438,23 +427,53 @@ describe('Q1 review fixes (D-120 to D-122)', () => {
 
 describe('the worry card (D-128)', () => {
   const games = Array.from({ length: 30 }, (_, k) => botsOnly(`worry-${k}`));
-  it('half the table are Worriers, dealt from their own deck', () => {
-    let worrierHigh = 0;
-    for (const s of games) {
-      const l = s.levelState as { worry: Record<string, string>; types: Record<string, string> };
-      expect(Object.values(l.worry).filter((w) => w === 'WORRIER')).toHaveLength(2);
-      worrierHigh += Object.keys(l.worry).filter((id) => l.worry[id] === 'WORRIER' && l.types[id] === 'HIGH').length;
-    }
-    // Independent of risk: some Worriers are high risk and some low.
-    expect(worrierHigh).toBeGreaterThan(0);
-    expect(worrierHigh).toBeLessThan(60);
+  it('every risk and worry card is drawn on its own, 50/50 (D-141)', () => {
+    const many = Array.from({ length: 200 }, (_, k) => {
+      const s = createInitialState({ ...cfg(`deal-${k}`), allBots: true });
+      step(s, { type: 'ADVANCE' });
+      return s.levelState as { worry: Record<string, string>; types: Record<string, string> };
+    });
+    const highs = many.map((l) => Object.values(l.types).filter((x) => x === 'HIGH').length);
+    const worriers = many.map((l) => Object.values(l.worry).filter((x) => x === 'WORRIER').length);
+    const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+    expect(mean(highs) / 4).toBeGreaterThan(0.42);
+    expect(mean(highs) / 4).toBeLessThan(0.58);
+    expect(mean(worriers) / 4).toBeGreaterThan(0.42);
+    expect(mean(worriers) / 4).toBeLessThan(0.58);
+    // No fixed mix: tables with every count of high-risk players turn up.
+    for (const k of [0, 1, 2, 3, 4]) expect(highs).toContain(k);
+    // Worry is independent of risk.
+    const both = many.flatMap((l) => Object.keys(l.types).map((id) => [l.types[id] === 'HIGH', l.worry[id] === 'WORRIER']));
+    const pHW = both.filter(([h, w]) => h && w).length / both.length;
+    expect(Math.abs(pHW - 0.25)).toBeLessThan(0.06);
   });
-  it('bots hold a joint belief consistent with both decks', () => {
+  it('with the hidden mixed-deal rule, tables of 3 or 4 always hold both risk cards; 2 seats are never redrawn (D-141)', () => {
+    const was = PLAY.L3_MIXED_DEAL;
+    PLAY.L3_MIXED_DEAL = true;
+    try {
+      let sameAt2 = 0;
+      for (const n of [2, 3, 4] as const)
+        for (let k = 0; k < 60; k++) {
+          const s = createInitialState({ ...cfg(`mixed-${n}-${k}`), nPlayers: n, allBots: true });
+          step(s, { type: 'ADVANCE' });
+          const kinds = new Set(Object.values((s.levelState as { types: Record<string, string> }).types));
+          if (n >= 3) expect(kinds.size).toBe(2);
+          else if (kinds.size === 1) sameAt2++;
+        }
+      expect(sameAt2).toBeGreaterThan(0);
+    } finally {
+      PLAY.L3_MIXED_DEAL = was;
+    }
+  });
+  it('bots start from an independent 0.5 per card per player (D-141)', () => {
     const s = createInitialState({ ...cfg('worry-belief'), allBots: true });
     step(s, { type: 'ADVANCE' });
-    const l = s.levelState as { worry: Record<string, string> };
-    for (const [obs, m] of Object.entries(s.play!.belief2)) expect(Object.values(m).reduce((a, b) => a + b, 0)).toBeCloseTo(l.worry[obs] === 'WORRIER' ? 1 : 2, 9);
-    for (const j of Object.values(s.play!.joint)) expect(j.states).toHaveLength(9);
+    for (const [obs, m] of Object.entries(s.play!.joint)) {
+      expect(Object.keys(m)).toHaveLength(3);
+      expect(Object.keys(m)).not.toContain(obs);
+      for (const w of Object.values(m)) expect(w).toHaveLength(4);
+    }
+    for (const m of [...Object.values(s.play!.belief), ...Object.values(s.play!.belief2)]) for (const b of Object.values(m)) expect(b).toBeCloseTo(0.5, 9);
   });
   it('the debt stress of a Worrier in the score is WORRIER_STRESS_MULT times the Calm amount', () => {
     expect(PLAY.WORRIER_STRESS_MULT).toBe(3);
@@ -472,13 +491,13 @@ describe('the worry card (D-128)', () => {
   });
 });
 
-describe('Play seats (D-140)', () => {
-  it('the solo store always starts a Play table with PLAY.SEATS contestants; Study keeps its choice', async () => {
+describe('Play seats (D-141)', () => {
+  it('a Play table seats the 2, 3 or 4 contestants the setup asks for; the setup starts on 4', async () => {
     const { useStore } = await import('../../src/ui/store');
-    useStore.getState().start({ mode: 'EPISODE', level: 3, ruleset: 'PLAY', nPlayers: 2, difficulty: 'NORMAL', seed: 'seats' });
-    expect(useStore.getState().game!.players).toHaveLength(PLAY.SEATS);
-    expect(PLAY.SEATS).toBe(4);
-    useStore.getState().start({ mode: 'SINGLE_LEVEL', level: 3, nPlayers: 2, difficulty: 'NORMAL', seed: 'seats' });
-    expect(useStore.getState().game!.players).toHaveLength(2);
+    for (const n of [2, 3, 4] as const) {
+      useStore.getState().start({ mode: 'EPISODE', level: 3, ruleset: 'PLAY', nPlayers: n, difficulty: 'NORMAL', seed: 'seats' });
+      expect(useStore.getState().game!.players).toHaveLength(n);
+    }
+    expect(PLAY.DEFAULT_SEATS).toBe(4);
   });
 });

@@ -124,8 +124,6 @@ export const STUDY_L3: L3Params = { ...L3, RISK_MULT: 1, RISK_CAP: 1, PREMIUM_MU
  */
 export interface L3Ctx {
   p: L3Params;
-  /** Play (D-120): exactly this many players are high risk, so bots weigh only type mixes with that many. */
-  highCount?: number;
   score(card: ValuesCard, W: readonly number[], i: number, effortShares: readonly number[]): number;
   /** `mult`: the debt-stress multiplier assumed for player j (D-128: a Worrier's; 1 when calm or unknown). */
   net(j: number, w: number, mult?: number): number;
@@ -149,15 +147,11 @@ export function ctxOf(s: GameState, withEvent = true, multOf?: (i: number) => nu
   const drift = PLAY.DEBT_HORIZON ? p.BASE_INCOME - PLAY.LIVING_COST - premiumFor(p.P_BAR, p) : null;
   return {
     p,
-    highCount: highCountOf(s.players.length, p),
     // Each player values outcomes with its own worry card, unless `multOf` says otherwise (D-128).
     score: (card, W, i, eff) => playRoundValue(s, card, W, i, eff, drift, multOf ? multOf(i) : undefined),
     net: (j, w, mult) => playNet(s, j, w, drift, mult),
   };
 }
-
-/** D-120: how many high-risk players a Play table is dealt (2 of 4; half the table, rounded). */
-export const highCountOf = (n: number, p: L3Params = STUDY_L3) => Math.round(n * p.P_HIGH_SHARE);
 
 const pOf = (type: RiskType, p: L3Params = STUDY_L3) => (type === 'HIGH' ? p.P_HIGH : p.P_LOW);
 const coverage = (r: Regime, p: L3Params = STUDY_L3) => (r === 'M50' ? p.COVERAGE_OPTIONS[0] : p.COVERAGE_OPTIONS[1]);
@@ -273,11 +267,6 @@ function choiceCE(
       types[j] = high ? 'HIGH' : 'LOW';
       pTypes *= high ? P.P_HIGH_SHARE : 1 - P.P_HIGH_SHARE;
     });
-    // Play: only the mixes with exactly the dealt number of high-risk players, equally likely.
-    if (ctx.highCount !== undefined) {
-      if (types.filter((t) => t === 'HIGH').length !== ctx.highCount) continue;
-      pTypes = 1;
-    }
     const others = types.map((t, j) => rnChoice(t, regime, premium, ctx, j));
     options.forEach((opt, k) => {
       const choices = others.slice();
@@ -571,19 +560,19 @@ export const level3: LevelDefinition = {
     const P = ctxOf(s, false).p;
     const g = gameRng(s);
     const types: Record<PlayerId, RiskType> = {};
-    // Play (D-120): deal from a deck with exactly half the table high risk, shuffled on the game stream.
-    const deck: RiskType[] | null = isPlay(s)
-      ? g.shuffle(s.players.map((_, k) => (k < highCountOf(s.players.length, P) ? 'HIGH' : 'LOW') as RiskType))
-      : null;
+    // D-141: in Play too, every seat's risk card is drawn on its own, P_HIGH_SHARE (50/50) on the game stream.
+    // Nobody is told the mix. With L3_MIXED_DEAL, a table of 3 or 4 is redrawn until both cards are in it.
+    const draw = () => s.players.map(() => (g.next() < P.P_HIGH_SHARE ? 'HIGH' : 'LOW') as RiskType);
+    let dealt = draw();
+    if (isPlay(s) && PLAY.L3_MIXED_DEAL && s.players.length >= 3) while (new Set(dealt).size < 2) dealt = draw();
     s.players.forEach((p, k) => {
-      types[p.id] = deck ? deck[k] : g.next() < P.P_HIGH_SHARE ? 'HIGH' : 'LOW';
+      types[p.id] = dealt[k];
       p.privateInfo.riskType = types[p.id];
     });
-    // Play (D-128): a second card from its own deck, half Worriers, independent of risk.
+    // Play (D-128, D-141): the worry card, drawn the same way after every risk card, independent of risk.
     let worry: Record<PlayerId, Worry> | undefined;
     if (isPlay(s)) {
-      const wdeck = g.shuffle(s.players.map((_, k) => (k < highCountOf(s.players.length, P) ? 'WORRIER' : 'CALM') as Worry));
-      worry = Object.fromEntries(s.players.map((p, k) => [p.id, wdeck[k]]));
+      worry = Object.fromEntries(s.players.map((p) => [p.id, (g.next() < PLAY.WORRIER_SHARE ? 'WORRIER' : 'CALM') as Worry]));
       for (const p of s.players) p.privateInfo.worry = worry[p.id];
     }
     s.levelState = {
@@ -594,12 +583,7 @@ export const level3: LevelDefinition = {
       rounds: [],
       ...(worry ? { worry } : {}),
     } satisfies L3State;
-    if (isPlay(s))
-      initFactBeliefs(
-        s,
-        { count: highCountOf(s.players.length, P), holds: (pid) => types[pid] === 'HIGH' },
-        { count: highCountOf(s.players.length, P), holds: (pid) => worry![pid] === 'WORRIER' },
-      );
+    if (isPlay(s)) initFactBeliefs(s, P.P_HIGH_SHARE, PLAY.WORRIER_SHARE);
   },
   phases(s) {
     const P = ctxOf(s, false).p;
