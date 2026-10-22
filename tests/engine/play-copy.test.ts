@@ -79,3 +79,20 @@ describe('reactions', () => {
     expect(n).toBeGreaterThan(0);
   });
 });
+
+describe('the dealt-cards line (D-140)', () => {
+  it('matches the cards actually dealt at 2, 3 and 4 seats, singular when a count is 1', async () => {
+    const { createInitialState, step } = await import('../../src/engine/engine');
+    const { dealtLine } = await import('../../src/ui/play/logic');
+    for (const n of [2, 3, 4] as const) {
+      const s = createInitialState({ mode: 'EPISODE', level: 3, ruleset: 'PLAY', nPlayers: n, difficulty: 'NORMAL', seed: `dealt-${n}`, allBots: true });
+      step(s, { type: 'ADVANCE' });
+      const l = s.levelState as { types: Record<string, string>; worry: Record<string, string> };
+      const high = Object.values(l.types).filter((x) => x === 'HIGH').length;
+      const worriers = Object.values(l.worry).filter((x) => x === 'WORRIER').length;
+      const want = `${high} of the ${n} of you ${high === 1 ? 'is' : 'are'} high risk. ${worriers} ${worriers === 1 ? 'is a Worrier' : 'are Worriers'}.`;
+      expect(dealtLine(n)).toBe(want);
+      expect(dealtLine(n, true)).toBe(`${high} of you ${high === 1 ? 'is' : 'are'} high risk.`);
+    }
+  });
+});

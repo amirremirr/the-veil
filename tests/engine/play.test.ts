@@ -471,3 +471,14 @@ describe('the worry card (D-128)', () => {
     expect(checked).toBeGreaterThan(0);
   });
 });
+
+describe('Play seats (D-140)', () => {
+  it('the solo store always starts a Play table with PLAY.SEATS contestants; Study keeps its choice', async () => {
+    const { useStore } = await import('../../src/ui/store');
+    useStore.getState().start({ mode: 'EPISODE', level: 3, ruleset: 'PLAY', nPlayers: 2, difficulty: 'NORMAL', seed: 'seats' });
+    expect(useStore.getState().game!.players).toHaveLength(PLAY.SEATS);
+    expect(PLAY.SEATS).toBe(4);
+    useStore.getState().start({ mode: 'SINGLE_LEVEL', level: 3, nPlayers: 2, difficulty: 'NORMAL', seed: 'seats' });
+    expect(useStore.getState().game!.players).toHaveLength(2);
+  });
+});

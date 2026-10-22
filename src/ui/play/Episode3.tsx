@@ -13,7 +13,7 @@ import { nameOf, shortName, useTalkFrom } from '../game';
 import { Avatar, useMotionOff } from '../components/common';
 import { fmt1 } from '../components/Money';
 import { BigButton, Bubble, Stage } from './OnAir';
-import { confessional, hostLine, pick, roundOutcome } from './logic';
+import { confessional, dealtLine, hostLine, pick, roundOutcome } from './logic';
 import { renderMessage } from '../game';
 
 export type L3View = {
@@ -108,7 +108,7 @@ export function ClaimScreen({ v }: { v: ViewState }) {
       <h1 className="h-show text-4xl leading-tight">{t('play.claim.title')}</h1>
       <div className="mt-3 rounded-2xl bg-card p-3">
         <p className="h-show text-2xl leading-tight">{t(`play.claim.you.${lv.myType}`, { p: pct(myOdds(v, false)), worry: t(`play.myCards.worry.${lv.myWorry ?? 'CALM'}`) })}</p>
-        <p className="mt-1 text-base">{t('play.claim.two')}</p>
+        <p className="mt-1 text-base">{dealtLine(v.players.length, true)}</p>
       </div>
       <div className="mt-auto space-y-2 pt-3" role="group" aria-label={t('play.claim.title')}>
         {opts.map((o) => (
@@ -139,7 +139,7 @@ export function MyCardsBeat({ v, next }: { v: ViewState; next: () => void }) {
             <p className="mt-1 text-sm">{t(`play.myCards.worryLine.${worry}`, { m: PLAY.WORRIER_STRESS_MULT })}</p>
           </div>
         </div>
-        <p className="mt-4 text-base">{t('play.myCards.two')}</p>
+        <p className="mt-4 text-base">{dealtLine(v.players.length)}</p>
         <p className="mt-2 text-sm text-soft">{t('play.myCards.note')}</p>
       </div>
     </Stage>
@@ -196,7 +196,7 @@ export function MoveScreen({ v }: { v: ViewState }) {
   return (
     <Stage v={v} chatFirst footer={<BigButton onClick={() => act(decision)}>{t('play.stage.lock')}</BigButton>}>
       <p className="text-base leading-snug">
-        {t('play.claim.two')}{' '}
+        {dealtLine(v.players.length, true)}{' '}
         <span className="font-semibold">
           {t('play.move.risk')} <span className="h-show text-2xl text-spot" aria-live="polite">{pct(myOdds(v, gym))}</span>
         </span>

@@ -44,6 +44,12 @@ export const PLAY = {
   WORRIER_STRESS_MULT: 3,
   /** D-122: bots count the debt stress a bank will still cost in the episode's later rounds. */
   DEBT_HORIZON: true,
+  /**
+   * D-140: every Play table seats this many contestants (bots fill the empty seats). Every Play target was
+   * tuned on 4, and with 2 your own cards tell you the other player's. The engine still accepts other sizes
+   * for the simulator and tests; the solo store always starts Play with this many.
+   */
+  SEATS: 4 as 2 | 3 | 4,
   /** v2 Section 5: Leaked Medical Files shows every risk type, only from this round of Episode 3. */
   LEAKED_FROM_ROUND: 2,
   /**

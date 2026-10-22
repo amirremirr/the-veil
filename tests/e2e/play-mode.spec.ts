@@ -44,7 +44,7 @@ test('plays Episode 3 from the title to the episode summary', async ({ page }) =
     } else if (await page.getByRole('button', { name: 'Say it' }).count()) {
       claims++;
       await expect(page.getByText(/Your risk: (low|high)/)).toBeVisible();
-      await expect(page.getByText('Two of you are high risk.')).toBeVisible();
+      await expect(page.getByText('2 of you are high risk.')).toBeVisible();
       await page.getByRole('button', { name: /low risk/ }).click();
       await page.getByRole('button', { name: 'Say it' }).click();
     } else if (await page.locator('[data-cards]').count()) {

@@ -1359,7 +1359,8 @@
       "inLabel": "Round {r} claims",
       "inTitle": "The claims are in",
       "inNote": "Anyone could be lying. The cards flip at the end.",
-      "two": "Two of you are high risk."
+      "two": "{high} of you are high risk.",
+      "twoOne": "{high} of you is high risk."
     },
     "move": {
       "risk": "Your risk:",
@@ -1426,8 +1427,11 @@
         "WORRIER": "Debt stress counts {m} times over for you.",
         "CALM": "Debt stress counts normally for you."
       },
-      "two": "Two of you are high risk. Two of you are Worriers.",
-      "note": "Only you see these. Both flip at the end."
+      "note": "Only you see these. Both flip at the end.",
+      "counts": "{high} of the {n} of you are high risk.",
+      "countsOne": "{high} of the {n} of you is high risk.",
+      "worriers": "{w} are Worriers.",
+      "worriersOne": "{w} is a Worrier."
     },
     "opening": {
       "skip": "Skip",

@@ -85,7 +85,6 @@ export function PlayModeSelect() {
 
 export function PlaySetup() {
   const { go, start, setupFor, settings } = useStore();
-  const [n, setN] = useState<2 | 3 | 4>(4);
   const [difficulty, setDifficulty] = useState<Difficulty>(settings.difficulty);
   const [name, setName] = useState('');
   const [seed, setSeed] = useState('');
@@ -102,19 +101,9 @@ export function PlaySetup() {
           className="mt-3 space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
-            start({ mode: 'EPISODE', level: setupFor.level ?? 3, ruleset: 'PLAY', nPlayers: n, difficulty, seed, humanName: name.trim() || undefined });
+            start({ mode: 'EPISODE', level: setupFor.level ?? 3, ruleset: 'PLAY', nPlayers: PLAY.SEATS, difficulty, seed, humanName: name.trim() || undefined });
           }}
         >
-          <fieldset>
-            <legend className="label mb-1">{t('play.setup.players')}</legend>
-            <div className="grid grid-cols-3 gap-2" role="group" aria-label={t('play.setup.players')}>
-              {([2, 3, 4] as const).map((k) => (
-                <button key={k} type="button" aria-pressed={n === k} className="choice justify-center" onClick={() => setN(k)}>
-                  <span className="num text-lg">{k}</span>
-                </button>
-              ))}
-            </div>
-          </fieldset>
           <fieldset>
             <legend className="label mb-1">{t('play.setup.difficulty')}</legend>
             <div className="grid grid-cols-3 gap-2" role="group" aria-label={t('play.setup.difficulty')}>
