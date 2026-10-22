@@ -1383,7 +1383,10 @@
       "notApplied": "No cover for them this round.",
       "none": "Nobody was barred.",
       "vote": "{name}: {target}",
-      "noOne": "no one"
+      "noOne": "no one",
+      "barredMany": "{names} are barred.",
+      "refusedMany": "{names} applied for cover and were turned away.",
+      "and": " and "
     },
     "cards": {
       "label": "The reveal",

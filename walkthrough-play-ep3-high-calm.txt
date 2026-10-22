@@ -1,8 +1,8 @@
 Walkthrough: seed playtest-7, 375x760, PLAY EPISODE 3, 4 players, Normal
 
 Group  Screens  Decisions  Words  Tallest(px)  Overlaps  HScroll
-Ep3         30          9   1606          760         0        0
-Total       30          9   1606                      0        0
+Ep3         30          9   1613          760         0        0
+Total       30          9   1613                      0        0
 
 PASS: every Play screen fits 375x760.
 
@@ -25,7 +25,7 @@ Ep3  R2 REVEAL:EVENTS (price)            words=  49 buttons= 2 height=  760
 Ep3  R3 DECIDE:CLAIM                     words=  40 buttons= 5 height=  760
 Ep3  R3 DECIDE:CHOICE (claims)           words=  49 buttons= 2 height=  760
 Ep3  R3 DECIDE:CHOICE                    words=  58 buttons= 7 height=  760
-Ep3  R3 REVEAL:EVENTS (bar)              words=  34 buttons= 2 height=  760
+Ep3  R3 REVEAL:EVENTS (bar)              words=  41 buttons= 2 height=  760
 Ep3  R3 REVEAL:EVENTS (outcome)          words=  54 buttons= 2 height=  760
 Ep3  R3 REVEAL:EVENTS (price)            words=  48 buttons= 2 height=  760
 Ep3  R3 DECIDE:REGIME                    words=  74 buttons= 5 height=  760

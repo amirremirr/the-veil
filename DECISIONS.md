@@ -375,3 +375,46 @@ The author's second review: reading people was solved, because risk was the only
 
   Lie gain: median 4.29 coins, 90th percentile 15.82. Lie rates: Chet 65.6%, Ugo 51.9%, Dot 44.5%, Marigold 23.0% (the author's order holds, but Chet is now 1.26 times Ugo, under the 1.5 asked for in D-123; CREDIBILITY_VALUE was not retuned this round because S-a is in band). At least one buyer in round 3 in 38.9% of games; SafeHands still offers cover in round 3 in 92.3%. F-e: Egoist 32.1%, Rawlsian 32.0%, Utilitarian 14.6%, Meritocrat 14.1% (the last two just under 15%, reported). Read together: bars are accurate but rare (they catch about a quarter of high-risk applicants), so nearly every lie gets its teller into the pool, and about a quarter of the reads members make before voting are genuinely uncertain.
 - **D-132 Screens.** The reveal shows both cards for each contestant and two new stamps: "Low risk. Just a Worrier." for a low-risk Worrier who applied in a voluntary round or was barred, and "High risk. Too calm to buy." for a high-risk Calm player who never applied in a voluntary round. "What was really going on?" gains the author's line on careful buyers. The claim screen adds your worry card as one word (40 words, the limit); the move screen is unchanged (58 words). Walkthroughs at 375 x 760: playtest-3 (you are a low-risk Worrier) 30 screens, 8 decisions, 1,611 words; playtest-7 (you are a high-risk Calm player) 30 screens, 9 decisions, 1,606 words; every screen 760 px in both. playtest-3 has 8 decisions because Leaked Medical Files drew in round 3, so nobody claimed that round.
+
+## Play mode v2, Q1 review round 3: a bar rule grounded in prices (October 2026)
+
+The author's third review: lie success was 98% and bar recall 23%, so lying dominated in solo play. Study is unchanged: the golden Study replays pass at every commit and the Study params hash is still 5ba140feb4eef1b7. The rules hash is now 00cfafddf279e800; the Play params hash is 6162876e0d7b0e8f.
+
+- **D-133 The bar rule for bots, from prices (replaces D-113; BAR_VALUE and BAR_THRESHOLD are gone).** A member values barring applicant j at gain(j) = BAR_GAIN_SCALE x pStay x LOADING x PRICE_LOSS x (mean risk of the pool with j - mean risk of the pool without j). The pool is last round's members, assumed to stay, plus j. Each other contestant's risk is P_HIGH x b + P_LOW x (1 - b), with b the member's own belief that they are high risk; the member's own risk is its true one (P_HIGH or P_LOW, without the gym). pStay, the chance the member stays in, is its own chance of buying now (the logit rule on its best plan with cover against without). Barring no one is worth 0, and the member chooses by the logit rule with its own lambda, as before. The gain is zero in the episode's last round, since there is no next price. When a claimant predicts a member's vote (D-112) it uses only public information: its own belief about the member for the member's risk, and the public choice model for the member's chance of buying. The grounded rule alone (scale 1) brought bar accuracy down from 99.7% to 69% but left lie success near 100%, because a strict majority of members was needed.
+- **D-134 The bar passes with at least half of the other members (the author's rule).** An applicant is barred with votes from at least half of the members who are not that applicant: 2 of 3 with four members, 1 of 2 with three, 1 of 1 with two. Every applicant who reaches that is barred, so two can be barred in one round (ties are both barred). The old strict majority of all members needed every other member to agree in half of all bar rounds (four members after the launch round): at scale 8, 115 of 143 lying applicants got at least one bar vote, but only 8 were barred. BAR_GAIN_SCALE sweeps, 500 bot games each:
+
+  | Rule | Scale | Lie success (old window) | Bar recall | E3c | Contested | S-a |
+  |---|---|---|---|---|---|---|
+  | strict majority | 1 | 100% | 8.7% | 69.4% | 10.7% | 7.3% |
+  | strict majority | 2 | 99.7% | 10.0% | 74.2% | 16.2% | 19.6% |
+  | strict majority | 4 | 99.3% | 10.6% | 74.4% | 21.0% | 30.4% |
+  | strict majority | 8 | 99.0% | 13.9% | 79.9% | 23.4% | 33.0% |
+  | strict majority | 32 | 95.6% | 17.6% | 84.7% | 23.0% | 21.4% |
+  | strict majority | 128 | 94.7% | 22.9% | 87.5% | 18.4% | 31.4% |
+  | at least half | 1 | 90.9% | 37.0% | 72.3% | 17.6% | 13.9% |
+  | at least half | 2 | 91.2% | 38.3% | 74.4% | 23.6% | 32.5% |
+  | at least half | 4 | 91.8% | 38.8% | 75.7% | 25.9% | 42.5% |
+  | at least half | 8 | 88.7% | 41.4% | 79.9% | 26.4% | 40.1% |
+
+  Under the old window (covered that round or the next), about half the lies were told in the launch round, where everyone is covered and no bar votes, so they always counted as successes. BAR_GAIN_SCALE is 2, the smallest scale that passes everything under the new lie-success definition (D-135) with S-a in band.
+- **D-135 Lie success, redefined by the author.** A lie succeeds if the liar is covered in the first round where a bar vote can act on that claim: a round-1 lie is judged by round 2, lies in rounds 2 and 3 in the same round (and a round-4 lie in round 4 if the market is still voluntary). A lie with no bar vote after it (the market closed, files leaked, or a mandate) is not counted, and the simulator reports how many there were. The two-round window is dropped.
+- **D-136 Final results (BAR_GAIN_SCALE 2, CREDIBILITY_VALUE 6, WORRIER_STRESS_MULT 3, starting bank 10; 2,000 bot games, seeds play-0 to play-1999, mean ± bootstrap SE).**
+
+  | Target | Result | Status |
+  |---|---|---|
+  | E3a round-2 high-risk / low-risk applicants (at least 2) | 3.90 ± 0.11 | pass |
+  | E3b round-3 price over round 2, open markets (at least +15%) | +29.3% ± 1.0 | pass |
+  | E3c bars that hit a high-risk player (at least 60%, gating) | 74.5% ± 0.7 (3,695 bars) | pass |
+  | E3d price set by round 3's pool over round 2 (above 0) | +45.4% ± 1.6 | pass |
+  | S-e low-risk share of round-2 applicants (20% to 40%) | 20.4% ± 0.4 | pass, at the bound |
+  | Lie success (50% to 75%) | 70.1% ± 1.0 (2,605 lies judged, 0 unjudged) | pass |
+  | Bar recall (35% to 60%) | 38.0% ± 0.6 | pass |
+  | Contested bar decisions (reported) | 24.3% ± 0.4 | |
+  | S-a lies where lying would pay (15% to 50%) | 31.9% ± 0.6 | pass |
+  | S-b reader judges a claim right (55% to 80%) | 87.7% ± 0.3 | fail, reported |
+  | F-d big moment (at least 90%) | 99.8% ± 0.1 | pass |
+  | F-f someone goes into debt (30% to 70%) | 42.1% ± 1.0 | pass |
+
+  Lie rates: Chet 58.9%, Ugo 33.6%, Dot 24.9%, Marigold 12.6% (Chet 1.75 times Ugo, so CREDIBILITY_VALUE stays 6). Lie gain: median 2.72 coins, 90th percentile 8.55 (down from 4.29: lies now risk a bar). At least one buyer in round 3 in 40.2% of games; cover still offered in round 3 in 88.0%. No lie went unjudged: after the launch round the market is always open in round 2, and later lies are only possible while it is open. Bars now hit low-risk players about a quarter of the time (E3c 74.5%).
+- **D-137 Mission balance waits for Q3.** F-e on single Episode 3 games: Egoist 32.8%, Rawlsian 28.7%, Utilitarian 15.9%, Meritocrat 14.9% (just under 15%). MISSION_SCALE is not retuned here: missions score a whole life, so they will be calibrated on full lives in Q3, not on single episodes.
+- **D-138 Screens.** The Bar's result beat names everyone barred ("Chet and Dot are barred.", "... applied for cover and were turned away."). Walkthroughs at 375 x 760: playtest-3 (low-risk Worrier) 31 screens, 8 decisions, 1,674 words; playtest-7 (high-risk Calm) 30 screens, 9 decisions, 1,613 words; every screen 760 px; claim screen 40 words, move with the Bar 58.

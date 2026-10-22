@@ -258,14 +258,27 @@ export function BarBeat({ v, next }: { v: ViewState; next: () => void }) {
   const lv = lv3(v);
   const r = lv.rounds[lv.rounds.length - 1];
   const b = r.bar!;
-  const you = b.barred === v.viewer;
-  const head = !b.barred ? t('play.barBeat.none') : t(you ? 'play.barBeat.barredYou' : 'play.barBeat.barred', { name: nameOf(v, b.barred) });
-  const sub = b.barred && b.refused ? t(you ? 'play.barBeat.refusedYou' : 'play.barBeat.refused', { name: shortName(v, b.barred) }) : b.barred ? t('play.barBeat.notApplied') : '';
+  // D-133: more than one applicant can be barred in a round.
+  const names = (xs: string[]) => xs.map((x) => shortName(v, x)).join(t('play.barBeat.and'));
+  const one = b.barred.length === 1 ? b.barred[0] : null;
+  const head = !b.barred.length
+    ? t('play.barBeat.none')
+    : one
+      ? t(one === v.viewer ? 'play.barBeat.barredYou' : 'play.barBeat.barred', { name: nameOf(v, one) })
+      : t('play.barBeat.barredMany', { names: names(b.barred) });
+  const r1 = b.refused.length === 1 ? b.refused[0] : null;
+  const sub = !b.barred.length
+    ? ''
+    : !b.refused.length
+      ? t('play.barBeat.notApplied')
+      : r1
+        ? t(r1 === v.viewer ? 'play.barBeat.refusedYou' : 'play.barBeat.refused', { name: shortName(v, r1) })
+        : t('play.barBeat.refusedMany', { names: names(b.refused) });
   return (
     <Stage v={v} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
-      <div className="my-auto text-center" data-bar={b.barred ?? 'none'}>
+      <div className="my-auto text-center" data-bar={b.barred.join(' ') || 'none'}>
         <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.barBeat.label')}</p>
-        <p className={`h-show mt-2 text-5xl leading-tight ${b.barred ? 'text-stamp' : 'text-spot'}`}>{head}</p>
+        <p className={`h-show mt-2 text-5xl leading-tight ${b.barred.length ? 'text-stamp' : 'text-spot'}`}>{head}</p>
         {sub && <p className="mt-3 text-base">{sub}</p>}
         <p className="mt-4 text-sm text-soft">
           {b.members.map((m) => t('play.barBeat.vote', { name: shortName(v, m), target: b.votes[m] ? shortName(v, b.votes[m]!) : t('play.barBeat.noOne') })).join(' · ')}
@@ -296,7 +309,7 @@ export function CardsReveal({ v }: { v: ViewState }) {
   // D-128 stamps: a low-risk Worrier who applied or was barred, and a high-risk Calm player who never applied.
   const voluntary = lv.rounds.filter((r) => r.regime === 'VOL' && r.premium !== null && !r.launch);
   const appliedEver = (id: string) => voluntary.some((r) => r.applied?.[id]);
-  const barredEver = (id: string) => lv.rounds.some((r) => r.bar?.barred === id);
+  const barredEver = (id: string) => lv.rounds.some((r) => r.bar?.barred.includes(id));
   const note = (id: string) =>
     types[id] === 'LOW' && worry[id] === 'WORRIER' && (appliedEver(id) || barredEver(id))
       ? t('play.cards.justWorrier')
