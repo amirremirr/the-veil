@@ -9,11 +9,11 @@ import { useStore } from '../store';
 import { t } from '../i18n';
 import { coins, pct } from '../labels';
 import { nameOf, shortName, useView } from '../game';
-import { Avatar, FlipCard, useMotionOff } from '../components/common';
+import { FlipCard, useMotionOff } from '../components/common';
 import { Sheet as TableSheet } from '../components/TableParts';
 import { LockedInPanel, useOnline, useWaiting } from '../components/Online';
 import { screenDecisionPhase } from '../../shared/flow';
-import { BigButton, Bubble, Stage } from './OnAir';
+import { BigButton, Bubble, Face, Stage } from './OnAir';
 import { BarBeat, CardsReveal, ClaimScreen, ClaimsBeat, MoveScreen, MyCardsBeat, PriceBeat, RegimeScreen, VoteInBeat, WheelBeat, claimsOpen, hasPriceBeat, regimeName, roundClaims, type L3View } from './Episode3';
 import { eventText, hostLine, missionName, pick } from './logic';
 import type { NearMiss } from '../../engine/play/types';
@@ -194,7 +194,7 @@ function EpisodeGuess({ v }: { v: ViewState }) {
       <div className="mt-4 grid grid-cols-3 gap-2" role="group" aria-label={t('play.guess.pick')}>
         {others.map((p) => (
           <button key={p.id} type="button" aria-pressed={target === p.id} onClick={() => setTarget(p.id)} className={`flex flex-col items-center gap-1 rounded-2xl p-2 ${target === p.id ? 'bg-spot text-onspot' : 'bg-card'}`}>
-            <Avatar bot={p.botKey} human={p.isHuman} size={32} />
+            <Face v={v} p={p} size={32} />
             <span className="truncate text-sm font-bold">{shortName(v, p.id)}</span>
           </button>
         ))}

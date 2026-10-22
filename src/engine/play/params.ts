@@ -48,7 +48,7 @@ export const PLAY = {
    * D-141, a hidden rule: at 3 or 4 seats, Episode 3's risk cards are redrawn until at least one HIGH and one
    * LOW are dealt. Never shown in play; About mentions it.
    */
-  L3_MIXED_DEAL: false,
+  L3_MIXED_DEAL: true,
   /** D-122: bots count the debt stress a bank will still cost in the episode's later rounds. */
   DEBT_HORIZON: true,
   /** D-141: the seat count the Play setup screen starts on (2, 3 or 4 can be picked; bots fill the rest). */
@@ -74,6 +74,23 @@ export const PLAY = {
    * times the chance it stays in, times this scale (1 = the grounded rule), against 0 for barring no one.
    */
   BAR_GAIN_SCALE: 2,
+  /**
+   * D-142, Give: once per round, on the move screen, a contestant may give one of these amounts to one other
+   * player. Gifts are public and land at the end of the round, after the wheel.
+   */
+  GIFT_AMOUNTS: [5, 10] as number[],
+  /** D-142: SafeHands adds this share to every gift (0 = no match). The recipient gets amount x (1 + match). */
+  GIFT_MATCH: 0,
+  /**
+   * D-145, difficulty in Play: the audience poll ('ALWAYS' on every screen that lists contestants, 'NORMAL'
+   * where it is today, 'NEVER' on no screen), a shift of every bot honesty range (kept inside 0 to 1), and a
+   * multiplier on BAR_GAIN_SCALE. Bots' lambda follows the Study difficulty table (x0.5 Easy, x1.5 Hard).
+   */
+  DIFFICULTY: {
+    EASY: { poll: 'ALWAYS', honestyShift: 0.15, barScale: 1 },
+    NORMAL: { poll: 'NORMAL', honestyShift: 0, barScale: 1 },
+    HARD: { poll: 'NEVER', honestyShift: -0.15, barScale: 1.5 },
+  } as Record<'EASY' | 'NORMAL' | 'HARD', { poll: 'ALWAYS' | 'NORMAL' | 'NEVER'; honestyShift: number; barScale: number }>,
   /** Section 6.2, Episode 3 deck: each card changes one Level 3 parameter for one round. */
   L3_EVENTS: {
     STORM: { RISK_MULT: 1.5, RISK_CAP: 0.9 },

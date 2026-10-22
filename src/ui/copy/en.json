@@ -1330,7 +1330,8 @@
       "launchTitle": "Launch cover",
       "launchDesc": "SafeHands signs everyone up for the launch season, at {p} coins. After that, it's your choice.",
       "headLaunch": "Everyone was in the pool, so the price is the average.",
-      "subLaunch": "From now on, buying cover is your choice."
+      "subLaunch": "From now on, buying cover is your choice.",
+      "debtCost": "In debt: -{n} points"
     },
     "claims": {
       "RISK": {
@@ -1372,7 +1373,9 @@
       "notMember": "Members can bar one.",
       "poll": "{p} risky",
       "pollLabel": "Audience on {name}: {p} think high risk",
-      "barPick": "You vote to bar {name}."
+      "barPick": "You vote to bar {name}.",
+      "preview": "Mission {n}",
+      "pollTitle": "What the audience thinks"
     },
     "barBeat": {
       "label": "The Bar",
@@ -1457,6 +1460,17 @@
         "body": "You get coins and a secret mission. Your score: bank plus how well your mission went. Debt hurts. Guess others' missions for bonus points.",
         "small": "The numbers are exaggerated. The mechanisms are real."
       }
+    },
+    "gift": {
+      "title": "Give",
+      "desc": "Up to {max} coins to someone",
+      "picked": "{n} to {name}",
+      "sheet": "Give coins",
+      "how": "Gifts are public and land after the wheel.",
+      "close": "Close",
+      "amount": "{n}",
+      "none": "No gift",
+      "gave": "{from} gave {to} {n}"
     }
   }
 }

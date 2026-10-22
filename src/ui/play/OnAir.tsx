@@ -77,6 +77,16 @@ export function PlayMenu({ v, onClose, chatFirst = false }: { v: ViewState; onCl
   );
 }
 
+/** A contestant's face; yours carries the yellow ring (D-146: your name shows instead of "You"). */
+export function Face({ v, p, size, ring = true }: { v: ViewState; p: ViewState['players'][number]; size: number; ring?: boolean }) {
+  const mine = ring && p.id === v.viewer;
+  return (
+    <span className={`inline-flex shrink-0 rounded-full ${mine ? 'ring-2 ring-spot' : ''}`} data-me={mine ? '' : undefined}>
+      <Avatar bot={p.botKey} human={p.isHuman} size={size} />
+    </span>
+  );
+}
+
 export function TopBar({ v, onMenu }: { v: ViewState; onMenu: () => void }) {
   const pl = v.play!;
   const mine = pl.banks[v.viewer];
@@ -97,7 +107,7 @@ export function TopBar({ v, onMenu }: { v: ViewState; onMenu: () => void }) {
         {v.players.map((p) => (
           <li key={p.id} className="flex w-16 flex-col items-center" aria-label={t('play.a11y.bankOnly', { name: shortName(v, p.id), bank: coins(pl.banks[p.id]) })}>
             <span className={`rounded-full ${p.id === v.viewer ? 'ring-2 ring-spot' : ''}`} aria-hidden>
-              <Avatar bot={p.botKey} human={p.isHuman} size={26} />
+              <Face v={v} p={p} size={26} ring={false} />
             </span>
             {/* The name under each icon, so a new player knows who is speaking (playtest note). */}
             <span className="max-w-full truncate text-[11px] font-bold leading-tight" aria-hidden>

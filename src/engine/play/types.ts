@@ -113,6 +113,8 @@ export interface PlayView {
    * each contestant's hidden fact is true (Episode 3: high risk). Null when the episode has no poll now.
    */
   poll: Record<PlayerId, number> | null;
+  /** D-145: where the poll is shown at this difficulty (ALWAYS on Easy, NORMAL, NEVER on Hard: then `poll` is null). */
+  pollMode: 'ALWAYS' | 'NORMAL' | 'NEVER';
   /** v2 Section 3.4: every contestant's public honesty record (claims checked so far, how many were true). */
   record: Record<PlayerId, { made: number; kept: number }>;
   /** The viewer's own card guesses; others' guesses only once every card is public. */

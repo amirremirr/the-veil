@@ -13,17 +13,25 @@ export function drawHonesty(s: GameState, rng: Rng): Record<PlayerId, number> {
   const out: Record<PlayerId, number> = {};
   for (const p of s.players) {
     if (p.isHuman || !p.botProfile) continue;
-    const [lo, hi] = PLAY.HONESTY_RANGE[p.botProfile.key];
+    const [lo, hi] = honestyRange(s, p.botProfile.key);
     out[p.id] = lo + (hi - lo) * rng.next();
   }
   return out;
+}
+
+/** D-145: a personality's honesty range at this game's difficulty, moved by the difficulty's shift and kept inside 0 to 1. */
+export function honestyRange(s: Pick<GameState, 'difficulty'>, key: string): [number, number] {
+  const shift = PLAY.DIFFICULTY[s.difficulty].honestyShift;
+  const clamp = (x: number) => Math.min(1, Math.max(0, x + shift));
+  const [lo, hi] = PLAY.HONESTY_RANGE[key];
+  return [clamp(lo), clamp(hi)];
 }
 
 /** A seat's honesty trait; a human's seat (played by the timeout rule) uses the middle of the AUTO range. */
 export function honestyOf(s: GameState, pid: PlayerId): number {
   const h = s.play!.honesty[pid];
   if (h !== undefined) return h;
-  const [lo, hi] = PLAY.HONESTY_RANGE.AUTO;
+  const [lo, hi] = honestyRange(s, 'AUTO');
   return (lo + hi) / 2;
 }
 

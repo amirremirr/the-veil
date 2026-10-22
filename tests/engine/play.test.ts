@@ -501,3 +501,121 @@ describe('Play seats (D-141)', () => {
     expect(PLAY.DEFAULT_SEATS).toBe(4);
   });
 });
+
+/** Runs a one-human game to its first move screen, deciding everything before it with the timeout rule. */
+function toMove(s: GameState): void {
+  for (let guard = 0; guard < 200; guard++) {
+    if (s.phase.kind === 'DECIDE' && s.phase.step === 'CHOICE') return;
+    if (s.phase.kind === 'DECIDE' && waitingOn(s).includes(HUMAN_ID)) step(s, { type: 'SUBMIT_DECISION', from: HUMAN_ID, decision: autoDecision(s, HUMAN_ID) });
+    else if (!step(s, { type: 'ADVANCE' })) throw new Error(`stuck at ${s.phase.kind}`);
+  }
+}
+
+describe('Give (D-142)', () => {
+  const run = (seed: string, extra: Partial<SetupConfig> = {}) => {
+    const s = createInitialState({ ...cfg(seed, extra), allBots: true });
+    while (s.phase.kind !== 'END') if (!step(s, { type: 'ADVANCE' })) throw new Error('stuck');
+    return s;
+  };
+  it('gifts land after the wheel: each bank moves by its wheel money plus its gift net; the match is paid on top', () => {
+    const was = PLAY.GIFT_MATCH;
+    PLAY.GIFT_MATCH = 0.5;
+    try {
+      let gifts = 0;
+      for (let k = 0; k < 12; k++) {
+        const s = run(`gift-${k}`);
+        const d = s.levelResults[3] as L3Debrief;
+        const hist = s.play!.bankHistory.filter((h) => h.level === 3);
+        d.rounds.forEach((r, n) => {
+          for (const p of s.players) expect(hist[n].W[p.id]).toBeCloseTo(r.W[p.id] + r.giftNet![p.id], 9);
+          for (const [from, g] of Object.entries(r.gifts!)) {
+            gifts++;
+            expect(PLAY.GIFT_AMOUNTS).toContain(g.amount);
+            expect(g.to).not.toBe(from);
+            expect(g.received).toBeCloseTo(g.amount * 1.5, 9);
+            // An Egoist never gives.
+            expect(s.players.find((p) => p.id === from)!.values).not.toBe('EGOIST');
+          }
+        });
+      }
+      expect(gifts).toBeGreaterThan(0);
+    } finally {
+      PLAY.GIFT_MATCH = was;
+    }
+  });
+  it('a gift must be a listed amount to someone else; anything else is no gift', () => {
+    const s = createInitialState(cfg('gift-validate'));
+    toMove(s);
+    const other = s.players.find((p) => p.id !== HUMAN_ID)!.id;
+    const ok = (gift: unknown) => step(structuredClone(s), { type: 'SUBMIT_DECISION', from: HUMAN_ID, decision: { buy: false, gym: false, gift } });
+    expect(ok({ to: other, amount: 5 })).toBe(true);
+    const c = structuredClone(s);
+    step(c, { type: 'SUBMIT_DECISION', from: HUMAN_ID, decision: { buy: false, gym: false, gift: { to: HUMAN_ID, amount: 5 } } });
+    const c2 = structuredClone(s);
+    step(c2, { type: 'SUBMIT_DECISION', from: HUMAN_ID, decision: { buy: false, gym: false, gift: { to: other, amount: 7 } } });
+    for (const g of [c, c2]) {
+      for (let k = 0; k < 20 && g.phase.kind === 'DECIDE'; k++) if (!step(g, { type: 'ADVANCE' })) break;
+      const r = (g.levelState as { rounds: L3Debrief['rounds'] }).rounds.at(-1)!;
+      expect(r.gifts![HUMAN_ID]).toBeUndefined();
+    }
+  });
+});
+
+describe('the mission preview (D-143)', () => {
+  it('shows each choice against doing nothing, in mission points, for your own mission only', () => {
+    let checked = 0;
+    for (let k = 0; k < 8; k++) {
+      const s = createInitialState(cfg(`preview-${k}`));
+      toMove(s);
+      const me = s.players.find((p) => p.id === HUMAN_ID)!;
+      const pv = (visibleState(s, HUMAN_ID).levelView as { preview: { cover: number | null; gym: number; gift: Record<string, Record<number, number>> } }).preview;
+      expect(pv).toBeDefined();
+      const other = s.players.find((p) => p.id !== HUMAN_ID)!.id;
+      const g5 = pv.gift[other][5];
+      // A plain transfer leaves the average bank where it was, and an Egoist's mission is its own bank.
+      if (me.values === 'UTILITARIAN' && PLAY.GIFT_MATCH === 0) expect(g5).toBeCloseTo(0, 9);
+      if (me.values === 'EGOIST') expect(g5).toBeCloseTo(-5 * PLAY.MISSION_SCALE.EGOIST, 9);
+      // Round 1 is the launch round: everyone is signed up, so there is no cover choice to preview.
+      expect(pv.cover).toBeNull();
+      checked++;
+    }
+    expect(checked).toBe(8);
+  });
+});
+
+describe('difficulty in Play (D-145)', () => {
+  it('Easy moves honesty ranges up 0.15 and Hard down 0.15, inside 0 to 1; Hard hides the poll and bars harder', () => {
+    for (const [d, shift] of [['EASY', 0.15], ['NORMAL', 0], ['HARD', -0.15]] as const) {
+      const s = createInitialState({ ...cfg(`diff-${d}`, { difficulty: d }), allBots: true });
+      for (const p of s.players) {
+        const [lo, hi] = PLAY.HONESTY_RANGE[p.botProfile!.key];
+        const h = s.play!.honesty[p.id];
+        expect(h).toBeGreaterThanOrEqual(Math.max(0, Math.min(1, lo + shift)) - 1e-12);
+        expect(h).toBeLessThanOrEqual(Math.max(0, Math.min(1, hi + shift)) + 1e-12);
+      }
+    }
+    expect(PLAY.DIFFICULTY.HARD.barScale).toBe(1.5);
+    const hard = createInitialState(cfg('diff-poll', { difficulty: 'HARD' }));
+    toMove(hard);
+    const v = visibleState(hard, HUMAN_ID);
+    expect(v.play!.poll).toBeNull();
+    expect(v.play!.pollMode).toBe('NEVER');
+    const easy = createInitialState(cfg('diff-poll', { difficulty: 'EASY' }));
+    toMove(easy);
+    expect(visibleState(easy, HUMAN_ID).play!.pollMode).toBe('ALWAYS');
+    expect(visibleState(easy, HUMAN_ID).play!.poll).not.toBeNull();
+  });
+});
+
+describe('your name (D-146)', () => {
+  it('Play shows the chosen name for you, "You" when blank; Study keeps "You"', async () => {
+    const { shortName, nameOf } = await import('../../src/ui/game');
+    const named = visibleState(createInitialState(cfg('name', { humanName: 'Ana Lee' })), HUMAN_ID);
+    expect(nameOf(named, HUMAN_ID)).toBe('Ana Lee');
+    expect(shortName(named, HUMAN_ID)).toBe('Ana');
+    const blank = visibleState(createInitialState(cfg('name')), HUMAN_ID);
+    expect(shortName(blank, HUMAN_ID)).toBe('You');
+    const study = visibleState(createInitialState({ mode: 'SINGLE_LEVEL', level: 3, nPlayers: 4, difficulty: 'NORMAL', seed: 'name', humanName: 'Ana' }), HUMAN_ID);
+    expect(shortName(study, HUMAN_ID)).toBe('You');
+  });
+});

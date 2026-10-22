@@ -22,7 +22,7 @@ function plans(s: GameState): Record<PlayerId, Plan> {
     const p: Plan = {};
     for (const c of s.play!.claimLog) if (c.pid === h && c.level === s.levelIndex) p[key(c.round, 'CLAIM')] = c.said;
     l.rounds.forEach((r, k) => {
-      p[key(k + 1, 'CHOICE')] = { buy: r.applied?.[h] ?? r.choices[h].buy, gym: r.choices[h].gym, bar: r.bar?.votes[h] ?? null };
+      p[key(k + 1, 'CHOICE')] = { buy: r.applied?.[h] ?? r.choices[h].buy, gym: r.choices[h].gym, bar: r.bar?.votes[h] ?? null, gift: r.gifts?.[h] ? { to: r.gifts[h].to, amount: r.gifts[h].amount } : null };
     });
     const reg = s.phaseQueue.find((q) => q.step === 'REGIME');
     if (reg && l.regimeVotes?.[h]) p[key(reg.round, 'REGIME')] = l.regimeVotes[h];

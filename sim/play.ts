@@ -126,6 +126,13 @@ interface Rec {
   winShare: number[];
   /** Per seat: final bank, and every mission's value on the final banks (for MISSION_SCALE). */
   banks: number[];
+  /** Per seat: debt stress and guess points (D-142: win shares can be recomputed for other MISSION_SCALE values). */
+  stress: number[];
+  guess: number[];
+  /** D-142: per seat, rounds played and gifts given (count and coins). */
+  giftRounds: number[];
+  giftsGiven: number[];
+  giftCoins: number[];
   missionByCard: Record<ValuesCard, number[]>;
   final: number[];
 }
@@ -227,6 +234,11 @@ function record(s: GameState, watch: Watch): Rec {
     cards: s.players.map((p) => p.values),
     winShare: final.map((x) => (Math.abs(x - best) < 1e-9 ? 1 / winners : 0)),
     banks,
+    stress: s.players.map((p) => pl.debtStress[p.id]),
+    guess: s.players.map((p) => pl.guessPoints[p.id]),
+    giftRounds: s.players.map(() => d.rounds.length),
+    giftsGiven: s.players.map((p) => d.rounds.filter((r) => r.gifts?.[p.id]).length),
+    giftCoins: s.players.map((p) => d.rounds.reduce((a, r) => a + (r.gifts?.[p.id]?.amount ?? 0), 0)),
     missionByCard: Object.fromEntries(VALUES_CARDS.map((c) => [c, banks.map((_, i) => missionValue(c, banks, i, eff))])) as Record<ValuesCard, number[]>,
     final,
   };
@@ -357,6 +369,42 @@ lines.push(`Contested bar decisions (member's belief about an applicant between 
   lines.push(`  lie success: all-same ${f(lieOk(same))} (${sum(same.map((r) => r.liesTold))} lies), mixed ${f(lieOk(mixed))} (${sum(mixed.map((r) => r.liesTold))} lies)`);
   lines.push(`  bar recall: all-same ${f(recall(same))} (${sum(same.map((r) => r.highApplicants))} high applicants), mixed ${f(recall(mixed))} (${sum(mixed.map((r) => r.highApplicants))})`);
   lines.push(`  mixed tables only: E3a ${buyerRatio(mixed).toFixed(3)}, E3b ${priceRise(mixed).toFixed(4)}, E3c ${barHighShare(mixed).toFixed(4)}, E3d ${priceRise3(mixed).toFixed(4)}`);
+}
+// D-142: gifts by the giver's mission, and MISSION_SCALE values that would bring every mission's win share
+// closest to 25% on these games' outcomes (a coordinate search; bots would play a little differently).
+{
+  const by = (c: ValuesCard, f: (r: Rec, i: number) => number) => sum(recs.flatMap((r) => r.cards.map((x, i) => (x === c ? f(r, i) : 0))));
+  lines.push(`Gift use (GIFT_MATCH ${PLAY.GIFT_MATCH}): ${VALUES_CARDS.map((c) => `${c} ${(100 * by(c, (r, i) => r.giftsGiven[i]) / by(c, (r, i) => r.giftRounds[i])).toFixed(1)}% of rounds, ${(by(c, (r, i) => r.giftCoins[i]) / Math.max(1, by(c, (r, i) => r.giftsGiven[i]))).toFixed(1)} coins a gift`).join('; ')}`);
+  const shares = (k: Record<ValuesCard, number>) => {
+    const w: Record<string, [number, number]> = {};
+    for (const r of recs) {
+      const sc = r.cards.map((c, i) => PLAY.BANK_WEIGHT * r.banks[i] + PLAY.MISSION_WEIGHT * k[c] * r.missionByCard[c][i] - r.stress[i] + r.guess[i]);
+      const best = Math.max(...sc);
+      const win = sc.filter((x) => Math.abs(x - best) < 1e-9).length;
+      r.cards.forEach((c, i) => {
+        w[c] ??= [0, 0];
+        w[c][1]++;
+        if (Math.abs(sc[i] - best) < 1e-9) w[c][0] += 1 / win;
+      });
+    }
+    return Object.fromEntries(VALUES_CARDS.map((c) => [c, w[c] ? w[c][0] / w[c][1] : NaN])) as Record<ValuesCard, number>;
+  };
+  const loss = (k: Record<ValuesCard, number>) => VALUES_CARDS.reduce((a, c) => a + (shares(k)[c] - 0.25) ** 2, 0);
+  const k = { ...PLAY.MISSION_SCALE };
+  lines.push(`Win shares now (recomputed): ${VALUES_CARDS.map((c) => `${c} ${(100 * shares(k)[c]).toFixed(1)}%`).join(', ')}`);
+  if (arg('calibrate', '') === '1') {
+    for (let sweep = 0; sweep < 4; sweep++)
+      for (const c of VALUES_CARDS) {
+        let best = k[c];
+        let bl = loss(k);
+        for (let x = 0.2; x <= 4.001; x += 0.02) {
+          const l2 = loss({ ...k, [c]: x });
+          if (l2 < bl - 1e-12) [best, bl] = [x, l2];
+        }
+        k[c] = Math.round(best * 100) / 100;
+      }
+    lines.push(`Calibrated MISSION_SCALE (win shares closest to 25%): ${JSON.stringify(k)}; win shares then ${VALUES_CARDS.map((c) => `${c} ${(100 * shares(k)[c]).toFixed(1)}%`).join(', ')}`);
+  }
 }
 lines.push(`At least one buyer in round 3: ${(avg((r) => (r.collapsed ? 0 : 1))(recs) * 100).toFixed(1)}% ± ${(se(avg((r) => (r.collapsed ? 0 : 1))) * 100).toFixed(1)}`);
 lines.push(`Market still open in round 3 (SafeHands offers cover): ${(avg((r) => (r.open3 ? 1 : 0))(recs) * 100).toFixed(1)}% ± ${(se(avg((r) => (r.open3 ? 1 : 0))) * 100).toFixed(1)}`);

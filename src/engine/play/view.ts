@@ -16,6 +16,8 @@ import { playL3Params } from '../levels/level3';
  */
 export function audiencePoll(s: GameState): PlayView['poll'] {
   if (s.phase.kind === 'INTRO' || s.phase.kind === 'VALUES_REVEAL' || !Object.keys(s.play!.belief).length) return null;
+  // D-145: no audience poll on any screen on Hard.
+  if (PLAY.DIFFICULTY[s.difficulty].poll === 'NEVER') return null;
   const out: Record<PlayerId, number> = {};
   for (const p of s.players) {
     const b = audienceBelief(s, p.id);
@@ -59,6 +61,7 @@ export function playView(s: GameState, viewer: PlayerId, revealAll: boolean): Pl
     ranks: pl.bankHistory.some((h) => h.level === s.levelIndex) ? playRanks(s) : null,
     mission,
     poll: audiencePoll(s),
+    pollMode: PLAY.DIFFICULTY[s.difficulty].poll,
     record: structuredClone(s.reliability),
     guesses,
     finalScores: revealAll ? Object.fromEntries(s.players.map((p) => [p.id, playScore(s, p.id)])) : null,

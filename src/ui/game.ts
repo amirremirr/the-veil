@@ -28,14 +28,17 @@ export function playerById(v: ViewState, id: string): VPlayer | undefined {
   return v.players.find((p) => p.id === id);
 }
 
+/** D-146: in Play your own label is the name you chose (the engine names a blank seat "You"); Study keeps "You". */
+const myPlayName = (v: ViewState) => (v.play ? playerById(v, v.viewer)?.name?.trim() : '') || t('table.you');
+
 export function nameOf(v: ViewState, id: string): string {
-  if (id === v.viewer) return t('table.you');
+  if (id === v.viewer) return myPlayName(v);
   return playerById(v, id)?.name ?? id;
 }
 
 /** First name only ("Marigold"), or "You". Used where space is tight. */
 export function shortName(v: ViewState, id: string): string {
-  if (id === v.viewer) return t('table.you');
+  if (id === v.viewer) return myPlayName(v).split(' ')[0];
   return (playerById(v, id)?.name ?? id).replace(/^Prof\. /, '').split(' ')[0];
 }
 
