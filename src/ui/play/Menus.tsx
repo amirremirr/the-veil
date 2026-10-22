@@ -8,6 +8,7 @@ import { useStore } from '../store';
 import { t } from '../i18n';
 import { Page } from '../components/common';
 import { BackLink } from '../screens/Menus';
+import { PlayOpening, openingSeen } from './Opening';
 
 export function HowToPlay() {
   const { go, settings } = useStore();
@@ -35,6 +36,8 @@ export function HowToPlay() {
 
 export function PlayModeSelect() {
   const { go } = useStore();
+  // D-139: the opening cards, the first time Play mode opens (and on "What is this game?").
+  const [opening, setOpening] = useState(() => !openingSeen());
   const choose = (n: LevelId) => {
     useStore.setState({ setupFor: { mode: 'EPISODE', level: n }, screen: 'playSetup' });
   };
@@ -72,6 +75,10 @@ export function PlayModeSelect() {
         </section>
       </div>
       <p className="mt-4 text-xs text-soft">{t('play.disclaimer')}</p>
+      <button type="button" className="mt-2 text-sm font-semibold underline" onClick={() => setOpening(true)}>
+        {t('play.opening.menu')}
+      </button>
+      {opening && <PlayOpening onDone={() => setOpening(false)} />}
     </Page>
   );
 }

@@ -81,14 +81,9 @@ function EpisodeIntro({ v }: { v: ViewState }) {
         {t('play.modes.ep', { n: v.levelIndex })} · {t('play.episodes.3.sponsor')}
       </p>
       <h1 className="h-show mt-1 text-5xl leading-none text-spot">{t(`play.episodes.${v.levelIndex}.name`)}</h1>
-      <ol className="mt-5 space-y-3">
-        {[0, 1, 2, 3].map((i) => (
-          <li key={i} className="flex gap-3 text-base leading-snug">
-            <span className="h-show text-2xl text-stamp">{i + 1}</span>
-            <span>{t(`play.episodes.3.how.${i}`, { income: n.baseIncome, living: n.livingCost, loss: n.loss })}</span>
-          </li>
-        ))}
-      </ol>
+      <p className="mt-5 text-lg leading-snug" data-intro>
+        {t('play.episodes.3.intro', { loss: n.loss })}
+      </p>
       <div className="mt-auto pt-4">
         <Bubble who="Dash" host text={hostLine('welcome', pick(v, 'welcome', 6))} />
       </div>

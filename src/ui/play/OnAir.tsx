@@ -12,6 +12,7 @@ import { Avatar } from '../components/common';
 import { ChatFeed, MessageComposer, Sheet } from '../components/TableParts';
 import { useOnline } from '../components/Online';
 import { missionName } from './logic';
+import { PlayOpening } from './Opening';
 
 const rounds = (v: ViewState) => Math.max(1, ...v.queue.map((p) => p.round));
 const stop = (e: { stopPropagation(): void }) => e.stopPropagation();
@@ -37,6 +38,7 @@ export function PlayMenu({ v, onClose, chatFirst = false }: { v: ViewState; onCl
   const go = useStore((s) => s.go);
   const leaveOnline = useStore((s) => s.leaveOnline);
   const online = useOnline();
+  const [opening, setOpening] = useState(false);
   const canTalk = v.phase.kind === 'TALK' && v.talkSent < TALK.MAX_MESSAGES;
   const chat = (
     <section aria-labelledby="menu-chat">
@@ -61,9 +63,16 @@ export function PlayMenu({ v, onClose, chatFirst = false }: { v: ViewState; onCl
         <MissionBar v={v} />
       </section>
       {!chatFirst && chat}
+      {/* D-139: not in multiplayer rooms until Q4. */}
+      {!online && (
+        <button type="button" className="btn-ghost w-full" onClick={() => setOpening(true)}>
+          {t('play.opening.menu')}
+        </button>
+      )}
       <button type="button" className="btn-ghost w-full" onClick={() => (online ? leaveOnline() : go('title'))}>
         {t('play.stage.menuQuit')}
       </button>
+      {opening && <PlayOpening onDone={() => setOpening(false)} />}
     </Sheet>
   );
 }

@@ -37,6 +37,40 @@ await page.goto(url);
 await page.evaluate(() => localStorage.clear());
 await page.reload();
 await page.waitForFunction(() => '__autoplay' in window);
+// Play's opening cards (D-139): --opening fresh shows them as a first-time player would, --opening seen
+// marks them seen first and checks they stay away. Without the flag the walkthrough starts the game directly.
+const opening = arg('opening', '');
+const openingLines = [];
+if (ruleset === 'PLAY' && opening) {
+  if (opening === 'seen') await page.evaluate(() => localStorage.setItem('veil.play.opening.seen', '1'));
+  await page.evaluate(() => {
+    const st = window.__veil.getState();
+    st.updateSettings({ reducedMotion: true });
+    st.go('playMode');
+  });
+  for (let i = 0; i < 5; i++) {
+    await page.waitForTimeout(200);
+    const o = await page.evaluate(() => {
+      const el = document.querySelector('[data-opening]');
+      const root = el || document.getElementById('root');
+      return {
+        card: el ? el.getAttribute('data-opening') : null,
+        words: (root.innerText || '').trim().split(/\s+/).filter(Boolean).length,
+        // The cards are a fixed overlay: measure the card itself, not the page behind it.
+        height: el ? el.scrollHeight : document.documentElement.scrollHeight,
+        tall: el ? el.scrollHeight > window.innerHeight : document.documentElement.scrollHeight > window.innerHeight,
+        title: document.querySelector('h1')?.innerText ?? '',
+      };
+    });
+    if (!o.card) {
+      openingLines.push(`Open  ${opening === 'seen' ? 'no cards (already seen); ' : ''}screen "${o.title}"`);
+      break;
+    }
+    await page.screenshot({ path: `${outDir}/000-opening-${o.card}.png` });
+    openingLines.push(`Open  card ${o.card}  words=${String(o.words).padStart(3)} height=${o.height}${o.tall ? ' TALLER THAN VIEWPORT' : ''}`);
+    await page.click('[data-opening-next]');
+  }
+}
 await page.evaluate(
   ([s, rs, ep]) => {
     const st = window.__veil.getState();
@@ -173,7 +207,7 @@ table.push(`${'Total'.padEnd(6)} ${String(tot.s).padStart(7)}  ${String(tot.d).p
 // Play screens must fit the viewport: one big element per screen, nothing to scroll (D-108).
 const tall = ruleset === 'PLAY' ? rows.filter((r) => r.tall).length : 0;
 if (ruleset === 'PLAY') table.push('', tall ? `FAIL: ${tall} Play screen(s) taller than ${width}x${height}.` : `PASS: every Play screen fits ${width}x${height}.`);
-const text = [...table, '', 'Screens:', ...lines].join('\n');
+const text = [...table, ...(openingLines.length ? ['', 'Opening (D-139):', ...openingLines] : []), '', 'Screens:', ...lines].join('\n');
 console.log(text);
 if (save) writeFileSync(save, text);
 if (tall) process.exitCode = 1;

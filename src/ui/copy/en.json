@@ -913,17 +913,12 @@
         "name": "Bad Luck Season",
         "sponsor": "Sponsored by SafeHands Mutual",
         "pitch": "Disasters, cover and a price board that only goes one way.",
-        "how": [
-          "Earn {income} a round. Living costs {living}.",
-          "The Wheel of Misfortune can take {loss}. Cover pays it.",
-          "Round 1 is the launch: SafeHands signs everyone up. After that, it's your choice.",
-          "Claim your risk. Pool members can bar people they doubt. After round 3, vote on mandatory cover."
-        ],
         "type": {
           "LOW": "Your file says: low risk. The Wheel hits you {p} of the time.",
           "HIGH": "Your file says: high risk. The Wheel hits you {p} of the time."
         },
-        "typeNote": "Only you can see this."
+        "typeNote": "Only you can see this.",
+        "intro": "The Wheel of Misfortune costs {loss} coins a hit. SafeHands sells cover, priced by who's in the pool. Members can bar people they think are risky. So who's lying?"
       },
       "4": {
         "name": "The Hiring Round",
@@ -1433,6 +1428,30 @@
       },
       "two": "Two of you are high risk. Two of you are Worriers.",
       "note": "Only you see these. Both flip at the end."
+    },
+    "opening": {
+      "skip": "Skip",
+      "next": "Next",
+      "go": "Let's play",
+      "menu": "What is this game?",
+      "dots": "Card {n} of {of}",
+      "c1": {
+        "headline": "A game show about fair play",
+        "body": "Live a whole life on air in five episodes. Each one is a real economics problem: luck, work, insurance, hiring, and who writes the rules."
+      },
+      "c2": {
+        "headline": "Everyone has secrets",
+        "intro": "Each round, you can:",
+        "claim": "Claim something. It can be a lie.",
+        "read": "Read the others. Who do you believe?",
+        "move": "Move: spend, vote, bar, hire.",
+        "reveal": "Reveal: every secret flips at the end. Liars get stamped."
+      },
+      "c3": {
+        "headline": "How you win",
+        "body": "You get coins and a secret mission. Your score: bank plus how well your mission went. Debt hurts. Guess others' missions for bonus points.",
+        "small": "The numbers are exaggerated. The mechanisms are real."
+      }
     }
   }
 }

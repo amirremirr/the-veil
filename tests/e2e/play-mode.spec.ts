@@ -20,6 +20,7 @@ test.beforeEach(async ({ page }) => {
 test('plays Episode 3 from the title to the episode summary', async ({ page }) => {
   await page.getByRole('button', { name: 'Start a new life' }).click();
   await page.getByRole('button', { name: /Quick and fun/ }).click();
+  await page.getByRole('button', { name: 'Skip' }).click();
   await page.getByRole('button', { name: /Bad Luck Season/ }).click();
   await page.getByLabel('Show code (optional)').fill('e2e-play');
   await page.getByRole('button', { name: 'Go live' }).click();
@@ -77,4 +78,38 @@ test('plays Episode 3 from the title to the episode summary', async ({ page }) =
   await expect(page.getByText('Episode summary')).toBeVisible();
   await page.getByRole('button', { name: 'What was really going on?' }).click();
   await expect(page.getByText("That's adverse selection.", { exact: false })).toBeVisible();
+});
+
+test('the opening cards: shown on the first visit, Skip goes to Pick your show, the menus reopen them (D-139)', async ({ page }) => {
+  await page.getByRole('button', { name: 'Start a new life' }).click();
+  await page.getByRole('button', { name: /Quick and fun/ }).click();
+  await expect(page.getByRole('heading', { name: 'A game show about fair play' })).toBeVisible();
+  // The cards are a fixed overlay: the card itself must fit, with no scrolling either way.
+  const card = await page.locator('[data-opening]').evaluate((el) => ({ sh: el.scrollHeight, sw: el.scrollWidth, cw: el.clientWidth, ih: window.innerHeight }));
+  expect(card.sw).toBeLessThanOrEqual(card.cw);
+  expect(card.sh).toBeLessThanOrEqual(card.ih);
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.getByRole('heading', { name: 'Everyone has secrets' })).toBeVisible();
+  await page.getByRole('button', { name: 'Skip' }).click();
+  await expect(page.getByRole('heading', { name: 'Pick your show' })).toBeVisible();
+  // Seen once: going back and in again shows no cards.
+  await page.reload();
+  await page.waitForFunction(() => '__veil' in window);
+  await page.evaluate(() => (window as unknown as { __veil: { getState(): { go(s: string): void } } }).__veil.getState().go('playMode'));
+  await expect(page.getByRole('heading', { name: 'Pick your show' })).toBeVisible();
+  await expect(page.locator('[data-opening]')).toHaveCount(0);
+  // "What is this game?" reopens them, here and from the in-game menu.
+  await page.getByRole('button', { name: 'What is this game?' }).click();
+  await expect(page.getByRole('heading', { name: 'A game show about fair play' })).toBeVisible();
+  await page.getByRole('button', { name: 'Skip' }).click();
+  await page.getByRole('button', { name: /Bad Luck Season/ }).click();
+  await page.getByRole('button', { name: 'Go live' }).click();
+  await page.getByRole('button', { name: 'Accept the mission' }).click();
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('button', { name: 'What is this game?' }).click();
+  await expect(page.getByRole('heading', { name: 'A game show about fair play' })).toBeVisible();
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: "Let's play" }).click();
+  await expect(page.locator('[data-opening]')).toHaveCount(0);
 });
