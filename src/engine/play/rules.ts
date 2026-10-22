@@ -82,9 +82,17 @@ export function stressMult(s: GameState, pid: PlayerId): number {
   return worry?.[pid] === 'WORRIER' ? PLAY.WORRIER_STRESS_MULT : 1;
 }
 
+/** The last round of each phase queue (a level's queue never changes once built; cached for speed only). */
+const lastRoundOf = new WeakMap<object, number>();
+
 /** The episode's rounds still to come after the current one. */
 export function roundsLeft(s: GameState): number {
-  return Math.max(0, Math.max(...s.phaseQueue.map((p) => p.round)) - s.round);
+  let last = lastRoundOf.get(s.phaseQueue);
+  if (last === undefined) {
+    last = Math.max(...s.phaseQueue.map((p) => p.round));
+    lastRoundOf.set(s.phaseQueue, last);
+  }
+  return Math.max(0, last - s.round);
 }
 
 /**

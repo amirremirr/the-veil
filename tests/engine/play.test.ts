@@ -427,12 +427,15 @@ describe('Q1 review fixes (D-120 to D-122)', () => {
 
 describe('the worry card (D-128)', () => {
   const games = Array.from({ length: 30 }, (_, k) => botsOnly(`worry-${k}`));
-  it('every risk and worry card is drawn on its own, 50/50 (D-141)', () => {
+  it('every risk and worry card is drawn on its own, 50/50 (D-141; the hidden mixed-deal rule off)', () => {
+    const was = PLAY.L3_MIXED_DEAL;
+    PLAY.L3_MIXED_DEAL = false;
     const many = Array.from({ length: 200 }, (_, k) => {
       const s = createInitialState({ ...cfg(`deal-${k}`), allBots: true });
       step(s, { type: 'ADVANCE' });
       return s.levelState as { worry: Record<string, string>; types: Record<string, string> };
     });
+    PLAY.L3_MIXED_DEAL = was;
     const highs = many.map((l) => Object.values(l.types).filter((x) => x === 'HIGH').length);
     const worriers = many.map((l) => Object.values(l.worry).filter((x) => x === 'WORRIER').length);
     const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
@@ -447,7 +450,8 @@ describe('the worry card (D-128)', () => {
     const pHW = both.filter(([h, w]) => h && w).length / both.length;
     expect(Math.abs(pHW - 0.25)).toBeLessThan(0.06);
   });
-  it('with the hidden mixed-deal rule, tables of 3 or 4 always hold both risk cards; 2 seats are never redrawn (D-141)', () => {
+  it('with the hidden mixed-deal rule (on, D-142), tables of 3 or 4 always hold both risk cards; 2 seats are never redrawn', () => {
+    expect(PLAY.L3_MIXED_DEAL).toBe(true);
     const was = PLAY.L3_MIXED_DEAL;
     PLAY.L3_MIXED_DEAL = true;
     try {

@@ -16,6 +16,10 @@ const seed = arg('seed', 'playtest-1');
 const save = arg('save', '');
 const ruleset = arg('ruleset', 'STUDY');
 const episode = Number(arg('episode', '3'));
+// D-141, D-145: Play tables of 2 to 4 seats, at any difficulty, with an optional stage name (D-146).
+const players = Number(arg('players', '4'));
+const difficulty = arg('difficulty', 'NORMAL');
+const humanName = arg('name', '');
 const outDir = ruleset === 'PLAY' ? 'walkthrough-out/play' : 'walkthrough-out';
 mkdirSync(outDir, { recursive: true });
 
@@ -72,13 +76,13 @@ if (ruleset === 'PLAY' && opening) {
   }
 }
 await page.evaluate(
-  ([s, rs, ep]) => {
+  ([s, rs, ep, np, df, nm]) => {
     const st = window.__veil.getState();
     st.updateSettings({ reducedMotion: true });
-    if (rs === 'PLAY') st.start({ mode: 'EPISODE', level: ep, ruleset: 'PLAY', nPlayers: 4, difficulty: 'NORMAL', seed: s });
+    if (rs === 'PLAY') st.start({ mode: 'EPISODE', level: ep, ruleset: 'PLAY', nPlayers: np, difficulty: df, seed: s, humanName: nm || undefined });
     else st.start({ mode: 'FULL_RUN', nPlayers: 4, difficulty: 'NORMAL', seed: s });
   },
-  [seed, ruleset, episode],
+  [seed, ruleset, episode, players, difficulty, humanName],
 );
 
 /** Measure the current screen. Runs in the page. */
@@ -188,7 +192,7 @@ for (let i = 0; i < 1000; i++) {
 
 const groups = [...new Set(rows.map((r) => r.group))];
 const table = [];
-table.push(`Walkthrough: seed ${seed}, ${width}x${height}, ${ruleset === 'PLAY' ? `PLAY EPISODE ${episode}` : 'FULL_RUN'}, 4 players, Normal`);
+table.push(`Walkthrough: seed ${seed}, ${width}x${height}, ${ruleset === 'PLAY' ? `PLAY EPISODE ${episode}` : 'FULL_RUN'}, ${ruleset === 'PLAY' ? players : 4} players, ${ruleset === 'PLAY' ? difficulty : 'NORMAL'}${humanName ? `, name ${humanName}` : ''}`);
 table.push('');
 table.push('Group  Screens  Decisions  Words  Tallest(px)  Overlaps  HScroll');
 let tot = { s: 0, d: 0, w: 0, o: 0, h: 0 };
