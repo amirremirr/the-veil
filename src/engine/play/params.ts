@@ -61,11 +61,10 @@ export const PLAY = {
   /** Beliefs about a hidden fact are kept inside these bounds (as Study's BELIEF_FLOOR). */
   BELIEF_FLOOR: 0.01,
   /**
-   * v2 Section 4, the Bar (D-113): a member values barring applicant j at BAR_VALUE x (P(j is high risk)
-   * - BAR_THRESHOLD) coins against 0 for barring no one, and picks by the logit rule.
+   * D-133, the Bar: a member values barring an applicant at its expected saving on next round's price,
+   * times the chance it stays in, times this scale (1 = the grounded rule), against 0 for barring no one.
    */
-  BAR_VALUE: 40,
-  BAR_THRESHOLD: 0.55,
+  BAR_GAIN_SCALE: 2,
   /** Section 6.2, Episode 3 deck: each card changes one Level 3 parameter for one round. */
   L3_EVENTS: {
     STORM: { RISK_MULT: 1.5, RISK_CAP: 0.9 },

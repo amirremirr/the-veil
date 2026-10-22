@@ -3,7 +3,7 @@ import { BOT, L3 } from '../params';
 import { botParams, botRng, finishRound, gameRng, headline, ids, idx, playerOf, pluralityResolve } from '../core';
 import { equalShares, mean, ownNet, roundScore } from '../scoring';
 import { PLAY } from '../play/params';
-import { activeEvent, isPlay, playNet, playRoundValue } from '../play/rules';
+import { activeEvent, isPlay, playNet, playRoundValue, roundsLeft } from '../play/rules';
 import { audienceBelief, beliefAfterClaim, checkClaims, chooseClaim, initFactBeliefs, observe, postClaims, revealFacts, SILENT } from '../play/claims';
 import { reliabilityOf } from '../core';
 import { ceOfLottery, logitChoice, logitProbs } from '../bots/utility';
@@ -23,13 +23,22 @@ export interface Choice {
   bar?: PlayerId | null;
 }
 
-/** Play v2 Section 4, the Bar: last round's members vote to bar one applicant (majority of members). */
+/**
+ * Play v2 Section 4, the Bar: last round's members each vote to bar one applicant. D-133: an applicant is
+ * barred with votes from at least half of the members who aren't that applicant; everyone who reaches it is.
+ */
 export interface L3Bar {
   members: PlayerId[];
   votes: Record<PlayerId, PlayerId | null>;
-  barred: PlayerId | null;
-  /** The barred contestant had applied for cover and was turned away. */
-  refused: boolean;
+  barred: PlayerId[];
+  /** The barred contestants who had applied for cover and were turned away. */
+  refused: PlayerId[];
+}
+
+/** D-133: the votes an applicant needs: at least half of the members who aren't the applicant (and at least one). */
+export function barNeeds(members: readonly PlayerId[], applicant: PlayerId): number {
+  const voters = members.filter((m) => m !== applicant).length;
+  return voters ? Math.max(1, Math.ceil(voters / 2)) : Infinity;
 }
 
 export interface L3Round {
@@ -403,16 +412,55 @@ function voterBelief(s: GameState, voter: PlayerId, j: PlayerId): number {
   return s.play!.belief[voter]?.[j] ?? audienceBelief(s, j) ?? playPrior(s);
 }
 
-/** D-113: a member's bar options (no one, then every other contestant) and their values in coins. */
-function barOptions(s: GameState, voter: PlayerId, belief: (j: PlayerId) => number): { options: Array<PlayerId | null>; u: number[] } {
-  const others = ids(s).filter((id) => id !== voter);
-  return { options: [null, ...others], u: [0, ...others.map((j) => PLAY.BAR_VALUE * (belief(j) - PLAY.BAR_THRESHOLD))] };
+/** A contestant's expected risk (no gym), given a belief that they are high risk. */
+const expectedRisk = (b: number, P: L3Params) => b * P.P_HIGH + (1 - b) * P.P_LOW;
+
+/**
+ * D-133: what barring `target` is worth to member `voter`, in coins: how much it lowers the price the member
+ * expects to pay next round, times the chance the member stays in. SafeHands prices next round from this
+ * round's pool, assumed to be last round's members (who stay) plus the target: price = LOADING x PRICE_LOSS x
+ * mean risk. Others' risks come from the voter's beliefs, its own from `selfRisk`. Zero in the last round.
+ * Scaled by BAR_GAIN_SCALE.
+ */
+function barGain(s: GameState, pool: PlayerId[], voter: PlayerId, target: PlayerId, beliefOf: (k: PlayerId) => number, selfRisk: number, pStay: number): number {
+  if (roundsLeft(s) <= 0) return 0;
+  const P = ctxOf(s, false).p;
+  const inPool = [...new Set([...pool, voter, target])];
+  const without = inPool.filter((k) => k !== target);
+  const risk = (k: PlayerId) => (k === voter ? selfRisk : expectedRisk(beliefOf(k), P));
+  const diff = P.LOADING * P.PRICE_LOSS * (mean(inPool.map(risk)) - mean(without.map(risk)));
+  return PLAY.BAR_GAIN_SCALE * pStay * diff;
 }
 
-function botBarVote(s: GameState, voter: PlayerId): PlayerId | null {
-  if (!membersOf(s).includes(voter)) return null;
-  const { options, u } = barOptions(s, voter, (j) => voterBelief(s, voter, j));
+/** A member's bar options (no one, then every other contestant) and their values in coins (D-133). */
+function barOptions(s: GameState, pool: PlayerId[], voter: PlayerId, belief: (j: PlayerId) => number, selfRisk: number, pStay: number): { options: Array<PlayerId | null>; u: number[] } {
+  const others = ids(s).filter((id) => id !== voter);
+  return { options: [null, ...others], u: [0, ...others.map((j) => barGain(s, pool, voter, j, belief, selfRisk, pStay))] };
+}
+
+/** A bot member's vote: its own beliefs, its own risk, and its own chance of buying as the chance it stays in. */
+function botBarVote(s: GameState, voter: PlayerId, pStay: number): PlayerId | null {
+  const members = membersOf(s);
+  if (!members.includes(voter)) return null;
+  const selfRisk = pOf(st(s).types[voter], ctxOf(s, false).p);
+  const { options, u } = barOptions(s, members, voter, (j) => voterBelief(s, voter, j), selfRisk, pStay);
   return options[logitChoice(u, botParams(s, voter).lambda, botRng(s))];
+}
+
+/**
+ * D-133: how likely member m is to buy, as `observer` sees it (public model, no private card): the logit rule
+ * on rnValue for each risk type, weighted by the observer's belief that m is high risk, Calm multiplier.
+ */
+function publicBuyChance(s: GameState, m: PlayerId, bHigh: number): number {
+  const premium = currentPremium(s);
+  if (premium === null) return 0;
+  const ctx = ctxOf(s);
+  const j = idx(s, m);
+  const pBuy = (type: RiskType) => {
+    const vNo = Math.max(rnValue(type, 'VOL', premium, { buy: false, gym: false }, ctx, j), rnValue(type, 'VOL', premium, { buy: false, gym: true }, ctx, j));
+    return logitProbs([vNo, rnValue(type, 'VOL', premium, { buy: true, gym: false }, ctx, j)], BOT.BELIEF_LAMBDA)[1];
+  };
+  return bHigh * pBuy('HIGH') + (1 - bHigh) * pBuy('LOW');
 }
 
 /**
@@ -424,7 +472,10 @@ function barChance(s: GameState, members: PlayerId[], target: PlayerId, beliefOf
   for (const m of members) {
     let q = 0;
     if (m !== target) {
-      const { options, u } = barOptions(s, m, (j) => (j === target ? beliefOf(m) : voterBelief(s, m, j)));
+      // The target predicts m's vote from public information: its own belief about m's risk and m's chance of staying in.
+      const bm = voterBelief(s, target, m);
+      const P = ctxOf(s, false).p;
+      const { options, u } = barOptions(s, members, m, (j) => (j === target ? beliefOf(m) : voterBelief(s, m, j)), expectedRisk(bm, P), publicBuyChance(s, m, bm));
       const lam = playerOf(s, m).isHuman ? BOT.BELIEF_LAMBDA : botParams(s, m).lambda;
       q = logitProbs(u, lam)[options.indexOf(target)];
     }
@@ -435,7 +486,8 @@ function barChance(s: GameState, members: PlayerId[], target: PlayerId, beliefOf
     });
     dist = next;
   }
-  return dist.reduce((a, p, k) => (k * 2 > members.length ? a + p : a), 0);
+  const need = barNeeds(members, target);
+  return dist.reduce((a, p, k) => (k >= need ? a + p : a), 0);
 }
 
 /**
@@ -637,7 +689,9 @@ export const level3: LevelDefinition = {
       const buy = canBuy && (isLaunch(s) || logitChoice([best(false), best(true)], lambda, rng) === 1);
       const gymCE = [false, true].map((gym) => ce[options.findIndex((o) => o.buy === buy && o.gym === gym)]);
       const gym = logitChoice(gymCE, lambda, rng) === 1;
-      if (isPlay(s)) return { buy, gym, bar: botBarVote(s, botId) };
+      // D-133: the chance of buying now stands in for the chance of staying in the pool next round.
+      const pStay = canBuy ? logitProbs([best(false), best(true)], lambda)[1] : 0;
+      if (isPlay(s)) return { buy, gym, bar: botBarVote(s, botId, pStay) };
       return { buy, gym };
     }
     const ce = regimeCE(s, n, i, st(s).types[botId], me.values, rho);
@@ -677,14 +731,14 @@ export const level3: LevelDefinition = {
         const votes = Object.fromEntries(members.map((m) => [m, (decisions[m] as Choice).bar ?? null])) as Record<PlayerId, PlayerId | null>;
         const counts: Record<PlayerId, number> = {};
         for (const v of Object.values(votes)) if (v) counts[v] = (counts[v] ?? 0) + 1;
-        const barred = pids.find((j) => (counts[j] ?? 0) * 2 > members.length) ?? null;
-        const refused = !!barred && choices[pids.indexOf(barred)].buy;
+        const barred = pids.filter((j) => (counts[j] ?? 0) >= barNeeds(members, j));
+        const refused = barred.filter((j) => choices[pids.indexOf(j)].buy);
         bar = { members, votes, barred, refused };
         for (const m of members)
           for (const [k, j] of pids.entries())
             if (j !== m && choices[k].buy) s.play!.barReads.push({ level: s.levelIndex, round: s.round, member: m, target: j, belief: voterBelief(s, m, j) });
       }
-      choices = choices.map((c, i) => ({ buy: c.buy && pids[i] !== bar?.barred, gym: c.gym }));
+      choices = choices.map((c, i) => ({ buy: c.buy && !bar?.barred.includes(pids[i]), gym: c.gym }));
     }
     const pEff = pids.map((id, i) => pEffOf(l.types[id], choices[i].gym, P));
     const pBase = pids.map((id, i) => pBaseOf(l.types[id], choices[i].gym, P));

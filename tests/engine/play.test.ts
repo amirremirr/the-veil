@@ -309,7 +309,7 @@ describe('v2 spine: claims, honesty and beliefs (PLAY_V2_SPEC.md Section 3)', ()
 
 describe('The Pool: the Bar and Leaked Medical Files (PLAY_V2_SPEC.md Sections 4 and 5)', () => {
   const games = Array.from({ length: 40 }, (_, k) => botsOnly(`pool-${k}`));
-  it('only last round\'s members vote; a strict majority bars one applicant, who gets no cover', () => {
+  it('only last round\'s members vote; at least half of the other members bar an applicant, who gets no cover (D-133)', () => {
     let bars = 0;
     for (const s of games) {
       const d = s.levelResults[3] as L3Debrief;
@@ -319,13 +319,13 @@ describe('The Pool: the Bar and Leaked Medical Files (PLAY_V2_SPEC.md Sections 4
         expect(r.bar.members).toEqual(s.players.map((p) => p.id).filter((id) => prev.choices[id].buy));
         const counts: Record<string, number> = {};
         for (const v of Object.values(r.bar.votes)) if (v) counts[v] = (counts[v] ?? 0) + 1;
-        const winner = Object.keys(counts).find((j) => counts[j] * 2 > r.bar!.members.length) ?? null;
-        expect(r.bar.barred).toBe(winner);
+        const need = (j: string) => Math.max(1, Math.ceil(r.bar!.members.filter((m) => m !== j).length / 2));
+        expect(r.bar.barred).toEqual(s.players.map((p) => p.id).filter((j) => (counts[j] ?? 0) >= need(j)));
         for (const [m, v] of Object.entries(r.bar.votes)) expect(v).not.toBe(m);
-        if (r.bar.barred) {
+        for (const j of r.bar.barred) {
           bars++;
-          expect(r.choices[r.bar.barred].buy).toBe(false);
-          expect(r.bar.refused).toBe(r.applied![r.bar.barred]);
+          expect(r.choices[j].buy).toBe(false);
+          expect(r.bar.refused.includes(j)).toBe(r.applied![j]);
         }
       });
       expect(d.rounds[0].bar).toBeUndefined();

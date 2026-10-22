@@ -87,9 +87,13 @@ interface Rec {
   r3Price: number | null;
   /** Bot claim decisions where the lie would gain coins, and how many of them lied (S-a). */
   lieChances: number;
-  /** D-130: lies told, and lies whose teller was covered (bought cover in the pool) that round or the next. */
+  /**
+   * D-135: lies judged in the first round where a bar vote can act on them (round 2 for a round-1 lie, the
+   * same round otherwise), how many of those got their teller covered, and lies with no bar vote to judge them.
+   */
   liesTold: number;
   liesCovered: number;
+  liesUnjudged: number;
   /** D-130: high-risk applicants in rounds with a bar vote, and how many of them were barred. */
   highApplicants: number;
   highBarred: number;
@@ -152,7 +156,7 @@ function record(s: GameState, watch: Watch): Rec {
   const anyEvent = pl.events.some((e) => e.id !== 'QUIET');
   const banks = s.players.map((p) => pl.banks[p.id]);
   const eff = playEffortShares(s);
-  const bars = d.rounds.map((r) => r.bar?.barred).filter((x): x is string => !!x);
+  const bars = d.rounds.flatMap((r) => r.bar?.barred ?? []);
   const r3 = d.rounds[2];
   const chances = pl.claimLog.filter((c) => c.lieGain !== null && c.lieGain > 0.01);
   const open = (r: (typeof d.rounds)[number] | undefined) => !!r && r.regime === 'VOL' && r.premium !== null;
@@ -169,7 +173,11 @@ function record(s: GameState, watch: Watch): Rec {
     const r = d.rounds[round - 1];
     return !!r && r.regime === 'VOL' && r.premium !== null && r.choices[pid].buy;
   };
-  const lies = pl.claimLog.filter((c) => c.lied);
+  const judged = pl.claimLog
+    .filter((c) => c.lied)
+    .map((c) => ({ c, k: c.round === 1 ? 2 : c.round }))
+    .map(({ c, k }) => ({ c, k, r: d.rounds[k - 1] }));
+  const lies = judged.filter((x) => x.r?.bar);
   let highApplicants = 0;
   let highBarred = 0;
   for (const r of d.rounds) {
@@ -177,13 +185,14 @@ function record(s: GameState, watch: Watch): Rec {
     for (const p of s.players)
       if (d.types[p.id] === 'HIGH' && r.applied?.[p.id]) {
         highApplicants++;
-        if (r.bar.barred === p.id) highBarred++;
+        if (r.bar.barred.includes(p.id)) highBarred++;
       }
   }
   return {
     watch,
     liesTold: lies.length,
-    liesCovered: lies.filter((c) => bought(c.round, c.pid) || bought(c.round + 1, c.pid)).length,
+    liesCovered: lies.filter((x) => bought(x.k, x.c.pid)).length,
+    liesUnjudged: judged.length - lies.length,
     highApplicants,
     highBarred,
     reads: pl.barReads.length,
@@ -286,9 +295,11 @@ const FV = PLAY.L3_LAUNCH ? 2 : 1;
 const targets: Target[] = [
   { name: `E3a round-${FV} High-risk / Low-risk applicants (first voluntary round)`, stat: buyerRatio, lo: 2, gate: true },
   { name: `E3b mean round-${FV + 1} price over round ${FV}, open markets`, stat: priceRise, lo: 0.15, gate: true, note: `${open(recs).length} of ${recs.length} games open; insurer's price before any Price War discount` },
-  { name: 'E3c share of bars that hit a high-risk contestant', stat: barHighShare, lo: 0.5, gate: true, note: `${sum(recs.map((r) => r.barHigh + r.barLow))} bars in ${recs.length} games; the bar screens somewhat` },
+  { name: 'E3c share of bars that hit a high-risk contestant', stat: barHighShare, lo: 0.6, gate: true, note: `${sum(recs.map((r) => r.barHigh + r.barLow))} bars in ${recs.length} games; the bar screens somewhat` },
   { name: `E3d price set by round 3's pool over round ${FV}, markets open in round 3`, stat: priceRise3, lo: 0, gate: true, note: `${open3(recs).length} of ${recs.length} games; screening does not fully fix it` },
   { name: `S-e low-risk share of round-${FV} applicants`, stat: (rs) => sum(rs.map((r) => r.lowBuyersR1)) / sum(rs.map((r) => r.lowBuyersR1 + r.highBuyersR1)), lo: 0.2, hi: 0.4, gate: false, note: 'applying is ambiguous (D-128)' },
+  { name: 'Lie success: liar covered in the first round a bar vote can act on the lie', stat: (rs) => sum(rs.map((r) => r.liesCovered)) / sum(rs.map((r) => r.liesTold)), lo: 0.5, hi: 0.75, gate: false, note: `${sum(recs.map((r) => r.liesTold))} lies judged, ${sum(recs.map((r) => r.liesUnjudged))} with no bar vote after them (not counted)` },
+  { name: 'Bar recall: high-risk applicants barred (rounds with a bar vote)', stat: (rs) => sum(rs.map((r) => r.highBarred)) / sum(rs.map((r) => r.highApplicants)), lo: 0.35, hi: 0.6, gate: false, note: `${sum(recs.map((r) => r.highApplicants))} high-risk applicants` },
   { name: 'S-a bots lie where lying would pay', stat: lieShare, lo: 0.15, hi: 0.5, gate: false, note: `${sum(recs.map((r) => r.lieChances))} bot claim decisions where the lie gains coins` },
   { name: 'S-b a reader using the audience belief judges a claim TRUE or LIE correctly', stat: readAcc, lo: 0.55, hi: 0.8, gate: false, note: `${sum(recs.map((r) => r.watch.reads.length))} claims, judged right after their round's results` },
   { name: 'F-f some contestant goes into debt', stat: avg((r) => (r.anyDebt ? 1 : 0)), lo: 0.3, hi: 0.7, gate: true, note: 'per episode (per life from P3)' },
@@ -330,7 +341,6 @@ for (const tg of targets) {
 }
 lines.push('  N/A [reported]                         F-b comeback from last after Episode 2: needs Episode 2 (P2)');
 lines.push('');
-lines.push(`Lie success (lies whose teller bought cover that round or the next): ${(100 * sum(recs.map((r) => r.liesCovered)) / sum(recs.map((r) => r.liesTold))).toFixed(1)}% ± ${(100 * se((rs) => sum(rs.map((r) => r.liesCovered)) / sum(rs.map((r) => r.liesTold)))).toFixed(1)} of ${sum(recs.map((r) => r.liesTold))} lies`);
 lines.push(`Bar recall (high-risk applicants barred, rounds with a bar vote): ${(100 * sum(recs.map((r) => r.highBarred)) / sum(recs.map((r) => r.highApplicants))).toFixed(1)}% ± ${(100 * se((rs) => sum(rs.map((r) => r.highBarred)) / sum(rs.map((r) => r.highApplicants)))).toFixed(1)} of ${sum(recs.map((r) => r.highApplicants))}`);
 lines.push(`Contested bar decisions (member's belief about an applicant between 0.35 and 0.65): ${(100 * sum(recs.map((r) => r.contested)) / sum(recs.map((r) => r.reads))).toFixed(1)}% ± ${(100 * se((rs) => sum(rs.map((r) => r.contested)) / sum(rs.map((r) => r.reads)))).toFixed(1)} of ${sum(recs.map((r) => r.reads))} reads`);
 lines.push(`At least one buyer in round 3: ${(avg((r) => (r.collapsed ? 0 : 1))(recs) * 100).toFixed(1)}% ± ${(se(avg((r) => (r.collapsed ? 0 : 1))) * 100).toFixed(1)}`);
