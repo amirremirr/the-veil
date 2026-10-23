@@ -325,7 +325,7 @@ export function About() {
               <p key={para.slice(0, 24)}>{para}</p>
             ))}
           <p className="font-semibold">{t('play.disclaimer')}</p>
-          {/* D-142: Play's one hidden dealing rule, stated here and never in play. */}
+          {/* D-141: Play's one hidden dealing rule, stated here and never in play. */}
           <p data-about-deal>{t('play.about.deal')}</p>
           <p className="text-soft">{t('about.noTracking')}</p>
           <p className="text-soft">{t('about.rooms')}</p>

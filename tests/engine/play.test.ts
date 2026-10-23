@@ -450,7 +450,7 @@ describe('the worry card (D-128)', () => {
     const pHW = both.filter(([h, w]) => h && w).length / both.length;
     expect(Math.abs(pHW - 0.25)).toBeLessThan(0.06);
   });
-  it('with the hidden mixed-deal rule (on, D-142), tables of 3 or 4 always hold both risk cards; 2 seats are never redrawn', () => {
+  it('with the hidden mixed-deal rule (on, D-141), tables of 3 or 4 always hold both risk cards; 2 seats are never redrawn', () => {
     expect(PLAY.L3_MIXED_DEAL).toBe(true);
     const was = PLAY.L3_MIXED_DEAL;
     PLAY.L3_MIXED_DEAL = true;

@@ -326,7 +326,7 @@ function EpisodeSummary({ v }: { v: ViewState }) {
       <h1 className="h-show text-3xl leading-tight text-spot">{t('play.summary.title')}</h1>
       <dl className="mt-3 space-y-3" data-summary>
         {row(t('play.summary.lieLabel'), lieText)}
-        {row(t('play.summary.readLabel'), readText)}
+        {pl.pollMode !== 'NEVER' && row(t('play.summary.readLabel'), readText)}
         {row(t('play.bar.bank'), t('play.summary.bankChange', { from: coins(pl.startingBank), to: coins(pl.banks[v.viewer]) }))}
         {row(missionName(m.card), complete ? t('play.summary.missionDone') : t('play.summary.missionMissed'), complete ? 'text-good' : 'text-stamp')}
         {row(t('play.summary.nearMiss'), nm ? nearMissText(v, nm) : t('play.summary.nearMissNone'))}

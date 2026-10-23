@@ -1470,7 +1470,9 @@
       "close": "Close",
       "amount": "{n}",
       "none": "No gift",
-      "gave": "{from} gave {to} {n}"
+      "gave": "{from} gave {to} {n}",
+      "match": "SafeHands adds {m} to every gift.",
+      "matched": "SafeHands added {m}."
     },
     "about": {
       "deal": "Quick and fun, Episode 3: every risk card and worry card is dealt 50/50, and nobody is told the mix. One hidden rule: at a table of 3 or 4, the risk cards are dealt again until at least one player is high risk and one is low risk. With everyone the same, there is nobody to screen out, so the episode has nothing to show. A table of 2 is never dealt again."

@@ -709,6 +709,14 @@ function readRound(s: GameState, r: L3Round): void {
   });
 }
 
+/** D-148: per game state, the regime-vote likelihoods already worked out (Play only; see `likelihood`). */
+const likelihoods = new WeakMap<GameState, Map<string, number[]>>();
+function likelihoodMemo(s: GameState): Map<string, number[]> {
+  let m = likelihoods.get(s);
+  if (!m) likelihoods.set(s, (m = new Map()));
+  return m;
+}
+
 export const level3: LevelDefinition = {
   id: 3,
   rounds: L3.ROUNDS,
@@ -978,15 +986,24 @@ export const level3: LevelDefinition = {
   },
   observable: ['REGIME'],
   likelihood(s, _observer, actor, _step, decision, card) {
-    const n = s.players.length;
-    const probs = REGIMES.map(() => 0);
-    // Play (D-128): the actor's worry card is private too, so the vote is read under both, equally likely.
-    const mults = isPlay(s) ? [1, PLAY.WORRIER_STRESS_MULT] : [null];
-    for (const type of ['LOW', 'HIGH'] as RiskType[])
-      for (const m of mults) {
-        const ce = regimeCE(s, n, idx(s, actor), type, card, BOT.BELIEF_RHO, m === null ? undefined : () => m);
-        logitProbs(ce, BOT.BELIEF_LAMBDA).forEach((p, k) => (probs[k] += p / (2 * mults.length)));
-      }
+    // Play only, for speed: the answer does not depend on the observer and the state does not change within a
+    // phase, so it is worked out once per actor and card in each phase (D-148). Study computes it every time.
+    const memo = isPlay(s) ? likelihoodMemo(s) : null;
+    const key = `${s.levelIndex}|${s.phaseIdx}|${actor}|${card}`;
+    let probs = memo?.get(key);
+    if (!probs) {
+      const n = s.players.length;
+      const out = REGIMES.map(() => 0);
+      // Play (D-128): the actor's worry card is private too, so the vote is read under both, equally likely.
+      const mults = isPlay(s) ? [1, PLAY.WORRIER_STRESS_MULT] : [null];
+      for (const type of ['LOW', 'HIGH'] as RiskType[])
+        for (const m of mults) {
+          const ce = regimeCE(s, n, idx(s, actor), type, card, BOT.BELIEF_RHO, m === null ? undefined : () => m);
+          logitProbs(ce, BOT.BELIEF_LAMBDA).forEach((p, k) => (out[k] += p / (2 * mults.length)));
+        }
+      probs = out;
+      memo?.set(key, probs);
+    }
     return probs[REGIMES.indexOf(decision as Regime)] ?? 0;
   },
   debrief(s) {

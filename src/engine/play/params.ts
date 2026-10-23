@@ -17,8 +17,11 @@ export const PLAY = {
   /** Section 4.3: final score = BANK_WEIGHT x bank + MISSION_WEIGHT x k x mission - debt stress. */
   BANK_WEIGHT: 0.5,
   MISSION_WEIGHT: 0.5,
-  /** k per mission, calibrated by bot-only simulation so each mission's mean equals the mean bank (D-96). */
-  MISSION_SCALE: { EGOIST: 1, RAWLSIAN: 1.78, UTILITARIAN: 1, MERITOCRAT: 1.16 } as Record<ValuesCard, number>,
+  /**
+   * k per mission. D-142: calibrated on single Episode 3 games (4 seats, Normal, gifts with the match) so every
+   * mission wins closest to 25% of the time (was D-96's mean-matching values 1, 1.78, 1, 1.16).
+   */
+  MISSION_SCALE: { EGOIST: 0.84, RAWLSIAN: 1.42, UTILITARIAN: 1.04, MERITOCRAT: 1.16 } as Record<ValuesCard, number>,
   /** The mission bar's full mark: start bank + this share of the episode's income minus living cost (D-102). */
   MISSION_GOAL_SHARE: 0.8,
   /** Section 7.4: points for a correct end-of-episode card guess. */
@@ -39,14 +42,14 @@ export const PLAY = {
   L3_LAUNCH: true,
   /**
    * D-128: Episode 3's second hidden card. A Worrier's debt stress is multiplied by this (the per-round cap
-   * too, D-141). Calm players are unchanged. The author's range: 1.5 to 4.
+   * too, D-144). Calm players are unchanged. The author's range: 1.5 to 4.
    */
   WORRIER_STRESS_MULT: 3,
   /** D-141: each seat is a Worrier with this chance, drawn on its own (like the risk card, 50/50). */
   WORRIER_SHARE: 0.5,
   /**
-   * D-141, a hidden rule: at 3 or 4 seats, Episode 3's risk cards are redrawn until at least one HIGH and one
-   * LOW are dealt. Never shown in play; About mentions it.
+   * D-141, a hidden rule (on after its test): at 3 or 4 seats, Episode 3's risk cards are redrawn until at
+   * least one HIGH and one LOW are dealt. Never shown in play; About mentions it.
    */
   L3_MIXED_DEAL: true,
   /** D-122: bots count the debt stress a bank will still cost in the episode's later rounds. */
@@ -79,8 +82,8 @@ export const PLAY = {
    * player. Gifts are public and land at the end of the round, after the wheel.
    */
   GIFT_AMOUNTS: [5, 10] as number[],
-  /** D-142: SafeHands adds this share to every gift (0 = no match). The recipient gets amount x (1 + match). */
-  GIFT_MATCH: 0,
+  /** D-142: SafeHands adds this share to every gift (0 = no match): the recipient gets amount x (1 + match). Tested 0, 0.5, 1. */
+  GIFT_MATCH: 1,
   /**
    * D-145, difficulty in Play: the audience poll ('ALWAYS' on every screen that lists contestants, 'NORMAL'
    * where it is today, 'NEVER' on no screen), a shift of every bot honesty range (kept inside 0 to 1), and a

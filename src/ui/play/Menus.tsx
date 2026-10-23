@@ -124,7 +124,7 @@ export function PlaySetup() {
                 </button>
               ))}
             </div>
-            {/* D-145: one line per level, for the level picked. */}
+            {/* D-145: one line per level, shown for the level picked. */}
             <p className="mt-1 text-sm text-soft" aria-live="polite" data-difficulty-line>
               {t(`play.setup.levels.${difficulty}`)}
             </p>

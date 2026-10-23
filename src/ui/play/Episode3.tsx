@@ -302,7 +302,10 @@ function GiftSheet({ v, gift, onPick, onClose }: { v: ViewState; gift: Gift | nu
   const pv = lv3(v).preview;
   return (
     <Sheet title={t('play.gift.sheet')} closeLabel={t('play.gift.close')} onClose={onClose}>
-      <p className="text-sm">{t('play.gift.how')}</p>
+      <p className="text-sm">
+        {t('play.gift.how')}
+        {PLAY.GIFT_MATCH > 0 && ` ${t('play.gift.match', { m: pct(PLAY.GIFT_MATCH) })}`}
+      </p>
       <ul className="space-y-2" data-gift-sheet>
         {v.players
           .filter((p) => p.id !== v.viewer)
@@ -526,7 +529,9 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
   // D-142: gifts land after the wheel; the change and the bank include them.
   const change = r.W[me] + (r.giftNet?.[me] ?? 0) - PLAY.LIVING_COST;
   const gifts = Object.entries(r.gifts ?? {});
-  const giftLine = gifts.map(([from, g]) => t('play.gift.gave', { from: shortName(v, from), to: shortName(v, g.to), n: fmt1(g.received) })).join(' · ');
+  const giftLine = gifts.length
+    ? `${gifts.map(([from, g]) => t('play.gift.gave', { from: shortName(v, from), to: shortName(v, g.to), n: g.amount })).join(' · ')}${PLAY.GIFT_MATCH > 0 ? ` ${t('play.gift.matched', { m: pct(PLAY.GIFT_MATCH) })}` : ''}`
+    : '';
   const stress = h.stress[me] ?? 0;
   const from = h.banks[me] - change;
   const ch = r.choices[me];
