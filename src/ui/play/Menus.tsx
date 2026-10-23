@@ -109,8 +109,10 @@ export function PlaySetup() {
             <legend className="label mb-1">{t('play.setup.players')}</legend>
             <div className="grid grid-cols-3 gap-2" role="group" aria-label={t('play.setup.players')}>
               {([2, 3, 4] as const).map((k) => (
-                <button key={k} type="button" aria-pressed={n === k} className="choice justify-center" onClick={() => setN(k)} data-seats={k}>
+                <button key={k} type="button" aria-pressed={n === k} className="choice flex-col justify-center" onClick={() => setN(k)} data-seats={k}>
                   <span className="num text-lg">{k}</span>
+                  {/* D-149 */}
+                  {k === 4 && <span className="text-xs font-semibold">{t('play.setup.best')}</span>}
                 </button>
               ))}
             </div>

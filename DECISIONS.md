@@ -490,3 +490,27 @@ The author's third review: lie success was 98% and bar recall 23%, so lying domi
   Walkthroughs at 375 x 760, cards already seen: 4 seats, Normal, name "Ana" (seed playtest-3): 29 screens, 9 decisions, 1,536 words, every screen 760 px, move screen at most 63 words (limit 65), private cards 77 words (was 61 to 62: the longer debt lines). 2 seats, Hard (seed playtest-7): 29 screens, 9 decisions, 1,313 words, every screen 760 px, move screen at most 52 words. A round ending in debt was checked on its own (seed debt-3, 2 seats, round 3): "In debt: -7 points" under the bank line, 65 words, 760 px.
 
   Speed: with independent beliefs, bots weigh all 8 card mixes of the other three players instead of the 3 the fixed deck allowed, so 4-seat simulations run about 2.7 times slower. Two caches that change no result (5 bot games hash the same before and after): the last round of each phase queue, and, in Play only, the regime-vote likelihoods behind the bots' mission guesses, which do not depend on the observer. The episode summary's near-miss replay, which blocks the screen, drops from about 6 s to 3 s in Node at 4 seats (it was 6.2 s before this review too).
+
+## Episode 3 review, follow-up (October 2026)
+
+- **D-149 Gift version (i), Hard's line, a shorter private-cards screen, "Best with 4".** Supersedes D-142's choice. (1) `GIFT_MATCH` is 0 and `MISSION_SCALE` is version (i)'s calibration: Egoist 0.84, Rawlsian 1.44, Utilitarian 1.02, Meritocrat 1.14. The author's reason: with any match, two players can give each other the same amount every round and both gain from nothing, which multiplayer will exploit; and the match changed no result beyond noise (D-142). The match line is gone from the gift picker and the results screen. (2) Hard's setup line is "No audience poll. Bots lie more." (the bar is not tuned; D-148 showed Hard bars less often). (3) The private-cards screen drops the note "Only you see these. Both flip at the end." and shortens its lines, keeping both debt rules exact: label "Your secret cards"; risk "Wheel odds: 40% a round."; Worrier "In debt after a round: -3 points per coin owed, at most 120."; Calm "In debt after a round: -1 point per coin owed, at most 40."; then "Nobody knows how many players are high risk or Worriers. Not even the host." At 375 x 760 the whole screen is 58 words at 4 seats (Calm; a Worrier's line has the same word count) and 54 at 2 seats (Worrier), from 77. (4) The seat picker marks 4 "Best with 4".
+
+  Final simulation, 2,000 bot games at 4 seats, Normal (rules 4627279708d2125e, Play params afa30813ef2a31c1, Study params 5ba140feb4eef1b7 unchanged; seeds play-0 to play-1999):
+
+  | Target | Result | Status |
+  |---|---|---|
+  | E3a round-2 high-risk / low-risk applicants (at least 2) | 2.87 ± 0.11 | pass |
+  | E3b round-3 price over round 2, open markets (at least +15%) | +25.0% ± 0.9 | pass |
+  | E3c bars that hit a high-risk player (at least 60%) | 66.5% ± 0.8 | pass |
+  | E3d price set by round 3's pool over round 2 (above 0) | +36.3% ± 1.8 | pass |
+  | S-e low-risk share of round-2 applicants (20% to 40%) | 25.9% ± 0.8 | pass |
+  | Lie success (50% to 75%) | 69.4% ± 1.0 | pass |
+  | Bar recall (35% to 60%) | 32.2% ± 0.6 | fail, reported |
+  | Contested bar decisions (reported) | 33.2% ± 0.7 | |
+  | S-a lies where lying would pay (15% to 50%) | 34.9% ± 0.7 | pass |
+  | S-b reader judges a claim right (55% to 80%) | 83.1% ± 0.3 | fail, reported |
+  | F-d big moment (at least 90%) | 99.8% ± 0.1 | pass |
+  | F-e mission win shares (15% to 35% each) | Egoist 25.2%, Rawlsian 25.7%, Utilitarian 25.3%, Meritocrat 23.6% | pass |
+  | F-f someone goes into debt (30% to 70%) | 36.0% ± 1.1 | pass |
+
+  Gifts: Rawlsian 29.7% of rounds (6.5 coins a gift), Utilitarian 28.7%, Meritocrat 28.4% (5.0), Egoist never. Lie rates: Chet 56.0%, Ugo 38.3%, Dot 30.8%, Marigold 14.5%. Walkthroughs (cards seen): 4 seats, Normal, 29 screens, 1,511 words, move screen at most 63 words; 2 seats, Hard, 29 screens, 1,284 words; every screen 760 px.

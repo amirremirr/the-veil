@@ -79,6 +79,7 @@ test('plays Episode 3 from the title to the episode summary', async ({ page }) =
   await page.getByRole('button', { name: /Bad Luck Season/ }).click();
   // D-141: four seats by default; D-147: the challenge code and its hint.
   await expect(page.locator('[data-seats="4"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('[data-seats="4"]')).toContainText('Best with 4');
   await expect(page.getByText('Same code, same game. Use it to play the exact game a friend played.')).toBeVisible();
   await page.getByLabel('Challenge code (optional)').fill('e2e-play');
   await page.getByLabel('Your stage name').fill('Ana');
@@ -116,7 +117,7 @@ test('two seats on Hard: the setup line, two contestants, no audience poll on an
   await page.locator('[data-difficulty="EASY"]').click();
   await expect(page.getByText('See what the audience thinks. Bots are mostly honest.')).toBeVisible();
   await page.locator('[data-difficulty="HARD"]').click();
-  await expect(page.getByText('No audience poll. Bots lie more and bar harder.')).toBeVisible();
+  await expect(page.getByText('No audience poll. Bots lie more.')).toBeVisible();
   await page.locator('[data-seats="2"]').click();
   await page.getByLabel('Challenge code (optional)').fill('e2e-hard');
   await page.getByRole('button', { name: 'Go live' }).click();

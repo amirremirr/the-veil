@@ -903,8 +903,9 @@
       "levels": {
         "EASY": "See what the audience thinks. Bots are mostly honest.",
         "NORMAL": "The standard game.",
-        "HARD": "No audience poll. Bots lie more and bar harder."
-      }
+        "HARD": "No audience poll. Bots lie more."
+      },
+      "best": "Best with 4"
     },
     "episodes": {
       "1": {
@@ -1424,17 +1425,16 @@
       "regime": "Voting {name}"
     },
     "myCards": {
-      "label": "Your private cards",
-      "riskLine": "The Wheel hits you {p} of the time.",
+      "label": "Your secret cards",
+      "riskLine": "Wheel odds: {p} a round.",
       "worry": {
         "WORRIER": "Worrier",
         "CALM": "Calm"
       },
       "worryLine": {
-        "WORRIER": "In debt at the end of a round? You lose {m} points for every coin you owe (at most {cap}).",
-        "CALM": "In debt at the end of a round? You lose 1 point for every coin you owe (at most {cap})."
+        "WORRIER": "In debt after a round: -{m} points per coin owed, at most {cap}.",
+        "CALM": "In debt after a round: -1 point per coin owed, at most {cap}."
       },
-      "note": "Only you see these. Both flip at the end.",
       "unknown": "Nobody knows how many players are high risk or Worriers. Not even the host."
     },
     "opening": {
@@ -1471,8 +1471,6 @@
       "amount": "{n}",
       "none": "No gift",
       "gave": "{from} gave {to} {n}.",
-      "match": "SafeHands adds {m} to every gift.",
-      "matched": "SafeHands added {m}.",
       "gaveYou": "{from} gave you {n}.",
       "youGave": "You gave {to} {n}."
     },

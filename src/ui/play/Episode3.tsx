@@ -147,7 +147,6 @@ export function MyCardsBeat({ v, next }: { v: ViewState; next: () => void }) {
           </div>
         </div>
         <p className="mt-4 text-base">{t('play.myCards.unknown')}</p>
-        <p className="mt-2 text-sm text-soft">{t('play.myCards.note')}</p>
       </div>
     </Stage>
   );
@@ -302,10 +301,7 @@ function GiftSheet({ v, gift, onPick, onClose }: { v: ViewState; gift: Gift | nu
   const pv = lv3(v).preview;
   return (
     <Sheet title={t('play.gift.sheet')} closeLabel={t('play.gift.close')} onClose={onClose}>
-      <p className="text-sm">
-        {t('play.gift.how')}
-        {PLAY.GIFT_MATCH > 0 && ` ${t('play.gift.match', { m: pct(PLAY.GIFT_MATCH) })}`}
-      </p>
+      <p className="text-sm">{t('play.gift.how')}</p>
       <ul className="space-y-2" data-gift-sheet>
         {v.players
           .filter((p) => p.id !== v.viewer)
@@ -535,7 +531,6 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
         ...gifts.map(([from, g]) =>
           from === me ? t('play.gift.youGave', { to: shortName(v, g.to), n: g.amount }) : t(g.to === me ? 'play.gift.gaveYou' : 'play.gift.gave', { from: shortName(v, from), to: shortName(v, g.to), n: g.amount }),
         ),
-        ...(PLAY.GIFT_MATCH > 0 ? [t('play.gift.matched', { m: pct(PLAY.GIFT_MATCH) })] : []),
       ].join(' ')
     : '';
   const stress = h.stress[me] ?? 0;

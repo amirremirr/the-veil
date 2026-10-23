@@ -86,7 +86,7 @@ Players learn four verbs in Episode 1 and use them all life. This is what makes 
 ### 3.6 Difficulty changes what you see (D-145)
 - **Easy:** the audience poll is always shown (every move screen from round 1, and beside every claim); bot honesty ranges move up 0.15 (capped at 1). Setup line: "See what the audience thinks. Bots are mostly honest."
 - **Normal:** as above. Setup line: "The standard game."
-- **Hard:** no audience poll on any screen; bot honesty ranges move down 0.15 (floor 0); `BAR_GAIN_SCALE` x 1.5; bots' lambda x 1.5. Setup line: "No audience poll. Bots lie more and bar harder."
+- **Hard:** no audience poll on any screen; bot honesty ranges move down 0.15 (floor 0); `BAR_GAIN_SCALE` x 1.5; bots' lambda x 1.5. Setup line: "No audience poll. Bots lie more." (D-149)
 
 ## 4. Episode specifications
 
@@ -127,7 +127,7 @@ Each episode keeps its Study level's rules and v1's Play overrides except where 
 ### Episode 3: "Bad Luck Season" (rebuilt as The Pool)
 **Mechanism:** the price rises because mostly risky people buy; a mandate stops the spiral.
 **Rounds:** 4. Round 1 is the launch round; rounds 2 and 3 are voluntary; the regime vote after round 3; round 4 under the chosen regime. Episode starting bank 10, loss 140 (DECISIONS.md D-97, D-123).
-**Seats:** 2, 3 or 4 (setup starts on 4); bots fill the empty seats (D-141).
+**Seats:** 2, 3 or 4 (setup starts on 4, marked "Best with 4"); bots fill the empty seats (D-141, D-149).
 
 **Risk types:** each seat's card is drawn on its own, 50/50, on the game stream. Nobody is told the mix; the private-cards screen says "Nobody knows how many players are high risk or Worriers. Not even the host." One hidden rule, stated in About and never in play: at 3 or 4 seats the risk cards are redrawn until at least one HIGH and one LOW are dealt (D-141). Bots start at 0.5 for each other player, independently (D-141).
 
@@ -140,7 +140,7 @@ SafeHands Mutual runs a pool. The price formula is Study's: `price = LOADING x L
 **Rounds 2 to 4, each round** (two screens: the claim, then the move; D-110):
 1. CLAIM: "I'm low risk" / "I'm high risk" / silent.
 2. READ: **The Bar.** Last round's members each vote to bar one applicant, or no one. An applicant is barred with votes from at least half of the members who aren't that applicant (2 of 3 with four members, 1 of 2 with three, 1 of 1 with two); every applicant who reaches that is barred. Bots vote by their expected saving on next round's price (SafeHands prices from the pool's mean risk), times the chance they stay in, times `PLAY.BAR_GAIN_SCALE`, with the logit rule (D-133, D-134). The audience poll shows the table's belief about each contestant's risk. Cast on the move screen, together with ACT.
-3. ACT: buy cover or not; gym or not (gym is public); give 0, 5 or 10 coins to one other player (public; lands after the wheel; SafeHands may match it, D-142). Every choice tile shows how it changes your mission, in mission points against doing nothing, under the bots' model, hidden under one point (D-143).
+3. ACT: buy cover or not; gym or not (gym is public); give 0, 5 or 10 coins to one other player (public; lands after the wheel; no match, D-142, D-149). Every choice tile shows how it changes your mission, in mission points against doing nothing, under the bots' model, hidden under one point (D-143).
 4. REVEAL: the Wheel of Misfortune for each contestant (v1), then the price board: "38 to 62. Last round's pool was mostly risky people."
 
 Bots value debt over the episode's remaining rounds, not only the current one (D-122).
