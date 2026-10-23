@@ -530,7 +530,13 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
   const change = r.W[me] + (r.giftNet?.[me] ?? 0) - PLAY.LIVING_COST;
   const gifts = Object.entries(r.gifts ?? {});
   const giftLine = gifts.length
-    ? `${gifts.map(([from, g]) => t('play.gift.gave', { from: shortName(v, from), to: shortName(v, g.to), n: g.amount })).join(' · ')}${PLAY.GIFT_MATCH > 0 ? ` ${t('play.gift.matched', { m: pct(PLAY.GIFT_MATCH) })}` : ''}`
+    ? [
+        // Sentences to you stay in the second person (D-146).
+        ...gifts.map(([from, g]) =>
+          from === me ? t('play.gift.youGave', { to: shortName(v, g.to), n: g.amount }) : t(g.to === me ? 'play.gift.gaveYou' : 'play.gift.gave', { from: shortName(v, from), to: shortName(v, g.to), n: g.amount }),
+        ),
+        ...(PLAY.GIFT_MATCH > 0 ? [t('play.gift.matched', { m: pct(PLAY.GIFT_MATCH) })] : []),
+      ].join(' ')
     : '';
   const stress = h.stress[me] ?? 0;
   const from = h.banks[me] - change;

@@ -1221,7 +1221,7 @@
       "scoreNote": "Score = half the bank + half the mission (x {k} for this mission) - debt points + guess points.",
       "again": "Play again",
       "menu": "Main menu",
-      "seed": "Show code: {seed}",
+      "seed": "Challenge code: {seed}",
       "missionsLabel": "The missions flip",
       "lieLabel": "Biggest lie",
       "lie": "{name} said \"{claim}\" {n} times and was {truth}.",
@@ -1470,9 +1470,11 @@
       "close": "Close",
       "amount": "{n}",
       "none": "No gift",
-      "gave": "{from} gave {to} {n}",
+      "gave": "{from} gave {to} {n}.",
       "match": "SafeHands adds {m} to every gift.",
-      "matched": "SafeHands added {m}."
+      "matched": "SafeHands added {m}.",
+      "gaveYou": "{from} gave you {n}.",
+      "youGave": "You gave {to} {n}."
     },
     "about": {
       "deal": "Quick and fun, Episode 3: every risk card and worry card is dealt 50/50, and nobody is told the mix. One hidden rule: at a table of 3 or 4, the risk cards are dealt again until at least one player is high risk and one is low risk. With everyone the same, there is nobody to screen out, so the episode has nothing to show. A table of 2 is never dealt again."
