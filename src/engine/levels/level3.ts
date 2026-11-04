@@ -2,7 +2,7 @@
 import { BOT, L3 } from '../params';
 import { botParams, botRng, finishRound, gameRng, headline, ids, idx, playerOf, pluralityResolve } from '../core';
 import { equalShares, mean, ownNet, roundScore } from '../scoring';
-import { missionValue } from '../play/rules';
+import { missionScale, missionValue } from '../play/rules';
 import { PLAY } from '../play/params';
 import { activeEvent, isPlay, playNet, playRoundValue, roundsLeft } from '../play/rules';
 import { audienceBelief, beliefAfterClaim, checkClaims, chooseClaim, initFactBeliefs, observe, postClaims, revealFacts, SILENT } from '../play/claims';
@@ -631,7 +631,7 @@ export function missionPreview(s: GameState, pid: PlayerId): L3Preview {
   const i = idx(s, pid);
   const pl = s.play!;
   const card = me.values;
-  const k = PLAY.MISSION_SCALE[card];
+  const k = missionScale(s, card);
   const eff = equalShares(s.players.length);
   const banks = (W: readonly number[]) => s.players.map((p, j) => pl.banks[p.id] + W[j] - PLAY.LIVING_COST);
   const mission = (W: readonly number[]) => k * missionValue(card, banks(W), i, eff);

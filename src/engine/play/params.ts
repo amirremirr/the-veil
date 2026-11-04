@@ -22,6 +22,13 @@ export const PLAY = {
    * mission wins closest to 25% of the time (was D-96's mean-matching values 1, 1.78, 1, 1.16).
    */
   MISSION_SCALE: { EGOIST: 0.84, RAWLSIAN: 1.44, UTILITARIAN: 1.02, MERITOCRAT: 1.14 } as Record<ValuesCard, number>,
+  /**
+   * D-151: k per mission for a single episode, calibrated on that episode alone (4 seats, Normal) so every
+   * mission wins close to 25% of the time. Episode 3 uses MISSION_SCALE.
+   */
+  MISSION_SCALE_EP: {} as Partial<Record<number, Record<ValuesCard, number>>>,
+  /** D-151: k per mission over a whole life (calibrated in T6; Episode 3's values until then). */
+  MISSION_SCALE_LIFE: { EGOIST: 0.84, RAWLSIAN: 1.44, UTILITARIAN: 1.02, MERITOCRAT: 1.14 } as Record<ValuesCard, number>,
   /** The mission bar's full mark: start bank + this share of the episode's income minus living cost (D-102). */
   MISSION_GOAL_SHARE: 0.8,
   /** Section 7.4: points for a correct end-of-episode card guess. */
@@ -107,6 +114,27 @@ export const PLAY = {
     /** v2 Section 5: every risk type is shown to the pool (no number changes). */
     LEAKED: {},
   },
+  /**
+   * Episode 4, The Hiring Round (v2 Section 4). Rounds 1 and 2 baseline, the policy vote, rounds 3 and 4 under
+   * the policy; the judge seat rotates (seat order, wrapping at 2 or 3 seats). Wages, costs, priors and test
+   * accuracy are Study's Level 4 values. The judge earns JUDGE_BASE + JUDGE_GAIN per skilled complex hire -
+   * JUDGE_LOSS per unskilled one; JUDGE_LOSS / (JUDGE_GAIN + JUDGE_LOSS) must equal Study's L4.THRESHOLD.
+   * JUDGE_CLAIM_WEIGHT: how far a bot judge's read moves toward "trained" on the claim "I trained", times the
+   * worker's record (D-151). METER: whether a human judge sees the HireBot meter, per difficulty (open item 2).
+   */
+  L4: { ROUNDS: 4, BASELINE_ROUNDS: 2, JUDGE_BASE: 40, JUDGE_GAIN: 20, JUDGE_LOSS: 30, JUDGE_CLAIM_WEIGHT: 0.25, METER: { EASY: true, NORMAL: true, HARD: false } as Record<string, boolean> },
+  /** D-151: Meritocrat effort for one round of training (Episode 2 effort is in hours, 0 to 10). */
+  L4_TRAIN_EFFORT: 5,
+  /** v1 Section 6.2, Episode 4 deck. Hiring Spree keeps the judge-pay identity by lowering JUDGE_LOSS (D-151). */
+  L4_EVENTS: {
+    SPREE: { JUDGE_LOSS: 20 },
+    RECESSION: { WAGE_GREEDY: 140 },
+    GRANT: { COST_CUT: 15 },
+    UPDATE: { UPDATE_WEIGHT: 0.3 },
+    PARTY: { FLEX_BONUS: 20 },
+  },
+  /** Event decks for the episodes after Episode 3 (Episode 3 keeps L3_DECK). */
+  DECKS: { 4: ['SPREE', 'RECESSION', 'GRANT', 'UPDATE', 'PARTY'] } as Partial<Record<number, string[]>>,
   /** Section 7.1: the danger meter is green above this bank, amber from 0 to it, red in debt. */
   DANGER_AMBER_BELOW: 60,
   /** Section 7.2: every reveal sequence takes at most this long. */

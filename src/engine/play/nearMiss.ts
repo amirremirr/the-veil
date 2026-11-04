@@ -10,12 +10,20 @@ import type { L3State } from '../levels/level3';
 import type { GameState, PlayerId } from '../types';
 import { SILENT } from './claims';
 import type { NearMiss } from './types';
+import { p4Plans, p4Tries } from './ep4';
 
 type Plan = Record<string, unknown>;
+
+/** Episodes after Episode 3 give their own plans and alternatives (key `${round}:${step}`). */
+const EPISODE_HOOKS: Partial<Record<number, { plans: (s: GameState, h: PlayerId) => Plan; tries: (s: GameState, k: string, value: unknown) => Array<{ value: unknown; from: unknown; to: unknown; kind: string }> }>> = {
+  4: { plans: p4Plans, tries: p4Tries },
+};
 const key = (round: number, stepId: string) => `${round}:${stepId}`;
 
 /** Each human's decisions in this episode, by round and step, read from the episode's records. */
 function plans(s: GameState): Record<PlayerId, Plan> {
+  const hooks = EPISODE_HOOKS[s.levelIndex];
+  if (hooks) return Object.fromEntries(humanIds(s).map((h) => [h, hooks.plans(s, h)]));
   const l = s.levelState as L3State;
   const out: Record<PlayerId, Plan> = {};
   for (const h of humanIds(s)) {
@@ -63,10 +71,15 @@ export function nearMisses(s: GameState): Record<PlayerId, NearMiss | null> {
   const base = run(s, all, null);
   const l = s.levelState as L3State;
   const out: Record<PlayerId, NearMiss | null> = {};
+  const hooks = EPISODE_HOOKS[s.levelIndex];
   for (const h of humanIds(s)) {
     const p = all[h];
     const tries: Array<{ k: string; value: unknown; nm: Omit<NearMiss, 'gain'> }> = [];
     for (const [k, value] of Object.entries(p)) {
+      if (hooks) {
+        for (const x of hooks.tries(s, k, value)) tries.push({ k, value: x.value, nm: { kind: x.kind as NearMiss['kind'], round: Number(k.split(':')[0]), from: x.from, to: x.to } });
+        continue;
+      }
       const [rs, stepId] = k.split(':');
       const round = Number(rs);
       if (stepId === 'CLAIM')

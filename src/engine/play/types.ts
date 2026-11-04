@@ -35,6 +35,8 @@ export interface PlayState {
   debtStress: Record<PlayerId, number>;
   /** Points from card guesses so far. */
   guessPoints: Record<PlayerId, number>;
+  /** Meritocrat effort so far (Section 4.3: Episode 2 effort plus Episode 4 training, in effort units). Public. */
+  effort?: Record<PlayerId, number>;
   /** The current round's event (cleared at the start of each episode). */
   event: PlayEvent | null;
   /** Every event drawn, in order. */
@@ -84,7 +86,7 @@ export interface ClaimRecord {
 
 /** v2 Section 6.1: the one change to your own decisions that would have left you richest. */
 export interface NearMiss {
-  kind: 'CLAIM' | 'CHOICE' | 'BAR' | 'REGIME';
+  kind: 'CLAIM' | 'CHOICE' | 'BAR' | 'REGIME' | 'TRAIN' | 'HIRE' | 'POLICY' | 'VOTE' | 'PEEK' | 'EFFORT' | 'TAX' | 'PRIZE' | 'AMEND' | 'DONATE';
   round: number;
   /** The decision you made and the one that would have paid more (CHOICE: {buy, gym}; BAR: target or null). */
   from: unknown;

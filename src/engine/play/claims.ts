@@ -150,7 +150,7 @@ export function audienceBelief(s: GameState, target: PlayerId): number | null {
  */
 export function postClaims(
   s: GameState,
-  topic: 'RISK',
+  topic: 'RISK' | 'TRAINING' | 'VOTE' | 'EFFORT' | 'AMEND',
   said: Record<PlayerId, string>,
   truth: (pid: PlayerId) => string,
   isTrueFact: (value: string) => boolean,

@@ -1,6 +1,6 @@
 // Play-mode rules (PLAY_MODE_SPEC.md Sections 4 and 6): the bank, debt stress, missions and scoring,
 // event cards and the end-of-episode card guess. Study games never reach this code (s.play is absent).
-import { valuesMetric, equalShares } from '../scoring';
+import { valuesMetric, equalShares, effortSharesFrom } from '../scoring';
 import { argmaxCard } from '../bots/beliefs';
 import type { Rng } from '../rng';
 import type { GameState, LevelId, PlayerId, ValuesCard } from '../types';
@@ -10,15 +10,24 @@ import type { PlayEvent, PlayState } from './types';
 export const isPlay = (s: Pick<GameState, 'play'>): boolean => !!s.play;
 
 /** Event decks built so far (Episode 3; v2 Section 5 trims them). The other episodes' decks arrive with their episodes. */
-export const eventDeck = (level: LevelId): readonly string[] => (level === 3 ? PLAY.L3_DECK : []);
+export const eventDeck = (level: LevelId): readonly string[] => (level === 3 ? PLAY.L3_DECK : (PLAY.DECKS[level] ?? []));
 
-/** Episodes playable in this build (P1: Episode 3 only). */
-export const PLAYABLE_EPISODES: LevelId[] = [3];
+/** Episodes playable in this build. */
+export const PLAYABLE_EPISODES: LevelId[] = [3, 4];
+
+/**
+ * k for a mission in this game (D-151): a life uses MISSION_SCALE_LIFE, a single episode its own calibration in
+ * MISSION_SCALE_EP when it has one, else MISSION_SCALE (Episode 3's).
+ */
+export function missionScale(s: Pick<GameState, 'mode' | 'levelIndex'>, card: ValuesCard): number {
+  if (s.mode === 'LIFE') return PLAY.MISSION_SCALE_LIFE[card];
+  return PLAY.MISSION_SCALE_EP[s.levelIndex]?.[card] ?? PLAY.MISSION_SCALE[card];
+}
 
 export function initPlay(s: GameState): PlayState {
   const start = s.mode === 'EPISODE' ? PLAY.EPISODE_STARTING_BANK : PLAY.STARTING_BANK;
   const per = <X>(x: X) => Object.fromEntries(s.players.map((p) => [p.id, x])) as Record<PlayerId, X>;
-  return { banks: per(start), debtStress: per(0), guessPoints: per(0), event: null, events: [], bankHistory: [], episodeStart: {}, guesses: {}, honesty: {}, belief: {}, belief2: {}, joint: {}, claimLog: [], barReads: [] };
+  return { banks: per(start), debtStress: per(0), guessPoints: per(0), effort: per(0), event: null, events: [], bankHistory: [], episodeStart: {}, guesses: {}, honesty: {}, belief: {}, belief2: {}, joint: {}, claimLog: [], barReads: [] };
 }
 
 /** Section 4.2: points lost at the end of a round with this bank. */
@@ -28,10 +37,12 @@ export function debtStressFor(bank: number): number {
 
 /**
  * Effort shares for the Meritocrat mission (Section 4.3: Episode 2 effort plus Episode 4 training, as in
- * Study). Neither episode exists yet in P1, so every share is equal (as in Study Level 3).
+ * Study). Effort so far in the life (or episode); equal shares before any effort is recorded.
  */
 export function playEffortShares(s: GameState): number[] {
-  return equalShares(s.players.length);
+  const e = s.play?.effort;
+  const xs = s.players.map((p) => e?.[p.id] ?? 0);
+  return xs.some((x) => x > 0) ? effortSharesFrom(xs) : equalShares(s.players.length);
 }
 
 /** The mission's value on a set of banks (seat order). Same metrics as the Study Values cards. */
@@ -40,8 +51,8 @@ export function missionValue(card: ValuesCard, banks: readonly number[], i: numb
 }
 
 /** Section 4.3 without the guess points: bank half, mission half, minus debt stress. */
-export function scoreOnBanks(card: ValuesCard, banks: readonly number[], i: number, effortShares: readonly number[], stress: number): number {
-  return PLAY.BANK_WEIGHT * banks[i] + PLAY.MISSION_WEIGHT * PLAY.MISSION_SCALE[card] * missionValue(card, banks, i, effortShares) - stress;
+export function scoreOnBanks(card: ValuesCard, banks: readonly number[], i: number, effortShares: readonly number[], stress: number, scale = PLAY.MISSION_SCALE[card]): number {
+  return PLAY.BANK_WEIGHT * banks[i] + PLAY.MISSION_WEIGHT * scale * missionValue(card, banks, i, effortShares) - stress;
 }
 
 const bankList = (s: GameState): number[] => s.players.map((p) => s.play!.banks[p.id]);
@@ -50,7 +61,8 @@ const bankList = (s: GameState): number[] => s.players.map((p) => s.play!.banks[
 export function playScore(s: GameState, pid: PlayerId): number {
   const pl = s.play!;
   const i = s.players.findIndex((p) => p.id === pid);
-  return scoreOnBanks(s.players[i].values, bankList(s), i, playEffortShares(s), pl.debtStress[pid]) + pl.guessPoints[pid];
+  const card = s.players[i].values;
+  return scoreOnBanks(card, bankList(s), i, playEffortShares(s), pl.debtStress[pid], missionScale(s, card)) + pl.guessPoints[pid];
 }
 
 /**
@@ -70,7 +82,7 @@ export function playRoundValue(
   const pl = s.play!;
   const banks = s.players.map((p, j) => pl.banks[p.id] + W[j] - PLAY.LIVING_COST);
   const id = s.players[i].id;
-  return scoreOnBanks(card, banks, i, effortShares, pl.debtStress[id] + mult * debtStressFor(banks[i])) - mult * futureStress(s, banks[i], drift);
+  return scoreOnBanks(card, banks, i, effortShares, pl.debtStress[id] + mult * debtStressFor(banks[i]), missionScale(s, card)) - mult * futureStress(s, banks[i], drift);
 }
 
 /**

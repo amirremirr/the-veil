@@ -5,7 +5,7 @@
 import type { GameState, PlayerId } from '../types';
 import { audienceBelief } from './claims';
 import { PLAY } from './params';
-import { missionValue, playEffortShares, playRanks, playScore } from './rules';
+import { missionScale, missionValue, playEffortShares, playRanks, playScore } from './rules';
 import type { PlayView } from './types';
 import { playL3Params } from '../levels/level3';
 
@@ -34,7 +34,7 @@ export function playView(s: GameState, viewer: PlayerId, revealAll: boolean): Pl
   if (me) {
     const banks = s.players.map((p) => pl.banks[p.id]);
     const value = missionValue(me.values, banks, i, playEffortShares(s));
-    const scale = PLAY.MISSION_SCALE[me.values];
+    const scale = missionScale(s, me.values);
     mission = {
       card: me.values,
       value,

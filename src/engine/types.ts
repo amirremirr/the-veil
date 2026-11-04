@@ -84,7 +84,7 @@ export type StructuredMessage =
    * Play v2 Section 3.1: a preset public claim about a hidden fact ('RISK' in Episode 3: 'LOW' or 'HIGH').
    * Made only through a CLAIM decision step, so it is a logged action; checked when the fact is revealed.
    */
-  | { type: 'CLAIM'; topic: 'RISK'; value: string };
+  | { type: 'CLAIM'; topic: 'RISK' | 'TRAINING' | 'VOTE' | 'EFFORT' | 'AMEND'; value: string };
 
 export interface Message {
   id: number;
