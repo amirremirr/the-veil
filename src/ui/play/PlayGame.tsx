@@ -16,6 +16,7 @@ import { screenDecisionPhase } from '../../shared/flow';
 import { BigButton, Bubble, Face, Stage } from './OnAir';
 import { BarBeat, CardsReveal, ClaimScreen, ClaimsBeat, MoveScreen, MyCardsBeat, PriceBeat, RegimeScreen, VoteInBeat, WheelBeat, claimsOpen, hasPriceBeat, regimeName, roundClaims, type L3View } from './Episode3';
 import { eventText, hostLine, missionName, pick, timesWord } from './logic';
+import { CardsReveal1, ClaimScreen1, IncomesBeat, PeekScreen, Unborn, VoteScreen1, VotesBeat, summary1 } from './Episode1';
 import { BeliefBeat, CardsReveal4, ClaimScreen4, HiresBeat, JudgeScreen, MyCards4, PolicyIn, PolicyScreen, TrainScreen, summary4, type L4View } from './Episode4';
 import type { NearMiss } from '../../engine/play/types';
 
@@ -148,6 +149,43 @@ function DecisionFlow({ v }: { v: ViewState }) {
   if (stepId === 'REGIME') return <RegimeScreen v={dv} />;
   if (stepId === 'CLAIM') return <ClaimScreen v={dv} />;
   return <MoveScreen v={dv} />;
+}
+
+/** Episode 1's beats and decision screens (D-152). */
+function DecisionFlow1({ v }: { v: ViewState }) {
+  const online = useOnline();
+  const { done } = useWaiting(v);
+  const stepId = v.phase.step;
+  const ev = v.play!.event;
+  const firstScreen = stepId === 'PEEK' || (stepId === 'CLAIM' && v.round < PLAY.L1.PEEK_FROM_ROUND);
+  const beats: Array<'cards' | 'event' | 'claims'> = [];
+  if (firstScreen && v.round === 1) beats.push('cards');
+  if (firstScreen && ev && ev.id !== 'QUIET' && ev.round === v.round && ev.level === v.levelIndex) beats.push('event');
+  if (stepId === 'VOTE' && Object.keys(roundClaims(v)).length) beats.push('claims');
+  const [k, setK] = useState(0);
+  const next = () => setK((x) => x + 1);
+  if (k < beats.length) {
+    const b = beats[k];
+    if (b === 'cards') return <Unborn v={v} next={next} />;
+    if (b === 'event') return <EventBeat v={v} next={next} />;
+    return <ClaimsBeat v={v} next={next} />;
+  }
+  if (online && done)
+    return (
+      <Stage v={v}>
+        <LockedInPanel v={v} />
+      </Stage>
+    );
+  if (stepId === 'PEEK') return <PeekScreen v={v} />;
+  if (stepId === 'CLAIM') return <ClaimScreen1 v={v} />;
+  return <VoteScreen1 v={v} />;
+}
+
+function ResultsFlow1({ v }: { v: ViewState }) {
+  const act = useStore((s) => s.act);
+  const [k, setK] = useState(0);
+  if (k === 0) return <VotesBeat v={v} next={() => setK(1)} />;
+  return <IncomesBeat v={v} last={v.round >= PLAY.L1.ROUNDS} next={() => act()} />;
 }
 
 /** Episode 4's beats and decision screens (D-151). */
@@ -298,6 +336,8 @@ function nearMissText(v: ViewState, nm: NearMiss): string {
     change = parts.length === 2 ? t('play.nm.and', { a: parts[0], b: parts[1].charAt(0).toLowerCase() + parts[1].slice(1) }) : parts[0];
   } else if (nm.kind === 'BAR') change = nm.to ? t('play.nm.bar', { name: nameOf(v, nm.to as string) }) : t('play.nm.barNone');
   else if (nm.kind === 'CLAIM' && v.levelIndex === 3) change = nm.to === 'SILENT' ? t('play.nm.silent') : t('play.nm.claim', { claim: t(`play.claims.RISK.${nm.to as string}`) });
+  else if (nm.kind === 'PEEK') change = t(nm.to ? 'play.nm.peek' : 'play.nm.noPeek');
+  else if (nm.kind === 'VOTE') change = t('play.nm.vote', { name: t(`play.l1.rule.${nm.to as string}.name`) });
   else if (nm.kind === 'TRAIN') change = t(nm.to ? 'play.nm.train' : 'play.nm.noTrain');
   else if (nm.kind === 'HIRE') {
     const x = nm.to as { worker: string; job: string };
@@ -333,7 +373,7 @@ function EpisodeSummary({ v }: { v: ViewState }) {
     .filter((p) => poll[p.id] !== undefined)
     .map((p) => ({ id: p.id, b: poll[p.id], wrong: Math.abs(poll[p.id] - (types[p.id] === 'HIGH' ? 1 : 0)) }))
     .sort((a, b) => b.wrong - a.wrong)[0];
-  const lieText = v.levelIndex === 4 ? summary4(v).lie : lies && lies.n
+  const lieText = v.levelIndex === 4 ? summary4(v).lie : v.levelIndex === 1 ? summary1(v).lie : lies && lies.n
       ? t(lies.id === v.viewer ? 'play.summary.lieYou' : 'play.summary.lie', { name: nameOf(v, lies.id), claim: t(`play.claim.short.${lies.value}`).toLowerCase(), n: timesWord(lies.n), truth: t(`play.cards.${types[lies.id]}`).toLowerCase() })
       : t('play.summary.noLie');
   const readText =
@@ -404,6 +444,12 @@ export function PlayGameScreen() {
   if (k === 'INTRO') return <EpisodeIntro v={v} />;
   if (k === 'GUESS') return <EpisodeGuess v={v} />;
   if (k === 'LEVEL_DEBRIEF' || k === 'END') return <EpisodeSummary v={v} />;
+  if (v.levelIndex === 1) {
+    if (k === 'DECIDE') return <DecisionFlow1 key={`${v.levelIndex}-${v.phaseIdx}`} v={v} />;
+    if (k === 'REVEAL' && next?.kind === 'ROUND_SUMMARY') return <ResultsFlow1 key={`${v.levelIndex}-${v.phaseIdx}`} v={v} />;
+    if (k === 'REVEAL' && v.phase.step === 'CARDS') return <CardsReveal1 v={v} />;
+    return null;
+  }
   if (v.levelIndex === 4) {
     if (k === 'DECIDE') return <DecisionFlow4 key={`${v.levelIndex}-${v.phaseIdx}`} v={v} />;
     if (k === 'REVEAL' && next?.kind === 'ROUND_SUMMARY') return <ResultsFlow4 key={`${v.levelIndex}-${v.phaseIdx}`} v={v} />;

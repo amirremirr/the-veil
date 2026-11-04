@@ -88,6 +88,23 @@ function boot(recs: GameRec[], f: (r: GameRec) => [number, number]): { mean: num
   return { mean: m, se, n: xs.reduce((a, x) => a + x[1], 0) };
 }
 
+function bootDiff(recs: GameRec[], a: string, b: string): { mean: number; se: number; n: number } {
+  const ratio = (arr: GameRec[], k: string) => {
+    const d = arr.reduce((acc, x) => acc + (x.m[k]?.[1] ?? 0), 0);
+    return d > 0 ? arr.reduce((acc, x) => acc + (x.m[k]?.[0] ?? 0), 0) / d : NaN;
+  };
+  const m = ratio(recs, a) - ratio(recs, b);
+  const rng = standalone(777);
+  const bs: number[] = [];
+  for (let k = 0; k < BOOT; k++) {
+    const smp = recs.map(() => recs[Math.floor(rng.next() * recs.length)]);
+    bs.push(ratio(smp, a) - ratio(smp, b));
+  }
+  const ok = bs.filter(Number.isFinite);
+  const mu = ok.reduce((x, y) => x + y, 0) / ok.length;
+  return { mean: m, se: Math.sqrt(ok.reduce((x, y) => x + (y - mu) ** 2, 0) / Math.max(1, ok.length - 1)), n: recs.reduce((acc, x) => acc + (x.m[a]?.[1] ?? 0) + (x.m[b]?.[1] ?? 0), 0) };
+}
+
 function winShares(recs: GameRec[], scale: Record<ValuesCard, number>): Record<ValuesCard, number> {
   const wins: Record<string, number> = {};
   const seats: Record<string, number> = {};
@@ -115,7 +132,8 @@ out.push(`rules ${JSON.stringify(rules)}`);
 out.push('');
 let fail = false;
 for (const m of metrics) {
-  const r = boot(recs, (x) => x.m[m.key] ?? [0, 0]);
+  // E1: a difference of two pooled shares (top two incomes minus bottom two), bootstrapped over games.
+  const r = m.key === 'e1' ? bootDiff(recs, 'e1hi', 'e1lo') : boot(recs, (x) => x.m[m.key] ?? [0, 0]);
   const pass = Number.isFinite(r.mean) && (m.min === undefined || r.mean >= m.min) && (m.max === undefined || r.mean <= m.max);
   const target = m.min !== undefined && m.max !== undefined ? `${m.min} to ${m.max}` : m.min !== undefined ? `>= ${m.min}` : m.max !== undefined ? `<= ${m.max}` : 'reported';
   if (m.gate && !pass) fail = true;

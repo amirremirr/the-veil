@@ -13,7 +13,7 @@ export const isPlay = (s: Pick<GameState, 'play'>): boolean => !!s.play;
 export const eventDeck = (level: LevelId): readonly string[] => (level === 3 ? PLAY.L3_DECK : (PLAY.DECKS[level] ?? []));
 
 /** Episodes playable in this build. */
-export const PLAYABLE_EPISODES: LevelId[] = [3, 4];
+export const PLAYABLE_EPISODES: LevelId[] = [1, 3, 4];
 
 /**
  * k for a mission in this game (D-151): a life uses MISSION_SCALE_LIFE, a single episode its own calibration in

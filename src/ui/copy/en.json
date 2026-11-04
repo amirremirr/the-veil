@@ -910,7 +910,9 @@
     "episodes": {
       "1": {
         "name": "Born",
-        "pitch": "You vote on sharing before you know your income."
+        "pitch": "You vote on sharing before you know your income.",
+        "sponsor": "Brought to you by the Ministry of Starting Lines",
+        "intro": "You vote on how money is shared before you know your income. In round 2 you can peek first, for a price. Everyone sees who peeked."
       },
       "2": {
         "name": "First Hustle",
@@ -1020,30 +1022,35 @@
         }
       },
       "L1": {
+        "QUIET": {
+          "name": "Quiet week",
+          "text": "The economy is asleep. Let it rest.",
+          "effect": "Nothing changes this round."
+        },
         "BOOM": {
           "name": "Economic Boom",
-          "text": "Everyone feels rich. Some of them are.",
+          "text": "Everything is up. Nobody knows why. Everyone takes credit.",
           "effect": "Every income is 1.2 times higher this round."
         },
         "CRASH": {
           "name": "Market Crash",
-          "text": "The market fell down the stairs. It is fine, mostly.",
-          "effect": "Every income is 0.8 times this round."
+          "text": "Analysts say it's temporary. Analysts said that last time.",
+          "effect": "Every income is 0.8 times lower this round."
         },
-        "TAX_STRIKE": {
+        "STRIKE": {
           "name": "Tax Office on Strike",
-          "text": "The tax office went home early. The forms did not.",
-          "effect": "Twice as much tax leaks away this round."
+          "text": "The forms are filling themselves out, badly.",
+          "effect": "Taxes leak twice as much this round."
         },
         "INHERITANCE": {
           "name": "Surprise Inheritance",
-          "text": "A distant aunt left a will and a strongly worded letter.",
+          "text": "A distant relative you never met remembered you.",
           "effect": "One random contestant gets 60 coins after taxes."
         },
         "LOTTERY": {
           "name": "Lottery Fever",
-          "text": "Someone bought a ticket. The ticket bought a yacht.",
-          "effect": "The top income card is worth 400 this round."
+          "text": "The top card got a glow-up.",
+          "effect": "The top income card is 400 this round."
         }
       },
       "L2": {
@@ -1259,6 +1266,13 @@
         "That kept the belief low. Nobody was prejudiced: the numbers fed themselves. That's statistical discrimination.",
         "The policies change what the meter sees (blind hiring), who must be hired (a quota) or what long hours cost (childcare).",
         "The judge seat is the real-world hiring manager: paid for good hires, blamed for bad ones, reading talk that costs nothing."
+      ],
+      "L1": [
+        "In round 1 nobody knew their income, so everyone voted as if they could be anyone.",
+        "Peekers knew. The richer the card, the more they voted for less sharing.",
+        "That's the veil of ignorance: a rule you pick before you know your place is closer to fair.",
+        "Taxes leak a little here, so sharing costs some of the pie. The vote is a trade between pie and protection.",
+        "The Peek is information: real voters always know their place. That's why the veil is a thought experiment."
       ]
     },
     "intro": {
@@ -1375,7 +1389,10 @@
       "short": {
         "LOW": "Low risk",
         "HIGH": "High risk",
-        "SILENT": "Said nothing"
+        "SILENT": "Said nothing",
+        "P1": "Free Market",
+        "P2": "Safety Net",
+        "P3": "Middle Way"
       },
       "record": "{kept} of {made} true",
       "inLabel": "Round {r} claims",
@@ -1443,7 +1460,10 @@
       "hireComplex": "Hiring {name} for the complex job",
       "hireSimple": "Hiring {name} for the simple job",
       "policy": "Voting {name}",
-      "claimT": "Saying \"I trained\""
+      "claimT": "Saying \"I trained\"",
+      "peek": "Peeking",
+      "noPeek": "Not peeking",
+      "vote": "Voting {name}"
     },
     "myCards": {
       "label": "Your secret cards",
@@ -1595,6 +1615,75 @@
       "sum": {
         "lie": "{name} said \"I trained\" {n} and hadn't.",
         "lieYou": "You said \"I trained\" {n} and hadn't."
+      }
+    },
+    "l1": {
+      "rule": {
+        "P1": {
+          "name": "Free Market",
+          "desc": "No tax."
+        },
+        "P2": {
+          "name": "Safety Net",
+          "desc": "Everyone gets 40."
+        },
+        "P3": {
+          "name": "Middle Way",
+          "desc": "Gap at most 100."
+        },
+        "P4": {
+          "name": "Help the Poorest",
+          "desc": "Poorest gets most."
+        }
+      },
+      "unborn": {
+        "label": "Your card",
+        "title": "You haven't been born yet.",
+        "deck": "Incomes this episode: {a}, {b}, {c} or {d}. You find out after the vote.",
+        "rules": "The rule with the most votes sets the tax. Tax is shared equally, and some leaks."
+      },
+      "peek": {
+        "title": "Peek?",
+        "how": "Pay {c} coins to see your income before you vote.",
+        "public": "Everyone will see that you peeked. Not what you saw.",
+        "yes": "Peek",
+        "yesDesc": "Costs {c} coins.",
+        "no": "Stay blind",
+        "noDesc": "Vote like round 1.",
+        "submit": "Decide"
+      },
+      "youKnow": "You peeked: income {y}.",
+      "youDont": "Income: unknown.",
+      "peekers": "Peeked: {names}.",
+      "claimOpt": "I'm voting {rule}",
+      "vote": {
+        "title": "Vote",
+        "submit": "Vote"
+      },
+      "votes": {
+        "label": "Round {r} votes",
+        "tax": "Tax: {t}",
+        "broke": "Said {rule}"
+      },
+      "peekedTag": "Peeked",
+      "inc": {
+        "label": "Incomes, poorest first",
+        "you": "You got {y}. After the rule: {w}.",
+        "row": "{y}, after the rule {w}",
+        "inherit": "{name} inherited 60 coins."
+      },
+      "toReveal": "To the reveal",
+      "peak": {
+        "title": "What did they vote?",
+        "stamp": "R{r} {rule}, {stamp}",
+        "peek": "{name} peeked. Got {y}. Voted {rule}.",
+        "peekYou": "You peeked. You got {y}. You voted {rule}.",
+        "noPeek": "Nobody peeked. Everyone voted blind.",
+        "lie": "{name} broke a promise {n}. Politics, darling."
+      },
+      "sum": {
+        "lie": "{name} said {said} and voted {did}.",
+        "lieYou": "You said {said} and voted {did}."
       }
     }
   }

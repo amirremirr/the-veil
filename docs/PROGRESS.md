@@ -7,7 +7,7 @@ Run mode: all tasks T0 to T9 in one session (owner's instruction for this run), 
 | T0 smoke | DONE | (this commit) | SMOKE OK: golden test 19/19 passed, no prompts |
 | T1 AI playtest Ep3 | DONE | see log | AI playtest (proxy, not human evidence); 4 copy fixes (D-150) |
 | T2 Episode 4 | DONE | see log | E4 passes; claims give training away (B.1), lie metrics off (D-151) |
-| T3 Episode 1 | | | |
+| T3 Episode 1 | DONE | see log | E1 passes; bots never lie about votes (D-152) |
 | T4 Episode 2 | | | |
 | T5 Episode 5 | | | |
 | T6 LIFE, Receipts, result card | | | |
@@ -23,6 +23,9 @@ Run mode: all tasks T0 to T9 in one session (owner's instruction for this run), 
 - D-151: E4b is measured without Hiring Spree in round 1 (15% with it). Alternative: keep Spree out of round 1.
 - D-151: F-f (someone in debt) 28% at 4 seats, 12% at 2 seats in Episode 4; not tuned.
 
+- D-152: Episode 1 bots keep claimed votes (0.03% broken), so lie success and S-b are degenerate. A claim would need a payoff (for example, others' votes reacting to it) for bots to lie. F-f 17% at 4 seats.
+- D-152: the life's first fair-tax answer is deferred to LIFE mode (T6).
+
 ## Stashes and wip branches
 
 None.
@@ -33,3 +36,4 @@ None.
 - T1: AI playtest (proxy, not human evidence) of Episode 3 as Skimmer, Careful, Bluffer: `docs/playtest/ai-ep3.md`, screenshots in `docs/playtest/shots/`. Fixed 4 copy problems (D-150). Gate: typecheck, build, 183 unit tests, e2e 14 passed (no room-server specs), walkthrough Ep3 4 seats Normal: 28 screens, 9 decisions, 1,465 words, every screen 760 px, no hscroll. Sim 500 games (seed t1, engine unchanged): E3a 2.76 ± 0.21, E3b +24.3% ± 1.9, E3c 64.5% ± 1.7, E3d +33.8% ± 3.4, lie success 69.6% ± 2.0, F-f 35.4% ± 2.2, all gating pass; bar recall 31.1% and S-b 82.9% still fail as reported in D-149.
 - Environment note: node_modules was missing; installed with `npm ci`. Playwright 1.50 needs `PW_EXECUTABLE=/opt/pw-browsers/chromium` here.
 - T2: Episode 4 built (engine `src/engine/play/ep4.ts`, UI `src/ui/play/Episode4.tsx`, sim `sim/episodes.ts` + `sim/metrics.ts`, tests `tests/engine/play-ep4.test.ts`). Gate: typecheck, build, unit tests (188), e2e 14 passed (no room-server specs), walkthrough Ep4 4 seats Normal 25 screens / 9 decisions / every screen 760 px, 2 seats Hard 26 screens. Sim table in D-151 (2,000 games): E4a 89.7% ± 0.6, E4b 0.0%.
+- T3: Episode 1 built (engine `src/engine/play/ep1.ts`, UI `src/ui/play/Episode1.tsx`, tests `tests/engine/play-ep1.test.ts`). Gate: typecheck, build, 191 unit tests, e2e 14 passed, walkthrough Ep1 4 seats Normal 19 screens / 6 decisions / 760 px, 2 seats Hard 18 screens. E1 +22.5 points ± 1.6 (D-152).

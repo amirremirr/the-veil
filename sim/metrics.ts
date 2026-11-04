@@ -131,7 +131,66 @@ function ep4(): EpisodeMetrics {
   };
 }
 
+function ep1(): EpisodeMetrics {
+  const DECK = [10, 40, 110, 300];
+  return {
+    metrics: [
+      { key: 'e1', label: 'E1 bot peekers: share voting Free Market (least redistribution), top two incomes minus bottom two (must be > 0)', min: 0.0001, gate: true },
+      ...DECK.map((y) => ({ key: `p1_${y}`, label: `Bot peekers with income ${y}: share voting Free Market`, pct: true })),
+      { key: 'nonP1', label: 'Non-peekers in round 2: share voting Free Market', pct: true },
+      { key: 'peek', label: 'Bots who peek in round 2', pct: true },
+      { key: 'broken', label: 'Broken promises (claimed one rule, voted another) per claim', pct: true },
+      { key: 'lie', label: 'Lie success (D-152: a broken promise whose real vote won)', min: 0.5, max: 0.75, pct: true },
+      { key: 'sb', label: 'S-b reader (trusts every claim) judges a claim TRUE or LIE right', min: 0.55, max: 0.8, pct: true },
+      { key: 'r1P1', label: 'Round 1 (pure veil): share voting Free Market', pct: true },
+      ...COMMON,
+    ],
+    finish(s) {
+      const rounds = (s.levelState as { rounds: Array<{ incomes: Record<string, number>; peeked: string[]; votes: Record<string, string>; claims: Record<string, string>; winner: string }> }).rounds;
+      const out: Record<string, [number, number]> = {};
+      const r2 = rounds[1];
+      const by: Record<number, [number, number]> = Object.fromEntries(DECK.map((y) => [y, [0, 0]]));
+      let nonP1: [number, number] = [0, 0];
+      for (const p of s.players) {
+        const y = r2.incomes[p.id];
+        const p1 = r2.votes[p.id] === 'P1' ? 1 : 0;
+        if (r2.peeked.includes(p.id)) {
+          const k = DECK.indexOf(y) >= 0 ? y : DECK.reduce((a, b) => (Math.abs(b - y) < Math.abs(a - y) ? b : a));
+          by[k][0] += p1;
+          by[k][1]++;
+        } else nonP1 = [nonP1[0] + p1, nonP1[1] + 1];
+      }
+      DECK.forEach((y) => (out[`p1_${y}`] = by[y]));
+      // E1 as a per-game contribution: difference of pooled shares is computed from these sums in the report.
+      out.e1hi = [by[110][0] + by[300][0], by[110][1] + by[300][1]];
+      out.e1lo = [by[10][0] + by[40][0], by[10][1] + by[40][1]];
+      out.nonP1 = nonP1;
+      out.peek = [r2.peeked.length, s.players.length];
+      let claims = 0;
+      let broken = 0;
+      let won = 0;
+      for (const r of rounds)
+        for (const p of s.players) {
+          const c = r.claims[p.id];
+          if (!c || c === 'SILENT') continue;
+          claims++;
+          if (c !== r.votes[p.id]) {
+            broken++;
+            if (r.votes[p.id] === r.winner) won++;
+          }
+        }
+      out.broken = [broken, claims];
+      out.lie = [won, broken];
+      out.sb = [claims - broken, claims];
+      const r1 = rounds[0];
+      out.r1P1 = [s.players.filter((p) => r1.votes[p.id] === 'P1').length, s.players.length];
+      return { ...out, ...common(s, 1, won > 0) };
+    },
+  };
+}
+
 export function episodeMetrics(ep: number): EpisodeMetrics {
+  if (ep === 1) return ep1();
   if (ep === 4) return ep4();
   return { metrics: [...COMMON], finish: (s) => common(s, s.levelIndex, false) };
 }

@@ -550,3 +550,28 @@ The author's third review: lie success was 98% and bar recall 23%, so lying domi
   | F-f someone in debt (30% to 70%) | 28.0% ± 1.0 | fail, reported |
 
   3 seats (500 games): E4a 88.8%, E4b 0.0%, F-f 22.4%. 2 seats: E4a 80.8%, E4b 0.0%, F-f 12.2%. The claim gives training away (B.1 with claims 98.9%): bots who trained always say so (a true claim raises the record) and untrained bots lie only when the lie flips the hire, which is rare and then near certain (S-a 90%). A second motive (as Episode 3's worry card) would be needed; not invented here. Walkthroughs at 375 x 760: 4 seats Normal, 25 screens, 9 decisions, 1,310 words, judge screen 64 words, every screen 760 px; 2 seats Hard, 26 screens, 8 decisions, 1,169 words.
+- **D-152 [AUTORUN, review] T3: Episode 1, Born (the Peek).** Play-only level definition (`src/engine/play/ep1.ts`) behind the same ruleset switch on Level 1 (the switch now forwards every method either definition has; Study Level 1 has no `onEnter`). Choices:
+  1. **Claim mapping:** "I'm voting Free Market" = No Tax (P1), "Safety Net" = Safety Net (P2), "Middle Way" = Limit the Gap (P3). Help the Poorest (P4) can be voted but not claimed (the spec lists three claims). The UI names: Free Market, Safety Net, Middle Way, Help the Poorest.
+  2. **Incomes are dealt at the start of each round** from v1's deck (10, 40, 110, 300), so a peek shows the card that counts. Study's tax solver, leakage (kappa 0.4), floor 40 and gap cap 100 are unchanged. The peek cost comes out of that round's money.
+  3. **Bot votes:** expected Play value if each rule wins (every deal they can't rule out), times the chance each rule wins with their vote (Study's plurality model of others, moved toward each claim by CLAIM_WEIGHT x record). A bot that claimed a vote keeps it unless breaking it pays by the v2 3.5 rule (gain x (1 - honesty) against CREDIBILITY_VALUE x the record lost). **Peek:** logit between the blind best vote and the informed one minus PEEK_COST's value.
+  4. **Lie success here** = a broken promise (claimed one rule, voted another) whose real vote won the round: the liar got what they wanted. Claim stamps are checked at the end reveal.
+  5. **Card reading:** a peeker's vote is not used to update beliefs about its mission (it votes from its income); a blind vote uses Study's likelihood.
+  6. The life's first fair-tax answer (v1 Episode 1 intro) is not asked yet: it belongs to LIFE mode (T6).
+  7. `MISSION_SCALE_EP[1]` = Egoist 0.65, Rawlsian 2.58, Utilitarian 1.1, Meritocrat 1.11 (500-game calibration).
+
+  Results, 2,000 bot games, 4 seats, Normal (rules 1c8f766e84d199e7, Play params 06ca7ad5fe687d86; seeds play-0 to play-1999). E1 structure (no non-peeker sees an income before voting) is a unit test (`tests/engine/play-ep1.test.ts`), passing.
+
+  | Target | Result | Status |
+  |---|---|---|
+  | E1 peekers voting Free Market, top two incomes minus bottom two (above 0) | +22.5 points ± 1.6 | pass |
+  | Peekers voting Free Market by income 10 / 40 / 110 / 300 | 0.0% / 1.6% / 6.4% / 38.1% | rises with income |
+  | Bots who peek in round 2 | 16.4% ± 0.4 | |
+  | Broken promises per claim | 0.0% (5 in 16,000) | |
+  | Lie success (50% to 75%) | 80% of 5 | fail, reported |
+  | S-b (55% to 80%) | 100% | fail, reported |
+  | S-a | n/a: no claim gains coins in this model | reported |
+  | F-d (at least 90%) | 100% | pass |
+  | F-e (15% to 35%) | 24.4 / 25.2 / 29.2 / 21.8% | pass |
+  | F-f (30% to 70%) | 17.3% ± 0.9 | fail, reported |
+
+  3 seats: E1 +55.6 points, F-f 52.2%. 2 seats: E1 +42.7 points, F-f 37.8%, Rawlsian wins 35.5% (just over). Bots almost never lie about votes: talk doesn't change their payoff in this model, so there is nothing to gain. Walkthroughs at 375 x 760: 4 seats Normal, 19 screens, 6 decisions, 971 words, claim screen at most 39 words, vote screen at most 61; 2 seats Hard, 18 screens, 767 words; every screen 760 px.

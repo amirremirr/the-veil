@@ -26,6 +26,11 @@ const SCRIPT: Record<string, unknown> = {
 
 /** Play episodes whose steps differ from Study's: scripted human moves, from the game state. */
 const PLAY_SCRIPT: Partial<Record<number, Record<string, (g: GameState) => unknown>>> = {
+  1: {
+    PEEK: () => true,
+    CLAIM: () => 'P2',
+    VOTE: () => ({ vote: 'P2', gift: null }),
+  },
   4: {
     TRAIN: () => ({ train: true, gift: null }),
     CLAIM: () => 'TRAINED',
@@ -82,6 +87,13 @@ export function personaDecision(g: GameState, persona: string, step: string | un
       return { buy: true, gym: false, gift: null, bar: members.includes(me.id) ? suspect(members) : null };
     }
     if (step === 'REGIME') return persona === 'CAREFUL' ? 'M50' : 'VOL';
+  }
+  if (g.levelIndex === 1 && g.play) {
+    if (step === 'PEEK') return persona !== 'SKIMMER';
+    const y = priv.income as number | undefined;
+    const vote = persona === 'SKIMMER' ? 'P1' : y === undefined ? 'P2' : y >= 110 ? 'P1' : 'P4';
+    if (step === 'CLAIM') return persona === 'SKIMMER' ? 'SILENT' : persona === 'BLUFFER' ? 'P2' : vote === 'P4' ? 'SILENT' : vote;
+    if (step === 'VOTE') return { vote: persona === 'BLUFFER' ? 'P1' : vote, gift: null };
   }
   if (g.levelIndex === 4 && g.play) {
     const l = g.levelState as { judge: string; current?: { meter?: Record<string, number>; train?: Record<string, boolean> } };

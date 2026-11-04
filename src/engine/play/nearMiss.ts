@@ -11,11 +11,13 @@ import type { GameState, PlayerId } from '../types';
 import { SILENT } from './claims';
 import type { NearMiss } from './types';
 import { p4Plans, p4Tries } from './ep4';
+import { p1Plans, p1Tries } from './ep1';
 
 type Plan = Record<string, unknown>;
 
 /** Episodes after Episode 3 give their own plans and alternatives (key `${round}:${step}`). */
 const EPISODE_HOOKS: Partial<Record<number, { plans: (s: GameState, h: PlayerId) => Plan; tries: (s: GameState, k: string, value: unknown) => Array<{ value: unknown; from: unknown; to: unknown; kind: string }> }>> = {
+  1: { plans: p1Plans, tries: p1Tries },
   4: { plans: p4Plans, tries: p4Tries },
 };
 const key = (round: number, stepId: string) => `${round}:${stepId}`;
