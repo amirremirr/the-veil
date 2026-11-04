@@ -14,7 +14,7 @@ import { useMotionOff } from '../components/common';
 import { Sheet } from '../components/TableParts';
 import { fmt1 } from '../components/Money';
 import { BigButton, Bubble, Face, Stage } from './OnAir';
-import { confessional, hostLine, pick, roundOutcome } from './logic';
+import { confessional, hostLine, pick, roundOutcome, timesWord } from './logic';
 import { renderMessage } from '../game';
 
 export type L3View = {
@@ -350,12 +350,15 @@ export function BarBeat({ v, next }: { v: ViewState; next: () => void }) {
       : r1
         ? t(r1 === v.viewer ? 'play.barBeat.refusedYou' : 'play.barBeat.refused', { name: shortName(v, r1) })
         : t('play.barBeat.refusedMany', { names: names(b.refused) });
+  // AI playtest (T1): a barred contestant who did not apply this round is named too, so two bars never read as one.
+  const idle = b.refused.length ? b.barred.filter((x) => !b.refused.includes(x)) : [];
+  const subIdle = idle.length ? ` ${t('play.barBeat.notAppliedNamed', { names: names(idle) })}` : '';
   return (
     <Stage v={v} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
       <div className="my-auto text-center" data-bar={b.barred.join(' ') || 'none'}>
         <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.barBeat.label')}</p>
         <p className={`h-show mt-2 text-5xl leading-tight ${b.barred.length ? 'text-stamp' : 'text-spot'}`}>{head}</p>
-        {sub && <p className="mt-3 text-base">{sub}</p>}
+        {sub && <p className="mt-3 text-base">{sub}{subIdle}</p>}
         <p className="mt-4 text-sm text-soft">
           {b.members.map((m) => t('play.barBeat.vote', { name: shortName(v, m), target: b.votes[m] ? shortName(v, b.votes[m]!) : t('play.barBeat.noOne') })).join(' · ')}
         </p>
@@ -401,7 +404,7 @@ export function CardsReveal({ v }: { v: ViewState }) {
   rows.sort((a, b) => b.lies - a.lies || b.wrong - a.wrong);
   const top = rows[0];
   const line = top.lies
-    ? t(top.p.id === v.viewer ? 'play.cards.peakLieYou' : 'play.cards.peakLie', { name: nameOf(v, top.p.id), n: top.lies, truth: t(`play.cards.${types[top.p.id]}`).toLowerCase() })
+    ? t(top.p.id === v.viewer ? 'play.cards.peakLieYou' : 'play.cards.peakLie', { name: nameOf(v, top.p.id), n: timesWord(top.lies), truth: t(`play.cards.${types[top.p.id]}`).toLowerCase() })
     : t('play.cards.peakHonest');
   return (
     <Stage v={v} footer={<BigButton onClick={() => act()}>{t('play.stage.tap')}</BigButton>}>
@@ -673,7 +676,7 @@ export function PriceBeat({ v, next, onReally }: { v: ViewState; next: () => voi
         </p>
         {to !== null && (
           <span className="mt-2 inline-block rounded-md bg-onspot px-2 py-0.5 text-sm font-bold text-spot">
-            {kind === 'Same' || kind === 'Launch' ? t('play.stage.same') : t(kind === 'Up' ? 'play.stage.up' : 'play.stage.down', { p: pct(Math.abs(change)) })}
+            {kind === 'Same' || (kind === 'Launch' && Math.abs(to - from) < 1e-9) ? t('play.stage.same') : t(to > from ? 'play.stage.up' : 'play.stage.down', { p: pct(Math.abs(change)) })}
           </span>
         )}
         <p className="h-show mt-4 text-2xl leading-tight">{t(`play.stage.head${kind}`)}</p>

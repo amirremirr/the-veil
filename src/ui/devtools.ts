@@ -3,6 +3,8 @@ import type { GameState } from '../engine/types';
 import { useStore } from './store';
 import { screenDecisionPhase } from '../shared/flow';
 import { devDelayMessages, devDropConnection, devSetRules } from './room';
+import { membersOf } from '../engine/levels/level3';
+import { audienceBelief } from '../engine/play/claims';
 
 const SCRIPT: Record<string, unknown> = {
   VOTE: 'P2',
@@ -44,6 +46,50 @@ export function autoplay(stopAt: (g: GameState) => boolean): string {
   return 'limit';
 }
 
+/**
+ * AI playtest personas (RUNPLAN T1, T7; proxy, not human evidence). Each decides from its own cards and the
+ * public table only: SKIMMER taps the first option, CAREFUL plays its cards honestly, BLUFFER lies every
+ * round and votes to bar the contestant the audience suspects most.
+ */
+export function personaDecision(g: GameState, persona: string, step: string | undefined): unknown {
+  if (!step) return undefined;
+  const me = g.players.find((p) => p.isHuman)!;
+  const priv = me.privateInfo as Record<string, unknown>;
+  const others = g.players.filter((p) => p.id !== me.id);
+  const suspect = (pool: string[]) =>
+    pool
+      .filter((id) => id !== me.id)
+      .map((id) => ({ id, b: g.play ? (audienceBelief(g, id) ?? 0.5) : 0.5 }))
+      .sort((a, b) => b.b - a.b)[0]?.id ?? null;
+  if (g.levelIndex === 3 && g.play) {
+    const high = priv.riskType === 'HIGH';
+    const worrier = priv.worry === 'WORRIER';
+    if (step === 'CLAIM') return persona === 'SKIMMER' ? 'SILENT' : persona === 'BLUFFER' ? (high ? 'LOW' : 'HIGH') : high ? 'HIGH' : 'LOW';
+    if (step === 'CHOICE') {
+      if (persona === 'SKIMMER') return { buy: true, gym: false };
+      if (persona === 'CAREFUL') return { buy: high || worrier, gym: high, gift: null, bar: null };
+      const members = membersOf(g);
+      return { buy: true, gym: false, gift: null, bar: members.includes(me.id) ? suspect(members) : null };
+    }
+    if (step === 'REGIME') return persona === 'CAREFUL' ? 'M50' : 'VOL';
+  }
+  void others;
+  return step.startsWith('AMEND_') ? persona !== 'BLUFFER' : SCRIPT[step];
+}
+
+/** One screen forward as a persona. */
+export function personaStep(persona: string): void {
+  const st = useStore;
+  const g = st.getState().game!;
+  if (g.phase.kind === 'GUESS') {
+    const other = g.players.find((p) => !p.isHuman)!;
+    st.getState().act(undefined, { [other.id]: persona === 'SKIMMER' ? 'EGOIST' : 'UTILITARIAN' });
+    return;
+  }
+  const step = screenDecisionPhase(g, g.phaseQueue)?.step;
+  st.getState().act(personaDecision(g, persona, step));
+}
+
 export function installDevtools(): void {
-  Object.assign(window, { __veil: useStore, __autoplay: autoplay, __roomDrop: devDropConnection, __roomDelay: devDelayMessages, __roomRules: devSetRules });
+  Object.assign(window, { __veil: useStore, __autoplay: autoplay, __personaStep: personaStep, __roomDrop: devDropConnection, __roomDelay: devDelayMessages, __roomRules: devSetRules });
 }

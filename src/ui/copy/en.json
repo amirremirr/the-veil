@@ -1225,8 +1225,8 @@
       "seed": "Challenge code: {seed}",
       "missionsLabel": "The missions flip",
       "lieLabel": "Biggest lie",
-      "lie": "{name} said \"{claim}\" {n} times and was {truth}.",
-      "lieYou": "You said \"{claim}\" {n} times and were {truth}.",
+      "lie": "{name} said \"{claim}\" {n} and was {truth}.",
+      "lieYou": "You said \"{claim}\" {n} and were {truth}.",
       "noLie": "Nobody lied this episode.",
       "readLabel": "Biggest wrong read",
       "read": "The audience was {p} sure {name} was {said}. {name} was {truth}.",
@@ -1297,11 +1297,11 @@
       "down": "Down {p}",
       "same": "No change",
       "closed": "Closed",
-      "headUp": "Last round, mostly risky people bought cover.",
-      "headDown": "Last round, more safe people bought cover.",
+      "headUp": "Last round's pool was riskier than the one before.",
+      "headDown": "Last round's pool was safer than the one before.",
       "headSame": "The same kind of people bought cover.",
       "headGone": "Nobody bought cover. SafeHands left town.",
-      "subUp": "So SafeHands raised the price. Now even fewer safe people will buy.",
+      "subUp": "So SafeHands raised the price. Safe people now have even less reason to buy.",
       "subDown": "So SafeHands lowered the price.",
       "subSame": "So the price stayed put.",
       "subGone": "No more cover on sale this episode, unless you vote for a plan.",
@@ -1330,7 +1330,7 @@
       },
       "launchTitle": "Launch cover",
       "launchDesc": "SafeHands signs everyone up for the launch season, at {p} coins. After that, it's your choice.",
-      "headLaunch": "Everyone was in the pool, so the price is the average.",
+      "headLaunch": "Everyone was in, so the new price is the whole table's average risk.",
       "subLaunch": "From now on, buying cover is your choice.",
       "debtCost": "In debt: -{n} points"
     },
@@ -1390,7 +1390,8 @@
       "noOne": "no one",
       "barredMany": "{names} are barred.",
       "refusedMany": "{names} applied for cover and were turned away.",
-      "and": " and "
+      "and": " and ",
+      "notAppliedNamed": "{names} didn't apply, so no cover this round."
     },
     "cards": {
       "label": "The reveal",
@@ -1401,9 +1402,9 @@
       "LIE": "LIE",
       "stamp": "R{r} {claim}: {stamp}",
       "noClaims": "Never made a claim.",
-      "peakLie": "{name} lied {n} times. {name} was {truth}.",
+      "peakLie": "{name} lied {n}. {name} was {truth}.",
       "peakHonest": "Not one lie. Nobody tell the network.",
-      "peakLieYou": "You lied {n} times. You were {truth}.",
+      "peakLieYou": "You lied {n}. You were {truth}.",
       "word": {
         "LOW": "Low",
         "HIGH": "High"
@@ -1476,6 +1477,11 @@
     },
     "about": {
       "deal": "Quick and fun, Episode 3: every risk card and worry card is dealt 50/50, and nobody is told the mix. One hidden rule: at a table of 3 or 4, the risk cards are dealt again until at least one player is high risk and one is low risk. With everyone the same, there is nobody to screen out, so the episode has nothing to show. A table of 2 is never dealt again."
+    },
+    "times": {
+      "one": "once",
+      "two": "twice",
+      "many": "{n} times"
     }
   }
 }

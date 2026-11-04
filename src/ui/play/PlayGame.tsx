@@ -15,7 +15,7 @@ import { LockedInPanel, useOnline, useWaiting } from '../components/Online';
 import { screenDecisionPhase } from '../../shared/flow';
 import { BigButton, Bubble, Face, Stage } from './OnAir';
 import { BarBeat, CardsReveal, ClaimScreen, ClaimsBeat, MoveScreen, MyCardsBeat, PriceBeat, RegimeScreen, VoteInBeat, WheelBeat, claimsOpen, hasPriceBeat, regimeName, roundClaims, type L3View } from './Episode3';
-import { eventText, hostLine, missionName, pick } from './logic';
+import { eventText, hostLine, missionName, pick, timesWord } from './logic';
 import type { NearMiss } from '../../engine/play/types';
 
 
@@ -283,7 +283,7 @@ function EpisodeSummary({ v }: { v: ViewState }) {
     .sort((a, b) => b.wrong - a.wrong)[0];
   const lieText =
     lies && lies.n
-      ? t(lies.id === v.viewer ? 'play.summary.lieYou' : 'play.summary.lie', { name: nameOf(v, lies.id), claim: t(`play.claim.short.${lies.value}`).toLowerCase(), n: lies.n, truth: t(`play.cards.${types[lies.id]}`).toLowerCase() })
+      ? t(lies.id === v.viewer ? 'play.summary.lieYou' : 'play.summary.lie', { name: nameOf(v, lies.id), claim: t(`play.claim.short.${lies.value}`).toLowerCase(), n: timesWord(lies.n), truth: t(`play.cards.${types[lies.id]}`).toLowerCase() })
       : t('play.summary.noLie');
   const readText =
     read && read.wrong >= 0.5

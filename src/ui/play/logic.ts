@@ -150,3 +150,8 @@ export function botReactions(v: ViewState, key: OutcomeKey): Reaction[] {
   }
   return out;
 }
+
+/** "once", "twice" or "3 times" (AI playtest T1: "lied 1 times"). */
+export function timesWord(n: number): string {
+  return n === 1 ? t('play.times.one') : n === 2 ? t('play.times.two') : t('play.times.many', { n });
+}

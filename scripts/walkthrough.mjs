@@ -30,6 +30,7 @@ const url = server.resolvedUrls.local[0];
 async function launch() {
   const channel = process.env.PW_CHANNEL;
   try {
+    if (process.env.PW_EXECUTABLE) return await chromium.launch({ executablePath: process.env.PW_EXECUTABLE });
     return await chromium.launch(channel ? { channel } : {});
   } catch {
     return await chromium.launch({ channel: 'msedge' });
