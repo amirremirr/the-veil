@@ -31,6 +31,11 @@ const PLAY_SCRIPT: Partial<Record<number, Record<string, (g: GameState) => unkno
     CLAIM: () => 'P2',
     VOTE: () => ({ vote: 'P2', gift: null }),
   },
+  2: {
+    TAX: () => 0.4,
+    EFFORT: () => ({ effort: 5, claim: 'LOT', gift: null }),
+    PRIZE: (g) => g.players.find((p) => !p.isHuman)!.id,
+  },
   4: {
     TRAIN: () => ({ train: true, gift: null }),
     CLAIM: () => 'TRAINED',
@@ -87,6 +92,11 @@ export function personaDecision(g: GameState, persona: string, step: string | un
       return { buy: true, gym: false, gift: null, bar: members.includes(me.id) ? suspect(members) : null };
     }
     if (step === 'REGIME') return persona === 'CAREFUL' ? 'M50' : 'VOL';
+  }
+  if (g.levelIndex === 2 && g.play) {
+    if (step === 'TAX') return persona === 'CAREFUL' ? 0.2 : 0;
+    if (step === 'EFFORT') return { effort: persona === 'SKIMMER' ? 5 : persona === 'BLUFFER' ? 2 : 6, claim: persona === 'SKIMMER' ? 'SILENT' : persona === 'BLUFFER' ? 'LOT' : 'SOME', gift: null };
+    if (step === 'PRIZE') return suspect(g.players.map((p) => p.id)) ?? others[0].id;
   }
   if (g.levelIndex === 1 && g.play) {
     if (step === 'PEEK') return persona !== 'SKIMMER';

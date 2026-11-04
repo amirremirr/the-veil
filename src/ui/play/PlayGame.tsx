@@ -17,6 +17,7 @@ import { BigButton, Bubble, Face, Stage } from './OnAir';
 import { BarBeat, CardsReveal, ClaimScreen, ClaimsBeat, MoveScreen, MyCardsBeat, PriceBeat, RegimeScreen, VoteInBeat, WheelBeat, claimsOpen, hasPriceBeat, regimeName, roundClaims, type L3View } from './Episode3';
 import { eventText, hostLine, missionName, pick, timesWord } from './logic';
 import { CardsReveal1, ClaimScreen1, IncomesBeat, PeekScreen, Unborn, VoteScreen1, VotesBeat, summary1 } from './Episode1';
+import { CardsReveal2, EffortScreen, IncomeScreen, MyCards2, PrizeBeat, PrizeScreen, TaxScreen, summary2 } from './Episode2';
 import { BeliefBeat, CardsReveal4, ClaimScreen4, HiresBeat, JudgeScreen, MyCards4, PolicyIn, PolicyScreen, TrainScreen, summary4, type L4View } from './Episode4';
 import type { NearMiss } from '../../engine/play/types';
 
@@ -188,6 +189,30 @@ function ResultsFlow1({ v }: { v: ViewState }) {
   return <IncomesBeat v={v} last={v.round >= PLAY.L1.ROUNDS} next={() => act()} />;
 }
 
+/** Episode 2's beats and decision screens (D-153). */
+function DecisionFlow2({ v }: { v: ViewState }) {
+  const online = useOnline();
+  const { done } = useWaiting(v);
+  const stepId = v.phase.step;
+  const ev = v.play!.event;
+  const firstScreen = stepId === 'TAX' || (stepId === 'EFFORT' && v.round > 1);
+  const beats: Array<'cards' | 'event'> = [];
+  if (firstScreen && v.round === 1) beats.push('cards');
+  if (firstScreen && ev && ev.id !== 'QUIET' && ev.round === v.round && ev.level === v.levelIndex) beats.push('event');
+  const [k, setK] = useState(0);
+  const next = () => setK((x) => x + 1);
+  if (k < beats.length) return beats[k] === 'cards' ? <MyCards2 v={v} next={next} /> : <EventBeat v={v} next={next} />;
+  if (online && done)
+    return (
+      <Stage v={v}>
+        <LockedInPanel v={v} />
+      </Stage>
+    );
+  if (stepId === 'TAX') return <TaxScreen v={v} />;
+  if (stepId === 'PRIZE') return <PrizeScreen v={v} />;
+  return <EffortScreen v={v} />;
+}
+
 /** Episode 4's beats and decision screens (D-151). */
 function DecisionFlow4({ v }: { v: ViewState }) {
   const online = useOnline();
@@ -343,6 +368,10 @@ function nearMissText(v: ViewState, nm: NearMiss): string {
     const x = nm.to as { worker: string; job: string };
     change = t(x.job === 'COMPLEX' ? 'play.nm.hireComplex' : 'play.nm.hireSimple', { name: nameOf(v, x.worker) });
   } else if (nm.kind === 'POLICY') change = t('play.nm.policy', { name: t(`levels.4.policies.${nm.to as string}.name`) });
+  else if (nm.kind === 'TAX') change = t('play.nm.tax', { t: pct(nm.to as number) });
+  else if (nm.kind === 'EFFORT') change = t('play.nm.effort', { e: nm.to as number });
+  else if (nm.kind === 'PRIZE') change = t('play.nm.prize', { name: nameOf(v, nm.to as string) });
+  else if (nm.kind === 'CLAIM' && v.levelIndex === 2) change = nm.to === 'SILENT' ? t('play.nm.silent') : t('play.nm.claim', { claim: t(`play.l2.band.${nm.to as string}`) });
   else if (nm.kind === 'CLAIM' && v.levelIndex === 4) change = t(nm.to === 'SILENT' ? 'play.nm.silent' : 'play.nm.claimT');
   else change = t('play.nm.regime', { name: regimeName(nm.to as 'VOL' | 'M50' | 'M100') });
   return t('play.nm.line', { change, r: nm.round, n: nm.gain });
@@ -373,7 +402,7 @@ function EpisodeSummary({ v }: { v: ViewState }) {
     .filter((p) => poll[p.id] !== undefined)
     .map((p) => ({ id: p.id, b: poll[p.id], wrong: Math.abs(poll[p.id] - (types[p.id] === 'HIGH' ? 1 : 0)) }))
     .sort((a, b) => b.wrong - a.wrong)[0];
-  const lieText = v.levelIndex === 4 ? summary4(v).lie : v.levelIndex === 1 ? summary1(v).lie : lies && lies.n
+  const lieText = v.levelIndex === 4 ? summary4(v).lie : v.levelIndex === 1 ? summary1(v).lie : v.levelIndex === 2 ? summary2(v).lie : lies && lies.n
       ? t(lies.id === v.viewer ? 'play.summary.lieYou' : 'play.summary.lie', { name: nameOf(v, lies.id), claim: t(`play.claim.short.${lies.value}`).toLowerCase(), n: timesWord(lies.n), truth: t(`play.cards.${types[lies.id]}`).toLowerCase() })
       : t('play.summary.noLie');
   const readText =
@@ -444,6 +473,13 @@ export function PlayGameScreen() {
   if (k === 'INTRO') return <EpisodeIntro v={v} />;
   if (k === 'GUESS') return <EpisodeGuess v={v} />;
   if (k === 'LEVEL_DEBRIEF' || k === 'END') return <EpisodeSummary v={v} />;
+  if (v.levelIndex === 2) {
+    if (k === 'DECIDE') return <DecisionFlow2 key={`${v.levelIndex}-${v.phaseIdx}`} v={v} />;
+    if (k === 'REVEAL' && v.phase.step === 'INCOME') return <IncomeScreen v={v} />;
+    if (k === 'REVEAL' && next?.kind === 'ROUND_SUMMARY') return <PrizeBeat v={v} next={() => useStore.getState().act()} />;
+    if (k === 'REVEAL' && v.phase.step === 'CARDS') return <CardsReveal2 v={v} />;
+    return null;
+  }
   if (v.levelIndex === 1) {
     if (k === 'DECIDE') return <DecisionFlow1 key={`${v.levelIndex}-${v.phaseIdx}`} v={v} />;
     if (k === 'REVEAL' && next?.kind === 'ROUND_SUMMARY') return <ResultsFlow1 key={`${v.levelIndex}-${v.phaseIdx}`} v={v} />;

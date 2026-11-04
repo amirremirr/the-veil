@@ -105,6 +105,30 @@ function bootDiff(recs: GameRec[], a: string, b: string): { mean: number; se: nu
   return { mean: m, se: Math.sqrt(ok.reduce((x, y) => x + (y - mu) ** 2, 0) / Math.max(1, ok.length - 1)), n: recs.reduce((acc, x) => acc + (x.m[a]?.[1] ?? 0) + (x.m[b]?.[1] ?? 0), 0) };
 }
 
+/** OLS slope of a per-game y on a per-game x, with a bootstrap SE over games. */
+function bootSlope(recs: GameRec[], xk: string, yk: string): { mean: number; se: number; n: number } {
+  const slope = (arr: GameRec[]) => {
+    const xs = arr.map((r) => r.m[xk][0]);
+    const ys = arr.map((r) => r.m[yk][0]);
+    const mx = xs.reduce((a, b) => a + b, 0) / xs.length;
+    const my = ys.reduce((a, b) => a + b, 0) / ys.length;
+    let sxy = 0;
+    let sxx = 0;
+    xs.forEach((x, i) => {
+      sxy += (x - mx) * (ys[i] - my);
+      sxx += (x - mx) ** 2;
+    });
+    return sxx > 0 ? sxy / sxx : NaN;
+  };
+  const m = slope(recs);
+  const rng = standalone(99);
+  const bs: number[] = [];
+  for (let k = 0; k < BOOT; k++) bs.push(slope(recs.map(() => recs[Math.floor(rng.next() * recs.length)])));
+  const ok = bs.filter(Number.isFinite);
+  const mu = ok.reduce((a, b) => a + b, 0) / ok.length;
+  return { mean: m, se: Math.sqrt(ok.reduce((a, b) => a + (b - mu) ** 2, 0) / Math.max(1, ok.length - 1)), n: recs.length };
+}
+
 function winShares(recs: GameRec[], scale: Record<ValuesCard, number>): Record<ValuesCard, number> {
   const wins: Record<string, number> = {};
   const seats: Record<string, number> = {};
@@ -133,7 +157,7 @@ out.push('');
 let fail = false;
 for (const m of metrics) {
   // E1: a difference of two pooled shares (top two incomes minus bottom two), bootstrapped over games.
-  const r = m.key === 'e1' ? bootDiff(recs, 'e1hi', 'e1lo') : boot(recs, (x) => x.m[m.key] ?? [0, 0]);
+  const r = m.key === 'e1' ? bootDiff(recs, 'e1hi', 'e1lo') : m.key === 'e2b' ? bootDiff(recs, 'e2c', 'e2t') : m.key === 'e2' ? bootSlope(recs, 'e2x', 'e2y') : boot(recs, (x) => x.m[m.key] ?? [0, 0]);
   const pass = Number.isFinite(r.mean) && (m.min === undefined || r.mean >= m.min) && (m.max === undefined || r.mean <= m.max);
   const target = m.min !== undefined && m.max !== undefined ? `${m.min} to ${m.max}` : m.min !== undefined ? `>= ${m.min}` : m.max !== undefined ? `<= ${m.max}` : 'reported';
   if (m.gate && !pass) fail = true;

@@ -49,7 +49,7 @@ describe('ruleset plumbing', () => {
     expect(() => createInitialState({ ...cfg('x'), ruleset: undefined })).toThrow();
     expect(() => createInitialState({ ...cfg('x'), mode: 'SINGLE_LEVEL' })).toThrow();
     expect(() => createInitialState({ ...cfg('x'), mode: 'LIFE' })).toThrow(/P3/);
-    expect(() => createInitialState({ ...cfg('x'), level: 2 })).toThrow(/not built/);
+    expect(() => createInitialState({ ...cfg('x'), level: 5 })).toThrow(/not built/);
   });
   it('Episode 3 (The Pool) has 4 rounds of claim then move, the regime vote after round 3, the card reveal, then the guess', () => {
     const s = createInitialState(cfg('phases'));

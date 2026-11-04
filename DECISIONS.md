@@ -575,3 +575,29 @@ The author's third review: lie success was 98% and bar recall 23%, so lying domi
   | F-f (30% to 70%) | 17.3% ± 0.9 | fail, reported |
 
   3 seats: E1 +55.6 points, F-f 52.2%. 2 seats: E1 +42.7 points, F-f 37.8%, Rawlsian wins 35.5% (just over). Bots almost never lie about votes: talk doesn't change their payoff in this model, so there is nothing to gain. Walkthroughs at 375 x 760: 4 seats Normal, 19 screens, 6 decisions, 971 words, claim screen at most 39 words, vote screen at most 61; 2 seats Hard, 18 screens, 767 words; every screen 760 px.
+- **D-153 [AUTORUN, review] T4: Episode 2, First Hustle (the Hustle Prize).** Play-only level definition (`src/engine/play/ep2.ts`) behind the ruleset switch on Level 2. Choices:
+  1. **The claim is on the effort screen** (little 0 to 3 hours, some 4 to 6, a lot 7 to 10, or nothing), made before incomes are shown. The spec puts it after the reveal, but that makes 11 decision screens (limit 10); this way it is 8.
+  2. **Luck dice stay hidden** until the end reveal (each contestant sees their own die). Gross incomes are public. The spec's reveal shows the dice, but then luck is no noise and incomes give effort away; the run plan and the peak line ("He rolled the jackpot") both treat luck as hidden.
+  3. **Bot effort** is Study's rule (best effort for the tax, plus Study's noise), with this round's event numbers. Bots ignore the prize when choosing effort, so the prize cannot flip the E2 slope (checked: slope -5.44 with the prize and without it).
+  4. **Bots' reads of effort:** from gross income with talent (the other cards) and luck (every face) unknown, then moved toward the claim by CLAIM_WEIGHT x record. Security Cameras make the read certain for the round. The audience poll is the share believing "a lot".
+  5. **Prize vote (B.2):** a bot votes for whoever's prize raises its own Play value most, effort shares as it believes them; near-ties go to the highest believed effort. Plurality wins, ties split the 30 coins, never yourself. Claims are stamped at the end reveal.
+  6. **Bot claims:** the v2 3.5 rule; the only lie is "a lot", worth 30 coins x the change in being read as the hardest worker.
+  7. `MISSION_SCALE_EP[2]` = Egoist 0.76, Rawlsian 1.7, Utilitarian 1.01, Meritocrat 1.22. Training and effort hours feed `play.effort` (Meritocrat).
+
+  Results, 2,000 bot games, 4 seats, Normal (rules {"rules":"e92bf064b3b34722","params":"5ff02833867940c2","commit":"unknown"}; seeds play-0 to play-1999):
+
+  | Target | Result | Status |
+  |---|---|---|
+  | E2 slope of mean effort on the tax rate (below 0) | -5.37 ± 0.08 hours per unit of tax | pass |
+  | E2 added: claimed minus true effort (above 0) | +0.13 ± 0.01 hours | pass |
+  | B.1 effort band read from income alone (about 80% at most) | 65.6% ± 0.3 | pass |
+  | Lie success (50% to 75%) | 13.5% ± 0.7 | fail, reported |
+  | S-a (15% to 50%) | 82.1% ± 0.8 | fail, reported |
+  | S-b (55% to 80%) | 95.9% ± 0.1 | fail, reported |
+  | Contested reads (at least 20%) | 19.9% ± 0.2 | at the bound |
+  | S-c prize misses the hardest worker (20% to 50%) | 73.9% ± 1.0 | fail, reported |
+  | F-d (at least 90%) | 90.1% ± 0.7 | pass |
+  | F-e (15% to 35%) | 24.5 / 23.0 / 25.7 / 27.4% | pass |
+  | F-f (30% to 70%) | 45.4% ± 1.1 | pass |
+
+  3 seats: E2 -6.44, F-f 28.2%, Rawlsian 37.6% (over). 2 seats: E2 -7.04, F-f 18.4%. Mean tax chosen 6%: bots vote low taxes, so E2's slope rests on the minority of games with higher taxes. Walkthroughs at 375 x 760: 4 seats Normal 20 screens, 8 decisions, 1,063 words, every screen 760 px, move screens at most 59 words; 2 seats Hard 22 screens, 964 words.

@@ -4,6 +4,7 @@
 import { PLAY } from '../src/engine/play/params';
 import type { GameState } from '../src/engine/types';
 import type { P4Round, P4State } from '../src/engine/play/ep4';
+import { p2Params, readEffort } from '../src/engine/play/ep2';
 
 export interface Metric {
   key: string;
@@ -189,8 +190,96 @@ function ep1(): EpisodeMetrics {
   };
 }
 
+function ep2(): EpisodeMetrics {
+  const MID: Record<string, number> = { LITTLE: 1.5, SOME: 5, LOT: 8.5 };
+  const band = (e: number) => (e <= 3 ? 'LITTLE' : e <= 6 ? 'SOME' : 'LOT');
+  return {
+    metrics: [
+      { key: 'e2', label: 'E2 slope of mean bot effort on the tax rate, across games (must be < 0)', max: -0.0001, gate: true },
+      { key: 'e2b', label: 'E2 added: mean claimed effort minus mean true effort of claimers, hours (must be > 0)', min: 0.0001, gate: true },
+      { key: 'effort', label: 'Mean bot effort (hours)' },
+      { key: 'tax', label: 'Mean tax rate chosen' },
+      { key: 'lie', label: 'Lie success (overclaimed effort and won or shared the prize that round)', min: 0.5, max: 0.75, pct: true },
+      { key: 'lies', label: 'Lies per claim', pct: true },
+      { key: 'sb', label: 'S-b reader (audience belief that the claimed band is true >= 0.5) judges a claim right', min: 0.55, max: 0.8, pct: true },
+      { key: 'b1', label: 'B.1 reader of the effort band from gross income alone: accuracy, about 80% at most', max: 0.8, pct: true },
+      { key: 'contested', label: 'Contested reads (belief "a lot" between 0.35 and 0.65)', min: 0.2, pct: true },
+      { key: 'sc', label: 'S-c the prize misses the hardest worker in some round', min: 0.2, max: 0.5, pct: true },
+      ...COMMON,
+    ],
+    finish(s) {
+      const rounds = (s.levelState as { t: number; rounds: Array<{ effort: Record<string, number>; claims: Record<string, string>; winners: string[]; beliefs: Record<string, Record<string, number[]>>; y: Record<string, number> }> }).rounds;
+      const t = (s.levelState as { t: number }).t;
+      const bots = s.players.filter((p) => !p.isHuman).map((p) => p.id);
+      const effs = rounds.flatMap((r) => bots.map((b) => r.effort[b]));
+      let claimMid = 0;
+      let claimTrue = 0;
+      let claims = 0;
+      let lies = 0;
+      let liesWon = 0;
+      let sbRight = 0;
+      let b1 = 0;
+      let reads = 0;
+      let contested = 0;
+      let missed = false;
+      for (const r of rounds) {
+        const maxE = Math.max(...Object.values(r.effort));
+        if (!r.winners.some((w) => r.effort[w] === maxE)) missed = true;
+        for (const p of s.players) {
+          const c = r.claims[p.id];
+          const others = Object.entries(r.beliefs).filter(([o]) => o !== p.id).map(([, m]) => m[p.id]).filter(Boolean);
+          const avg = [0, 1, 2].map((k) => others.reduce((a, x) => a + x[k], 0) / Math.max(1, others.length));
+          if (c && c !== 'SILENT') {
+            claims++;
+            claimMid += MID[c];
+            claimTrue += r.effort[p.id];
+            const lied = band(r.effort[p.id]) !== c;
+            if (lied) {
+              lies++;
+              if (r.winners.includes(p.id)) liesWon++;
+            }
+            const k = ['LITTLE', 'SOME', 'LOT'].indexOf(c);
+            if ((avg[k] >= 0.5) === !lied) sbRight++;
+          }
+          for (const x of others) {
+            reads++;
+            if (x[2] >= 0.35 && x[2] <= 0.65) contested++;
+          }
+        }
+      }
+      // B.1: an income-only read (claims ignored, no cameras), by each other contestant, argmax band.
+      let b1n = 0;
+      const P = p2Params(s);
+      for (const r of rounds)
+        for (const p of s.players)
+          for (const o of s.players) {
+            if (o.id === p.id) continue;
+            const m = readEffort(s, o.id, p.id, r.y[p.id], undefined, 0, P, null);
+            b1 += ['LITTLE', 'SOME', 'LOT'][m.indexOf(Math.max(...m))] === band(r.effort[p.id]) ? 1 : 0;
+            b1n++;
+          }
+      return {
+        e2x: [t, 1],
+        e2y: [effs.reduce((a, b) => a + b, 0) / Math.max(1, effs.length), 1],
+        e2c: [claimMid, claims],
+        e2t: [claimTrue, claims],
+        effort: [effs.reduce((a, b) => a + b, 0), effs.length],
+        tax: [t, 1],
+        lie: [liesWon, lies],
+        lies: [lies, claims],
+        sb: [sbRight, claims],
+        b1: [b1, b1n],
+        contested: [contested, reads],
+        sc: b(missed),
+        ...common(s, 2, liesWon > 0),
+      };
+    },
+  };
+}
+
 export function episodeMetrics(ep: number): EpisodeMetrics {
   if (ep === 1) return ep1();
+  if (ep === 2) return ep2();
   if (ep === 4) return ep4();
   return { metrics: [...COMMON], finish: (s) => common(s, s.levelIndex, false) };
 }

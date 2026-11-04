@@ -916,7 +916,9 @@
       },
       "2": {
         "name": "First Hustle",
-        "pitch": "Effort, luck and a jackpot. Nobody can tell which is which."
+        "pitch": "Effort, luck and a jackpot. Nobody can tell which is which.",
+        "sponsor": "Sponsored by GrindSet Energy Drinks",
+        "intro": "Your income is talent times effort, plus a luck die. Only incomes are public. Then the table votes the Hustle Prize to whoever really worked."
       },
       "3": {
         "name": "Bad Luck Season",
@@ -1054,30 +1056,40 @@
         }
       },
       "L2": {
+        "QUIET": {
+          "name": "Quiet week",
+          "text": "The grind continues. Quietly.",
+          "effect": "Nothing changes this round."
+        },
         "LUCKY": {
           "name": "Lucky Week",
-          "text": "Four-leaf clovers are on sale everywhere.",
-          "effect": "Every luck value is 1.5 times bigger this round."
+          "text": "Mercury is in retrograde, in a good way.",
+          "effect": "Every luck die face is 1.5 times bigger this round."
         },
         "OVERTIME": {
           "name": "Overtime Bonanza",
-          "text": "The boss discovered coffee. Everyone works harder.",
-          "effect": "Talent pays 5 coins per effort point instead of 4."
+          "text": "The boss found the overtime budget in a drawer.",
+          "effect": "Each hour earns 5 x talent instead of 4 this round."
         },
         "BURNOUT": {
           "name": "Burnout Season",
-          "text": "Everyone is tired. The motivational posters are tired too.",
-          "effect": "Effort costs 0.6 per point instead of 0.4 this round."
+          "text": "Everyone is tired. Even the coffee is tired.",
+          "effect": "Effort costs 0.6 x hours squared instead of 0.4 this round."
         },
         "VIRAL": {
           "name": "Viral Video",
-          "text": "A cat video went viral. Somebody owns the cat.",
-          "effect": "One random contestant gets 80 extra luck."
+          "text": "Someone's cat did something. Money followed.",
+          "effect": "One random contestant's luck is 80 higher this round."
         },
-        "BAD_WIFI": {
+        "WIFI": {
           "name": "Bad Wi-Fi Week",
-          "text": "The router is blinking. Nobody knows why.",
-          "effect": "Every luck value is half as big this round."
+          "text": "Nothing uploads. Nothing goes viral.",
+          "effect": "Every luck die face is half as big this round."
+        },
+        "CAMERAS": {
+          "name": "Security Cameras",
+          "text": "HR installed cameras. For wellness.",
+          "effect": "Everyone's true hours are shown this round."
         }
       },
       "L4": {
@@ -1273,6 +1285,13 @@
         "That's the veil of ignorance: a rule you pick before you know your place is closer to fair.",
         "Taxes leak a little here, so sharing costs some of the pie. The vote is a trade between pie and protection.",
         "The Peek is information: real voters always know their place. That's why the veil is a thought experiment."
+      ],
+      "L2": [
+        "Income mixed talent, effort and luck, and only the total was public.",
+        "So the Hustle Prize went to who looked like a hard worker, often a lucky one.",
+        "Claims were cheap, so they drifted up. That's cheap talk.",
+        "Higher taxes cut what an extra hour earns you, so people worked less. That's the incentive cost of redistribution.",
+        "The Hustle Prize is performance pay: rewarding effort when you can only see results."
       ]
     },
     "intro": {
@@ -1463,7 +1482,10 @@
       "claimT": "Saying \"I trained\"",
       "peek": "Peeking",
       "noPeek": "Not peeking",
-      "vote": "Voting {name}"
+      "vote": "Voting {name}",
+      "tax": "Voting a {t} tax",
+      "effort": "Working {e} hours",
+      "prize": "Voting {name} for the prize"
     },
     "myCards": {
       "label": "Your secret cards",
@@ -1684,6 +1706,69 @@
       "sum": {
         "lie": "{name} said {said} and voted {did}.",
         "lieYou": "You said {said} and voted {did}."
+      }
+    },
+    "l2": {
+      "band": {
+        "LITTLE": "A little",
+        "SOME": "Some",
+        "LOT": "A lot"
+      },
+      "silent": "Say nothing",
+      "said": "Said: {b}",
+      "cam": "{e}h on camera",
+      "poll": "{p} a lot",
+      "cards": {
+        "label": "Your card",
+        "talent": "Talent {a}",
+        "how": "Each hour of effort earns you {per} coins, plus a luck die. Hours cost you more the more you work.",
+        "secret": "Your talent, hours and die are secret. Everyone sees your total income."
+      },
+      "tax": {
+        "title": "Tax for the episode",
+        "how": "The middle vote wins. Tax is shared equally; some leaks.",
+        "none": "No tax",
+        "shared": "Shared out",
+        "submit": "Vote"
+      },
+      "effort": {
+        "tax": "Tax {t}",
+        "title": "Work {e} hours",
+        "aria": "Hours of effort",
+        "money": "Your money with average luck: {w}.",
+        "claim": "Tell the table you worked:"
+      },
+      "inc": {
+        "label": "Round {r} incomes",
+        "you": "You made {y}. Your die: {d}.",
+        "hidden": "Hours and other dice stay secret until the end.",
+        "cameras": "The cameras showed everyone's hours.",
+        "next": "To the Hustle Prize"
+      },
+      "prize": {
+        "title": "Hustle Prize: {n} coins",
+        "how": "Vote for who worked hardest. Not yourself.",
+        "submit": "Vote"
+      },
+      "won": {
+        "label": "The Hustle Prize",
+        "you": "You won {n} coins.",
+        "one": "Prize to {name}: {n} coins.",
+        "split": "Split: {names}.",
+        "bank": "Your money this round: {w}."
+      },
+      "peak": {
+        "title": "Who really worked?",
+        "stamp": "R{r} {e}h, die {d}, {stamp}",
+        "star": "{name} won the Hustle Prize {n}x. Worked {e} hours a round. Best die {d}.",
+        "starYou": "You won the Hustle Prize {n}x. You worked {e} hours a round. Best die {d}.",
+        "none": "Nobody won outright. The table couldn't agree who hustled.",
+        "unlucky": "{name}: worked hard, rolled badly.",
+        "host": "Effort is invisible. Luck is loud. Our sponsor sells both."
+      },
+      "sum": {
+        "lie": "{name} overclaimed effort {n} times.",
+        "lieYou": "You overclaimed effort {n} times."
       }
     }
   }

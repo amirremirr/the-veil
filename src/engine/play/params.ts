@@ -26,7 +26,7 @@ export const PLAY = {
    * D-151: k per mission for a single episode, calibrated on that episode alone (4 seats, Normal) so every
    * mission wins close to 25% of the time. Episode 3 uses MISSION_SCALE.
    */
-  MISSION_SCALE_EP: { 1: { EGOIST: 0.65, RAWLSIAN: 2.58, UTILITARIAN: 1.1, MERITOCRAT: 1.11 }, 4: { EGOIST: 0.78, RAWLSIAN: 1.75, UTILITARIAN: 0.88, MERITOCRAT: 1.31 } } as Partial<Record<number, Record<ValuesCard, number>>>,
+  MISSION_SCALE_EP: { 1: { EGOIST: 0.65, RAWLSIAN: 2.58, UTILITARIAN: 1.1, MERITOCRAT: 1.11 }, 2: { EGOIST: 0.76, RAWLSIAN: 1.7, UTILITARIAN: 1.01, MERITOCRAT: 1.22 }, 4: { EGOIST: 0.78, RAWLSIAN: 1.75, UTILITARIAN: 0.88, MERITOCRAT: 1.31 } } as Partial<Record<number, Record<ValuesCard, number>>>,
   /** D-151: k per mission over a whole life (calibrated in T6; Episode 3's values until then). */
   MISSION_SCALE_LIFE: { EGOIST: 0.84, RAWLSIAN: 1.44, UTILITARIAN: 1.02, MERITOCRAT: 1.14 } as Record<ValuesCard, number>,
   /** The mission bar's full mark: start bank + this share of the episode's income minus living cost (D-102). */
@@ -138,6 +138,22 @@ export const PLAY = {
    * principles, leakage, floor and gap cap are unchanged.
    */
   L1: { ROUNDS: 2, INCOME_DECK: [10, 40, 110, 300], PEEK_FROM_ROUND: 2 },
+  /**
+   * Episode 2, First Hustle (v2 Section 4, D-153): 3 rounds, v1's luck die; Study's talents, effort cost, leakage
+   * and tax options. BANDS: the top hour of "a little" and of "some" (claims are on a 3-step scale).
+   */
+  L2: { ROUNDS: 3, LUCK_VALUES: [-30, 0, 10, 30, 90], TAX_OPTIONS: [0, 0.2, 0.4, 0.6, 0.8], BANDS: [3, 6] },
+  /** v2 Section 4: the Hustle Prize, to the plurality winner of the vote (never yourself); ties split. */
+  HUSTLE_PRIZE: 30,
+  /** v1 Section 6.2 and v2 Section 5, Episode 2 deck (Security Cameras shows true effort for the round). */
+  L2_EVENTS: {
+    LUCKY: { LUCK_MULT: 1.5 },
+    OVERTIME: { TALENT_MULT: 5 },
+    BURNOUT: { EFFORT_COST: 0.6 },
+    VIRAL: { VIRAL: 80 },
+    WIFI: { LUCK_MULT: 0.5 },
+    CAMERAS: {},
+  },
   /** v2 Section 2: coins to see your own income before the vote (everyone sees that you peeked). */
   PEEK_COST: 10,
   /** v1 Section 6.2, Episode 1 deck. */
@@ -149,7 +165,7 @@ export const PLAY = {
     LOTTERY: { TOP_CARD: 400 },
   },
   /** Event decks for the episodes after Episode 3 (Episode 3 keeps L3_DECK). */
-  DECKS: { 1: ['BOOM', 'CRASH', 'STRIKE', 'INHERITANCE', 'LOTTERY'], 4: ['SPREE', 'RECESSION', 'GRANT', 'UPDATE', 'PARTY'] } as Partial<Record<number, string[]>>,
+  DECKS: { 1: ['BOOM', 'CRASH', 'STRIKE', 'INHERITANCE', 'LOTTERY'], 2: ['LUCKY', 'OVERTIME', 'BURNOUT', 'VIRAL', 'WIFI', 'CAMERAS'], 4: ['SPREE', 'RECESSION', 'GRANT', 'UPDATE', 'PARTY'] } as Partial<Record<number, string[]>>,
   /** Section 7.1: the danger meter is green above this bank, amber from 0 to it, red in debt. */
   DANGER_AMBER_BELOW: 60,
   /** Section 7.2: every reveal sequence takes at most this long. */

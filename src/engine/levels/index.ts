@@ -7,6 +7,7 @@ import { level4 } from './level4';
 import { level5 } from './level5';
 import { playLevel4 } from '../play/ep4';
 import { playLevel1 } from '../play/ep1';
+import { playLevel2 } from '../play/ep2';
 
 /**
  * D-151: a level whose Play episode is its own definition. Study games (no s.play) call the Study level,
@@ -25,4 +26,4 @@ function byRuleset(study: LevelDefinition, play: LevelDefinition): LevelDefiniti
   return out;
 }
 
-export const LEVELS: Record<LevelId, LevelDefinition> = { 1: byRuleset(level1, playLevel1), 2: level2, 3: level3, 4: byRuleset(level4, playLevel4), 5: level5 };
+export const LEVELS: Record<LevelId, LevelDefinition> = { 1: byRuleset(level1, playLevel1), 2: byRuleset(level2, playLevel2), 3: level3, 4: byRuleset(level4, playLevel4), 5: level5 };

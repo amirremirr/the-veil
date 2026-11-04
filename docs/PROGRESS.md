@@ -8,7 +8,7 @@ Run mode: all tasks T0 to T9 in one session (owner's instruction for this run), 
 | T1 AI playtest Ep3 | DONE | see log | AI playtest (proxy, not human evidence); 4 copy fixes (D-150) |
 | T2 Episode 4 | DONE | see log | E4 passes; claims give training away (B.1), lie metrics off (D-151) |
 | T3 Episode 1 | DONE | see log | E1 passes; bots never lie about votes (D-152) |
-| T4 Episode 2 | | | |
+| T4 Episode 2 | DONE | see log | E2 and added check pass; lie metrics off (D-153) |
 | T5 Episode 5 | | | |
 | T6 LIFE, Receipts, result card | | | |
 | T7 AI playtest life, polish | | | |
@@ -26,6 +26,9 @@ Run mode: all tasks T0 to T9 in one session (owner's instruction for this run), 
 - D-152: Episode 1 bots keep claimed votes (0.03% broken), so lie success and S-b are degenerate. A claim would need a payoff (for example, others' votes reacting to it) for bots to lie. F-f 17% at 4 seats.
 - D-152: the life's first fair-tax answer is deferred to LIFE mode (T6).
 
+- D-153: Episode 2 claim moved onto the effort screen (decision budget) and luck dice hidden until the end. Alternatives: claim after the reveal (11 decisions), or show dice (luck no longer hides effort).
+- D-153: Episode 2 lie success 13.5%, S-a 82%: lies are rare but nearly always taken when they pay, and seldom win.
+
 ## Stashes and wip branches
 
 None.
@@ -37,3 +40,4 @@ None.
 - Environment note: node_modules was missing; installed with `npm ci`. Playwright 1.50 needs `PW_EXECUTABLE=/opt/pw-browsers/chromium` here.
 - T2: Episode 4 built (engine `src/engine/play/ep4.ts`, UI `src/ui/play/Episode4.tsx`, sim `sim/episodes.ts` + `sim/metrics.ts`, tests `tests/engine/play-ep4.test.ts`). Gate: typecheck, build, unit tests (188), e2e 14 passed (no room-server specs), walkthrough Ep4 4 seats Normal 25 screens / 9 decisions / every screen 760 px, 2 seats Hard 26 screens. Sim table in D-151 (2,000 games): E4a 89.7% ± 0.6, E4b 0.0%.
 - T3: Episode 1 built (engine `src/engine/play/ep1.ts`, UI `src/ui/play/Episode1.tsx`, tests `tests/engine/play-ep1.test.ts`). Gate: typecheck, build, 191 unit tests, e2e 14 passed, walkthrough Ep1 4 seats Normal 19 screens / 6 decisions / 760 px, 2 seats Hard 18 screens. E1 +22.5 points ± 1.6 (D-152).
+- T4: Episode 2 built (`src/engine/play/ep2.ts`, `src/ui/play/Episode2.tsx`, `tests/engine/play-ep2.test.ts`). Gate: typecheck, build, 193 unit tests, e2e 14 passed, walkthroughs 4 seats Normal and 2 seats Hard, every screen 760 px. E2 slope -5.37 ± 0.08 (D-153). Session restarted once mid-task; work was intact.
