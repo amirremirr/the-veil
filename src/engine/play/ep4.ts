@@ -301,14 +301,23 @@ function botTrain(s: GameState, pid: PlayerId): { train: boolean; gift: Gift4 | 
   return { train, gift: bestGift(s, i, expectedW(s, i, { trained: train }, P)) };
 }
 
-/** Coins a claim is worth to a worker this round, by a bot judge's read (the test result is known by now). */
+/**
+ * Coins a claim is worth to a worker this round, by a bot judge's read, before the test (D-151): the chance of
+ * each test result given the worker's training, times the job that result and the claim get.
+ */
 function claimGain(s: GameState, pid: PlayerId, value: string): number {
   const l = st(s);
   const P = p4Params(s);
-  const c = l.current!;
-  const read = judgeRead(c.meter![pid], value === 'TRAINED', reliabilityOf(s, pid));
-  const complex = read >= P.threshold - EPS;
-  return complex ? pay4('COMPLEX', l.care[pid], l.policy, P) : P.wageSimple;
+  const trained = !!l.current!.train![pid];
+  const pp = trained ? L4.PASS_IF_SKILLED : L4.PASS_IF_UNSKILLED;
+  const rel = reliabilityOf(s, pid);
+  let out = 0;
+  for (const pass of [true, false]) {
+    const read = judgeRead(posterior4(priorOf(l, pid), pass), value === 'TRAINED', rel);
+    const w = read >= P.threshold - EPS ? pay4('COMPLEX', l.care[pid], l.policy, P) : P.wageSimple;
+    out += (pass ? pp : 1 - pp) * w;
+  }
+  return out;
 }
 
 function botHire(s: GameState, pid: PlayerId): { hires: Record<PlayerId, Job>; gift: Gift4 | null } {
@@ -464,14 +473,10 @@ export const playLevel4: LevelDefinition = {
     }
     if (step === 'TRAIN') {
       c.train = {};
-      c.pass = {};
-      c.meter = {};
       for (const w of c.workers!) {
         const d = decisions[w] as { train: boolean; gift: Gift4 | null };
         c.train[w] = d.train;
         if (d.gift) c.gifts![w] = d.gift;
-        c.pass[w] = g.next() < (d.train ? L4.PASS_IF_SKILLED : L4.PASS_IF_UNSKILLED);
-        c.meter[w] = posterior4(priorOf(l, w), c.pass[w]);
         playerOf(s, w).privateInfo.trained = d.train;
       }
       return;
@@ -485,6 +490,13 @@ export const playLevel4: LevelDefinition = {
         gains[w] = human || c.train![w] ? null : claimGain(s, w, 'TRAINED') - claimGain(s, w, SILENT);
       }
       c.claims = said;
+      // v2 Section 4: the test comes after the claim, so a claim is made without knowing the result.
+      c.pass = {};
+      c.meter = {};
+      for (const w of c.workers!) {
+        c.pass[w] = g.next() < (c.train![w] ? L4.PASS_IF_SKILLED : L4.PASS_IF_UNSKILLED);
+        c.meter[w] = posterior4(priorOf(l, w), c.pass[w]);
+      }
       // Reads use each worker's record as it stood before this round (claims are simultaneous).
       c.reads = Object.fromEntries(c.workers!.map((w) => [w, judgeRead(c.meter![w], said[w] === 'TRAINED', reliabilityOf(s, w))]));
       postClaims(s, 'TRAINING', said, (pid) => (c.train![pid] ? 'TRAINED' : 'UNTRAINED'), (v) => v === 'TRAINED', gains);
@@ -502,6 +514,15 @@ export const playLevel4: LevelDefinition = {
     c.judgePay = jp.pay;
     c.good = jp.good;
     c.bad = jp.bad;
+    // v2 Section 4: a complex hire's true skill is shown now (GOOD HIRE or BAD HIRE), so a claim by a complex
+    // hire is stamped at once and feeds the record; every other claim waits for the end reveal.
+    for (const m of s.messages) {
+      if (m.level !== s.levelIndex || m.round !== s.round || m.resolved || m.msg.type !== 'CLAIM' || job[m.from] !== 'COMPLEX') continue;
+      m.resolved = true;
+      m.kept = c.train![m.from];
+      s.reliability[m.from].made++;
+      if (m.kept) s.reliability[m.from].kept++;
+    }
     let W = s.players.map((p) => (p.id === l.judge ? jp.pay : pay4(job[p.id], l.care[p.id], l.policy, P) - (c.train![p.id] ? costOf(s, p.id, P) : 0)));
     for (const [from, gf] of Object.entries(c.gifts!)) W = withGift(W, idx(s, from), gf, s);
     c.W = Object.fromEntries(s.players.map((p, i) => [p.id, W[i]]));

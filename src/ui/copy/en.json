@@ -929,7 +929,9 @@
       },
       "4": {
         "name": "The Hiring Round",
-        "pitch": "HireBot 3000 judges. Old beliefs do the rest."
+        "pitch": "HireBot 3000 judges. Old beliefs do the rest.",
+        "sponsor": "Judged by HireBot 3000",
+        "intro": "Workers train, or don't, and say so, or don't. Each round one of you is HireBot and hires. The meter knows only the test and last year."
       },
       "5": {
         "name": "Grand Finale: Rewrite the Rules",
@@ -1072,30 +1074,35 @@
         }
       },
       "L4": {
+        "QUIET": {
+          "name": "Quiet week",
+          "text": "HireBot is defragmenting.",
+          "effect": "Nothing changes this round."
+        },
         "SPREE": {
           "name": "Hiring Spree",
-          "text": "HireBot is in a generous mood. It will pass.",
-          "effect": "HireBot hires at 50% confidence instead of 60%."
+          "text": "The board wants growth. Any growth.",
+          "effect": "A bad hire costs the judge 20 instead of 30, so HireBot hires from 50%."
         },
         "RECESSION": {
           "name": "Recession",
-          "text": "The economy is taking a nap. A long one.",
-          "effect": "Long hours pay 140 instead of 180 this round."
+          "text": "The economy has been placed on a performance plan.",
+          "effect": "Long-hours complex pay drops from 180 to 140 this round."
         },
         "GRANT": {
           "name": "Training Grant",
-          "text": "The Ministry found money behind the sofa.",
-          "effect": "Every training costs 15 coins less this round (never below 0)."
+          "text": "A foundation discovered workers. It's thrilled.",
+          "effect": "Training costs 15 less this round (never below 0)."
         },
-        "HIREBOT_UPDATE": {
+        "UPDATE": {
           "name": "HireBot Update",
-          "text": "HireBot installed a patch. The patch has opinions.",
-          "effect": "HireBot's beliefs move 0.3 per result instead of 0.2 this round."
+          "text": "Version 3000.1 learns faster. Nobody read the notes.",
+          "effect": "HireBot's beliefs move 0.3 toward this round's data instead of 0.2."
         },
-        "OFFICE_PARTY": {
+        "PARTY": {
           "name": "Office Party",
-          "text": "There is cake. There is always cake.",
-          "effect": "Flexible hours pay 20 more this round."
+          "text": "Mandatory fun, with snacks.",
+          "effect": "Flexible-hours complex pay is 20 higher this round."
         }
       },
       "L5": {
@@ -1245,7 +1252,14 @@
         "The Bar is underwriting: real insurers check who is risky. Here the only check was what people said.",
         "People who buy insurance aren't only the risky ones. Careful people buy too. That's why insurers can't just read you from your order."
       ],
-      "link": "See the exact model in the economics version"
+      "link": "See the exact model in the economics version",
+      "L4": [
+        "HireBot hired by a belief about each group, updated from last year's workers.",
+        "Squares started with a lower belief, so a passing Square still fell short of the bar. Training paid them less, so fewer trained.",
+        "That kept the belief low. Nobody was prejudiced: the numbers fed themselves. That's statistical discrimination.",
+        "The policies change what the meter sees (blind hiring), who must be hired (a quota) or what long hours cost (childcare).",
+        "The judge seat is the real-world hiring manager: paid for good hires, blamed for bad ones, reading talk that costs nothing."
+      ]
     },
     "intro": {
       "go": "Roll the cameras",
@@ -1423,7 +1437,13 @@
       "barNone": "Barring no one",
       "claim": "Saying \"{claim}\"",
       "silent": "Saying nothing",
-      "regime": "Voting {name}"
+      "regime": "Voting {name}",
+      "train": "Training",
+      "noTrain": "Skipping training",
+      "hireComplex": "Hiring {name} for the complex job",
+      "hireSimple": "Hiring {name} for the simple job",
+      "policy": "Voting {name}",
+      "claimT": "Saying \"I trained\""
     },
     "myCards": {
       "label": "Your secret cards",
@@ -1482,6 +1502,100 @@
       "one": "once",
       "two": "twice",
       "many": "{n} times"
+    },
+    "l4": {
+      "group": {
+        "CIRCLE": "Circle",
+        "SQUARE": "Square"
+      },
+      "cards": {
+        "label": "Your card",
+        "care": "Childcare duty: yes. Long hours cost you 80 more.",
+        "noCare": "Childcare duty: no.",
+        "public": "Everyone can see every group and duty. Only training is secret.",
+        "judges": "HireBot seats, round by round: {names}."
+      },
+      "policyIn": "The policy is in",
+      "judgeIs": "HireBot this round: {name}",
+      "train": {
+        "title": "Train?",
+        "belief": "HireBot believes {p} of {group}s trained.",
+        "beliefBlind": "HireBot can't see groups: it believes {p} of everyone trained.",
+        "how": "Trained workers pass the test 80% of the time, others 30%.",
+        "tile": "Train",
+        "cost": "Costs you {c} coins this round."
+      },
+      "claim": {
+        "youT": "You trained.",
+        "youU": "You didn't train.",
+        "how": "Then you take the test. HireBot ({name}) sees your claim and your result.",
+        "opts": {
+          "TRAINED": "I trained",
+          "SILENT": "Say nothing"
+        }
+      },
+      "judge": {
+        "title": "You are HireBot",
+        "pay": "+{g} per trained complex hire, -{l} per untrained. Base 40.",
+        "hidden": "Group hidden",
+        "meterNote": "Hiring pays from {p}.",
+        "submit": "Hire"
+      },
+      "pass": "Pass",
+      "fail": "Fail",
+      "saidT": "Claims trained",
+      "saidNothing": "Silent",
+      "meter": "Meter {p}",
+      "complex": "Complex",
+      "simple": "Simple",
+      "quota": "Quota hire",
+      "policy": {
+        "title": "Change HireBot?",
+        "how": "Rounds 3 and 4 run under the policy with the most votes.",
+        "submit": "Cast my vote",
+        "short": {
+          "A": "Judge by group, as now.",
+          "B": "HireBot can't see groups.",
+          "C": "Each group gets a complex job.",
+          "D": "Childcare long hours cost 20, not 80."
+        }
+      },
+      "res": {
+        "label": "Round {r} hires",
+        "youJudged": "You judged. You earn {n}.",
+        "youComplex": "You got the complex job. You earn {n}.",
+        "youSimple": "You got the simple job. You earn {n}.",
+        "judgePay": "{name} earned {n} as HireBot."
+      },
+      "stamp": {
+        "GOOD": "GOOD HIRE",
+        "BAD": "BAD HIRE"
+      },
+      "everyone": "Everyone",
+      "board": {
+        "title": "HireBot's beliefs: share trained",
+        "head": "HireBot learned from last round's workers.",
+        "sub": "A worker is hired complex when the meter reaches {p}."
+      },
+      "peak": {
+        "title": "Who really trained?",
+        "stamp": "R{r} {did}, {stamp}",
+        "T": "trained",
+        "U": "didn't",
+        "silent": "silent",
+        "gap": "Circles earned {n} more a round than Squares.",
+        "gapNeg": "Squares earned {n} more a round than Circles.",
+        "line": "Nobody here was prejudiced. You hired by the numbers. The numbers came from last year.",
+        "youTurnedSq": "As HireBot you turned down {n} trained Squares.",
+        "youTurned": "As HireBot you turned down {n} trained workers.",
+        "youBad": "As HireBot you made {n} bad hires.",
+        "youClean": "As HireBot you hired every trained worker you saw.",
+        "lie": "{name} lied {n}. Training, apparently, is a state of mind."
+      },
+      "sum": {
+        "lie": "{name} said \"I trained\" {n} and hadn't.",
+        "lieYou": "You said \"I trained\" {n} and hadn't."
+      }
     }
   }
 }

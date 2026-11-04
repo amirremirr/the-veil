@@ -518,3 +518,35 @@ The author's third review: lie success was 98% and bar recall 23%, so lying domi
 ## AUTORUN (November 2026)
 
 - **D-150 [AUTORUN, review] T1: AI playtest of Episode 3 and clarity fixes.** AI playtest (proxy, not human evidence) by three personas, written up in `docs/playtest/ai-ep3.md`. Copy fixes only, no mechanics or numbers: (1) the price board after the launch round shows the real direction ("Down 30%") instead of "No change", and says "Everyone was in, so the new price is the whole table's average risk."; (2) the price-up line is "Last round's pool was riskier than the one before." instead of "mostly risky people bought cover", which could be false; (3) when two players are barred and only one applied, the other is named ("Marigold didn't apply, so no cover this round."); (4) "1 times" reads "once", "twice", "3 times". Tooling: `scripts/ai-playtest.mjs` plus `personaDecision` in the dev tools; `playwright.config.ts` and the walkthrough take `PW_EXECUTABLE` (a browser binary) and `PW_NO_ROOM=1` (no local room server: the multiplayer and versions specs are left out, since this run may not start wrangler). The e2e numbers in this run are therefore without those two specs.
+- **D-151 [AUTORUN, review] T2: Episode 4, The Hiring Round.** Built as a Play-only level definition (`src/engine/play/ep4.ts`); `LEVELS[4]` switches on the ruleset, so a Study game runs the Study Level 4 code unchanged (golden passes). Choices the spec leaves open:
+  1. **Order:** train (private), then claim ("I trained" or silent), then the test, then the judge hires. The claim comes before the test (v2 Section 4 order), so a worker can't tailor the claim to the result. The test is public on the judge's screen and in the results.
+  2. **Judge seat:** seat order, round r judged by seat (r - 1) mod n; 4 rounds at every table size. The judge does not train or claim that round.
+  3. **Bot judges:** the Study rule (hire complex when the read reaches `JUDGE_LOSS / (JUDGE_GAIN + JUDGE_LOSS)` = 0.6) on a read that is the HireBot meter moved toward "trained" by a claim: read = (1 - k) x meter + k, k = `JUDGE_CLAIM_WEIGHT` (0.25) x the worker's record. 0.25 keeps a passing Square who claims below 0.6 in round 1 at a fresh record (0.59), so E4b holds. Payoff-grounded (B.2): the judge's pay makes 0.6 the break-even read.
+  4. **Records:** a complex hire's skill is shown at once (GOOD HIRE / BAD HIRE), so that claim is stamped and feeds the record that round; other claims are stamped at the end reveal.
+  5. **Schedule:** the Study long-hours / flexible choice is made for the worker (the better one for their duty), to stay within the decision budget.
+  6. **Meter (open item 2):** shown to a human judge on Easy and Normal, hidden on Hard (`PLAY.L4.METER`). No separate audience poll: the meter is the hint.
+  7. **Hiring Spree** lowers `JUDGE_LOSS` to 20 for the round instead of the threshold, so the identity holds (HireBot hires from 50%). E4b is measured on round-1 tables without Hiring Spree (15.3% with it, reported).
+  8. **Meritocrat effort:** a round of training counts `L4_TRAIN_EFFORT` = 5 effort units (Episode 2 effort is 0 to 10 hours), kept in `play.effort` for the life.
+  9. **Bot training:** logit over the expected Play value of training or not (own test odds, the threshold rule, others' expected pay); bot gifts as Episode 3 (best mission gain over 0.5). Policy vote: logit over expected Play value of each policy over rounds 3 and 4.
+  10. **Card guess:** bots learn nothing about missions in Episode 4 (no observable steps), so their guess is a prior guess.
+  11. **Mission scales per episode:** `MISSION_SCALE_EP[4]` = Egoist 0.78, Rawlsian 1.75, Utilitarian 0.88, Meritocrat 1.31 (calibrated on 500 games; `missionScale()` picks LIFE, episode or Episode 3's values). `MISSION_SCALE_LIFE` added, Episode 3's values until T6.
+
+  Results, 2,000 bot games, 4 seats, Normal (rules 9c90ade0ec516754, Play params 9d5025b4d4178925, Study params 5ba140feb4eef1b7 unchanged; seeds play-0 to play-1999):
+
+  | Target | Result | Status |
+  |---|---|---|
+  | E4a gap positive (at least 70%) | 89.7% ± 0.6 | pass |
+  | E4b passing Squares hired complex, round 1, no Spree (at most 10%) | 0.0% ± 0.0 | pass |
+  | Mean gap Circle minus Square (coins per worker-round) | 40.3 ± 0.7 | |
+  | Lie success (50% to 75%) | 35.9% ± 2.4 (345 lies) | fail, reported |
+  | S-a lies where lying pays (15% to 50%) | 90.1% ± 1.6 | fail, reported |
+  | S-b reader right (55% to 80%) | 80.3% ± 0.4 | at the bound, reported |
+  | Contested hires (at least 20%) | 17.5% ± 0.2 | fail, reported |
+  | S-c a hire differs from full information (20% to 50%) | 88.5% ± 0.8 | fail, reported |
+  | B.1 training read from the test alone (about 80% at most) | 75.4% ± 0.3 | pass |
+  | B.1 training read using the claim | 98.9% ± 0.1 | fail, reported |
+  | F-d big moment (at least 90%) | 97.6% ± 0.4 | pass |
+  | F-e mission win shares (15% to 35%) | 26.8 / 22.2 / 22.5 / 26.9% | pass |
+  | F-f someone in debt (30% to 70%) | 28.0% ± 1.0 | fail, reported |
+
+  3 seats (500 games): E4a 88.8%, E4b 0.0%, F-f 22.4%. 2 seats: E4a 80.8%, E4b 0.0%, F-f 12.2%. The claim gives training away (B.1 with claims 98.9%): bots who trained always say so (a true claim raises the record) and untrained bots lie only when the lie flips the hire, which is rare and then near certain (S-a 90%). A second motive (as Episode 3's worry card) would be needed; not invented here. Walkthroughs at 375 x 760: 4 seats Normal, 25 screens, 9 decisions, 1,310 words, judge screen 64 words, every screen 760 px; 2 seats Hard, 26 screens, 8 decisions, 1,169 words.

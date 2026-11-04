@@ -210,7 +210,7 @@ function enterPhase(s: GameState): void {
       // Counterfactual sandboxes only read the rounds, so they skip the debrief (and its card's-best lines).
       if (s.cf) break;
       const result = d.debrief(s) as Record<string, unknown>;
-      if (s.levelIndex === 4 && !s.cf && !s.config.skipCounterfactual) result.counterfactual = level4Counterfactual(s);
+      if (s.levelIndex === 4 && !s.play && !s.cf && !s.config.skipCounterfactual) result.counterfactual = level4Counterfactual(s);
       // Play v2 Section 6.1: each human's near miss, by replaying the episode with one decision changed.
       if (s.play && !s.config.skipCounterfactual) {
         const nm = nearMisses(s);

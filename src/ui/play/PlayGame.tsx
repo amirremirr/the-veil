@@ -16,6 +16,7 @@ import { screenDecisionPhase } from '../../shared/flow';
 import { BigButton, Bubble, Face, Stage } from './OnAir';
 import { BarBeat, CardsReveal, ClaimScreen, ClaimsBeat, MoveScreen, MyCardsBeat, PriceBeat, RegimeScreen, VoteInBeat, WheelBeat, claimsOpen, hasPriceBeat, regimeName, roundClaims, type L3View } from './Episode3';
 import { eventText, hostLine, missionName, pick, timesWord } from './logic';
+import { BeliefBeat, CardsReveal4, ClaimScreen4, HiresBeat, JudgeScreen, MyCards4, PolicyIn, PolicyScreen, TrainScreen, summary4, type L4View } from './Episode4';
 import type { NearMiss } from '../../engine/play/types';
 
 
@@ -74,15 +75,15 @@ function MissionReveal({ v }: { v: ViewState }) {
 
 function EpisodeIntro({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
-  const n = v.play!.l3!;
+  const n = v.play!.l3;
   return (
     <Stage v={v} footer={<BigButton onClick={() => act()}>{t('play.intro.go')}</BigButton>}>
       <p className="text-xs font-bold uppercase tracking-wider text-soft">
-        {t('play.modes.ep', { n: v.levelIndex })} · {t('play.episodes.3.sponsor')}
+        {t('play.modes.ep', { n: v.levelIndex })} · {t(`play.episodes.${v.levelIndex}.sponsor`)}
       </p>
       <h1 className="h-show mt-1 text-5xl leading-none text-spot">{t(`play.episodes.${v.levelIndex}.name`)}</h1>
       <p className="mt-5 text-lg leading-snug" data-intro>
-        {t('play.episodes.3.intro', { loss: n.loss })}
+        {t(`play.episodes.${v.levelIndex}.intro`, { loss: n?.loss ?? 0 })}
       </p>
       <div className="mt-auto pt-4">
         <Bubble who="Dash" host text={hostLine('welcome', pick(v, 'welcome', 6))} />
@@ -147,6 +148,51 @@ function DecisionFlow({ v }: { v: ViewState }) {
   if (stepId === 'REGIME') return <RegimeScreen v={dv} />;
   if (stepId === 'CLAIM') return <ClaimScreen v={dv} />;
   return <MoveScreen v={dv} />;
+}
+
+/** Episode 4's beats and decision screens (D-151). */
+function DecisionFlow4({ v }: { v: ViewState }) {
+  const online = useOnline();
+  const { done } = useWaiting(v);
+  const stepId = v.phase.step;
+  const lv = v.levelView as L4View;
+  const ev = v.play!.event;
+  const isFirstScreen = stepId === 'TRAIN' || (stepId === 'HIRE' && lv.judge === v.viewer);
+  const beats: Array<'cards' | 'vote' | 'event'> = [];
+  if (isFirstScreen && v.round === 1) beats.push('cards');
+  if (isFirstScreen && v.round === PLAY.L4.BASELINE_ROUNDS + 1 && lv.policyVotes) beats.push('vote');
+  if (isFirstScreen && ev && ev.id !== 'QUIET' && ev.round === v.round && ev.level === v.levelIndex) beats.push('event');
+  const [k, setK] = useState(0);
+  const next = () => setK((x) => x + 1);
+  if (k < beats.length) {
+    const b = beats[k];
+    if (b === 'cards') return <MyCards4 v={v} next={next} />;
+    if (b === 'vote') return <PolicyIn v={v} next={next} />;
+    return <EventBeat v={v} next={next} />;
+  }
+  if (online && done)
+    return (
+      <Stage v={v}>
+        <LockedInPanel v={v} />
+      </Stage>
+    );
+  if (stepId === 'POLICY') return <PolicyScreen v={v} />;
+  if (stepId === 'CLAIM') return <ClaimScreen4 v={v} />;
+  if (stepId === 'HIRE') return <JudgeScreen v={v} />;
+  return <TrainScreen v={v} />;
+}
+
+function ResultsFlow4({ v }: { v: ViewState }) {
+  const act = useStore((s) => s.act);
+  const [k, setK] = useState(0);
+  const [really, setReally] = useState(false);
+  if (k === 0) return <HiresBeat v={v} last={false} next={() => setK(1)} />;
+  return (
+    <>
+      <BeliefBeat v={v} next={() => act()} onReally={() => setReally(true)} />
+      {really && <ReallySheet v={v} onClose={() => setReally(false)} />}
+    </>
+  );
 }
 
 /** A round's results as beats: the Bar (if it voted), the wheel (everyone else in one row), then the price. */
@@ -251,7 +297,13 @@ function nearMissText(v: ViewState, nm: NearMiss): string {
     if (from.gym !== to.gym) parts.push(t(to.gym ? 'play.nm.gym' : 'play.nm.noGym'));
     change = parts.length === 2 ? t('play.nm.and', { a: parts[0], b: parts[1].charAt(0).toLowerCase() + parts[1].slice(1) }) : parts[0];
   } else if (nm.kind === 'BAR') change = nm.to ? t('play.nm.bar', { name: nameOf(v, nm.to as string) }) : t('play.nm.barNone');
-  else if (nm.kind === 'CLAIM') change = nm.to === 'SILENT' ? t('play.nm.silent') : t('play.nm.claim', { claim: t(`play.claims.RISK.${nm.to as string}`) });
+  else if (nm.kind === 'CLAIM' && v.levelIndex === 3) change = nm.to === 'SILENT' ? t('play.nm.silent') : t('play.nm.claim', { claim: t(`play.claims.RISK.${nm.to as string}`) });
+  else if (nm.kind === 'TRAIN') change = t(nm.to ? 'play.nm.train' : 'play.nm.noTrain');
+  else if (nm.kind === 'HIRE') {
+    const x = nm.to as { worker: string; job: string };
+    change = t(x.job === 'COMPLEX' ? 'play.nm.hireComplex' : 'play.nm.hireSimple', { name: nameOf(v, x.worker) });
+  } else if (nm.kind === 'POLICY') change = t('play.nm.policy', { name: t(`levels.4.policies.${nm.to as string}.name`) });
+  else if (nm.kind === 'CLAIM' && v.levelIndex === 4) change = t(nm.to === 'SILENT' ? 'play.nm.silent' : 'play.nm.claimT');
   else change = t('play.nm.regime', { name: regimeName(nm.to as 'VOL' | 'M50' | 'M100') });
   return t('play.nm.line', { change, r: nm.round, n: nm.gain });
 }
@@ -281,8 +333,7 @@ function EpisodeSummary({ v }: { v: ViewState }) {
     .filter((p) => poll[p.id] !== undefined)
     .map((p) => ({ id: p.id, b: poll[p.id], wrong: Math.abs(poll[p.id] - (types[p.id] === 'HIGH' ? 1 : 0)) }))
     .sort((a, b) => b.wrong - a.wrong)[0];
-  const lieText =
-    lies && lies.n
+  const lieText = v.levelIndex === 4 ? summary4(v).lie : lies && lies.n
       ? t(lies.id === v.viewer ? 'play.summary.lieYou' : 'play.summary.lie', { name: nameOf(v, lies.id), claim: t(`play.claim.short.${lies.value}`).toLowerCase(), n: timesWord(lies.n), truth: t(`play.cards.${types[lies.id]}`).toLowerCase() })
       : t('play.summary.noLie');
   const readText =
@@ -326,7 +377,7 @@ function EpisodeSummary({ v }: { v: ViewState }) {
       <h1 className="h-show text-3xl leading-tight text-spot">{t('play.summary.title')}</h1>
       <dl className="mt-3 space-y-3" data-summary>
         {row(t('play.summary.lieLabel'), lieText)}
-        {pl.pollMode !== 'NEVER' && row(t('play.summary.readLabel'), readText)}
+        {pl.pollMode !== 'NEVER' && v.levelIndex === 3 && row(t('play.summary.readLabel'), readText)}
         {row(t('play.bar.bank'), t('play.summary.bankChange', { from: coins(pl.startingBank), to: coins(pl.banks[v.viewer]) }))}
         {row(missionName(m.card), complete ? t('play.summary.missionDone') : t('play.summary.missionMissed'), complete ? 'text-good' : 'text-stamp')}
         {row(t('play.summary.nearMiss'), nm ? nearMissText(v, nm) : t('play.summary.nearMissNone'))}
@@ -353,6 +404,12 @@ export function PlayGameScreen() {
   if (k === 'INTRO') return <EpisodeIntro v={v} />;
   if (k === 'GUESS') return <EpisodeGuess v={v} />;
   if (k === 'LEVEL_DEBRIEF' || k === 'END') return <EpisodeSummary v={v} />;
+  if (v.levelIndex === 4) {
+    if (k === 'DECIDE') return <DecisionFlow4 key={`${v.levelIndex}-${v.phaseIdx}`} v={v} />;
+    if (k === 'REVEAL' && next?.kind === 'ROUND_SUMMARY') return <ResultsFlow4 key={`${v.levelIndex}-${v.phaseIdx}`} v={v} />;
+    if (k === 'REVEAL' && v.phase.step === 'CARDS') return <CardsReveal4 v={v} />;
+    return null;
+  }
   if (k === 'TALK' || k === 'DECIDE') return <DecisionFlow key={`${v.levelIndex}-${v.phaseIdx}`} v={v} />;
   if (k === 'REVEAL' && next?.kind === 'ROUND_SUMMARY') return <ResultsFlow key={`${v.levelIndex}-${v.phaseIdx}`} v={v} />;
   if (k === 'REVEAL' && v.phase.step === 'CARDS') return <CardsReveal v={v} />;

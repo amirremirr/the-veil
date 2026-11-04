@@ -24,6 +24,16 @@ const SCRIPT: Record<string, unknown> = {
   LOBBY: { donateTo: null, amount: 0, proposal: { t: 0.1, F: 25 } },
 };
 
+/** Play episodes whose steps differ from Study's: scripted human moves, from the game state. */
+const PLAY_SCRIPT: Partial<Record<number, Record<string, (g: GameState) => unknown>>> = {
+  4: {
+    TRAIN: () => ({ train: true, gift: null }),
+    CLAIM: () => 'TRAINED',
+    HIRE: (g) => ({ hires: Object.fromEntries(g.players.filter((p) => p.id !== (g.levelState as { judge: string }).judge).map((p) => [p.id, 'COMPLEX'])), gift: null }),
+    POLICY: () => 'B',
+  },
+};
+
 /** Play scripted human moves, one screen (one tap) at a time, until `stopAt` returns true. */
 export function autoplay(stopAt: (g: GameState) => boolean): string {
   const st = useStore;
@@ -40,7 +50,7 @@ export function autoplay(stopAt: (g: GameState) => boolean): string {
       continue;
     }
     const step = screenDecisionPhase(g, g.phaseQueue)?.step;
-    const decision = step ? (step.startsWith('AMEND_') ? true : SCRIPT[step]) : undefined;
+    const decision = g.play && step && PLAY_SCRIPT[g.levelIndex]?.[step] ? PLAY_SCRIPT[g.levelIndex]![step](g) : step ? (step.startsWith('AMEND_') ? true : SCRIPT[step]) : undefined;
     st.getState().act(decision);
   }
   return 'limit';
@@ -72,6 +82,15 @@ export function personaDecision(g: GameState, persona: string, step: string | un
       return { buy: true, gym: false, gift: null, bar: members.includes(me.id) ? suspect(members) : null };
     }
     if (step === 'REGIME') return persona === 'CAREFUL' ? 'M50' : 'VOL';
+  }
+  if (g.levelIndex === 4 && g.play) {
+    const l = g.levelState as { judge: string; current?: { meter?: Record<string, number>; train?: Record<string, boolean> } };
+    const workers = g.players.filter((p) => p.id !== l.judge).map((p) => p.id);
+    if (step === 'TRAIN') return { train: persona === 'CAREFUL' ? (me.publicInfo as { group?: string }).group === 'CIRCLE' : persona === 'SKIMMER', gift: null };
+    if (step === 'CLAIM') return persona === 'BLUFFER' ? 'TRAINED' : persona === 'SKIMMER' ? 'SILENT' : l.current?.train?.[me.id] ? 'TRAINED' : 'SILENT';
+    if (step === 'HIRE')
+      return { hires: Object.fromEntries(workers.map((w) => [w, persona === 'SKIMMER' ? 'COMPLEX' : (l.current?.meter?.[w] ?? 0) >= 0.6 ? 'COMPLEX' : 'SIMPLE'])), gift: null };
+    if (step === 'POLICY') return persona === 'CAREFUL' ? 'B' : 'A';
   }
   void others;
   return step.startsWith('AMEND_') ? persona !== 'BLUFFER' : SCRIPT[step];

@@ -61,7 +61,7 @@ export function LatestMessage({ v }: { v: ViewState }) {
 }
 
 /** A big tap tile (Play spec redesign: choices are tiles, not checkboxes). */
-function Tile({ on, title, desc, note, onClick, disabled = false }: { on: boolean; title: string; desc: string; note?: string | null; onClick?: () => void; disabled?: boolean }) {
+export function Tile({ on, title, desc, note, onClick, disabled = false }: { on: boolean; title: string; desc: string; note?: string | null; onClick?: () => void; disabled?: boolean }) {
   return (
     <button
       type="button"
@@ -297,8 +297,8 @@ export function previewText(x: number | null | undefined): string | null {
 }
 
 /** D-142: pick a gift: one other contestant, one amount, or none. Each option shows its mission preview. */
-function GiftSheet({ v, gift, onPick, onClose }: { v: ViewState; gift: Gift | null; onPick: (g: Gift | null) => void; onClose: () => void }) {
-  const pv = lv3(v).preview;
+export function GiftSheet({ v, gift, onPick, onClose, previews }: { v: ViewState; gift: Gift | null; onPick: (g: Gift | null) => void; onClose: () => void; previews?: Record<string, Record<number, number>> }) {
+  const pv = previews ? { gift: previews } : lv3(v).preview;
   return (
     <Sheet title={t('play.gift.sheet')} closeLabel={t('play.gift.close')} onClose={onClose}>
       <p className="text-sm">{t('play.gift.how')}</p>

@@ -24,6 +24,11 @@ function arg(name: string, def: string): string {
 }
 
 const mode = arg('mode', 'EPISODE');
+// Episodes 1, 2, 4, 5 and whole lives run in sim/episodes.ts (RUNPLAN T2 to T6).
+if (mode === 'LIFE' || Number(arg('episode', '3')) !== 3) {
+  await import('./episodes');
+  process.exit(process.exitCode ?? 0);
+}
 if (mode !== 'EPISODE') {
   console.error(`--mode ${mode}: LIFE mode is not built yet (milestone P3). Use --mode EPISODE --episode 3.`);
   process.exit(2);

@@ -26,7 +26,7 @@ export const PLAY = {
    * D-151: k per mission for a single episode, calibrated on that episode alone (4 seats, Normal) so every
    * mission wins close to 25% of the time. Episode 3 uses MISSION_SCALE.
    */
-  MISSION_SCALE_EP: {} as Partial<Record<number, Record<ValuesCard, number>>>,
+  MISSION_SCALE_EP: { 4: { EGOIST: 0.78, RAWLSIAN: 1.75, UTILITARIAN: 0.88, MERITOCRAT: 1.31 } } as Partial<Record<number, Record<ValuesCard, number>>>,
   /** D-151: k per mission over a whole life (calibrated in T6; Episode 3's values until then). */
   MISSION_SCALE_LIFE: { EGOIST: 0.84, RAWLSIAN: 1.44, UTILITARIAN: 1.02, MERITOCRAT: 1.14 } as Record<ValuesCard, number>,
   /** The mission bar's full mark: start bank + this share of the episode's income minus living cost (D-102). */
