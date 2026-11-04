@@ -41,6 +41,10 @@ if (-not (Get-Command claude -ErrorAction SilentlyContinue)) {
   exit 1
 }
 
+if ((git status --porcelain) -ne $null) {
+  Write-Host "This folder has uncommitted changes. Commit or move them, or use a fresh clone, then run again." -ForegroundColor Red
+  exit 1
+}
 $branch = (git rev-parse --abbrev-ref HEAD).Trim()
 if ($branch -ne "autorun") {
   Write-Host "Switching to the autorun branch."
@@ -77,6 +81,7 @@ foreach ($t in $tasks) {
     --permission-mode dontAsk `
     --max-budget-usd $t.budget `
     --output-format json > $log 2> "autorun-logs/$($t.id)_$stamp.err.txt"
+  $exitCode = $LASTEXITCODE
 
   $cost = 0.0
   try {
@@ -86,6 +91,16 @@ foreach ($t in $tasks) {
   if ($cost -eq 0.0) { $cost = $t.budget }   # unknown cost: assume the whole budget was used
   $spent += $cost
   Write-Host ("[{0}] Finished {1}: about {2:N2} USD (total {3:N2})" -f (Get-Date -Format "HH:mm"), $t.id, $cost, $spent)
+
+  git pull --ff-only origin autorun 2>$null | Out-Null
+  $row = Select-String -Path "docs/PROGRESS.md" -Pattern "^\| $($t.id) " -ErrorAction SilentlyContinue | Select-Object -First 1
+  $statusOk = $row -and ($row.Line -match "DONE|SKIPPED|PARTIAL")
+  $local = (git rev-parse HEAD).Trim()
+  $remote = (git rev-parse origin/autorun 2>$null)
+  if ($exitCode -ne 0 -or -not $statusOk -or ($remote -and $local -ne $remote.Trim()) -or ((git status --porcelain) -ne $null)) {
+    Write-Host ("{0} did not finish cleanly (exit {1}, status row: {2}). Stopping so the state is preserved. See autorun-logs." -f $t.id, $exitCode, $row.Line) -ForegroundColor Red
+    exit 1
+  }
 
   if ($t.id -eq "T0") {
     if (-not ((Test-Path "docs/PROGRESS.md") -and (Select-String -Path "docs/PROGRESS.md" -Pattern "SMOKE OK" -Quiet))) {

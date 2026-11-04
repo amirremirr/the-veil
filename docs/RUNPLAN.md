@@ -3,7 +3,7 @@
 **Owner:** Amirreza Akhavan. **Written by:** the design reviewer. **Branch:** `autorun` (made from `play-mode` at d01915b).
 **How it runs:** `scripts/autorun.ps1` starts a fresh Claude Code session for each task below, in order, each with its own spending cap. Nobody is watching. Amir reviews everything afterwards from `docs/AUTORUN_REPORT.md`.
 
-Each session: read this whole file, `docs/PROGRESS.md`, `docs/PLAY_V2_SPEC.md`, the recent end of `DECISIONS.md`, then do **only the task you were given**, then update PROGRESS.md and stop.
+Each session: read this whole file, `docs/PROGRESS.md`, `docs/PLAY_V2_SPEC.md`, `docs/PLAY_MODE_SPEC.md` (v1.0, the baseline that v2 builds on: bank, debt stress, missions, events, event decks, theme, tone), the recent end of `DECISIONS.md`, then do **only the task you were given**, then update PROGRESS.md and stop.
 
 ---
 
@@ -21,6 +21,8 @@ Each session: read this whole file, `docs/PROGRESS.md`, `docs/PLAY_V2_SPEC.md`, 
 5. Every Play number in `src/engine/play/params.ts`, every Play string under `play.*`, **no em dashes** in any text, file or commit message.
 6. D-entries continue from the last number in DECISIONS.md.
 7. Satire never mocks disability, illness, caregivers, gender or real groups. Circles and Squares stay abstract.
+8. **Human validation is outstanding.** The spec's Gate 1 and Gate 2 (human playtests) have not happened. This run builds past them on purpose, because of time. Never describe an AI playtest as a human playtest, never say a gate passed, and never claim the game is fun or that people replay it. AI playtest findings are labeled "AI playtest (proxy, not human evidence)" everywhere. The final report lists both gates as **not done**.
+9. If something the spec relies on can't be found in the repo or in either spec, don't reconstruct it from guesswork: choose the simplest version consistent with the engine, mark it [AUTORUN, review], and list it under "Needs Amir".
 
 ### A.3 Start of every task
 1. `git status`. If the tree is dirty (a previous session was cut off by its budget): run the quality gate (A.4). If it passes, commit as "AUTORUN: finish interrupted work" and push. If not, run `git stash push -u -m "wip-<task>"`, record it in PROGRESS.md, and start clean from HEAD.
@@ -112,16 +114,17 @@ Build per the spec plus Section B. Claims per amendment ("I'll vote yes / no" / 
 - Calibrate a separate `MISSION_SCALE_LIFE` on full lives. Sim on lives: F-a to F-f, E5, mission shares 15% to 35% each.
 - Walkthrough a full life at 375x760 and report the total time at a realistic pace (target at most 25 minutes).
 
-### T7. Retention without dark patterns (v2 Section 7, minus multiplayer)
+### T7. AI playtest of a full life, then polish (automated QA)
+- Repeat T1's method on a full life (one Skimmer, one Careful). Write `docs/playtest/ai-life.md`.
+- Fix clarity issues only. Then: an accessibility pass (keyboard focus, labels, contrast AA, reduced motion; use axe through Playwright if it installs from npm, otherwise check by hand), a copy pass (no em dashes, word limits from B.8), and a speed check (the summary near-miss step and sim run time; optimize only if it changes no result, verified by matching game hashes).
+
+### T8. Retention without dark patterns (v2 Section 7, minus multiplayer). Conditional.
+**Do this only if T2 to T7 are all DONE and the quality gate is green.** Otherwise skip it, mark it SKIPPED in PROGRESS.md and go to T9. Gameplay comes first: five solid episodes matter more than achievements and daily challenges.
 - **Daily Life:** the seed is the date (Europe/Istanbul day); one shared life per day against bots; a spoiler-free share text (emoji grid per episode plus the final rank), copied to the clipboard or Web Share.
 - **Achievements:** at most 12, named after the economics (Death Spiral, Lemon, Free Rider, Glass Ceiling Breaker, Kingmaker, Veil Piercer, and others you define), stored locally with try/catch, shown on the result card. No grinding achievements.
 - **Rival line:** "Chet beat you by 12. Rematch with the same seed?"
 - No streak penalties, no notifications, no timers that punish leaving.
 - Skip the party link and Play multiplayer: they need the room server, which can't be deployed tonight. Note this in PROGRESS.md.
-
-### T8. AI playtest of a full life, then polish
-- Repeat T1's method on a full life (one Skimmer, one Careful). Write `docs/playtest/ai-life.md`.
-- Fix clarity issues only. Then: an accessibility pass (keyboard focus, labels, contrast AA, reduced motion; use axe through Playwright if it installs from npm, otherwise check by hand), a copy pass (no em dashes, word limits from B.8), and a speed check (the summary near-miss step and sim run time; optimize only if it changes no result, verified by matching game hashes).
 
 ### T9. Final report
 Write `docs/AUTORUN_REPORT.md` for Amir, short and plain:
@@ -129,7 +132,7 @@ Write `docs/AUTORUN_REPORT.md` for Amir, short and plain:
 2. One table per episode: every E and S check, mean ± SE, pass or fail.
 3. Everything that fails or was left out, and why.
 4. The top 10 "Needs Amir" decisions, each with the choice made and the alternative.
-5. What to playtest first with people, and the challenge code to use.
+5. A section "Human validation: NOT DONE" stating that Gate 1 and Gate 2 are still outstanding and that nothing in this run shows whether people enjoy or replay the game. Then what to playtest first with people, and the challenge code to use.
 6. The latest `autorun` commit and the rules hash. Note that merging to `main` needs the room server redeployed first.
 Update README's Status table. Commit and push. Write "ALL DONE" as the last line of PROGRESS.md.
 
@@ -149,8 +152,8 @@ Update README's Status table. Commit and push. Write "ALL DONE" as the last line
 | T4 Episode 2 | | | |
 | T5 Episode 5 | | | |
 | T6 LIFE, Receipts, result card | | | |
-| T7 Retention | | | |
-| T8 AI playtest life, polish | | | |
+| T7 AI playtest life, polish | | | |
+| T8 Retention (conditional) | | | |
 | T9 Report | | | |
 
 ## Needs Amir
