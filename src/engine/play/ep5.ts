@@ -85,12 +85,23 @@ function incomesOf(s: GameState): number[] {
   return ids(s).map((id) => st(s).incomes![id]);
 }
 
+/**
+ * D-155: in a life the incomes are the banks (debt counts as 0 for the tax base), and the rules redistribute
+ * them: the round's money is the after-rules amount minus the bank it came from, plus the living cost, so the
+ * bank becomes the after-rules amount (a debt stays). In a single episode the after-rules amount is the money.
+ */
+function asRound(s: GameState, W: number[]): number[] {
+  if (s.mode !== 'LIFE') return W;
+  const base = incomesOf(s);
+  return W.map((w, j) => w - base[j] + PLAY.LIVING_COST);
+}
+
 /** A bot's proposal: its sigma mix of the mission-best and the money-best constitution, as Study. */
 function botProposal(s: GameState, pid: PlayerId): Constitution | null {
   const i = idx(s, pid);
   const inc = incomesOf(s);
   const { sigma } = botParams(s, pid);
-  const Ws = ALL_CONSTITUTIONS.map((c) => constitutionWealth(inc, c));
+  const Ws = ALL_CONSTITUTIONS.map((c) => asRound(s, constitutionWealth(inc, c)));
   const bestS = ALL_CONSTITUTIONS[argmax(Ws.map((W) => value(s, i, W)))];
   const bestW = ALL_CONSTITUTIONS[argmax(Ws.map((W) => W[i]))];
   const prop = { t: snap((1 - sigma) * bestS.t + sigma * bestW.t, L5.TAX_OPTIONS), F: snap((1 - sigma) * bestS.F + sigma * bestW.F, L5.FLOOR_OPTIONS) };
@@ -125,8 +136,8 @@ function botLobby(s: GameState, pid: PlayerId): Lobby5 {
   const P = p5Params(s);
   const i = idx(s, pid);
   const inc = incomesOf(s);
-  const Wa = constitutionWealth(inc, prop);
-  const Wc = constitutionWealth(inc, st(s).current!);
+  const Wa = asRound(s, constitutionWealth(inc, prop));
+  const Wc = asRound(s, constitutionWealth(inc, st(s).current!));
   const amounts = PLAY.L5.DONATION_OPTIONS_BOT.filter((a) => a <= P.maxDonation);
   const combos: Array<{ to: PlayerId | null; d: number }> = [{ to: null, d: 0 }];
   for (const to of ids(s)) if (to !== pid) for (const d of amounts) if (d > 0) combos.push({ to, d });
@@ -152,8 +163,8 @@ function pYes(s: GameState, pid: PlayerId, k: number, statusQuo: Constitution): 
   const a = l.lobby![l.order[k]];
   const i = idx(s, pid);
   const inc = incomesOf(s);
-  const Sa = value(s, i, withDonations(s, constitutionWealth(inc, a.proposal!), l.lobby));
-  const Sc = value(s, i, withDonations(s, constitutionWealth(inc, statusQuo), l.lobby));
+  const Sa = value(s, i, withDonations(s, asRound(s, constitutionWealth(inc, a.proposal!)), l.lobby));
+  const Sc = value(s, i, withDonations(s, asRound(s, constitutionWealth(inc, statusQuo)), l.lobby));
   let p = logitProbs([Sa, Sc], botParams(s, pid).lambda)[0];
   if (a.donateTo === pid) p = Math.min(1, p + (L5.RECIPROCITY * a.amount) / p5Params(s).maxDonation);
   return { p, gap: Sa - Sc };
@@ -182,7 +193,7 @@ function botFair(s: GameState, pid: PlayerId, after: boolean): number {
 function finalize(s: GameState): void {
   const l = st(s);
   if (l.W) return;
-  const W = withDonations(s, constitutionWealth(incomesOf(s), l.current!), l.lobby);
+  const W = withDonations(s, asRound(s, constitutionWealth(incomesOf(s), l.current!)), l.lobby);
   l.W = Object.fromEntries(ids(s).map((id, i) => [id, W[i]]));
   finishRound(s, W, playEffortShares(s), headline(s, 'l5.play', {}));
 }
@@ -201,7 +212,7 @@ export function p5Preview(s: GameState, pid: PlayerId): P5Preview {
     return PLAY.MISSION_WEIGHT * missionScale(s, card) * missionValue(card, banks, i, playEffortShares(s));
   };
   const draws = l.incomes ? [incomesOf(s)] : orderedDraws(p5Deck(), s.players.length);
-  const by = ALL_CONSTITUTIONS.map((c) => mean(draws.map((inc) => pts(constitutionWealth(inc, c)))));
+  const by = ALL_CONSTITUTIONS.map((c) => mean(draws.map((inc) => pts(l.incomes ? asRound(s, constitutionWealth(inc, c)) : constitutionWealth(inc, c)))));
   const avg = mean(by);
   return { constitutions: by.map((x) => x - avg) };
 }
@@ -312,7 +323,8 @@ export const playLevel5: LevelDefinition = {
       l.adopted = { t: lowerMedian(pids.map((id) => l.veil![id].t)), F: lowerMedian(pids.map((id) => l.veil![id].F)) };
       l.current = { ...l.adopted };
       const drawn = g.shuffle(p5Deck()).slice(0, pids.length);
-      l.incomes = Object.fromEntries(pids.map((id, i) => [id, drawn[i]]));
+      // The draw is always taken, so the game stream is the same in both modes; a life uses the banks.
+      l.incomes = Object.fromEntries(pids.map((id, i) => [id, s.mode === 'LIFE' ? Math.max(0, Math.round(s.play!.banks[id])) : drawn[i]]));
       return;
     }
     if (step === 'FAIR_1') {

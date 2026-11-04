@@ -12,7 +12,7 @@ import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import type { LevelDefinition } from '../levels/types';
 import { POLICIES, type Group, type Job, type Policy, type Priors } from '../levels/level4';
 import { PLAY } from './params';
-import { activeEvent, missionScale, missionValue, playEffortShares, playRoundValue } from './rules';
+import { activeEvent, missionScale, missionValue, playEffortShares, playRanks, playRoundValue, playScore } from './rules';
 import { chooseClaim, postClaims, SILENT } from './claims';
 import { reliabilityOf } from '../core';
 
@@ -102,6 +102,13 @@ export function pay4(job: Job, care: boolean, policy: Policy, P: P4Params): numb
 }
 
 const priorOf = (l: P4State, id: PlayerId) => (l.policy === 'B' && l.priors.POOL !== null ? l.priors.POOL : l.priors[l.groups[id]]);
+
+/** v1 6.3: the contestant in last place now (lowest Play score; the later seat on a tie). */
+export function comebackSeat(s: GameState): PlayerId {
+  const r = playRanks(s);
+  const worst = Math.max(...Object.values(r));
+  return s.players.filter((p) => r[p.id] === worst).slice(-1)[0].id;
+}
 
 /** The judge seat for a round: seat order, wrapping when there are fewer than 4 seats. */
 export const judgeOf = (s: GameState, round: number): PlayerId => s.players[(round - 1) % s.players.length].id;
@@ -384,8 +391,10 @@ export const playLevel4: LevelDefinition = {
     pl.belief = {};
     pl.belief2 = {};
   },
-  phases() {
+  phases(s) {
     const out: Phase[] = [];
+    // v1 Section 6.3: in a life, the comeback card comes before Episode 4 for whoever is last after Episode 3.
+    if (s.mode === 'LIFE') out.push({ kind: 'DECIDE', step: 'COMEBACK', round: 1 });
     for (let r = 1; r <= PLAY.L4.ROUNDS; r++) {
       out.push(
         { kind: 'BRIEFING', round: r },
@@ -425,6 +434,7 @@ export const playLevel4: LevelDefinition = {
     l.current = { judge: l.judge, workers: workersOf(s), policy: l.policy, priorsBefore: { ...l.priors }, costs: { ...l.costs }, gifts: {} };
   },
   deciders(s, step) {
+    if (step === 'COMEBACK') return s.play!.comeback ? [] : [comebackSeat(s)];
     if (step === 'POLICY') return ids(s);
     if (step === 'HIRE') return [st(s).judge];
     return workersOf(s);
@@ -435,6 +445,7 @@ export const playLevel4: LevelDefinition = {
       return gf && typeof gf.to === 'string' && gf.to !== pid && ids(s).includes(gf.to) && PLAY.GIFT_AMOUNTS.includes(gf.amount) ? { to: gf.to, amount: gf.amount } : null;
     };
     if (step === 'POLICY') return POLICIES.includes(d as Policy) ? d : null;
+    if (step === 'COMEBACK') return d === 'COINS' || d === 'POINTS' ? d : null;
     if (step === 'CLAIM') return d === 'TRAINED' || d === SILENT ? d : null;
     if (step === 'TRAIN') {
       const c = d as { train?: unknown; gift?: unknown };
@@ -451,6 +462,14 @@ export const playLevel4: LevelDefinition = {
     return null;
   },
   botDecide(s, botId, step) {
+    if (step === 'COMEBACK') {
+      // The option that raises the bot's Play score more (the coins count half, and move its mission).
+      const before = playScore(s, botId);
+      s.play!.banks[botId] += PLAY.COMEBACK.COINS;
+      const coinsGain = playScore(s, botId) - before;
+      s.play!.banks[botId] -= PLAY.COMEBACK.COINS;
+      return coinsGain >= PLAY.COMEBACK.POINTS ? 'COINS' : 'POINTS';
+    }
     if (step === 'TRAIN') return botTrain(s, botId);
     if (step === 'CLAIM') {
       const trained = st(s).current!.train![botId];
@@ -463,6 +482,13 @@ export const playLevel4: LevelDefinition = {
     const l = st(s);
     const c = l.current!;
     const g = gameRng(s);
+    if (step === 'COMEBACK') {
+      const [pid, took] = Object.entries(decisions)[0] as [PlayerId, 'COINS' | 'POINTS'];
+      if (took === 'COINS') s.play!.banks[pid] += PLAY.COMEBACK.COINS;
+      else s.play!.guessPoints[pid] += PLAY.COMEBACK.POINTS;
+      s.play!.comeback = { pid, took };
+      return;
+    }
     if (step === 'POLICY') {
       const votes = ids(s).map((id) => POLICIES.indexOf(decisions[id] as Policy));
       const { winner } = pluralityResolve(votes, POLICIES.length, g);

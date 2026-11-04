@@ -28,7 +28,7 @@ export const PLAY = {
    */
   MISSION_SCALE_EP: { 1: { EGOIST: 0.65, RAWLSIAN: 2.58, UTILITARIAN: 1.1, MERITOCRAT: 1.11 }, 2: { EGOIST: 0.76, RAWLSIAN: 1.7, UTILITARIAN: 1.01, MERITOCRAT: 1.22 }, 5: { EGOIST: 0.51, RAWLSIAN: 2.14, UTILITARIAN: 1.58, MERITOCRAT: 1.35 }, 4: { EGOIST: 0.78, RAWLSIAN: 1.75, UTILITARIAN: 0.88, MERITOCRAT: 1.31 } } as Partial<Record<number, Record<ValuesCard, number>>>,
   /** D-151: k per mission over a whole life (calibrated in T6; Episode 3's values until then). */
-  MISSION_SCALE_LIFE: { EGOIST: 0.84, RAWLSIAN: 1.44, UTILITARIAN: 1.02, MERITOCRAT: 1.14 } as Record<ValuesCard, number>,
+  MISSION_SCALE_LIFE: { EGOIST: 0.92, RAWLSIAN: 1.29, UTILITARIAN: 1.11, MERITOCRAT: 1.16 } as Record<ValuesCard, number>,
   /** The mission bar's full mark: start bank + this share of the episode's income minus living cost (D-102). */
   MISSION_GOAL_SHARE: 0.8,
   /** Section 7.4: points for a correct end-of-episode card guess. */
@@ -122,7 +122,7 @@ export const PLAY = {
    * JUDGE_CLAIM_WEIGHT: how far a bot judge's read moves toward "trained" on the claim "I trained", times the
    * worker's record (D-151). METER: whether a human judge sees the HireBot meter, per difficulty (open item 2).
    */
-  L4: { ROUNDS: 4, BASELINE_ROUNDS: 2, JUDGE_BASE: 40, JUDGE_GAIN: 20, JUDGE_LOSS: 30, JUDGE_CLAIM_WEIGHT: 0.25, METER: { EASY: true, NORMAL: true, HARD: false } as Record<string, boolean> },
+  L4: { ROUNDS: 4, BASELINE_ROUNDS: 2, JUDGE_BASE: 40, JUDGE_GAIN: 20, JUDGE_LOSS: 30, JUDGE_CLAIM_WEIGHT: 0, METER: { EASY: true, NORMAL: true, HARD: false } as Record<string, boolean> },
   /** D-151: Meritocrat effort for one round of training (Episode 2 effort is in hours, 0 to 10). */
   L4_TRAIN_EFFORT: 5,
   /** v1 Section 6.2, Episode 4 deck. Hiring Spree keeps the judge-pay identity by lowering JUDGE_LOSS (D-151). */
@@ -165,6 +165,10 @@ export const PLAY = {
     LEAKED_RECEIPTS: {},
     PANIC: { ALL_BUT_ONE: 1 },
   },
+  /** v1 Section 6.3, LIFE only: once per life, before Episode 4, the last-placed contestant takes COINS now or POINTS mission points. */
+  COMEBACK: { COINS: 60, POINTS: 20 },
+  /** v2 Section 3.4: the Receipts reel runs at most this long (it is skippable). */
+  RECEIPTS_MAX_MS: 20000,
   /** v2 Section 2: coins to see your own income before the vote (everyone sees that you peeked). */
   PEEK_COST: 10,
   /** v1 Section 6.2, Episode 1 deck. */

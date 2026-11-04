@@ -52,7 +52,6 @@ export const isSingle = (mode: SetupConfig['mode']): boolean => mode === 'SINGLE
 function checkMode(config: SetupConfig): void {
   const play = config.ruleset === 'PLAY';
   if (play !== (config.mode === 'LIFE' || config.mode === 'EPISODE')) throw new Error(`mode ${config.mode} does not belong to ruleset ${config.ruleset ?? 'STUDY'}`);
-  if (config.mode === 'LIFE') throw new Error('LIFE mode is not built yet (milestone P3)');
   if (config.mode === 'EPISODE' && !PLAYABLE_EPISODES.includes(config.level ?? 1)) throw new Error(`episode ${config.level ?? 1} is not built yet`);
 }
 
@@ -170,6 +169,12 @@ function startLevel(s: GameState, level: LevelId): void {
   } else s.phaseQueue = [{ kind: 'INTRO', round: 1 }, ...d.phases(s), { kind: 'LEVEL_DEBRIEF', round: d.rounds }];
   s.phaseIdx = 0;
   enterPhase(s);
+  // D-155: in a life, keep the state at each episode's start so the near miss can replay only that episode.
+  if (s.play && s.mode === 'LIFE' && !s.cf && !s.config.skipCounterfactual && s.players.some((p) => p.isHuman)) {
+    const { play, ...rest } = s;
+    const { episodeSnap: _drop, ...pl } = play!;
+    s.play!.episodeSnap = JSON.stringify({ ...rest, log: [], play: pl });
+  }
 }
 
 function enterPhase(s: GameState): void {
@@ -274,6 +279,16 @@ function advance(s: GameState): void {
     return;
   }
   if (cur === 'LEVEL_DEBRIEF') {
+    // Play LIFE (v1 Section 3.2, D-155): the five episodes in order, banks carried over, then the Receipts.
+    if (s.mode === 'LIFE') {
+      if (s.levelIndex < 5) startLevel(s, (s.levelIndex + 1) as LevelId);
+      else {
+        s.phaseQueue = [{ kind: 'RUN_DEBRIEF', round: 0 }, { kind: 'END', round: 0 }];
+        s.phaseIdx = 0;
+        enterPhase(s);
+      }
+      return;
+    }
     if (s.mode === 'FULL_RUN' && s.levelIndex < 5) {
       startLevel(s, (s.levelIndex + 1) as LevelId);
       return;

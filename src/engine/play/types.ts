@@ -37,6 +37,10 @@ export interface PlayState {
   guessPoints: Record<PlayerId, number>;
   /** Meritocrat effort so far (Section 4.3: Episode 2 effort plus Episode 4 training, in effort units). Public. */
   effort?: Record<PlayerId, number>;
+  /** D-155, LIFE only: the game state at the current episode's start (JSON), for the near-miss replay. Never in a view. */
+  episodeSnap?: string;
+  /** v1 Section 6.3, LIFE only: the comeback card, once per life. */
+  comeback?: { pid: PlayerId; took: 'COINS' | 'POINTS' };
   /** The current round's event (cleared at the start of each episode). */
   event: PlayEvent | null;
   /** Every event drawn, in order. */

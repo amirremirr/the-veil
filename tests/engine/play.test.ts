@@ -45,10 +45,10 @@ describe('ruleset plumbing', () => {
     expect('play' in s).toBe(false);
     expect('play' in visibleState(s, HUMAN_ID)).toBe(false);
   });
-  it('a ruleset accepts only its own modes; LIFE is not built yet', () => {
+  it('a ruleset accepts only its own modes; LIFE plays all five episodes (D-155)', () => {
     expect(() => createInitialState({ ...cfg('x'), ruleset: undefined })).toThrow();
     expect(() => createInitialState({ ...cfg('x'), mode: 'SINGLE_LEVEL' })).toThrow();
-    expect(() => createInitialState({ ...cfg('x'), mode: 'LIFE' })).toThrow(/P3/);
+    expect(() => createInitialState({ ...cfg('x'), mode: 'LIFE', level: undefined })).not.toThrow();
   });
   it('Episode 3 (The Pool) has 4 rounds of claim then move, the regime vote after round 3, the card reveal, then the guess', () => {
     const s = createInitialState(cfg('phases'));

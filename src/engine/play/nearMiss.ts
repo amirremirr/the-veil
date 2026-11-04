@@ -47,7 +47,9 @@ function plans(s: GameState): Record<PlayerId, Plan> {
 
 /** Run the episode again with every human's plan, one decision replaced; return the final banks. */
 function run(s: GameState, all: Record<PlayerId, Plan>, change: { pid: PlayerId; k: string; value: unknown } | null): Record<PlayerId, number> {
-  const g = createInitialState({ ...s.config, skipCounterfactual: true });
+  // D-155: in a life, replay from this episode's start, not the life's.
+  const g: GameState = s.play?.episodeSnap ? (JSON.parse(s.play.episodeSnap) as GameState) : createInitialState({ ...s.config, skipCounterfactual: true });
+  if (s.play?.episodeSnap) g.config = { ...g.config, skipCounterfactual: true };
   for (let guard = 0; guard < 2000; guard++) {
     const k = g.phase.kind;
     if (k === 'GUESS' || k === 'LEVEL_DEBRIEF' || k === 'END') break;

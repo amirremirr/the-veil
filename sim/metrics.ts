@@ -5,6 +5,7 @@ import { PLAY } from '../src/engine/play/params';
 import type { GameState } from '../src/engine/types';
 import type { P4Round, P4State } from '../src/engine/play/ep4';
 import { p2Params, readEffort } from '../src/engine/play/ep2';
+import { playScore } from '../src/engine/play/rules';
 
 export interface Metric {
   key: string;
@@ -346,7 +347,63 @@ function ep5(): EpisodeMetrics {
   };
 }
 
+/** A whole life (T6): each episode's E checks under a prefix, plus the per-life fun targets (v1 10.2). */
+function life(): EpisodeMetrics {
+  const per: Record<string, [number, number]> = {};
+  const seen = new Set<number>();
+  const pre = (lvl: number, ks: string[]): Metric[] =>
+    episodeMetrics(lvl)
+      .metrics.filter((m) => ks.includes(m.key))
+      .map((m) => ({ ...m, key: `L${lvl}.${m.key}`, label: `Ep${lvl} ${m.label}` }));
+  return {
+    metrics: [
+      ...pre(1, ['e1']),
+      ...pre(2, ['e2', 'e2b']),
+      ...pre(4, ['e4a', 'e4b']),
+      ...pre(5, ['e5']),
+      { key: 'fa', label: 'F-a lead changes per life (mean at least 2)', min: 2 },
+      { key: 'fb', label: 'F-b last after Episode 2 finishes first or second', min: 0.2, pct: true },
+      { key: 'fc', label: 'F-c first and second within 15% at the end', min: 0.4, pct: true },
+      { key: 'fd', label: 'F-d episodes with a big moment', min: 0.9, pct: true },
+      { key: 'ff', label: 'F-f someone goes into debt during the life', min: 0.3, max: 0.7, pct: true },
+      { key: 'cb', label: 'Comeback card: took the coins', pct: true },
+    ],
+    watch(s) {
+      if (s.phase.kind !== 'LEVEL_DEBRIEF' || seen.has(s.levelIndex)) return;
+      seen.add(s.levelIndex);
+      const m = s.levelIndex === 3 ? common(s, 3, false) : episodeMetrics(s.levelIndex).finish(s);
+      for (const [k, v] of Object.entries(m)) per[`L${s.levelIndex}.${k}`] = v;
+    },
+    finish(s) {
+      const pl = s.play!;
+      const out: Record<string, [number, number]> = { ...per };
+      let changes = 0;
+      let leader: string | null = null;
+      for (const h of pl.bankHistory) {
+        const top = Object.entries(h.ranks).find(([, r]) => r === 1)?.[0] ?? null;
+        if (leader !== null && top !== leader) changes++;
+        leader = top;
+      }
+      const after2 = pl.bankHistory.filter((h) => h.level === 2).slice(-1)[0];
+      const worst = after2 ? Object.entries(after2.ranks).sort((a, c) => c[1] - a[1])[0][0] : null;
+      const sc = s.players.map((p) => playScore(s, p.id));
+      const sorted = sc.slice().sort((a, c) => c - a);
+      const rankOf = (id: string) => 1 + sc.filter((x) => x > sc[s.players.findIndex((p) => p.id === id)] + 1e-9).length;
+      const fd = [1, 2, 3, 4, 5].map((l) => per[`L${l}.fd`]?.[0] ?? 0);
+      const debt = pl.bankHistory.some((h) => Object.values(h.banks).some((x) => x < 0));
+      out.fa = [changes, 1];
+      out.fb = worst ? b(rankOf(worst) <= 2) : [0, 0];
+      out.fc = b(sorted[0] > 0 ? (sorted[0] - sorted[1]) / sorted[0] <= 0.15 : false);
+      out.fd = [fd.reduce((a, c) => a + c, 0), 5];
+      out.ff = b(debt);
+      out.cb = pl.comeback ? b(pl.comeback.took === 'COINS') : [0, 0];
+      return out;
+    },
+  };
+}
+
 export function episodeMetrics(ep: number): EpisodeMetrics {
+  if (ep === 0) return life();
   if (ep === 5) return ep5();
   if (ep === 1) return ep1();
   if (ep === 2) return ep2();

@@ -108,8 +108,9 @@ function bootDiff(recs: GameRec[], a: string, b: string): { mean: number; se: nu
 /** OLS slope of a per-game y on a per-game x, with a bootstrap SE over games. */
 function bootSlope(recs: GameRec[], xk: string, yk: string): { mean: number; se: number; n: number } {
   const slope = (arr: GameRec[]) => {
-    const xs = arr.map((r) => r.m[xk][0]);
-    const ys = arr.map((r) => r.m[yk][0]);
+    const ok = arr.filter((r) => r.m[xk] && r.m[yk]);
+    const xs = ok.map((r) => r.m[xk][0]);
+    const ys = ok.map((r) => r.m[yk][0]);
     const mx = xs.reduce((a, b) => a + b, 0) / xs.length;
     const my = ys.reduce((a, b) => a + b, 0) / ys.length;
     let sxy = 0;
@@ -157,7 +158,9 @@ out.push('');
 let fail = false;
 for (const m of metrics) {
   // E1: a difference of two pooled shares (top two incomes minus bottom two), bootstrapped over games.
-  const r = m.key === 'e1' ? bootDiff(recs, 'e1hi', 'e1lo') : m.key === 'e2b' ? bootDiff(recs, 'e2c', 'e2t') : m.key === 'e2' ? bootSlope(recs, 'e2x', 'e2y') : boot(recs, (x) => x.m[m.key] ?? [0, 0]);
+  const px = m.key.includes('.') ? m.key.slice(0, m.key.indexOf('.') + 1) : '';
+  const base = m.key.slice(px.length);
+  const r = base === 'e1' ? bootDiff(recs, `${px}e1hi`, `${px}e1lo`) : base === 'e2b' ? bootDiff(recs, `${px}e2c`, `${px}e2t`) : base === 'e2' ? bootSlope(recs, `${px}e2x`, `${px}e2y`) : boot(recs, (x) => x.m[m.key] ?? [0, 0]);
   const pass = Number.isFinite(r.mean) && (m.min === undefined || r.mean >= m.min) && (m.max === undefined || r.mean <= m.max);
   const target = m.min !== undefined && m.max !== undefined ? `${m.min} to ${m.max}` : m.min !== undefined ? `>= ${m.min}` : m.max !== undefined ? `<= ${m.max}` : 'reported';
   if (m.gate && !pass) fail = true;
