@@ -939,7 +939,9 @@
       },
       "5": {
         "name": "Grand Finale: Rewrite the Rules",
-        "pitch": "Write the rules, then find out where you stand."
+        "pitch": "Write the rules, then find out where you stand.",
+        "sponsor": "Paid for by Friends of Whoever Wins",
+        "intro": "Write the rules before you know your income. Then the incomes land, and you can propose changes and pay for votes. Secretly."
       }
     },
     "missions": {
@@ -1125,25 +1127,25 @@
         }
       },
       "L5": {
-        "LOBBYISTS": {
+        "QUIET": {
+          "name": "Quiet finale",
+          "text": "The lobbyists are on vacation.",
+          "effect": "Nothing changes."
+        },
+        "LOBBYIST": {
           "name": "Lobbyist Convention",
-          "text": "The hotel is full of people in very shiny shoes.",
+          "text": "The hotel bar is full of friendly strangers.",
           "effect": "You can donate up to 60 instead of 40."
         },
-        "LEAKED": {
+        "LEAKED_RECEIPTS": {
           "name": "Leaked Receipts",
-          "text": "Someone left the donation book on the photocopier.",
-          "effect": "Every donation is shown before the amendment votes."
+          "text": "Someone left the ledger on the photocopier.",
+          "effect": "Every donation is shown before the votes."
         },
         "PANIC": {
           "name": "Constitutional Panic",
-          "text": "The founding documents are sweating.",
-          "effect": "Amendments need every vote but one."
-        },
-        "QUIET_FINALE": {
-          "name": "Quiet Finale",
-          "text": "No twist. Just you and the rules.",
-          "effect": "Nothing changes."
+          "text": "The lawyers are reading the fine print. Slowly.",
+          "effect": "An amendment needs every vote but one."
         }
       }
     },
@@ -1292,6 +1294,13 @@
         "Claims were cheap, so they drifted up. That's cheap talk.",
         "Higher taxes cut what an extra hour earns you, so people worked less. That's the incentive cost of redistribution.",
         "The Hustle Prize is performance pay: rewarding effort when you can only see results."
+      ],
+      "L5": [
+        "Behind the veil, everyone voted on rules without knowing their income.",
+        "Once incomes landed, fair answers moved toward each person's own interest.",
+        "The bots here are programmed to shift that way, so the slope is built in. With people, it's the question.",
+        "Changing the rules needed a supermajority, and money could buy votes, or not.",
+        "Bought Votes is lobbying: paying for a vote you can't check until the ballots land."
       ]
     },
     "intro": {
@@ -1485,7 +1494,8 @@
       "vote": "Voting {name}",
       "tax": "Voting a {t} tax",
       "effort": "Working {e} hours",
-      "prize": "Voting {name} for the prize"
+      "prize": "Voting {name} for the prize",
+      "noDonate": "Keeping your donation"
     },
     "myCards": {
       "label": "Your secret cards",
@@ -1770,6 +1780,75 @@
         "lie": "{name} overclaimed effort {n} times.",
         "lieYou": "You overclaimed effort {n} times."
       }
+    },
+    "l5": {
+      "rules": "Tax {t}, floor {F}",
+      "tax": "Tax rate",
+      "floor": "Floor: everyone gets at least",
+      "YES": "Yes",
+      "NO": "No",
+      "said": {
+        "YES": "yes",
+        "NO": "no",
+        "SILENT": "silent"
+      },
+      "cards": {
+        "label": "The finale",
+        "title": "Write the rules. Then find out where you stand.",
+        "deck": "Incomes this time: {list}.",
+        "how": "Middle votes win. After the reveal, anyone can propose a change and pay for votes in secret."
+      },
+      "veil": {
+        "title": "Rules behind the veil",
+        "how": "You don't know your income yet.",
+        "submit": "Submit"
+      },
+      "fair": {
+        "title": "What tax is fair?",
+        "before": "Unpaid. Just your opinion, before you know your income.",
+        "after": "Unpaid. Same question, now that you know.",
+        "submit": "Answer"
+      },
+      "inc": {
+        "label": "The incomes, poorest first",
+        "now": "These are the rules now. Next: change them, if you can.",
+        "next": "To the lobby"
+      },
+      "lobby": {
+        "now": "Now: {rules}",
+        "propose": "Propose: {rules}",
+        "keep": "Keep the rules",
+        "donate": "Secret donation to",
+        "nobody": "Nobody",
+        "amount": "Amount"
+      },
+      "claim": {
+        "title": "Vote claims",
+        "how": "Tap Yes or No to claim it. Leave both off to say nothing."
+      },
+      "amend": {
+        "label": "Amendment {k} of {n}, from {name}",
+        "now": "Now: {rules}. Needs {n} yes votes.",
+        "got": "{name} secretly gave you {n} coins.",
+        "submit": "Vote"
+      },
+      "peak": {
+        "label": "The ballots",
+        "final": "Final rules: {rules}",
+        "am": "{name}'s {rules}: {res}, {y} yes.",
+        "passed": "passed",
+        "failed": "failed",
+        "bought": "{name} took {n} from {donor}. Voted yes.",
+        "betray": "{name}: took your {n}. Voted no.",
+        "shift": "Your fair tax: {a} before, {b} after ({d} points).",
+        "hostBought": "Money talks. Sometimes it just mumbles.",
+        "hostClean": "No money changed hands. Our sponsors are devastated."
+      },
+      "sum": {
+        "lie": "{name} broke {n} vote promises.",
+        "lieYou": "You broke {n} vote promises."
+      },
+      "short": "{t} tax, {F} floor"
     }
   }
 }

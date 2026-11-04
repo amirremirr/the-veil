@@ -26,7 +26,7 @@ export const PLAY = {
    * D-151: k per mission for a single episode, calibrated on that episode alone (4 seats, Normal) so every
    * mission wins close to 25% of the time. Episode 3 uses MISSION_SCALE.
    */
-  MISSION_SCALE_EP: { 1: { EGOIST: 0.65, RAWLSIAN: 2.58, UTILITARIAN: 1.1, MERITOCRAT: 1.11 }, 2: { EGOIST: 0.76, RAWLSIAN: 1.7, UTILITARIAN: 1.01, MERITOCRAT: 1.22 }, 4: { EGOIST: 0.78, RAWLSIAN: 1.75, UTILITARIAN: 0.88, MERITOCRAT: 1.31 } } as Partial<Record<number, Record<ValuesCard, number>>>,
+  MISSION_SCALE_EP: { 1: { EGOIST: 0.65, RAWLSIAN: 2.58, UTILITARIAN: 1.1, MERITOCRAT: 1.11 }, 2: { EGOIST: 0.76, RAWLSIAN: 1.7, UTILITARIAN: 1.01, MERITOCRAT: 1.22 }, 5: { EGOIST: 0.51, RAWLSIAN: 2.14, UTILITARIAN: 1.58, MERITOCRAT: 1.35 }, 4: { EGOIST: 0.78, RAWLSIAN: 1.75, UTILITARIAN: 0.88, MERITOCRAT: 1.31 } } as Partial<Record<number, Record<ValuesCard, number>>>,
   /** D-151: k per mission over a whole life (calibrated in T6; Episode 3's values until then). */
   MISSION_SCALE_LIFE: { EGOIST: 0.84, RAWLSIAN: 1.44, UTILITARIAN: 1.02, MERITOCRAT: 1.14 } as Record<ValuesCard, number>,
   /** The mission bar's full mark: start bank + this share of the episode's income minus living cost (D-102). */
@@ -154,6 +154,17 @@ export const PLAY = {
     WIFI: { LUCK_MULT: 0.5 },
     CAMERAS: {},
   },
+  /**
+   * Episode 5, Grand Finale (v1 Section 5, v2 Section 4, D-154): donations up to DONATION_MAX (Study 20), bots
+   * pick from DONATION_OPTIONS_BOT; in a single episode incomes are Study's deck times INCOME_SCALE.
+   */
+  L5: { DONATION_MAX: 40, DONATION_OPTIONS_BOT: [0, 10, 20, 40], INCOME_SCALE: 2 },
+  /** v1 Section 6.2, Episode 5 deck (Quiet Finale cut by v2 Section 5). */
+  L5_EVENTS: {
+    LOBBYIST: { DONATION_MAX: 60 },
+    LEAKED_RECEIPTS: {},
+    PANIC: { ALL_BUT_ONE: 1 },
+  },
   /** v2 Section 2: coins to see your own income before the vote (everyone sees that you peeked). */
   PEEK_COST: 10,
   /** v1 Section 6.2, Episode 1 deck. */
@@ -165,7 +176,7 @@ export const PLAY = {
     LOTTERY: { TOP_CARD: 400 },
   },
   /** Event decks for the episodes after Episode 3 (Episode 3 keeps L3_DECK). */
-  DECKS: { 1: ['BOOM', 'CRASH', 'STRIKE', 'INHERITANCE', 'LOTTERY'], 2: ['LUCKY', 'OVERTIME', 'BURNOUT', 'VIRAL', 'WIFI', 'CAMERAS'], 4: ['SPREE', 'RECESSION', 'GRANT', 'UPDATE', 'PARTY'] } as Partial<Record<number, string[]>>,
+  DECKS: { 1: ['BOOM', 'CRASH', 'STRIKE', 'INHERITANCE', 'LOTTERY'], 2: ['LUCKY', 'OVERTIME', 'BURNOUT', 'VIRAL', 'WIFI', 'CAMERAS'], 5: ['LOBBYIST', 'LEAKED_RECEIPTS', 'PANIC'], 4: ['SPREE', 'RECESSION', 'GRANT', 'UPDATE', 'PARTY'] } as Partial<Record<number, string[]>>,
   /** Section 7.1: the danger meter is green above this bank, amber from 0 to it, red in debt. */
   DANGER_AMBER_BELOW: 60,
   /** Section 7.2: every reveal sequence takes at most this long. */

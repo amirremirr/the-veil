@@ -36,6 +36,9 @@ const PLAY_SCRIPT: Partial<Record<number, Record<string, (g: GameState) => unkno
     EFFORT: () => ({ effort: 5, claim: 'LOT', gift: null }),
     PRIZE: (g) => g.players.find((p) => !p.isHuman)!.id,
   },
+  5: {
+    CLAIM: () => ({}),
+  },
   4: {
     TRAIN: () => ({ train: true, gift: null }),
     CLAIM: () => 'TRAINED',

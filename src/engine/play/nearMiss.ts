@@ -13,6 +13,7 @@ import type { NearMiss } from './types';
 import { p4Plans, p4Tries } from './ep4';
 import { p1Plans, p1Tries } from './ep1';
 import { p2Plans, p2Tries } from './ep2';
+import { p5Plans, p5Tries } from './ep5';
 
 type Plan = Record<string, unknown>;
 
@@ -21,6 +22,7 @@ const EPISODE_HOOKS: Partial<Record<number, { plans: (s: GameState, h: PlayerId)
   1: { plans: p1Plans, tries: p1Tries },
   2: { plans: p2Plans, tries: p2Tries },
   4: { plans: p4Plans, tries: p4Tries },
+  5: { plans: p5Plans, tries: p5Tries },
 };
 const key = (round: number, stepId: string) => `${round}:${stepId}`;
 

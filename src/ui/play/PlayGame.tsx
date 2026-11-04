@@ -18,6 +18,7 @@ import { BarBeat, CardsReveal, ClaimScreen, ClaimsBeat, MoveScreen, MyCardsBeat,
 import { eventText, hostLine, missionName, pick, timesWord } from './logic';
 import { CardsReveal1, ClaimScreen1, IncomesBeat, PeekScreen, Unborn, VoteScreen1, VotesBeat, summary1 } from './Episode1';
 import { CardsReveal2, EffortScreen, IncomeScreen, MyCards2, PrizeBeat, PrizeScreen, TaxScreen, summary2 } from './Episode2';
+import { AmendReveal, AmendScreen, ClaimScreen5, FairScreen, Finale, IncomesScreen, LobbyScreen, VeilScreen, summary5 } from './Episode5';
 import { BeliefBeat, CardsReveal4, ClaimScreen4, HiresBeat, JudgeScreen, MyCards4, PolicyIn, PolicyScreen, TrainScreen, summary4, type L4View } from './Episode4';
 import type { NearMiss } from '../../engine/play/types';
 
@@ -213,6 +214,31 @@ function DecisionFlow2({ v }: { v: ViewState }) {
   return <EffortScreen v={v} />;
 }
 
+/** Episode 5's beats and decision screens (D-154). */
+function DecisionFlow5({ v }: { v: ViewState }) {
+  const online = useOnline();
+  const { done } = useWaiting(v);
+  const stepId = v.phase.step ?? '';
+  const ev = v.play!.event;
+  const beats: Array<'cards' | 'event'> = [];
+  if (stepId === 'VEIL') beats.push('cards');
+  if (stepId === 'VEIL' && ev && ev.id !== 'QUIET' && ev.level === v.levelIndex) beats.push('event');
+  const [k, setK] = useState(0);
+  const next = () => setK((x) => x + 1);
+  if (k < beats.length) return beats[k] === 'cards' ? <Finale v={v} next={next} /> : <EventBeat v={v} next={next} />;
+  if (online && done)
+    return (
+      <Stage v={v}>
+        <LockedInPanel v={v} />
+      </Stage>
+    );
+  if (stepId === 'VEIL') return <VeilScreen v={v} />;
+  if (stepId.startsWith('FAIR')) return <FairScreen key={stepId} v={v} />;
+  if (stepId === 'LOBBY') return <LobbyScreen v={v} />;
+  if (stepId === 'CLAIM') return <ClaimScreen5 v={v} />;
+  return <AmendScreen key={stepId} v={v} />;
+}
+
 /** Episode 4's beats and decision screens (D-151). */
 function DecisionFlow4({ v }: { v: ViewState }) {
   const online = useOnline();
@@ -368,6 +394,7 @@ function nearMissText(v: ViewState, nm: NearMiss): string {
     const x = nm.to as { worker: string; job: string };
     change = t(x.job === 'COMPLEX' ? 'play.nm.hireComplex' : 'play.nm.hireSimple', { name: nameOf(v, x.worker) });
   } else if (nm.kind === 'POLICY') change = t('play.nm.policy', { name: t(`levels.4.policies.${nm.to as string}.name`) });
+  else if (nm.kind === 'DONATE') change = t('play.nm.noDonate');
   else if (nm.kind === 'TAX') change = t('play.nm.tax', { t: pct(nm.to as number) });
   else if (nm.kind === 'EFFORT') change = t('play.nm.effort', { e: nm.to as number });
   else if (nm.kind === 'PRIZE') change = t('play.nm.prize', { name: nameOf(v, nm.to as string) });
@@ -402,7 +429,7 @@ function EpisodeSummary({ v }: { v: ViewState }) {
     .filter((p) => poll[p.id] !== undefined)
     .map((p) => ({ id: p.id, b: poll[p.id], wrong: Math.abs(poll[p.id] - (types[p.id] === 'HIGH' ? 1 : 0)) }))
     .sort((a, b) => b.wrong - a.wrong)[0];
-  const lieText = v.levelIndex === 4 ? summary4(v).lie : v.levelIndex === 1 ? summary1(v).lie : v.levelIndex === 2 ? summary2(v).lie : lies && lies.n
+  const lieText = v.levelIndex === 4 ? summary4(v).lie : v.levelIndex === 1 ? summary1(v).lie : v.levelIndex === 2 ? summary2(v).lie : v.levelIndex === 5 ? summary5(v).lie : lies && lies.n
       ? t(lies.id === v.viewer ? 'play.summary.lieYou' : 'play.summary.lie', { name: nameOf(v, lies.id), claim: t(`play.claim.short.${lies.value}`).toLowerCase(), n: timesWord(lies.n), truth: t(`play.cards.${types[lies.id]}`).toLowerCase() })
       : t('play.summary.noLie');
   const readText =
@@ -473,6 +500,12 @@ export function PlayGameScreen() {
   if (k === 'INTRO') return <EpisodeIntro v={v} />;
   if (k === 'GUESS') return <EpisodeGuess v={v} />;
   if (k === 'LEVEL_DEBRIEF' || k === 'END') return <EpisodeSummary v={v} />;
+  if (v.levelIndex === 5) {
+    if (k === 'DECIDE') return <DecisionFlow5 key={`${v.levelIndex}-${v.phaseIdx}`} v={v} />;
+    if (k === 'REVEAL' && v.phase.step === 'INCOMES') return <IncomesScreen v={v} />;
+    if (k === 'REVEAL' && v.phase.step === 'AMENDMENTS') return <AmendReveal v={v} />;
+    return null;
+  }
   if (v.levelIndex === 2) {
     if (k === 'DECIDE') return <DecisionFlow2 key={`${v.levelIndex}-${v.phaseIdx}`} v={v} />;
     if (k === 'REVEAL' && v.phase.step === 'INCOME') return <IncomeScreen v={v} />;

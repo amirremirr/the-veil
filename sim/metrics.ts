@@ -277,7 +277,77 @@ function ep2(): EpisodeMetrics {
   };
 }
 
+function ep5(): EpisodeMetrics {
+  return {
+    metrics: [
+      { key: 'e5', label: 'E5 slope of the bots\' fair-answer shift on wealth rank (1 = poorest), programmed (must be < 0)', max: -0.0001, gate: true },
+      { key: 'donate', label: 'Bots who donate', pct: true },
+      { key: 'bought', label: 'Donations whose recipient voted yes on the donor\'s amendment', pct: true },
+      { key: 'betrayed', label: '"Took your money. Voted no." per donation voted on', pct: true },
+      { key: 'passed', label: 'Amendments passed per amendment voted', pct: true },
+      { key: 'lies', label: 'Vote claims broken', pct: true },
+      { key: 'sc', label: 'S-c some donation changed a vote outcome (a passed amendment won by the recipient\'s yes)', min: 0.2, max: 0.5, pct: true },
+      ...COMMON,
+    ],
+    finish(s) {
+      const l = s.levelState as { incomes: Record<string, number>; fair1: Record<string, number>; fair2: Record<string, number>; lobby: Record<string, { donateTo: string | null; amount: number }>; amendments: Array<{ proposer: string; votes: Record<string, boolean>; claims: Record<string, string>; yes: number; need: number; passed: boolean; withdrawn?: boolean }> };
+      const pids = s.players.map((p) => p.id);
+      const sorted = pids.slice().sort((a, c) => l.incomes[a] - l.incomes[c]);
+      const rank = pids.map((id) => sorted.indexOf(id) + 1);
+      const dT = pids.map((id) => l.fair2[id] - l.fair1[id]);
+      const mr = rank.reduce((a, c) => a + c, 0) / rank.length;
+      const md = dT.reduce((a, c) => a + c, 0) / dT.length;
+      let sxy = 0;
+      let sxx = 0;
+      rank.forEach((r, i) => {
+        sxy += (r - mr) * (dT[i] - md);
+        sxx += (r - mr) ** 2;
+      });
+      const slope = sxx > 0 ? sxy / sxx : 0;
+      let donors = 0;
+      let bought = 0;
+      let betrayed = 0;
+      let votedOn = 0;
+      let pivotal = false;
+      for (const [from, lb] of Object.entries(l.lobby ?? {})) {
+        if (!lb.donateTo || lb.amount <= 0) continue;
+        donors++;
+        const a = l.amendments.find((x) => x.proposer === from && !x.withdrawn);
+        if (!a) continue;
+        votedOn++;
+        if (a.votes[lb.donateTo]) {
+          bought++;
+          if (a.passed && a.yes === a.need) pivotal = true;
+        } else betrayed++;
+      }
+      const voted = l.amendments.filter((a) => !a.withdrawn);
+      let claims = 0;
+      let broken = 0;
+      for (const a of voted)
+        for (const id of pids) {
+          const c = a.claims[id];
+          if (c === 'YES' || c === 'NO') {
+            claims++;
+            if ((c === 'YES') !== !!a.votes[id]) broken++;
+          }
+        }
+      return {
+        e5x: [slope, 1],
+        e5: [slope, 1],
+        donate: [donors, pids.length],
+        bought: [bought, votedOn],
+        betrayed: [betrayed, votedOn],
+        passed: [voted.filter((a) => a.passed).length, voted.length],
+        lies: [broken, claims],
+        sc: b(pivotal),
+        ...common(s, 5, betrayed > 0 || pivotal),
+      };
+    },
+  };
+}
+
 export function episodeMetrics(ep: number): EpisodeMetrics {
+  if (ep === 5) return ep5();
   if (ep === 1) return ep1();
   if (ep === 2) return ep2();
   if (ep === 4) return ep4();
