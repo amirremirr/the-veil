@@ -167,7 +167,7 @@ Update README's Status table. Commit and push. Write "ALL DONE" as the last line
 
 ## D. Round 2 (second unattended session, same rules as Section A)
 
-Round 1 built everything, but the claim layer is dead outside Episode 3: in Episodes 1, 4 and 5 a claim earns a bot nothing, so bots never lie, and reading is trivial. A game where only one episode has bluffing breaks the spine (v2 Section 3). Round 2 fixes that, then life stakes. Same Section A rules, B lessons, quality gate, commit and push after every task, PROGRESS.md updated after every task (add rows R1 to R7). If it's after 10:00 Istanbul time, skip to R7.
+Round 1 built everything, but the claim layer is dead outside Episode 3: in Episodes 1, 4 and 5 a claim earns a bot nothing, so bots never lie, and reading is trivial. A game where only one episode has bluffing breaks the spine (v2 Section 3). Round 2 fixes that, then life stakes. Same Section A rules, B lessons, quality gate, commit and push after every task, PROGRESS.md updated after every task (add rows R1 to R7). Order: R1 to R6, then Section E (E1 to E5), then R7 last. If it's after 09:30 Istanbul time, skip to R7.
 
 The principle for every fix (B.2): **a claim must pay through other players' decisions, computed from the game's payoffs.** Players who listen must also discount by credibility (the speaker's record and the table's known honesty mix), so lies pay sometimes and get caught sometimes. No invented constants.
 
@@ -199,5 +199,45 @@ The principle for every fix (B.2): **a claim must pay through other players' dec
 - Bots vote strategically under plurality: each votes for its best rule among those it believes can win, using claims as polls, discounted by record (strategic voting under plurality is real; Duverger's law). That gives claims a payoff: claiming a rule makes it look viable. Bots claim by Ep3's rule.
 - Targets: S-a at least 5%; report lie success and S-b. Episode 1 is the tutorial, so low lying is acceptable. E1 must pass.
 
-### R7. Report
-- Add a "Round 2" section at the top of `docs/AUTORUN_REPORT.md`: per task, the new sim table, what passed, what didn't, and new "Needs Amir" items. Keep "Human validation: NOT DONE". Update README Status. Commit, push. Write "ROUND 2 DONE" as the last line of PROGRESS.md.
+### R7. Report (always last, after Section E)
+- Add a "Round 2 and the big-picture review" section at the top of `docs/AUTORUN_REPORT.md`: per task, the new sim table, what passed, what didn't, the big-picture verdict from E2 and E5 (per episode: strongest moment, weakest moment, would a first-timer want another round, and why), the fixes made in E5 and the ones left, and new "Needs Amir" items. Keep "Human validation: NOT DONE". Update README Status. Commit, push. Write "ROUND 2 DONE" as the last line of PROGRESS.md.
+
+---
+
+## E. The big-picture review: is this a good game? (after R6, before R7)
+
+Everything so far checked numbers. This section checks the game itself: is it clear, does it feel good, are the choices interesting, would someone want another round. Judge by what a player sees and does, not by the code. Same Section A rules. **Everything here is AI judgment, a proxy, not human evidence**; label it so, and never claim the game is fun.
+
+### E1. Fresh eyes (independent reviewers)
+- Capture a full LIFE at 375x760 on Normal (one screenshot per screen, plus the timing of each reveal) and one Episode 3 on Hard.
+- Start **two separate subagents that have not seen the code, the spec or this plan.** Give them only the screenshots in order, plus one sentence: "This is a mobile browser game; play along screen by screen."
+  - Reviewer A, an experienced game designer (party and social deduction games such as Coup, Werewolf, Among Us, Jackbox). Ask: what is this game in one sentence; where were you bored, confused or overloaded; which moments are fun and why; which choices are interesting and which are obvious or fake; what is missing that games in this genre have; would you play another round, and with whom; the top 5 changes, ranked.
+  - Reviewer B, a casual first-time player, not an economist. Ask: what did you think you were supposed to do on each screen; where did you get lost; what made you laugh or care; when did you want to stop; would you play again.
+- Save both verbatim to `docs/playtest/fresh-eyes.md`. Don't argue with them in the file.
+
+### E2. Design audit against the principles
+- For each episode and for the life, score the seven principles (v2 Section 1), the emotional loop (goal, think, surprise, meaning, reason to go again) and the five reasons to share (funny story, personal challenge, social experiment, betrayal, easy invitation) as Strong / OK / Weak, each with evidence (screen numbers, sim numbers, reviewer quotes).
+- Name the single weakest moment of each episode and of the life.
+- Save to `docs/review/design-audit.md`.
+
+### E3. Game-logic audit (not economics: is it a good game system?)
+Use the simulator. For each episode, measure:
+- **Dominant and dead options.** The choice rate of every option for bots. Any option chosen in under 3% or over 97% of chances is dead or forced; list it.
+- **Fixed strategies against adaptive play.** Replace one bot with a fixed rule and compare its mean final score with an adaptive bot's: always lie, always silent, always truthful, never bar or always bar, never give or always give, always buy cover, always peek, always claim "I trained", always donate the maximum. If a fixed rule beats adaptive play by more than 1 SE, the game has a dominant strategy; if every fixed rule ties, decisions don't matter. Report both cases.
+- **Exploits** a min-maxing human would find: gift loops, vote coordination, timing tricks, reading another player's private card from the UI or the logs, replaying a challenge code to learn the deck.
+- **Information leaks in the UI:** anything on screen (counts, colors, order, animation timing, the audience poll) that gives away hidden cards more than the rules intend.
+- **Dead time:** screens with no decision and no reveal; consecutive screens with nothing new.
+- **Consistency across episodes:** the same verb (claim, read, move, reveal, give) looks and works the same everywhere.
+- Save to `docs/review/logic-audit.md`, with tables.
+
+### E4. UI and UX audit
+- Heuristic review of every Play screen (Nielsen's ten heuristics), with screenshots: visual hierarchy (is the decision the most prominent thing), tap targets at least 44 px, empty or crowded areas, contrast, consistency of components across episodes, how fast the onboarding cards get to the first decision, whether every number shown is needed for the decision on that screen.
+- Feel: reveal timings (too slow or too fast), the peak screen of each episode (does it look like a peak), transitions, how a loss and a win feel different.
+- Voice: count how often each host and bot line repeats across one life; flag repeats and flat lines; check the humor stays inside the guardrails (A.2 rule 7).
+- Save to `docs/review/ux-audit.md`.
+
+### E5. Fix the most important problems
+- Merge findings from E1 to E4 into one ranked list in `docs/review/fix-list.md`, by impact on fun and clarity divided by effort.
+- Implement from the top, as many as time allows (aim for 10 or more). Copy, layout, pacing, feedback, voice and UI changes are free. Game-logic changes are allowed when E3 shows a dominant strategy, a dead option or an exploit, **only if every E check still passes**; record each as a D-entry with [AUTORUN, review].
+- After each group of fixes: the quality gate, walkthroughs, commit and push.
+- Finish by rerunning E1's Reviewer B (a new subagent, fresh) on the updated screenshots, and save the before and after comparison in `docs/playtest/fresh-eyes.md`.
