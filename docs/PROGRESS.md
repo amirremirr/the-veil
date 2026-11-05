@@ -113,6 +113,6 @@ LOOP DONE
 | G4 Episode 2 lies | PARTIAL | finer luck die: lie success 13.6% to 19.0% (target 30%), contested 27.7%, effort share 50.2% to 53.0%, E2 passes; D-190 |
 | G5 Dead options | DONE | Help the Poorest and an 80% tax kept as real (usually mistaken) choices, reasons in D-191 |
 | G6 Life fun targets | PARTIAL | card 120/40, living 40: F-a 1.95 (target 2), F-b 24.0% (pass), F-d 86.7% (miss); 1,000 lives, E checks pass; D-192 |
-| G7 Improvement loop | TODO | |
+| G7 Improvement loop | DONE | 2 cycles (designer, casual); fixed lies under Security Cameras (D-193) and two HireBot lines; final audit of all five episodes in docs/review/logic-audit-data-r3.json |
 | G8 Report | TODO | |
 
