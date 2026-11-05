@@ -179,10 +179,10 @@ export function ResultCard({ v }: { v: ViewState }) {
   const m = v.play!.mission!;
   const lines = [
     t('play.card.rank', { name: me.name || t('play.card.you'), r: rank, n: v.players.length }),
-    t('play.card.best', { ep: best, name: t(`play.episodes.${best}.name`), n: coins(ch[best] ?? 0) }),
-    t('play.card.worst', { ep: worst, name: t(`play.episodes.${worst}.name`), n: coins(ch[worst] ?? 0) }),
+    t('play.card.best', { ep: best, name: t(`play.episodes.${best}.name`), n: `${(ch[best] ?? 0) >= 0 ? '+' : ''}${coins(ch[best] ?? 0)}` }),
+    t('play.card.worst', { ep: worst, name: t(`play.episodes.${worst}.name`), n: `${(ch[worst] ?? 0) >= 0 ? '+' : ''}${coins(ch[worst] ?? 0)}` }),
     t('play.card.bank', { n: coins(v.play!.banks[v.viewer]) }),
-    t(m.value > m.lifeStartValue + 1e-9 ? 'play.card.missionDone' : 'play.card.missionMissed', { mission: missionName(m.card) }),
+    t(m.value > m.lifeStartValue + 1e-9 ? 'play.card.missionDone' : 'play.card.missionMissed', { mission: missionName(m.card), a: coins(m.lifeStartValue), b: coins(m.value) }),
     !h.made ? t('play.card.noClaims') : h.lies ? t('play.card.honesty', { lies: h.lies, made: h.made, caught: h.caught }) : t('play.card.allTrue', { made: h.made }),
   ];
   const ref = useRef<HTMLDivElement>(null);

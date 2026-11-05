@@ -1784,7 +1784,8 @@
         "you": "You made {y}. Your die: {d}.",
         "hidden": "Hours and other dice stay secret until the end.",
         "cameras": "The cameras showed everyone's hours.",
-        "next": "To the Hustle Prize"
+        "next": "To the Hustle Prize",
+        "how": "20 base + {h}h x {per} = {w} more, then your die {d}."
       },
       "prize": {
         "title": "Hustle Prize: {n} coins",
@@ -1885,14 +1886,16 @@
         "passed": "passed",
         "failed": "failed",
         "bought": "{name} took {n} from {donor}. Voted yes.",
-        "betray": "{name}: took your {n}. Voted no.",
+        "betray": "{name} took {n} from {donor}. Voted no.",
         "shift": "Your fair tax: {a} before, {b} after (moved {d} percentage points).",
         "hostBought": "Money talks. Sometimes it just mumbles.",
         "hostClean": "No money changed hands. Our sponsors are devastated.",
         "kept": "(kept)",
         "broke": "(broke promise)",
         "boughtYou": "{donor} gave you {n}. You voted yes.",
-        "betrayYou": "{donor} gave you {n}. You voted no."
+        "betrayYou": "{donor} gave you {n}. You voted no.",
+        "betrayYours": "{name} took your {n}. Voted no.",
+        "boughtYours": "{name} took your {n}. Voted yes."
       },
       "sum": {
         "lie": "{name} broke a vote promise {n}.",
@@ -1949,11 +1952,11 @@
     "card": {
       "rank": "{name}: #{r} of {n}",
       "you": "You",
-      "best": "Best: Ep{ep} {name}, {n}",
-      "worst": "Worst: Ep{ep} {name}, {n}",
+      "best": "Best episode: Ep{ep} {name}, bank {n}",
+      "worst": "Worst episode: Ep{ep} {name}, bank {n}",
       "bank": "Final bank: {n}",
-      "missionDone": "Mission over the life, {mission}: done",
-      "missionMissed": "Mission over the life, {mission}: missed",
+      "missionDone": "Mission over the life, {mission}: done ({a} to {b})",
+      "missionMissed": "Mission over the life, {mission}: missed ({a} to {b})",
       "honesty": "Lied {lies} of {made} times. Caught {caught}.",
       "noClaims": "Never made a claim.",
       "small": "Just for fun. Not a diagnosis.",
