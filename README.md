@@ -18,6 +18,8 @@ Each player secretly holds a Values card (Egoist, Rawlsian, Utilitarian, Meritoc
 
 Author: Amirreza Akhavan. Spec: Phase 1 (solo vs. bots, browser, English).
 
+**Two ways to play.** "With the economics" is the game described here (Study mode, frozen). "Quick and fun" is Play mode, *The Veil: Live*: the same engine and mechanisms as a satirical reality show, with a bank that carries over, debt, event cards, a host and secret missions (PLAY_MODE_SPEC.md). Play mode exaggerates the numbers for drama; the mechanisms are real. Milestone P1 built the framework and Episode 3, "Bad Luck Season" (DECISIONS.md D-92 to D-107). Play v2 (docs/PLAY_V2_SPEC.md) makes the mechanisms happen through the players: milestone Q1 adds public claims that can be false, an honesty record, bots that bluff, and Episode 3 rebuilt as The Pool, where pool members can bar people they think are risky (D-110 to D-119; review fixes D-120 to D-127: two of four are high risk, a launch round, and bots that count debt over the whole episode; D-128 to D-132: a second private card, Worrier or Calm, so wanting cover no longer gives away your risk; D-133 to D-138: bots bar by what it saves them on next round's price, and half of the other members can bar). New players see three short opening cards before picking a show (D-139). The Episode 3 review (D-141 to D-148) brings back 2 to 4 seats with every card dealt 50/50 and the mix unknown, adds gifts and a mission preview on every move, spells out debt stress, makes difficulty change what you see (the audience poll, bot honesty, the bar), shows your chosen name instead of "You", and renames the show code to a challenge code.
+
 Play it: https://the-veil-mauve.vercel.app
 
 ## Quick start
@@ -43,6 +45,8 @@ Then open http://localhost:5173.
 | `npm run rules-version` | Regenerate `src/engine/rules-hash.ts` after any engine change (the build and a unit test fail if it is stale) |
 | `npm run sim -- --games 2000` | Headless bot-only simulation; writes a CSV and a summary (mean ± bootstrap SE) to `sim/out/`. Bot-only: it checks design targets, not anything about people |
 | `npm run e2e` | Playwright end-to-end tests at 360 px and desktop widths |
+| `npm run sim -- --ruleset PLAY --mode EPISODE --episode 3` | Bot-only Play simulation: the E3 mechanism checks, the social targets S-a and S-b, debt rate, fun targets, the deck trim rule, mission-scale calibration (D-101, D-117) |
+| `npm run walkthrough -- --ruleset PLAY --episode 3` | Phone-width walkthrough of a Play episode: screens, words, overlaps, horizontal scroll |
 
 `npm run e2e` uses Playwright's bundled Chromium (install it once with `npx playwright install chromium`), or an installed browser via `PW_CHANNEL=msedge` or `PW_CHANNEL=chrome`.
 
@@ -52,7 +56,8 @@ Simulator flags: `--games`, `--players 2|3|4`, `--difficulty EASY|NORMAL|HARD`, 
 
 ```
 src/engine/   pure TypeScript game engine (no UI or browser dependencies)
-  params.ts         every numeric constant
+  params.ts         every Study numeric constant
+  play/             Play mode: PLAY params, bank, debt stress, missions, events, claims and beliefs, near misses, the Play view
   engine.ts         the reducer: reduce(state, action) and visibleState(state, viewer)
   levels/level1-5   one LevelDefinition per level (phases, rules, bot policies, debrief data)
   bots/             CARA utility, logit choice, beliefs, messaging
@@ -135,6 +140,8 @@ The room server listens on http://127.0.0.1:8787, and in development the site co
 | M9: deploy | Live on Vercel at https://the-veil-mauve.vercel.app. Pushes to `main` deploy automatically. Not yet checked on iOS Safari, Android Chrome, or Firefox. |
 | Multiplayer | Merged into `main`. Room server deployed with Wrangler 3 (3.114.17; version 4 is available) at https://the-veil-rooms.theveilgame.workers.dev. Vercel builds read it from `VITE_ROOM_SERVER_URL` (production and preview). The room server must be redeployed whenever the engine's rules change; a page and a server with different rules refuse to play together (D-75). |
 | Audit fixes (October 2026) | DECISIONS.md D-72 to D-82; post-merge review fixes D-83 to D-91. |
-| Tests | 117 unit tests (Vitest) and 12 e2e tests (Playwright, plus 4 skipped by design: the three-player and version-check tests run once, on desktop) pass. |
+| Play mode v2 Q1 | The spine and Episode 3 as The Pool on branch `play-mode`. Golden Study replay test passes; E3a to E3d, S-e, S-a, lie success, bar recall, F-d and F-f pass; S-b is reported (D-136). |
+| Play mode v2, AUTORUN (branch `autorun`, November 2026) | All five episodes, LIFE mode, the Receipts, result card v2, Daily Life, achievements and the rival line, built unattended (DECISIONS.md D-150 to D-157; report in docs/AUTORUN_REPORT.md). Round 2 (D-158 to D-166): claims that pay in every episode, life stakes, the first fair answer in Episode 1, an AI big-picture review with fixes, a playtest kit (`?playtest=1`, `?playtest=results`) and a case study draft. Every E check passes in the bot simulator. **Human playtests (Gates 1 and 2) have not been done.** Not merged: merging to `main` needs the room server redeployed first (the rules hash changed). Party link and Play multiplayer not built. |
+| Tests | On `autorun`: 204 unit tests (Vitest, including the golden Study replays) and 15 e2e tests pass, run without the local room server, so the multiplayer and versions specs were not run (D-150). On `main`: 176 unit tests and 14 e2e tests. |
 
 Open items for the author: the final name, the hosting location, and whether to add opt-in result sharing in Phase 2. The About screen will link to the source repository once there is one.

@@ -2,6 +2,12 @@
 import { BOT, L3 } from '../params';
 import { botParams, botRng, finishRound, gameRng, headline, ids, idx, playerOf, pluralityResolve } from '../core';
 import { equalShares, mean, ownNet, roundScore } from '../scoring';
+import { missionScale, missionValue } from '../play/rules';
+import { PLAY } from '../play/params';
+import { activeEvent, isPlay, livingCost, playNet, playRoundValue, roundsLeft, setRoundLedger } from '../play/rules';
+import { audienceBelief, beliefAfterClaim, checkClaims, chooseClaim, claimsOf, initFactBeliefs, observe, postClaims, revealFacts, SILENT } from '../play/claims';
+import { reliabilityOf } from '../core';
+import { botCall, callChance, callsOn, callsThisRound, lieBelief, settleCalls, validCall } from '../play/calls';
 import { ceOfLottery, logitChoice, logitProbs } from '../bots/utility';
 import { flavorIndex } from '../rng';
 import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
@@ -10,9 +16,41 @@ import type { LevelDefinition } from './types';
 export type Regime = 'VOL' | 'M50' | 'M100';
 export const REGIMES: Regime[] = ['VOL', 'M50', 'M100'];
 export type RiskType = 'LOW' | 'HIGH';
+/** Play (D-128): the second hidden card of Episode 3. */
+export type Worry = 'WORRIER' | 'CALM';
 export interface Choice {
   buy: boolean;
   gym: boolean;
+  /** Play v2 only, on the decision: a pool member's bar vote (an applicant, or null for no one). */
+  bar?: PlayerId | null;
+  /** Play only (D-142): a gift to one other contestant this round, or null. */
+  gift?: Gift | null;
+  /** Play only (H1, D-194): a call on another contestant's risk claim this round, or null. */
+  call?: PlayerId | null;
+}
+
+/** D-142: a gift of `amount` coins (one of PLAY.GIFT_AMOUNTS) to `to`. */
+export interface Gift {
+  to: PlayerId;
+  amount: number;
+}
+
+/**
+ * Play v2 Section 4, the Bar: last round's members each vote to bar one applicant. D-133: an applicant is
+ * barred with votes from at least half of the members who aren't that applicant; everyone who reaches it is.
+ */
+export interface L3Bar {
+  members: PlayerId[];
+  votes: Record<PlayerId, PlayerId | null>;
+  barred: PlayerId[];
+  /** The barred contestants who had applied for cover and were turned away. */
+  refused: PlayerId[];
+}
+
+/** D-133: the votes an applicant needs: at least half of the members who aren't the applicant (and at least one). */
+export function barNeeds(members: readonly PlayerId[], applicant: PlayerId): number {
+  const voters = members.filter((m) => m !== applicant).length;
+  return voters ? Math.max(1, Math.ceil(voters / 2)) : Infinity;
 }
 
 export interface L3Round {
@@ -25,6 +63,20 @@ export interface L3Round {
   eventCards: Record<PlayerId, number>;
   W: Record<PlayerId, number>;
   nextPremium: number | null;
+  /** Play only: the insurer's price this round before an event discount (D-98). */
+  listPrice?: number | null;
+  /** Play v2 only: the bar vote of this round (absent when no bar was possible). */
+  bar?: L3Bar;
+  /** Play v2 only: who applied for cover (a barred applicant applied but is not covered). */
+  applied?: Record<PlayerId, boolean>;
+  /** Play v2 only: the launch round, when SafeHands signed everyone up (D-121). */
+  launch?: boolean;
+  /**
+   * Play only (D-142): this round's gifts by giver, with what the recipient got (match included), and each
+   * contestant's net from gifts. `W` is the money before gifts; the banks move by W plus the gift net.
+   */
+  gifts?: Record<PlayerId, Gift & { received: number }>;
+  giftNet?: Record<PlayerId, number>;
 }
 
 export interface L3Debrief {
@@ -57,18 +109,80 @@ export interface L3State {
   regimeTie?: boolean;
   rounds: L3Round[];
   debrief?: L3Debrief;
+  /** Play v2: the round Leaked Medical Files made every risk type public (absent if it never drew). */
+  leaked?: number;
+  /** Play v2: the end reveal has flipped every risk card. */
+  cardsRevealed?: boolean;
+  /** Play (D-128): each contestant's worry card (private until the end reveal; never leaked). */
+  worry?: Record<PlayerId, Worry>;
 }
 
 const st = (s: GameState) => s.levelState as L3State;
-const pOf = (type: RiskType) => (type === 'HIGH' ? L3.P_HIGH : L3.P_LOW);
-const coverage = (r: Regime) => (r === 'M50' ? L3.COVERAGE_OPTIONS[0] : L3.COVERAGE_OPTIONS[1]);
 
-export function premiumFor(meanP: number): number {
-  return L3.LOADING * L3.LOSS * meanP;
+/**
+ * The Level 3 numbers in force (Play spec 3.1): Study's params, plus the Play overrides and this round's
+ * event in a Play game. The extra fields are neutral in Study (multiply by 1, add 0, no cap below 1).
+ */
+export type L3Params = typeof L3 & {
+  /** Event multiplier on every risk this round, and its cap (Storm Season). */
+  RISK_MULT: number;
+  RISK_CAP: number;
+  /** Event multiplier on the price charged this round (Price War). */
+  PREMIUM_MULT: number;
+  /** Event addition to the mandatory contribution (Paperwork Week). */
+  MANDATE_EXTRA: number;
+  /** The loss the insurer prices with: the level's loss, never an event's (D-98). */
+  PRICE_LOSS: number;
+};
+export const STUDY_L3: L3Params = { ...L3, RISK_MULT: 1, RISK_CAP: 1, PREMIUM_MULT: 1, MANDATE_EXTRA: 0, PRICE_LOSS: L3.LOSS };
+
+/**
+ * Everything a Level 3 calculation needs besides the state: the numbers, the score a player maximizes
+ * for one outcome, and the simple selfish value of `w` coins for player j (the model bots use for others).
+ */
+export interface L3Ctx {
+  p: L3Params;
+  score(card: ValuesCard, W: readonly number[], i: number, effortShares: readonly number[]): number;
+  /** `mult`: the debt-stress multiplier assumed for player j (D-128: a Worrier's; 1 when calm or unknown). */
+  net(j: number, w: number, mult?: number): number;
+}
+export const STUDY_CTX: L3Ctx = { p: STUDY_L3, score: roundScore, net: (_j, w) => ownNet(w) };
+
+/** Play's Episode 3 numbers, with this round's event when `withEvent` (D-94, D-98). */
+export function playL3Params(s: GameState, withEvent = true): L3Params {
+  // R3 (D-160): a life may use its own Episode 3 loss.
+  const loss = s.mode === 'LIFE' ? PLAY.LIFE_L3_LOSS : PLAY.L3.LOSS;
+  const base: L3Params = { ...STUDY_L3, ...PLAY.L3, LOSS: loss, PRICE_LOSS: loss };
+  const ev = withEvent ? activeEvent(s) : null;
+  if (!ev) return base;
+  return { ...base, ...(PLAY.L3_EVENTS as Record<string, Partial<L3Params>>)[ev.id] };
 }
 
-export function mandatoryContribution(c: number, pEffAll: readonly number[]): number {
-  return L3.LOADING * c * L3.LOSS * mean(pEffAll);
+/** The context for the current state: Study's, or Play's with banks, debt stress and the event. */
+export function ctxOf(s: GameState, withEvent = true, multOf?: (i: number) => number): L3Ctx {
+  if (!isPlay(s)) return STUDY_CTX;
+  const p = playL3Params(s, withEvent);
+  // D-122: with DEBT_HORIZON, debt also costs stress in the episode's later rounds, on a bank that drifts by
+  // income minus living cost minus the pooled price each round.
+  const drift = PLAY.DEBT_HORIZON ? p.BASE_INCOME - livingCost(s) - premiumFor(p.P_BAR, p) : null;
+  return {
+    p,
+    // Each player values outcomes with its own worry card, unless `multOf` says otherwise (D-128).
+    score: (card, W, i, eff) => playRoundValue(s, card, W, i, eff, drift, multOf ? multOf(i) : undefined),
+    net: (j, w, mult) => playNet(s, j, w, drift, mult),
+  };
+}
+
+const pOf = (type: RiskType, p: L3Params = STUDY_L3) => (type === 'HIGH' ? p.P_HIGH : p.P_LOW);
+const coverage = (r: Regime, p: L3Params = STUDY_L3) => (r === 'M50' ? p.COVERAGE_OPTIONS[0] : p.COVERAGE_OPTIONS[1]);
+
+export function premiumFor(meanP: number, p: L3Params = STUDY_L3): number {
+  return p.LOADING * p.PRICE_LOSS * meanP;
+}
+
+export function mandatoryContribution(c: number, pEffAll: readonly number[], p: L3Params = STUDY_L3): number {
+  const T = p.LOADING * c * p.LOSS * mean(pEffAll);
+  return p.MANDATE_EXTRA ? T + p.MANDATE_EXTRA : T;
 }
 
 export function wealthL3(
@@ -77,17 +191,18 @@ export function wealthL3(
   choices: readonly Choice[],
   pEff: readonly number[],
   events: readonly boolean[],
+  p: L3Params = STUDY_L3,
 ): { W: number[]; T?: number } {
   if (regime === 'VOL') {
     const W = choices.map((c, i) => {
       const buy = c.buy && premium !== null;
-      return L3.BASE_INCOME - (buy ? premium! : 0) - (c.gym ? L3.GYM_COST : 0) - (events[i] && !buy ? L3.LOSS : 0);
+      return p.BASE_INCOME - (buy ? premium! : 0) - (c.gym ? p.GYM_COST : 0) - (events[i] && !buy ? p.LOSS : 0);
     });
     return { W };
   }
-  const c = coverage(regime);
-  const T = mandatoryContribution(c, pEff);
-  const W = choices.map((ch, i) => L3.BASE_INCOME - T - (ch.gym ? L3.GYM_COST : 0) - (events[i] ? (1 - c) * L3.LOSS : 0));
+  const c = coverage(regime, p);
+  const T = mandatoryContribution(c, pEff, p);
+  const W = choices.map((ch, i) => p.BASE_INCOME - T - (ch.gym ? p.GYM_COST : 0) - (events[i] ? (1 - c) * p.LOSS : 0));
   return { W, T };
 }
 
@@ -95,32 +210,44 @@ export function wealthL3(
  * Expected own money minus hardship for one choice (risk neutral apart from the hardship line).
  * Under a mandate the contribution is estimated from the population average risk.
  */
-export function rnValue(type: RiskType, regime: Regime, premium: number | null, ch: Choice): number {
-  const pe = pOf(type) * (ch.gym ? L3.GYM_FACTOR : 1);
-  const gym = ch.gym ? L3.GYM_COST : 0;
+export function rnValue(type: RiskType, regime: Regime, premium: number | null, ch: Choice, ctx: L3Ctx = STUDY_CTX, j = -1, mult = 1): number {
+  const p = ctx.p;
+  const net = (w: number) => ctx.net(j, w, mult);
+  const pe = pEffOf(type, ch.gym, p);
+  const gym = ch.gym ? p.GYM_COST : 0;
   if (regime === 'VOL') {
-    if (ch.buy && premium !== null) return ownNet(L3.BASE_INCOME - premium - gym);
-    return (1 - pe) * ownNet(L3.BASE_INCOME - gym) + pe * ownNet(L3.BASE_INCOME - gym - L3.LOSS);
+    if (ch.buy && premium !== null) return net(p.BASE_INCOME - premium - gym);
+    return (1 - pe) * net(p.BASE_INCOME - gym) + pe * net(p.BASE_INCOME - gym - p.LOSS);
   }
-  const c = coverage(regime);
-  const T = mandatoryContribution(c, [L3.P_BAR]);
-  return (1 - pe) * ownNet(L3.BASE_INCOME - T - gym) + pe * ownNet(L3.BASE_INCOME - T - gym - (1 - c) * L3.LOSS);
+  const c = coverage(regime, p);
+  const T = mandatoryContribution(c, [p.P_BAR], p);
+  return (1 - pe) * net(p.BASE_INCOME - T - gym) + pe * net(p.BASE_INCOME - T - gym - (1 - c) * p.LOSS);
 }
 
-/** Risk-neutral selfish choice for a type, counting the hardship line (the simple model bots use for others). */
-export function rnChoice(type: RiskType, regime: Regime, premium: number | null): Choice {
+/**
+ * Risk-neutral selfish choice for a type (the simple model bots use for others), counting the hardship
+ * line in Study and debt stress on player j's bank in Play.
+ */
+export function rnChoice(type: RiskType, regime: Regime, premium: number | null, ctx: L3Ctx = STUDY_CTX, j = -1): Choice {
   const opts: Choice[] = [
     { buy: false, gym: false },
     { buy: false, gym: true },
   ];
   if (regime === 'VOL' && premium !== null) opts.push({ buy: true, gym: false });
   let best = opts[0];
-  for (const o of opts) if (rnValue(type, regime, premium, o) > rnValue(type, regime, premium, best) + 1e-9) best = o;
+  for (const o of opts) if (rnValue(type, regime, premium, o, ctx, j) > rnValue(type, regime, premium, best, ctx, j) + 1e-9) best = o;
   return best;
 }
 
-function pEffOf(type: RiskType, gym: boolean): number {
-  return pOf(type) * (gym ? L3.GYM_FACTOR : 1);
+/** Effective risk this round (an event can raise it, up to its cap). */
+function pEffOf(type: RiskType, gym: boolean, p: L3Params = STUDY_L3): number {
+  const pe = pOf(type, p) * (gym ? p.GYM_FACTOR : 1);
+  return p.RISK_MULT === 1 ? pe : Math.min(p.RISK_CAP, pe * p.RISK_MULT);
+}
+
+/** Risk without this round's event: what the insurer prices next round from (D-98). Equal to pEffOf in Study. */
+function pBaseOf(type: RiskType, gym: boolean, p: L3Params = STUDY_L3): number {
+  return pOf(type, p) * (gym ? p.GYM_FACTOR : 1);
 }
 
 function optionsFor(regime: Regime, premium: number | null): Choice[] {
@@ -145,7 +272,9 @@ function choiceCE(
   rho: number,
   regime: Regime,
   premium: number | null,
+  ctx: L3Ctx = STUDY_CTX,
 ): { options: Choice[]; ce: number[] } {
+  const P = ctx.p;
   const options = optionsFor(regime, premium);
   const lotteries: Array<Array<[number, number]>> = options.map(() => []);
   const eq = equalShares(n);
@@ -156,13 +285,13 @@ function choiceCE(
     free.forEach((j, k) => {
       const high = (tm >> k) & 1;
       types[j] = high ? 'HIGH' : 'LOW';
-      pTypes *= high ? L3.P_HIGH_SHARE : 1 - L3.P_HIGH_SHARE;
+      pTypes *= high ? P.P_HIGH_SHARE : 1 - P.P_HIGH_SHARE;
     });
-    const others = types.map((t) => rnChoice(t, regime, premium));
+    const others = types.map((t, j) => rnChoice(t, regime, premium, ctx, j));
     options.forEach((opt, k) => {
       const choices = others.slice();
       choices[i] = opt;
-      const pEff = choices.map((c, j) => pEffOf(types[j], c.gym));
+      const pEff = choices.map((c, j) => pEffOf(types[j], c.gym, P));
       for (let em = 0; em < 1 << n; em++) {
         let p = pTypes;
         const events = pEff.map((pe, j) => {
@@ -171,24 +300,27 @@ function choiceCE(
           return ev;
         });
         if (p === 0) continue;
-        const { W } = wealthL3(regime, premium, choices, pEff, events);
-        lotteries[k].push([p, roundScore(card, W, i, eq)]);
+        const { W } = wealthL3(regime, premium, choices, pEff, events, P);
+        lotteries[k].push([p, ctx.score(card, W, i, eq)]);
       }
     });
   }
   return { options, ce: lotteries.map((lot) => ceOfLottery(lot, rho)) };
 }
 
-function currentPremium(s: GameState): number | null {
+/** The price charged now: the insurer's price, times this round's event multiplier in Play (Price War). */
+function currentPremium(s: GameState, ctx: L3Ctx = ctxOf(s)): number | null {
   const l = st(s);
-  return l.regime === 'VOL' && l.insurerActive ? l.nextPremium : null;
+  const price = l.regime === 'VOL' && l.insurerActive ? l.nextPremium : null;
+  return price === null || ctx.p.PREMIUM_MULT === 1 ? price : price * ctx.p.PREMIUM_MULT;
 }
 
-function regimeCE(s: GameState, n: number, i: number, myType: RiskType | null, card: ValuesCard, rho: number): number[] {
+function regimeCE(s: GameState, n: number, i: number, myType: RiskType | null, card: ValuesCard, rho: number, multOf?: (i: number) => number): number[] {
   const l = st(s);
+  const ctx = ctxOf(s, true, multOf);
   return REGIMES.map((r) => {
     const prem = r === 'VOL' && l.insurerActive ? l.nextPremium : null;
-    const { ce } = choiceCE(n, i, myType, card, rho, r, prem);
+    const { ce } = choiceCE(n, i, myType, card, rho, r, prem, ctx);
     return Math.max(...ce);
   });
 }
@@ -199,22 +331,23 @@ function regimeCE(s: GameState, n: number, i: number, myType: RiskType | null, c
  * current price set next round's price from their average risk, and if nobody buys the insurer leaves
  * for good. Deterministic: it uses the table's mix of types, not anyone's luck.
  */
-export function voluntaryPath(nHigh: number, n: number): Array<number | null> {
+export function voluntaryPath(nHigh: number, n: number, ctx: L3Ctx = STUDY_CTX): Array<number | null> {
+  const P = ctx.p;
   const out: Array<number | null> = [];
-  let premium: number | null = premiumFor(L3.P_BAR);
-  for (let r = 0; r < L3.ROUNDS; r++) {
+  let premium: number | null = premiumFor(P.P_BAR, P);
+  for (let r = 0; r < P.ROUNDS; r++) {
     out.push(premium);
     if (premium === null) continue;
     const counts: Record<RiskType, number> = { HIGH: nHigh, LOW: n - nHigh };
     let buyers = 0;
     let riskSum = 0;
     for (const type of ['LOW', 'HIGH'] as RiskType[]) {
-      const c = rnChoice(type, 'VOL', premium);
+      const c = rnChoice(type, 'VOL', premium, ctx);
       if (!c.buy || counts[type] === 0) continue;
       buyers += counts[type];
-      riskSum += counts[type] * pEffOf(type, c.gym);
+      riskSum += counts[type] * pEffOf(type, c.gym, P);
     }
-    premium = buyers ? premiumFor(riskSum / buyers) : null;
+    premium = buyers ? premiumFor(riskSum / buyers, P) : null;
   }
   return out;
 }
@@ -225,28 +358,29 @@ export function voluntaryPath(nHigh: number, n: number): Array<number | null> {
  * the opening price (D-80). With `net`, each outcome counts own money minus the hardship penalty (used to
  * pick a type's best regime).
  */
-export function expectedByType(nHigh: number, n: number, net = false): Record<Regime, Record<RiskType, number>> {
-  const f = net ? ownNet : (w: number) => w;
+export function expectedByType(nHigh: number, n: number, net = false, ctx: L3Ctx = STUDY_CTX): Record<Regime, Record<RiskType, number>> {
+  const P = ctx.p;
+  const f = net ? (w: number) => ctx.net(-1, w) : (w: number) => w;
   const highShare = n > 0 ? nHigh / n : 0;
-  const path = voluntaryPath(nHigh, n);
+  const path = voluntaryPath(nHigh, n, ctx);
   const volRound = (type: RiskType, prem: number | null) => {
-    const c = rnChoice(type, 'VOL', prem);
-    const gym = c.gym ? L3.GYM_COST : 0;
-    if (c.buy && prem !== null) return f(L3.BASE_INCOME - prem - gym);
-    const p = pEffOf(type, c.gym);
-    return (1 - p) * f(L3.BASE_INCOME - gym) + p * f(L3.BASE_INCOME - gym - L3.LOSS);
+    const c = rnChoice(type, 'VOL', prem, ctx);
+    const gym = c.gym ? P.GYM_COST : 0;
+    if (c.buy && prem !== null) return f(P.BASE_INCOME - prem - gym);
+    const p = pEffOf(type, c.gym, P);
+    return (1 - p) * f(P.BASE_INCOME - gym) + p * f(P.BASE_INCOME - gym - P.LOSS);
   };
   const vol = (type: RiskType) => mean(path.map((prem) => volRound(type, prem)));
   const mand = (r: Regime) => {
-    const cv = coverage(r);
-    const gymL = rnChoice('LOW', r, null).gym;
-    const gymH = rnChoice('HIGH', r, null).gym;
-    const meanP = highShare * pEffOf('HIGH', gymH) + (1 - highShare) * pEffOf('LOW', gymL);
-    const T = L3.LOADING * cv * L3.LOSS * meanP;
+    const cv = coverage(r, P);
+    const gymL = rnChoice('LOW', r, null, ctx).gym;
+    const gymH = rnChoice('HIGH', r, null, ctx).gym;
+    const meanP = highShare * pEffOf('HIGH', gymH, P) + (1 - highShare) * pEffOf('LOW', gymL, P);
+    const T = mandatoryContribution(cv, [meanP], P);
     const w = (type: RiskType, gym: boolean) => {
-      const base = L3.BASE_INCOME - T - (gym ? L3.GYM_COST : 0);
-      const p = pEffOf(type, gym);
-      return (1 - p) * f(base) + p * f(base - (1 - cv) * L3.LOSS);
+      const base = P.BASE_INCOME - T - (gym ? P.GYM_COST : 0);
+      const p = pEffOf(type, gym, P);
+      return (1 - p) * f(base) + p * f(base - (1 - cv) * P.LOSS);
     };
     return { LOW: w('LOW', gymL), HIGH: w('HIGH', gymH) };
   };
@@ -259,31 +393,429 @@ function cardBestBuy(s: GameState, pid: PlayerId): { best: boolean; chose: boole
   const me = playerOf(s, pid);
   const r1 = l.rounds[0];
   const premium = r1.premium;
-  const { options, ce } = choiceCE(s.players.length, idx(s, pid), l.types[pid], me.values, 0, 'VOL', premium);
+  const { options, ce } = choiceCE(s.players.length, idx(s, pid), l.types[pid], me.values, 0, 'VOL', premium, ctxOf(s, false));
   return { best: options[ce.indexOf(Math.max(...ce))].buy, chose: r1.choices[pid].buy };
+}
+
+// ---- Play v2 (PLAY_V2_SPEC.md Section 4, The Pool). Study never reaches these. ----
+
+/** D-121: with L3_LAUNCH, SafeHands signs everyone up in round 1 at the pooled price. */
+export const isLaunch = (s: GameState) => isPlay(s) && PLAY.L3_LAUNCH && s.round === 1;
+
+/** The market is open for voluntary cover now. */
+const marketOpen = (s: GameState) => st(s).regime === 'VOL' && st(s).insurerActive;
+
+/** Last round's pool members, who vote on the bar this round (none in round 1 or once the market closed). */
+export function membersOf(s: GameState): PlayerId[] {
+  const l = st(s);
+  if (!isPlay(s) || !marketOpen(s) || !l.rounds.length) return [];
+  const last = l.rounds[l.rounds.length - 1];
+  if (last.regime !== 'VOL' || last.premium === null) return [];
+  return ids(s).filter((id) => last.choices[id].buy);
+}
+
+const playPrior = (s: GameState) => ctxOf(s, false).p.P_HIGH_SHARE;
+
+/** A voter's belief that `j` is high risk: a bot's own, or (a human seat) the audience poll. */
+function voterBelief(s: GameState, voter: PlayerId, j: PlayerId): number {
+  return s.play!.belief[voter]?.[j] ?? audienceBelief(s, j) ?? playPrior(s);
+}
+
+/** H1: contestants with a risk claim on record this round. */
+const claimants3 = (s: GameState): PlayerId[] => { const c = claimsOf(s.messages, s.levelIndex, s.round); return ids(s).filter((id) => c[id] === 'LOW' || c[id] === 'HIGH'); };
+
+/** A contestant's expected risk (no gym), given a belief that they are high risk. */
+const expectedRisk = (b: number, P: L3Params) => b * P.P_HIGH + (1 - b) * P.P_LOW;
+
+/**
+ * D-133: what barring `target` is worth to member `voter`, in coins: how much it lowers the price the member
+ * expects to pay next round, times the chance the member stays in. SafeHands prices next round from this
+ * round's pool, assumed to be last round's members (who stay) plus the target: price = LOADING x PRICE_LOSS x
+ * mean risk. Others' risks come from the voter's beliefs, its own from `selfRisk`. Zero in the last round.
+ * Scaled by BAR_GAIN_SCALE.
+ */
+function barGain(s: GameState, pool: PlayerId[], voter: PlayerId, target: PlayerId, beliefOf: (k: PlayerId) => number, selfRisk: number, pStay: number): number {
+  if (roundsLeft(s) <= 0) return 0;
+  const P = ctxOf(s, false).p;
+  const inPool = [...new Set([...pool, voter, target])];
+  const without = inPool.filter((k) => k !== target);
+  const risk = (k: PlayerId) => (k === voter ? selfRisk : expectedRisk(beliefOf(k), P));
+  const diff = P.LOADING * P.PRICE_LOSS * (mean(inPool.map(risk)) - mean(without.map(risk)));
+  const saving = PLAY.BAR_GAIN_SCALE * PLAY.DIFFICULTY[s.difficulty].barScale * pStay * diff;
+  if (!PLAY.BAR_MISSION) return saving;
+  // G2 (D-188): valued with the voter's own mission, in coin-equivalents of the voter's own money. The saving
+  // goes to the voter; a barred target who would have bought loses cover this round (keeps the premium,
+  // bears the expected loss), which a Protect-the-poorest or Grow-the-pie voter counts against the bar.
+  const premium = currentPremium(s);
+  const vi = idx(s, voter);
+  const ti = idx(s, target);
+  const card = playerOf(s, voter).values;
+  const eq = equalShares(s.players.length);
+  const W0 = s.players.map(() => 0);
+  const W1 = W0.slice();
+  W1[vi] += saving;
+  if (premium !== null) {
+    const bT = beliefOf(target);
+    W1[ti] += publicBuyChance(s, target, bT) * (premium - expectedRisk(bT, P) * P.LOSS);
+  }
+  const coin = W0.slice();
+  coin[vi] += 1;
+  const v0 = playRoundValue(s, card, W0, vi, eq);
+  const unit = Math.max(1e-6, playRoundValue(s, card, coin, vi, eq) - v0);
+  return (playRoundValue(s, card, W1, vi, eq) - v0) / unit;
+}
+
+/** A member's bar options (no one, then every other contestant) and their values in coins (D-133). */
+function barOptions(s: GameState, pool: PlayerId[], voter: PlayerId, belief: (j: PlayerId) => number, selfRisk: number, pStay: number): { options: Array<PlayerId | null>; u: number[] } {
+  const others = ids(s).filter((id) => id !== voter);
+  const options: Array<PlayerId | null> = [null, ...others];
+  const u = [0, ...others.map((j) => barGain(s, pool, voter, j, belief, selfRisk, pStay))];
+  if (!PLAY.GIFT_ONLY_IF_GAIN) return { options, u };
+  // G3 (D-189): a bar that lowers the voter's own value is never cast; the logit rule chooses among "no one"
+  // and the bars that help. Every caller (bot votes, the bar chance, the preview) uses the same options.
+  const keep = options.map((_, k) => k).filter((k) => k === 0 || u[k] > 0);
+  return { options: keep.map((k) => options[k]), u: keep.map((k) => u[k]) };
+}
+
+/** A bot member's vote: its own beliefs, its own risk, and its own chance of buying as the chance it stays in. */
+function botBarVote(s: GameState, voter: PlayerId, pStay: number): PlayerId | null {
+  const members = membersOf(s);
+  if (!members.includes(voter)) return null;
+  const selfRisk = pOf(st(s).types[voter], ctxOf(s, false).p);
+  const { options, u } = barOptions(s, members, voter, (j) => voterBelief(s, voter, j), selfRisk, pStay);
+  return options[logitChoice(u, botParams(s, voter).lambda, botRng(s))];
+}
+
+/**
+ * D-133: how likely member m is to buy, as `observer` sees it (public model, no private card): the logit rule
+ * on rnValue for each risk type, weighted by the observer's belief that m is high risk, Calm multiplier.
+ */
+function publicBuyChance(s: GameState, m: PlayerId, bHigh: number): number {
+  const premium = currentPremium(s);
+  if (premium === null) return 0;
+  const ctx = ctxOf(s);
+  const j = idx(s, m);
+  const pBuy = (type: RiskType) => {
+    const vNo = Math.max(rnValue(type, 'VOL', premium, { buy: false, gym: false }, ctx, j), rnValue(type, 'VOL', premium, { buy: false, gym: true }, ctx, j));
+    return logitProbs([vNo, rnValue(type, 'VOL', premium, { buy: true, gym: false }, ctx, j)], BOT.BELIEF_LAMBDA)[1];
+  };
+  return bHigh * pBuy('HIGH') + (1 - bHigh) * pBuy('LOW');
+}
+
+/**
+ * The chance `target` is barred this round if every member's belief about it were `beliefOf(member)`:
+ * each member votes by the logit rule (a human seat with the belief model's lambda), a strict majority bars.
+ */
+function barChance(s: GameState, members: PlayerId[], target: PlayerId, beliefOf: (m: PlayerId) => number): number {
+  let dist = [1];
+  for (const m of members) {
+    let q = 0;
+    if (m !== target) {
+      // The target predicts m's vote from public information: its own belief about m's risk and m's chance of staying in.
+      const bm = voterBelief(s, target, m);
+      const P = ctxOf(s, false).p;
+      const { options, u } = barOptions(s, members, m, (j) => (j === target ? beliefOf(m) : voterBelief(s, m, j)), expectedRisk(bm, P), publicBuyChance(s, m, bm));
+      const lam = playerOf(s, m).isHuman ? BOT.BELIEF_LAMBDA : botParams(s, m).lambda;
+      q = options.includes(target) ? logitProbs(u, lam)[options.indexOf(target)] : 0;
+    }
+    const next: number[] = new Array(dist.length + 1).fill(0);
+    dist.forEach((p, k) => {
+      next[k] += p * (1 - q);
+      next[k + 1] += p * q;
+    });
+    dist = next;
+  }
+  const need = barNeeds(members, target);
+  return dist.reduce((a, p, k) => (k >= need ? a + p : a), 0);
+}
+
+/**
+ * D-112: what a claim is worth to `pid` this round, before credibility: minus the chance of being barred
+ * after it times the value of cover (best plan with cover minus best without, as the bot values it). In
+ * round 1 there are no members yet, so the claim is valued against the bar it will face next round, as if
+ * every other contestant were a member.
+ */
+function claimGainFn(s: GameState, pid: PlayerId): (value: string) => number {
+  const l = st(s);
+  const premium = currentPremium(s);
+  if (!marketOpen(s) || premium === null) return () => 0;
+  let members = membersOf(s);
+  if (!l.rounds.length) members = ids(s).filter((id) => id !== pid);
+  if (!members.some((m) => m !== pid)) return () => 0;
+  const { rho } = botParams(s, pid);
+  const ctx = ctxOf(s);
+  const { options, ce } = choiceCE(s.players.length, idx(s, pid), l.types[pid], playerOf(s, pid).values, rho, l.regime, premium, ctx);
+  const best = (buy: boolean) => Math.max(...options.map((o, k) => (o.buy === buy ? ce[k] : -Infinity)));
+  const cover = Math.max(0, best(true) - best(false));
+  if (cover <= 0) return () => 0;
+  const rel = reliabilityOf(s, pid);
+  return (value) =>
+    -cover *
+    barChance(s, members, pid, (m) => {
+      const b = voterBelief(s, m, pid);
+      if (value === SILENT) return b;
+      if (s.play!.joint[m]) return beliefAfterClaim(s, m, pid, value === 'HIGH', rel);
+      const k = PLAY.CLAIM_WEIGHT * rel;
+      return (1 - k) * b + k * (value === 'HIGH' ? 1 : 0);
+    });
+}
+
+function botClaim(s: GameState, pid: PlayerId): { value: string; lieGain: number } {
+  const type = st(s).types[pid];
+  const g = claimGainFn(s, pid);
+  // H2 (D-194): a lie can be called. Others' doubt is their belief against the claim; a caught liar is turned
+  // away from cover (the lie's gain is lost) and pays the payout.
+  const withCalls = (value: string) => {
+    const raw = g(value);
+    if (value === SILENT || value === type || !callsOn(s)) return raw;
+    const pc = callChance(s, pid, (obs) => lieBelief(s, pid, value === 'LOW' ? 1 - voterBelief(s, obs, pid) : voterBelief(s, obs, pid)));
+    return (1 - pc) * raw - pc * PLAY.CALL_PAYOUT;
+  };
+  return chooseClaim(s, pid, type, type === 'HIGH' ? 'LOW' : 'HIGH', withCalls);
+}
+
+/**
+ * D-142, D-143: an expectation over this round under the model bots use for others (choiceCE): every other
+ * contestant's risk card at the prior, their cover and gym by the risk-neutral rule (everyone covered in
+ * the launch round; `barred` loses cover), and every wheel outcome. `mine` is contestant i's own choice and
+ * its own card is known. `f` maps the round's money W (seat order) to a list of values; returns their means.
+ */
+function expectRound(s: GameState, i: number, mine: Choice, f: (W: number[]) => number[], barred: PlayerId | null = null): number[] {
+  const l = st(s);
+  const ctx = ctxOf(s);
+  const P = ctx.p;
+  const n = s.players.length;
+  const pids = ids(s);
+  const premium = currentPremium(s, ctx);
+  const launch = isLaunch(s);
+  const myType = l.types[pids[i]];
+  const free = pids.map((_, j) => j).filter((j) => j !== i);
+  let acc: number[] | null = null;
+  for (let tm = 0; tm < 1 << free.length; tm++) {
+    const types: RiskType[] = pids.map(() => myType);
+    let pTypes = 1;
+    free.forEach((j, k) => {
+      const high = (tm >> k) & 1;
+      types[j] = high ? 'HIGH' : 'LOW';
+      pTypes *= high ? P.P_HIGH_SHARE : 1 - P.P_HIGH_SHARE;
+    });
+    const choices = types.map((t, j) => {
+      if (j === i) return { buy: mine.buy && premium !== null, gym: mine.gym };
+      const c = rnChoice(t, l.regime, premium, ctx, j);
+      const buy = (launch && premium !== null) || c.buy;
+      return { buy: buy && pids[j] !== barred, gym: c.gym };
+    });
+    const pEff = choices.map((c, j) => pEffOf(types[j], c.gym, P));
+    for (let em = 0; em < 1 << n; em++) {
+      let p = pTypes;
+      const events = pEff.map((pe, j) => {
+        const ev = ((em >> j) & 1) === 1;
+        p *= ev ? pe : 1 - pe;
+        return ev;
+      });
+      if (p === 0) continue;
+      const v = f(wealthL3(l.regime, premium, choices, pEff, events, P).W);
+      if (!acc) acc = v.map(() => 0);
+      v.forEach((x, k) => (acc![k] += p * x));
+    }
+  }
+  return acc ?? [];
+}
+
+/** Every gift option for contestant i: each other contestant, each amount. */
+const giftOptions = (s: GameState, i: number): Gift[] =>
+  ids(s)
+    .filter((_, j) => j !== i)
+    .flatMap((to) => PLAY.GIFT_AMOUNTS.map((amount) => ({ to, amount })));
+
+/** The round's money with a gift from i: i pays the amount, the recipient gets it plus SafeHands' match. */
+function withGift(s: GameState, W: readonly number[], i: number, g: Gift): number[] {
+  const out = W.slice();
+  out[i] -= g.amount;
+  out[idx(s, g.to)] += g.amount * (1 + PLAY.GIFT_MATCH);
+  return out;
+}
+
+/**
+ * D-142, a bot's gift: it values each gift as the expected change in its own Play score (bank, mission and
+ * debt stress, as it values everything else) against giving nothing, then decides whether to give its best
+ * gift by the binary logit rule, like buying cover. An Egoist never gives: its mission is its own bank, so
+ * a gift only costs it, and a gift cannot lower its chance of being barred (members bar on risk and price).
+ */
+function botGift(s: GameState, botId: PlayerId, mine: Choice, lambda: number): Gift | null {
+  const me = playerOf(s, botId);
+  if (me.values === 'EGOIST' || !PLAY.GIFT_AMOUNTS.length) return null;
+  const i = idx(s, botId);
+  const ctx = ctxOf(s);
+  const eq = equalShares(s.players.length);
+  const opts = giftOptions(s, i);
+  const vals = expectRound(s, i, mine, (W) => [ctx.score(me.values, W, i, eq), ...opts.map((g) => ctx.score(me.values, withGift(s, W, i, g), i, eq))]);
+  const u = vals.slice(1).map((x) => x - vals[0]);
+  const k = u.indexOf(Math.max(...u));
+  // G3 (D-189): a gift that lowers the giver's own expected score is never made. The logit rule alone gave
+  // a gift costing 2 points about 40% of the time, which is why "never give" beat adaptive play.
+  if (PLAY.GIFT_ONLY_IF_GAIN && u[k] <= 0) return null;
+  return logitChoice([0, u[k]], lambda, botRng(s)) === 1 ? opts[k] : null;
+}
+
+/** D-143: the mission preview on the move screen, in mission points (k x mission), each against doing nothing. */
+export interface L3Preview {
+  cover: number | null;
+  gym: number;
+  bar: Record<PlayerId, number>;
+  gift: Record<PlayerId, Record<number, number>>;
+}
+
+/**
+ * D-143: how each choice on the move screen changes your mission this round, in mission points against
+ * doing nothing (no cover unless the launch round signs you up, no gym, no bar vote, no gift), as an
+ * expected value under the bots' model (expectRound). Your bar vote counts only when it decides the vote:
+ * the other members are modelled with the bots' bar rule on public beliefs (the audience poll where it is
+ * shown, else the prior), and the preview is that chance times the mission change if the target is barred.
+ */
+export function missionPreview(s: GameState, pid: PlayerId): L3Preview {
+  const me = playerOf(s, pid);
+  const i = idx(s, pid);
+  const pl = s.play!;
+  const card = me.values;
+  const k = missionScale(s, card);
+  const eff = equalShares(s.players.length);
+  const banks = (W: readonly number[]) => s.players.map((p, j) => pl.banks[p.id] + W[j] - livingCost(s));
+  const mission = (W: readonly number[]) => k * missionValue(card, banks(W), i, eff);
+  const premium = currentPremium(s);
+  const launch = isLaunch(s);
+  const none: Choice = { buy: launch, gym: false };
+  const opts = giftOptions(s, i);
+  const [base, ...gifts] = expectRound(s, i, none, (W) => [mission(W), ...opts.map((g) => mission(withGift(s, W, i, g)))]);
+  const cover = premium !== null && !launch && st(s).regime === 'VOL' ? expectRound(s, i, { buy: true, gym: false }, (W) => [mission(W)])[0] - base : null;
+  const gym = expectRound(s, i, { buy: launch, gym: true }, (W) => [mission(W)])[0] - base;
+  const gift: L3Preview['gift'] = {};
+  opts.forEach((g, n) => ((gift[g.to] ??= {})[g.amount] = gifts[n] - base));
+  const bar: Record<PlayerId, number> = {};
+  const members = membersOf(s);
+  if (members.includes(pid)) {
+    const P = ctxOf(s, false).p;
+    const shown = PLAY.DIFFICULTY[s.difficulty].poll !== 'NEVER';
+    const pub = (j: PlayerId) => (shown ? (audienceBelief(s, j) ?? playPrior(s)) : playPrior(s));
+    for (const x of ids(s)) {
+      if (x === pid) continue;
+      let dist = [1];
+      for (const m of members) {
+        if (m === pid || m === x) continue;
+        const { options, u } = barOptions(s, members, m, pub, expectedRisk(pub(m), P), publicBuyChance(s, m, pub(m)));
+        const q = options.includes(x) ? logitProbs(u, BOT.BELIEF_LAMBDA)[options.indexOf(x)] : 0;
+        const next: number[] = new Array(dist.length + 1).fill(0);
+        dist.forEach((p, c) => {
+          next[c] += p * (1 - q);
+          next[c + 1] += p * q;
+        });
+        dist = next;
+      }
+      const decisive = dist[barNeeds(members, x) - 1] ?? 0;
+      bar[x] = decisive * (expectRound(s, i, none, (W) => [mission(W)], x)[0] - base);
+    }
+  }
+  return { cover, gym, bar, gift };
+}
+
+/**
+ * D-110: what a finished round tells every bot about each contestant's risk. Buying (applying for cover),
+ * the gym when uninsured, and the wheel's result are each read by Bayes' rule, with the public model of a
+ * contestant's choice (the logit rule on rnValue, with the belief lambda) and the true odds of the wheel.
+ */
+function readRound(s: GameState, r: L3Round): void {
+  const l = st(s);
+  if (l.leaked) return;
+  const ctx = ctxOf(s);
+  const P = ctx.p;
+  const lam = BOT.BELIEF_LAMBDA;
+  ids(s).forEach((id, j) => {
+    const ch = r.choices[id];
+    // D-128: every combination of risk and worry card, each with its own choice model.
+    const likOf = (type: RiskType, worrier: boolean) => {
+      const m = worrier ? PLAY.WORRIER_STRESS_MULT : 1;
+      let lik = 1;
+      if (r.regime === 'VOL' && r.premium !== null && !r.launch) {
+        const vNo = Math.max(rnValue(type, 'VOL', r.premium, { buy: false, gym: false }, ctx, j, m), rnValue(type, 'VOL', r.premium, { buy: false, gym: true }, ctx, j, m));
+        const vBuy = rnValue(type, 'VOL', r.premium, { buy: true, gym: false }, ctx, j, m);
+        const pBuy = logitProbs([vNo, vBuy], lam)[1];
+        lik *= r.applied?.[id] ? pBuy : 1 - pBuy;
+      }
+      const insured = (r.regime === 'VOL' && r.premium !== null && ch.buy) || r.regime === 'M100';
+      if (!insured) {
+        const prem = r.regime === 'VOL' ? r.premium : null;
+        const g = [false, true].map((gym) => rnValue(type, r.regime, prem, { buy: false, gym }, ctx, j, m));
+        const pGym = logitProbs(g, lam)[1];
+        lik *= ch.gym ? pGym : 1 - pGym;
+      }
+      const pe = pEffOf(type, ch.gym, P);
+      return lik * (r.events[id] ? pe : 1 - pe);
+    };
+    const table = { HH: likOf('HIGH', true), HC: likOf('HIGH', false), LH: likOf('LOW', true), LC: likOf('LOW', false) };
+    observe(s, id, (high, worrier) => table[`${high ? 'H' : 'L'}${worrier ? 'H' : 'C'}` as keyof typeof table]);
+  });
+}
+
+/** D-148: per game state, the regime-vote likelihoods already worked out (Play only; see `likelihood`). */
+const likelihoods = new WeakMap<GameState, Map<string, number[]>>();
+function likelihoodMemo(s: GameState): Map<string, number[]> {
+  let m = likelihoods.get(s);
+  if (!m) likelihoods.set(s, (m = new Map()));
+  return m;
 }
 
 export const level3: LevelDefinition = {
   id: 3,
   rounds: L3.ROUNDS,
   init(s) {
+    const P = ctxOf(s, false).p;
     const g = gameRng(s);
     const types: Record<PlayerId, RiskType> = {};
-    for (const p of s.players) {
-      types[p.id] = g.next() < L3.P_HIGH_SHARE ? 'HIGH' : 'LOW';
+    // D-141: in Play too, every seat's risk card is drawn on its own, P_HIGH_SHARE (50/50) on the game stream.
+    // Nobody is told the mix. With L3_MIXED_DEAL, a table of 3 or 4 is redrawn until both cards are in it.
+    const draw = () => s.players.map(() => (g.next() < P.P_HIGH_SHARE ? 'HIGH' : 'LOW') as RiskType);
+    let dealt = draw();
+    if (isPlay(s) && PLAY.L3_MIXED_DEAL && s.players.length >= 3) while (new Set(dealt).size < 2) dealt = draw();
+    s.players.forEach((p, k) => {
+      types[p.id] = dealt[k];
       p.privateInfo.riskType = types[p.id];
+    });
+    // Play (D-128, D-141): the worry card, drawn the same way after every risk card, independent of risk.
+    let worry: Record<PlayerId, Worry> | undefined;
+    if (isPlay(s)) {
+      worry = Object.fromEntries(s.players.map((p) => [p.id, (g.next() < PLAY.WORRIER_SHARE ? 'WORRIER' : 'CALM') as Worry]));
+      for (const p of s.players) p.privateInfo.worry = worry[p.id];
     }
     s.levelState = {
       types,
       regime: 'VOL',
       insurerActive: true,
-      nextPremium: premiumFor(L3.P_BAR),
+      nextPremium: premiumFor(P.P_BAR, P),
       rounds: [],
+      ...(worry ? { worry } : {}),
     } satisfies L3State;
+    if (isPlay(s)) initFactBeliefs(s, P.P_HIGH_SHARE, PLAY.WORRIER_SHARE);
   },
-  phases() {
+  phases(s) {
+    const P = ctxOf(s, false).p;
     const out: Phase[] = [];
-    for (let r = 1; r <= L3.ROUNDS; r++) {
+    if (isPlay(s)) {
+      // Play v2 Section 4: claim, then the move (bar and cover), then the wheel; the regime vote after round 3;
+      // the end reveal of every risk card with the claims stamped. No talk phases: claims are the talk (D-110).
+      for (let r = 1; r <= P.ROUNDS; r++) {
+        out.push(
+          { kind: 'BRIEFING', round: r },
+          { kind: 'DECIDE', step: 'CLAIM', round: r },
+          { kind: 'DECIDE', step: 'CHOICE', round: r },
+          { kind: 'REVEAL', step: 'EVENTS', round: r },
+          { kind: 'ROUND_SUMMARY', round: r },
+        );
+        if (r === P.VOLUNTARY_ROUNDS) out.push({ kind: 'DECIDE', step: 'REGIME', round: r }, { kind: 'REVEAL', step: 'REGIME', round: r });
+      }
+      out.push({ kind: 'REVEAL', step: 'CARDS', round: P.ROUNDS });
+      return out;
+    }
+    for (let r = 1; r <= P.ROUNDS; r++) {
       out.push(
         { kind: 'BRIEFING', round: r },
         { kind: 'TALK', step: 'ROUND', round: r },
@@ -291,7 +823,7 @@ export const level3: LevelDefinition = {
         { kind: 'REVEAL', step: 'EVENTS', round: r },
         { kind: 'ROUND_SUMMARY', round: r },
       );
-      if (r === L3.VOLUNTARY_ROUNDS)
+      if (r === P.VOLUNTARY_ROUNDS)
         out.push(
           { kind: 'TALK', step: 'REGIME', round: r },
           { kind: 'DECIDE', step: 'REGIME', round: r },
@@ -300,15 +832,41 @@ export const level3: LevelDefinition = {
     }
     return out;
   },
-  deciders(s) {
+  deciders(s, step) {
+    // Play v2: claims only while there is a pool to get into, and not once every risk type is public.
+    if (step === 'CLAIM') return marketOpen(s) && !st(s).leaked ? ids(s) : [];
     return ids(s);
   },
-  validate(s, step, _pid, d) {
+  onEnter(s, phase) {
+    if (!isPlay(s)) return;
+    const l = st(s);
+    if (phase.kind === 'BRIEFING' && activeEvent(s)?.id === 'LEAKED' && !l.leaked) {
+      // v2 Section 5: everyone's risk type is shown, so every belief becomes (almost) certain.
+      l.leaked = s.round;
+      revealFacts(s, (pid) => l.types[pid] === 'HIGH');
+    }
+    if (phase.kind === 'REVEAL' && phase.step === 'CARDS') {
+      checkClaims(s, (pid) => l.types[pid]);
+      l.cardsRevealed = true;
+    }
+  },
+  validate(s, step, pid, d) {
     if (step === 'REGIME') return REGIMES.includes(d as Regime) ? d : null;
+    if (step === 'CLAIM') return d === 'LOW' || d === 'HIGH' || d === SILENT ? d : null;
     if (step === 'CHOICE') {
       const c = d as Choice;
       if (!c || typeof c.buy !== 'boolean' || typeof c.gym !== 'boolean') return null;
-      return { buy: c.buy && currentPremium(s) !== null, gym: c.gym };
+      const out: Choice = { buy: (c.buy || isLaunch(s)) && currentPremium(s) !== null, gym: c.gym };
+      if (isPlay(s)) {
+        // A bar vote counts only from a member, against someone else at the table.
+        const ok = typeof c.bar === 'string' && c.bar !== pid && membersOf(s).includes(pid) && ids(s).includes(c.bar);
+        out.bar = ok ? c.bar! : null;
+        // D-142: one gift, of a listed amount, to someone else at the table.
+        const gf = c.gift;
+        out.gift = gf && typeof gf.to === 'string' && gf.to !== pid && ids(s).includes(gf.to) && PLAY.GIFT_AMOUNTS.includes(gf.amount) ? { to: gf.to, amount: gf.amount } : null;
+        out.call = validCall(s, pid, c.call, claimants3(s));
+      }
+      return out;
     }
     return null;
   },
@@ -318,16 +876,27 @@ export const level3: LevelDefinition = {
     const rng = botRng(s);
     const n = s.players.length;
     const i = idx(s, botId);
+    if (step === 'CLAIM') return botClaim(s, botId).value;
     if (step === 'CHOICE') {
       const l = st(s);
-      const { options, ce } = choiceCE(n, i, l.types[botId], me.values, rho, l.regime, currentPremium(s));
+      const ctx = ctxOf(s);
+      const { options, ce } = choiceCE(n, i, l.types[botId], me.values, rho, l.regime, currentPremium(s, ctx), ctx);
       // Section 5.5: buy is a binary logit (each side valued at its best gym response),
       // then the gym is a binary logit given the purchase decision.
       const best = (buy: boolean) => Math.max(...options.map((o, k) => (o.buy === buy ? ce[k] : -Infinity)));
       const canBuy = options.some((o) => o.buy);
-      const buy = canBuy ? logitChoice([best(false), best(true)], lambda, rng) === 1 : false;
+      const buy = canBuy && (isLaunch(s) || logitChoice([best(false), best(true)], lambda, rng) === 1);
       const gymCE = [false, true].map((gym) => ce[options.findIndex((o) => o.buy === buy && o.gym === gym)]);
       const gym = logitChoice(gymCE, lambda, rng) === 1;
+      // D-133: the chance of buying now stands in for the chance of staying in the pool next round.
+      const pStay = canBuy ? logitProbs([best(false), best(true)], lambda)[1] : 0;
+      if (isPlay(s)) {
+        const bar = botBarVote(s, botId, pStay);
+        // H2 (D-194): call the risk claim it most doubts, if the bet pays with its own beliefs and mission.
+        const said = claimsOf(s.messages, s.levelIndex, s.round);
+        const call = botCall(s, botId, claimants3(s), (t) => (said[t] === 'LOW' ? lieBelief(s, t, 1 - voterBelief(s, botId, t)) : said[t] === 'HIGH' ? lieBelief(s, t, voterBelief(s, botId, t)) : null));
+        return { buy, gym, bar, gift: botGift(s, botId, { buy, gym }, lambda), call };
+      }
       return { buy, gym };
     }
     const ce = regimeCE(s, n, i, st(s).types[botId], me.values, rho);
@@ -346,12 +915,67 @@ export const level3: LevelDefinition = {
       l.regime = REGIMES[winner];
       return;
     }
-    const premium = currentPremium(s);
-    const choices = pids.map((id) => decisions[id] as Choice);
-    const pEff = pids.map((id, i) => pEffOf(l.types[id], choices[i].gym));
+    if (step === 'CLAIM') {
+      const said = decisions as Record<PlayerId, string>;
+      const gains = Object.fromEntries(pids.filter((id) => id in said).map((id) => [id, playerOf(s, id).isHuman ? null : botClaim(s, id).lieGain]));
+      postClaims(s, 'RISK', said, (pid) => l.types[pid], (v) => v === 'HIGH', gains);
+      return;
+    }
+    const ctx = ctxOf(s);
+    const P = ctx.p;
+    const premium = currentPremium(s, ctx);
+    const listPrice = l.nextPremium;
+    let choices = pids.map((id) => decisions[id] as Choice);
+    // Play v2, the Bar: a strict majority of last round's members bars one applicant, who gets no cover.
+    let bar: L3Bar | undefined;
+    let callNet: Record<PlayerId, number> | undefined;
+    let applied: Record<PlayerId, boolean> | undefined;
+    if (isPlay(s)) {
+      applied = Object.fromEntries(pids.map((id, i) => [id, choices[i].buy]));
+      const members = membersOf(s);
+      if (members.length) {
+        const votes = Object.fromEntries(members.map((m) => [m, (decisions[m] as Choice).bar ?? null])) as Record<PlayerId, PlayerId | null>;
+        const counts: Record<PlayerId, number> = {};
+        for (const v of Object.values(votes)) if (v) counts[v] = (counts[v] ?? 0) + 1;
+        const barred = pids.filter((j) => (counts[j] ?? 0) >= barNeeds(members, j));
+        const refused = barred.filter((j) => choices[pids.indexOf(j)].buy);
+        bar = { members, votes, barred, refused };
+        for (const m of members)
+          for (const [k, j] of pids.entries())
+            if (j !== m && choices[k].buy) s.play!.barReads.push({ level: s.levelIndex, round: s.round, member: m, target: j, belief: voterBelief(s, m, j) });
+      }
+      choices = choices.map((c, i) => ({ buy: c.buy && !bar?.barred.includes(pids[i]), gym: c.gym }));
+      // H1 (D-194): calls are checked before the pool resolves. A caught liar who applied is turned away
+      // (misrepresentation voids the policy) and pays nothing for cover; the checked fact becomes public.
+      const said = claimsOf(s.messages, s.levelIndex, s.round);
+      const lied = (t: PlayerId) => (said[t] === 'LOW' || said[t] === 'HIGH') && said[t] !== l.types[t];
+      callNet = settleCalls(s, Object.fromEntries(pids.map((id) => [id, (decisions[id] as Choice).call ?? null])), lied);
+      for (const x of callsThisRound(s)) {
+        if (x.lie) choices = choices.map((c, i) => (pids[i] === x.target ? { buy: false, gym: c.gym } : c));
+        observe(s, x.target, (fact) => (fact === (l.types[x.target] === 'HIGH') ? 1 : 0));
+      }
+    }
+    const pEff = pids.map((id, i) => pEffOf(l.types[id], choices[i].gym, P));
+    const pBase = pids.map((id, i) => pBaseOf(l.types[id], choices[i].gym, P));
     const events = pEff.map((p) => g.next() < p);
-    const { W, T } = wealthL3(l.regime, premium, choices, pEff, events);
+    const { W, T } = wealthL3(l.regime, premium, choices, pEff, events, P);
     const rec = <X>(xs: X[]) => Object.fromEntries(pids.map((id, i) => [id, xs[i]])) as Record<PlayerId, X>;
+    // D-142: gifts land after the wheel; SafeHands adds GIFT_MATCH to each.
+    let gifts: L3Round['gifts'];
+    let giftNet: Record<PlayerId, number> | undefined;
+    if (isPlay(s)) {
+      gifts = {};
+      giftNet = rec(pids.map(() => 0));
+      for (const id of pids) {
+        const gf = (decisions[id] as Choice).gift;
+        if (!gf) continue;
+        const received = gf.amount * (1 + PLAY.GIFT_MATCH);
+        gifts[id] = { ...gf, received };
+        giftNet[id] -= gf.amount;
+        giftNet[gf.to] += received;
+      }
+    }
+    const Wend = giftNet ? W.map((w, i) => w + giftNet![pids[i]] + (callNet?.[pids[i]] ?? 0)) : W;
     let exited = false;
     const before = l.nextPremium;
     if (l.regime === 'VOL' && l.insurerActive) {
@@ -360,7 +984,7 @@ export const level3: LevelDefinition = {
         l.insurerActive = false;
         l.nextPremium = null;
         exited = true;
-      } else l.nextPremium = premiumFor(mean(buyers.map((i) => pEff[i])));
+      } else l.nextPremium = premiumFor(mean(buyers.map((i) => pBase[i])), P);
     }
     const round: L3Round = {
       regime: l.regime,
@@ -372,15 +996,35 @@ export const level3: LevelDefinition = {
       eventCards: Object.fromEntries(pids.map((id) => [id, flavorIndex(s.seed, `l3-${s.round}-${id}`, 9973)])),
       W: rec(W),
       nextPremium: l.nextPremium,
+      // Play only: the insurer's price before an event's discount (E3 compares these, D-98).
+      ...(isPlay(s) ? { listPrice, applied, gifts, giftNet, ...(bar ? { bar } : {}), ...(isLaunch(s) ? { launch: true } : {}) } : {}),
     };
     l.rounds.push(round);
+    if (isPlay(s)) readRound(s, round);
     const nEvents = events.filter(Boolean).length;
     let key = 'l3.quiet';
     if (exited) key = 'l3.exit';
     else if (l.regime !== 'VOL') key = 'l3.mandatory';
     else if (before !== null && l.nextPremium !== null && l.nextPremium > before + 1e-9) key = 'l3.premiumUp';
     else if (nEvents * 2 >= pids.length) key = 'l3.manyEvents';
-    finishRound(s, W, equalShares(pids.length), headline(s, key, { premium: Math.round(l.nextPremium ?? 0), events: nEvents }));
+    if (isPlay(s)) {
+      // G1: the round's money, line by line (pay, cover or the plan, gym, the wheel, gifts).
+      const cov = l.regime === 'VOL' ? 0 : coverage(l.regime, P);
+      setRoundLedger(s, Object.fromEntries(pids.map((id, i) => {
+        const bought = l.regime === 'VOL' && choices[i].buy && premium !== null;
+        const loss = !events[i] ? 0 : l.regime === 'VOL' ? (bought ? 0 : -P.LOSS) : -(1 - cov) * P.LOSS;
+        return [id, [
+          { k: 'pay' as const, n: P.BASE_INCOME },
+          { k: 'cover' as const, n: bought ? -premium! : 0 },
+          { k: 'plan' as const, n: l.regime === 'VOL' ? 0 : -(T ?? 0) },
+          { k: 'gym' as const, n: choices[i].gym ? -P.GYM_COST : 0 },
+          { k: 'loss' as const, n: loss },
+          { k: 'gift' as const, n: giftNet?.[id] ?? 0 },
+          { k: 'call' as const, n: callNet?.[id] ?? 0 },
+        ]];
+      })));
+    }
+    finishRound(s, Wend, equalShares(pids.length), headline(s, key, { premium: Math.round(l.nextPremium ?? 0), events: nEvents }));
   },
   talkMenu(s, phase) {
     if (phase.step === 'REGIME') return { support: [...REGIMES], oppose: [], promise: [] };
@@ -411,19 +1055,32 @@ export const level3: LevelDefinition = {
       return { support: order[0][0], decoy: order[1][0] };
     }
     const l = st(s);
-    const { options, ce } = choiceCE(n, i, l.types[botId], me.values, rho, l.regime, currentPremium(s));
+    const ctx = ctxOf(s);
+    const { options, ce } = choiceCE(n, i, l.types[botId], me.values, rho, l.regime, currentPremium(s, ctx), ctx);
     const best = options[ce.indexOf(Math.max(...ce))];
-    const menu = currentPremium(s) !== null ? ['BUY', 'GYM'] : ['GYM'];
+    const menu = currentPremium(s, ctx) !== null ? ['BUY', 'GYM'] : ['GYM'];
     const yes = menu.filter((a) => (a === 'BUY' ? best.buy : best.gym));
     return { promise: yes, falsePromise: menu.filter((a) => !yes.includes(a)) };
   },
   observable: ['REGIME'],
   likelihood(s, _observer, actor, _step, decision, card) {
-    const n = s.players.length;
-    const probs = REGIMES.map(() => 0);
-    for (const type of ['LOW', 'HIGH'] as RiskType[]) {
-      const ce = regimeCE(s, n, idx(s, actor), type, card, BOT.BELIEF_RHO);
-      logitProbs(ce, BOT.BELIEF_LAMBDA).forEach((p, k) => (probs[k] += p / 2));
+    // Play only, for speed: the answer does not depend on the observer and the state does not change within a
+    // phase, so it is worked out once per actor and card in each phase (D-148). Study computes it every time.
+    const memo = isPlay(s) ? likelihoodMemo(s) : null;
+    const key = `${s.levelIndex}|${s.phaseIdx}|${actor}|${card}`;
+    let probs = memo?.get(key);
+    if (!probs) {
+      const n = s.players.length;
+      const out = REGIMES.map(() => 0);
+      // Play (D-128): the actor's worry card is private too, so the vote is read under both, equally likely.
+      const mults = isPlay(s) ? [1, PLAY.WORRIER_STRESS_MULT] : [null];
+      for (const type of ['LOW', 'HIGH'] as RiskType[])
+        for (const m of mults) {
+          const ce = regimeCE(s, n, idx(s, actor), type, card, BOT.BELIEF_RHO, m === null ? undefined : () => m);
+          logitProbs(ce, BOT.BELIEF_LAMBDA).forEach((p, k) => (out[k] += p / (2 * mults.length)));
+        }
+      probs = out;
+      memo?.set(key, probs);
     }
     return probs[REGIMES.indexOf(decision as Regime)] ?? 0;
   },
@@ -432,8 +1089,9 @@ export const level3: LevelDefinition = {
     const pids = ids(s);
     const nHigh = pids.filter((id) => l.types[id] === 'HIGH').length;
     const highShare = nHigh / pids.length;
-    const exp = expectedByType(nHigh, pids.length);
-    const expNet = expectedByType(nHigh, pids.length, true);
+    const dctx = ctxOf(s, false);
+    const exp = expectedByType(nHigh, pids.length, false, dctx);
+    const expNet = expectedByType(nHigh, pids.length, true, dctx);
     const best = (type: RiskType) => REGIMES.reduce((a, b) => (expNet[b][type] > expNet[a][type] + 1e-9 ? b : a), 'VOL' as Regime);
     const gym = { insured: [0, 0] as [number, number], uninsured: [0, 0] as [number, number], mandatory: [0, 0] as [number, number] };
     for (const r of l.rounds)
@@ -455,13 +1113,13 @@ export const level3: LevelDefinition = {
       }),
       gym,
       expectedByType: exp,
-      volPath: voluntaryPath(nHigh, pids.length),
+      volPath: voluntaryPath(nHigh, pids.length, dctx),
       highShare,
       regimeVotes: l.regimeVotes,
       regime: l.regime,
       bestRegimeForType: { LOW: best('LOW'), HIGH: best('HIGH') },
       byHuman,
-      unraveled: vol.slice(0, L3.VOLUNTARY_ROUNDS).some((r) => r.premium === null || pids.every((id) => !r.choices[id].buy)),
+      unraveled: vol.slice(0, dctx.p.VOLUNTARY_ROUNDS).some((r) => r.premium === null || pids.every((id) => !r.choices[id].buy)),
     };
     l.debrief = d;
     return d;
@@ -470,7 +1128,20 @@ export const level3: LevelDefinition = {
     const l = st(s);
     return {
       myType: l.types[viewer],
-      types: revealPrivate ? l.types : undefined,
+      // Play v2: every risk type is public once leaked, and at the end reveal.
+      types: revealPrivate || l.leaked || l.cardsRevealed ? l.types : undefined,
+      ...(isPlay(s)
+        ? {
+            leaked: l.leaked ?? null,
+            cardsRevealed: !!l.cardsRevealed,
+            members: membersOf(s),
+            myWorry: l.worry?.[viewer],
+            // D-143: your own mission preview, while you decide your move.
+            // E5 (D-164): Hard shows no mission hints, as it shows no audience poll.
+            preview: s.difficulty !== 'HARD' && s.phase.kind === 'DECIDE' && s.phase.step === 'CHOICE' && s.players.some((p) => p.id === viewer) ? missionPreview(s, viewer) : undefined,
+            worry: revealPrivate || l.cardsRevealed ? l.worry : undefined,
+          }
+        : {}),
       regime: l.regime,
       insurerActive: l.insurerActive,
       premium: currentPremium(s),
@@ -482,3 +1153,20 @@ export const level3: LevelDefinition = {
     };
   },
 };
+
+/**
+ * Simulator only (v2 Section 5, the deck trim rule): each bot's best cover and gym choice now (its highest
+ * certainty equivalent), with this round's event or without it.
+ */
+export function bestOwnChoices(s: GameState, withEvent: boolean): Record<PlayerId, Choice> {
+  const l = st(s);
+  const ctx = ctxOf(s, withEvent);
+  const out: Record<PlayerId, Choice> = {};
+  for (const p of s.players) {
+    if (p.isHuman) continue;
+    const { rho } = botParams(s, p.id);
+    const { options, ce } = choiceCE(s.players.length, idx(s, p.id), l.types[p.id], p.values, rho, l.regime, currentPremium(s, ctx), ctx);
+    out[p.id] = options[ce.indexOf(Math.max(...ce))];
+  }
+  return out;
+}

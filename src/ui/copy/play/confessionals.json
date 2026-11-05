@@ -1,0 +1,155 @@
+{
+  "_note": "Bot confessionals to camera (Play spec 7.3): at least 4 per bot per outcome key. They never name anyone, so no second-person variants are needed.",
+  "chet": {
+    "disaster": [
+      "Insurance is for people who plan to lose. I plan to win.",
+      "Bad luck is a mindset. Mine is excellent.",
+      "I would have dodged that. Reflexes, baby.",
+      "Somebody tell the Wheel I have a lawyer."
+    ],
+    "betrayal": [
+      "A promise is just a negotiation that hasn't ended.",
+      "I never lie. I pivot.",
+      "Trust me. Actually, don't. That's the lesson.",
+      "Words are free. Coins are not."
+    ],
+    "debt": [
+      "Debt is just the bank believing in you.",
+      "Broke is temporary. Swagger is forever.",
+      "Red is my power color.",
+      "I'm not in debt. I'm pre-rich."
+    ],
+    "comeback": [
+      "Told you. Bootstraps don't break.",
+      "From the bottom to the top. Story of my life.",
+      "Nobody gave me this. Except luck. Don't quote me.",
+      "Climbing feels better than starting high."
+    ],
+    "jackpot": [
+      "Hard work. And maybe a tiny bit of luck.",
+      "Money loves me. It's mutual.",
+      "Write this down: I earned it.",
+      "Every coin has my name on it now."
+    ],
+    "quiet": [
+      "Quiet rounds are where legends rest.",
+      "Boring. I need a bigger stage.",
+      "No drama? I'll make some.",
+      "Peace and quiet. Terrible for my brand."
+    ]
+  },
+  "marigold": {
+    "disaster": [
+      "Oh no. I hope someone brings soup. And a claims form.",
+      "This is why we share the umbrella, people.",
+      "My heart goes out. My coins would too, if the rules allowed.",
+      "Fate is rude. Paperwork is ruder."
+    ],
+    "betrayal": [
+      "I believed them. I'll believe them again. That's my flaw.",
+      "A broken promise is a little sad cloud.",
+      "I'm not angry. I'm writing it in my diary.",
+      "Honesty costs nothing. Apparently that's still too expensive."
+    ],
+    "debt": [
+      "Nobody should face the red alone.",
+      "Debt is heavy. Let's carry it together.",
+      "A safety net would be nice right about now.",
+      "I'm knitting a scarf for whoever is in debt."
+    ],
+    "comeback": [
+      "See? Everyone deserves a second act.",
+      "The underdog rising makes me cry every time.",
+      "I always knew they had it in them.",
+      "Hope wins a round. Write that down."
+    ],
+    "jackpot": [
+      "Wonderful! Now share it, please.",
+      "Good fortune is best when it's passed around.",
+      "So happy for them. Mildly worried for everyone else.",
+      "Riches are lovely. Kindness is lovelier."
+    ],
+    "quiet": [
+      "A gentle round. My favorite kind.",
+      "Nobody got hurt. That's the whole dream.",
+      "Calm seas. I brought tea.",
+      "Quiet is underrated, darling."
+    ]
+  },
+  "ugo": {
+    "disaster": [
+      "Classic. The uninsured carried the variance. I have a chart.",
+      "The expected loss was printed on the wall. Nobody reads walls.",
+      "Statistically, someone had to. Emotionally, it's still awkward.",
+      "This is why risk pools exist. Footnote three."
+    ],
+    "betrayal": [
+      "Cheap talk is cheap. That is literally the term.",
+      "Stated and revealed preferences have filed for divorce.",
+      "A promise without enforcement is a suggestion.",
+      "I updated my beliefs. Downward."
+    ],
+    "debt": [
+      "Negative wealth. Fascinating. Also concerning.",
+      "Every coin lost in debt now hurts twice. Textbook.",
+      "Debt aversion detected. Please hold for analysis.",
+      "A liquidity constraint, live on television. Beautiful."
+    ],
+    "comeback": [
+      "Mean reversion, ladies and gentlemen.",
+      "Low starting point, high upside. The math was always there.",
+      "A comeback. My model gave it twelve percent.",
+      "Variance giveth. Variance taketh. Today it gave."
+    ],
+    "jackpot": [
+      "An outlier! I'll be cutting it from my data.",
+      "Luck or skill? Give me forty more seasons.",
+      "Wealth concentrates. I'm taking notes.",
+      "Diminishing marginal utility says share it."
+    ],
+    "quiet": [
+      "No shocks. A rare equilibrium.",
+      "A boring round is an efficient round.",
+      "Nothing happened. I measured it carefully.",
+      "Steady state achieved. The producers are furious."
+    ]
+  },
+  "dot": {
+    "disaster": [
+      "No cover? Bold. Expensive, but bold.",
+      "I logged that loss in blue ink. Red felt mean.",
+      "Receipts will be needed. Lots of receipts.",
+      "The Wheel doesn't care. Neither does the ledger."
+    ],
+    "betrayal": [
+      "I'd never break a promise. On paper.",
+      "Fine print, darling. Always read it.",
+      "I keep two books. One is for promises.",
+      "A lie is just an entry that doesn't balance."
+    ],
+    "debt": [
+      "Someone owes. Someone always owes.",
+      "Interest is piling up as we speak. Delicious.",
+      "I have a payment plan. Four hundred pages.",
+      "In the red. My favorite column to audit."
+    ],
+    "comeback": [
+      "Rebalanced. The books love a comeback.",
+      "Recovered assets. Very good for the quarterly report.",
+      "Last place was only a temporary entry.",
+      "Adjusting the ranking. With a sharp pencil."
+    ],
+    "jackpot": [
+      "Taxable. Very, very taxable.",
+      "Lovely windfall. I'll need to see the paperwork.",
+      "Big numbers. I'm already counting them twice.",
+      "That's a lot of coins to explain to the auditor."
+    ],
+    "quiet": [
+      "Nothing to record. I recorded it anyway.",
+      "Balanced books, quiet round. Bliss.",
+      "Zero entries. Suspicious.",
+      "A quiet round is a tidy ledger."
+    ]
+  }
+}

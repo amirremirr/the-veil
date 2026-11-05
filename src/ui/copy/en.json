@@ -866,5 +866,1373 @@
       "CLOSED_BY_UPDATE": "This room closed because the game was updated."
     },
     "thinking": "Thinking..."
+  },
+  "play": {
+    "show": "THE VEIL: LIVE",
+    "tagline": "One life. One season. No refunds.",
+    "hostName": "Dash Fortuna",
+    "hostLabel": "Your host",
+    "onAir": "ON AIR",
+    "disclaimer": "Play mode exaggerates the numbers for drama. The mechanisms are real.",
+    "choose": {
+      "title": "How do you want to play?",
+      "fun": "Quick and fun",
+      "funDesc": "A whole life in about 20 minutes. Big swings, drama, secret missions.",
+      "econ": "With the economics",
+      "econDesc": "The exact models, formulas and research behind each level.",
+      "resumePlay": "Continue your show",
+      "resumeStudy": "Continue your economics game"
+    },
+    "modes": {
+      "title": "Pick your show",
+      "life": "Live a whole life",
+      "lifeDesc": "Five episodes, one bank, no refunds.",
+      "episode": "Play one episode",
+      "episodeDesc": "Jump into any episode. Everyone starts with {bank} coins.",
+      "soon": "Coming in a later update",
+      "ep": "Episode {n}"
+    },
+    "setup": {
+      "title": "Casting call",
+      "players": "Contestants",
+      "name": "Your stage name",
+      "difficulty": "How sharp are the other contestants?",
+      "seed": "Challenge code (optional)",
+      "start": "Go live",
+      "seedHint": "Same code, same game. Use it to play the exact game a friend played.",
+      "levels": {
+        "EASY": "See what the audience thinks. Bots are mostly honest.",
+        "NORMAL": "The standard game.",
+        "HARD": "No audience poll, no mission hints. Bots lie more."
+      },
+      "best": "Best with 4",
+      "badge": {
+        "EASY": "Easy",
+        "HARD": "Hard: no poll, no hints"
+      }
+    },
+    "episodes": {
+      "1": {
+        "name": "Born",
+        "pitch": "You vote on sharing before you know your income.",
+        "sponsor": "Brought to you by the Ministry of Starting Lines",
+        "intro": "You vote on how money is shared before you know your income. In round 2 you can peek first, for a price. Everyone sees who peeked."
+      },
+      "2": {
+        "name": "First Hustle",
+        "pitch": "Effort, luck and a jackpot. Nobody can tell which is which.",
+        "sponsor": "Sponsored by GrindSet Energy Drinks",
+        "intro": "Your income is talent times effort, plus a luck die. Only incomes are public. Then the table votes the Hustle Prize to whoever really worked."
+      },
+      "3": {
+        "name": "Bad Luck Season",
+        "sponsor": "Sponsored by SafeHands Mutual",
+        "pitch": "Disasters, cover and a price board that only goes one way.",
+        "type": {
+          "LOW": "Your file says: low risk. The Wheel hits you {p} of the time.",
+          "HIGH": "Your file says: high risk. The Wheel hits you {p} of the time."
+        },
+        "typeNote": "Only you can see this.",
+        "intro": "The Wheel of Misfortune costs {loss} coins a hit. SafeHands sells cover, priced by who's in the pool. Members can bar people they think are risky. So who's lying?"
+      },
+      "4": {
+        "name": "The Hiring Round",
+        "pitch": "HireBot 3000 judges. Old beliefs do the rest.",
+        "sponsor": "Judged by HireBot 3000",
+        "intro": "Workers train, or don't, and say so, or don't. Each round one of you is HireBot and hires. The meter knows only the test and last year."
+      },
+      "5": {
+        "name": "Grand Finale: Rewrite the Rules",
+        "pitch": "Write the rules, then find out where you stand.",
+        "sponsor": "Paid for by Friends of Whoever Wins",
+        "intro": "Write the rules before you know your income. Then the incomes land, and you can propose changes and pay for votes. Secretly.",
+        "introLife": "Your banks are on the table. Write the rules for sharing them, then propose changes and pay for votes. Secretly."
+      }
+    },
+    "missions": {
+      "EGOIST": {
+        "name": "Get rich",
+        "line": "Only your own bank counts.",
+        "points": "Your mission points follow your own bank, scaled so all four missions are worth about the same."
+      },
+      "RAWLSIAN": {
+        "name": "Protect the poorest",
+        "line": "You win when the lowest bank at the table is high.",
+        "points": "Your mission points follow the poorest bank at the table, scaled so all four missions are worth about the same."
+      },
+      "UTILITARIAN": {
+        "name": "Grow the pie",
+        "line": "You win when the average bank is high.",
+        "points": "Your mission points follow the average bank, scaled so all four missions are worth about the same."
+      },
+      "MERITOCRAT": {
+        "name": "Reward hard work",
+        "line": "You win when money follows effort: hours worked and training count. Before anyone has worked, that means equal banks.",
+        "points": "Your mission points follow the average bank, less when money doesn't follow effort, scaled so all four missions are worth about the same."
+      }
+    },
+    "values": {
+      "title": "Your secret mission",
+      "score": "Your score is half your bank, half your mission. Debt costs points.",
+      "private": "Nobody knows your mission. Keep it secret, or lie about it.",
+      "accept": "Accept the mission"
+    },
+    "bar": {
+      "round": "Round {r} of {n}",
+      "bank": "Bank",
+      "you": "You",
+      "rank": "#{n}",
+      "rankLabel": "Rank {n}",
+      "mission": "Mission",
+      "missionBar": "{name}: {value} of {goal}",
+      "chat": "Chat ({n})",
+      "menu": "Menu",
+      "ranking": "Live ranking",
+      "danger": {
+        "green": "Safe",
+        "amber": "Getting tight",
+        "red": "In debt"
+      },
+      "debtNote": "In debt: you lose 1 point per coin owed each round, at most {cap}."
+    },
+    "events": {
+      "title": "Event card",
+      "L3": {
+        "QUIET": {
+          "name": "Quiet week",
+          "text": "No twist. The writers are on a break.",
+          "effect": "Nothing changes this round."
+        },
+        "STORM": {
+          "name": "Storm Season",
+          "text": "The weather department has filed a complaint against the weather.",
+          "effect": "Every risk is 1.5 times higher this round (at most 90%)."
+        },
+        "GYM_SALE": {
+          "name": "Gym Sale",
+          "text": "SweatCo is clearing out its treadmills. Sweat is half price.",
+          "effect": "The gym costs {gym} coins instead of {base} this round."
+        },
+        "PRICE_WAR": {
+          "name": "Price War",
+          "text": "A rival insurer mocked SafeHands on the radio. SafeHands panicked.",
+          "effect": "Cover costs 20% less this round. Next round's price is still set from buyers."
+        },
+        "BREAKTHROUGH": {
+          "name": "Medical Breakthrough",
+          "text": "Scientists fixed the thing. The billing department is devastated.",
+          "effect": "Bad luck costs {loss} coins instead of {base} this round."
+        },
+        "PAPERWORK": {
+          "name": "Paperwork Week",
+          "text": "The mandatory plan found a new form. It comes with a fee.",
+          "effect": "The mandatory payment is {extra} coins higher this round."
+        },
+        "LEAKED": {
+          "name": "Leaked Medical Files",
+          "text": "Someone left the files on the photocopier. Everyone read them.",
+          "effect": "Every risk type is public from now on. No claims needed."
+        }
+      },
+      "L1": {
+        "QUIET": {
+          "name": "Quiet week",
+          "text": "The economy is asleep. Let it rest.",
+          "effect": "Nothing changes this round."
+        },
+        "BOOM": {
+          "name": "Economic Boom",
+          "text": "Everything is up. Nobody knows why. Everyone takes credit.",
+          "effect": "Every income is 1.2 times higher this round."
+        },
+        "CRASH": {
+          "name": "Market Crash",
+          "text": "Analysts say it's temporary. Analysts said that last time.",
+          "effect": "Every income is 0.8 times lower this round."
+        },
+        "STRIKE": {
+          "name": "Tax Office on Strike",
+          "text": "The forms are filling themselves out, badly.",
+          "effect": "Taxes leak twice as much this round."
+        },
+        "INHERITANCE": {
+          "name": "Surprise Inheritance",
+          "text": "A distant relative you never met remembered you.",
+          "effect": "One random contestant gets 60 coins after taxes."
+        },
+        "LOTTERY": {
+          "name": "Lottery Fever",
+          "text": "The top card got a glow-up.",
+          "effect": "The top income card is 400 this round."
+        }
+      },
+      "L2": {
+        "QUIET": {
+          "name": "Quiet week",
+          "text": "The grind continues. Quietly.",
+          "effect": "Nothing changes this round."
+        },
+        "LUCKY": {
+          "name": "Lucky Week",
+          "text": "Mercury is in retrograde, in a good way.",
+          "effect": "Every luck die face is 1.5 times bigger this round."
+        },
+        "OVERTIME": {
+          "name": "Overtime Bonanza",
+          "text": "The boss found the overtime budget in a drawer.",
+          "effect": "Each hour earns 5 x talent instead of 4 this round."
+        },
+        "BURNOUT": {
+          "name": "Burnout Season",
+          "text": "Everyone is tired. Even the coffee is tired.",
+          "effect": "Effort costs 0.6 x hours squared instead of 0.4 this round."
+        },
+        "VIRAL": {
+          "name": "Viral Video",
+          "text": "Someone's cat did something. Money followed.",
+          "effect": "One random contestant's luck is 80 higher this round."
+        },
+        "WIFI": {
+          "name": "Bad Wi-Fi Week",
+          "text": "Nothing uploads. Nothing goes viral.",
+          "effect": "Every luck die face is half as big this round."
+        },
+        "CAMERAS": {
+          "name": "Security Cameras",
+          "text": "HR installed cameras. For wellness.",
+          "effect": "Everyone's true hours are shown this round."
+        }
+      },
+      "L4": {
+        "QUIET": {
+          "name": "Quiet week",
+          "text": "HireBot is defragmenting.",
+          "effect": "Nothing changes this round."
+        },
+        "SPREE": {
+          "name": "Hiring Spree",
+          "text": "The board wants growth. Any growth.",
+          "effect": "A bad hire costs the judge 20 instead of 30, so HireBot hires from 50%."
+        },
+        "RECESSION": {
+          "name": "Recession",
+          "text": "The economy has been placed on a performance plan.",
+          "effect": "Long-hours complex pay drops from 180 to 140 this round."
+        },
+        "GRANT": {
+          "name": "Training Grant",
+          "text": "A foundation discovered workers. It's thrilled.",
+          "effect": "Training costs 15 less this round (never below 0)."
+        },
+        "UPDATE": {
+          "name": "HireBot Update",
+          "text": "Version 3000.1 learns faster. Nobody read the notes.",
+          "effect": "HireBot's beliefs move 0.3 toward this round's data instead of 0.2."
+        },
+        "PARTY": {
+          "name": "Office Party",
+          "text": "Mandatory fun, with snacks.",
+          "effect": "Flexible-hours complex pay is 20 higher this round."
+        }
+      },
+      "L5": {
+        "QUIET": {
+          "name": "Quiet finale",
+          "text": "The lobbyists are on vacation.",
+          "effect": "Nothing changes."
+        },
+        "LOBBYIST": {
+          "name": "Lobbyist Convention",
+          "text": "The hotel bar is full of friendly strangers.",
+          "effect": "You can donate up to 60 instead of 40."
+        },
+        "LEAKED_RECEIPTS": {
+          "name": "Leaked Receipts",
+          "text": "Someone left the ledger on the photocopier.",
+          "effect": "Every donation is shown before the votes."
+        },
+        "PANIC": {
+          "name": "Constitutional Panic",
+          "text": "The lawyers are reading the fine print. Slowly.",
+          "effect": "An amendment needs every vote but one."
+        }
+      }
+    },
+    "l3": {
+      "choiceTitle": "Your move",
+      "choiceDecide": "Pick any, both or neither.",
+      "buy": "Buy SafeHands cover for {p} coins. It pays the whole loss.",
+      "gym": "Go to the gym for {c} coins. It halves your risk.",
+      "mandatory": "Cover is mandatory now. Everyone pays {T} coins, roughly. It covers {c}% of a loss.",
+      "noInsurer": "SafeHands has left the building. No cover this round.",
+      "submit": "Lock it in",
+      "regimeTitle": "The big vote",
+      "regimeDecide": "Round 4 runs under the rule with the most votes.",
+      "regimes": {
+        "VOL": {
+          "name": "Keep the market",
+          "desc": "Buy cover if you want."
+        },
+        "M50": {
+          "name": "Half cover for all",
+          "desc": "Everyone pays in, gets half a loss back."
+        },
+        "M100": {
+          "name": "Full cover for all",
+          "desc": "Everyone pays in, gets a loss back."
+        }
+      },
+      "regimeSubmit": "Cast my vote",
+      "regimeResult": "The vote is in: {name}.",
+      "regimeVotes": "Votes",
+      "ticker": "SafeHands Mutual",
+      "tickerLabel": "Price of cover",
+      "tickerClosed": "Closed",
+      "tickerMandate": "Mandatory plan",
+      "reasonFirst": "Opening price, set from the average risk.",
+      "reasonUp": "Last round's buyers were mostly high risk.",
+      "reasonDown": "Last round's buyers were mostly low risk.",
+      "reasonSame": "Same mix of buyers as last round.",
+      "reasonGone": "Nobody bought. SafeHands left town.",
+      "reasonMandate": "Everyone pays in now. The price board is off.",
+      "discount": "Price War: {p} this round only.",
+      "wheel": "Wheel of Misfortune",
+      "skip": "Skip",
+      "safe": "Safe this round",
+      "hit": "Bad luck: {loss} coins",
+      "covered": "Covered: SafeHands pays",
+      "halfCovered": "Half covered by the plan",
+      "oddsYou": "Your odds: {p}",
+      "oddsOthers": "Wheels show the table's average odds. Real odds are secret.",
+      "insured": "Covered",
+      "gymTag": "Gym",
+      "money": "Money this round",
+      "bankChange": "Bank {from} to {to}"
+    },
+    "reactions": {
+      "label": "React",
+      "laugh": "Laugh",
+      "gasp": "Gasp",
+      "angry": "Angry",
+      "clap": "Clap",
+      "eyeroll": "Eye roll",
+      "botReacted": "{name} reacted: {reaction}",
+      "note": "Reactions are just for fun and change nothing."
+    },
+    "broken": "{name} promised to {action}. It didn't happen.",
+    "brokenYou": "You promised to {action}. It didn't happen.",
+    "promises": {
+      "BUY": "buy cover",
+      "GYM": "hit the gym",
+      "VOTE": "vote {option}"
+    },
+    "confessional": "Confessional",
+    "guess": {
+      "title": "Guess a mission",
+      "intro": "Pick one contestant and guess their mission. Right is worth {pts} points.",
+      "pick": "Who?",
+      "mission": "Their mission",
+      "submit": "Lock in my guess",
+      "skip": "No guess",
+      "youGuessed": "You guessed {name}: {card}.",
+      "tell": {
+        "EGOIST": "Votes for whatever fills their own bank.",
+        "RAWLSIAN": "Votes for taxes and cover that lift the poorest.",
+        "UTILITARIAN": "Votes for whatever grows the whole table.",
+        "MERITOCRAT": "Votes to reward hours and training."
+      }
+    },
+    "summary": {
+      "title": "Episode summary",
+      "winner": "Episode winner: {name}",
+      "winnerYou": "You won the episode!",
+      "moment": "Biggest moment",
+      "momentEvent": "Round {r}: {event}.",
+      "momentSwing": "Round {r}: {name} {change} coins.",
+      "momentSwingYou": "Round {r}: you {change} coins.",
+      "bankChange": "Your bank: {from} to {to}",
+      "mission": "Your mission: {name}",
+      "missionDone": "Mission this episode: improved",
+      "missionMissed": "Mission this episode: not improved",
+      "guess": "Your guess: {name} is out to {mission}.",
+      "guessRight": "Correct, +{pts} points.",
+      "guessWrong": "Wrong. {name} was out to {mission}.",
+      "noGuess": "You made no guess.",
+      "results": "Full results",
+      "colName": "Contestant",
+      "colMission": "Mission",
+      "colBank": "Bank",
+      "colScore": "Score",
+      "scoreNote": "Score = half the bank + half the mission (x {k} for this mission) - debt points + guess points.",
+      "again": "Play again",
+      "menu": "Main menu",
+      "seed": "Challenge code: {seed}",
+      "missionsLabel": "The missions flip",
+      "lieLabel": "Biggest lie",
+      "lie": "{name} said \"{claim}\" {n} and was {truth}.",
+      "lieYou": "You said \"{claim}\" {n} and were {truth}.",
+      "noLie": "Nobody lied this episode.",
+      "readLabel": "Biggest wrong read",
+      "read": "By the end, the audience was {p} sure {name} was {said}. {name} was {truth}.",
+      "readYou": "By the end, the audience was {p} sure you were {said}. You were {truth}.",
+      "gapAbove": "About {n} points behind the player above you.",
+      "gapBelow": "About {n} points ahead of the player below you.",
+      "gapAboveClose": "Within a few points of the player above you.",
+      "gapBelowClose": "Within a few points of the player below you.",
+      "noRead": "By the end, the audience had everyone on the right side of 50%.",
+      "nearMiss": "Near miss",
+      "nearMissNone": "No single change would have left you richer.",
+      "ranksLabel": "The ranking so far (only your own score is shown)",
+      "lead": "Leading the life: {name}",
+      "leadYou": "You lead the life!",
+      "scoreLabel": "Your score",
+      "score": "{s} = half your bank {b} + half your mission {m}, minus {d} debt points this life ({e} this episode), plus guesses and Second Chance points {g}. The ranking uses this score."
+    },
+    "really": {
+      "button": "What was really going on?",
+      "close": "Close",
+      "L3": [
+        "SafeHands priced each round from the last round's buyers.",
+        "Low-risk people stopped buying, so the pool got riskier and the price climbed. That's adverse selection.",
+        "A mandate keeps everyone in the pool, so the price stops climbing.",
+        "The Bar is underwriting: real insurers check who is risky. Here the only check was what people said.",
+        "People who buy insurance aren't only the risky ones. Careful people buy too. That's why insurers can't just read you from your order.",
+        "Calling a risk claim is a medical check: insurers pay to verify only when an applicant looks risky, and a caught misstatement voids the policy."
+      ],
+      "link": "See the exact model in the economics version",
+      "L4": [
+        "HireBot hired by a belief about each group, updated from last year's workers.",
+        "Squares started with a lower belief, so a passing Square still fell short of the bar. Training paid them less, so fewer trained.",
+        "That kept the belief low. Nobody was prejudiced: the numbers fed themselves. That's statistical discrimination.",
+        "Everyone says they trained. Talk is cheap, so the old belief about your group still decides.",
+        "The policies change what the meter sees (blind hiring), who must be hired (a quota) or what long hours cost (childcare).",
+        "The judge seat is the real-world hiring manager: paid for good hires, blamed for bad ones, reading talk that costs nothing.",
+        "Calling a training claim is a reference check: costly, so a hirer checks only the claims it doubts, and a caught bluff loses the job."
+      ],
+      "L1": [
+        "In round 1 nobody knew their income, so everyone voted as if they could be anyone.",
+        "Peekers knew. The richer the card, the more they voted for less sharing.",
+        "That's the veil of ignorance: a rule you pick before you know your place is closer to fair.",
+        "Taxes leak a little here, so sharing costs some of the pie. The vote is a trade between pie and protection.",
+        "The Peek is information: real voters always know their place. That's why the veil is a thought experiment.",
+        "Calling a promise is fact-checking: it costs something to check, so you only check when a promise sounds too convenient."
+      ],
+      "L2": [
+        "Income mixed talent, effort and luck, and only the total was public.",
+        "So the Hustle Prize went to who looked like a hard worker, often a lucky one.",
+        "Claims were cheap, so they drifted up. That's cheap talk.",
+        "Higher taxes cut what an extra hour earns you, so people worked less. That's the incentive cost of redistribution.",
+        "The Hustle Prize is performance pay: rewarding effort when you can only see results.",
+        "Calling hours is a timesheet audit: checking costs money, so a firm audits only when a report looks off, and a caught padder loses the bonus."
+      ],
+      "L5": [
+        "Behind the veil, everyone voted on rules without knowing their income.",
+        "Once incomes landed, fair answers moved toward each person's own interest.",
+        "The bots here are programmed to shift that way, so the slope is built in. With people, it's the question.",
+        "Changing the rules needed a supermajority, and money could buy votes, or not.",
+        "Bought Votes is lobbying: paying for a vote you can't check until the ballots land.",
+        "Calling a vote promise is fact-checking a politician: checking costs something, so you check the promises that matter most."
+      ]
+    },
+    "intro": {
+      "go": "Roll the cameras",
+      "rules": "How it works"
+    },
+    "settings": {
+      "ruleset": "Default way to play",
+      "fun": "Quick and fun",
+      "econ": "With the economics",
+      "note": "A game in progress keeps its own mode."
+    },
+    "a11y": {
+      "bankOf": "{name}: bank {bank}, rank {rank}",
+      "missionProgress": "Mission progress",
+      "bankOnly": "{name}: bank {bank}"
+    },
+    "stage": {
+      "chance": "Your chance of disaster",
+      "chanceNote": "A disaster costs {loss}. Only you see this.",
+      "buyTitle": "Buy cover",
+      "buyDesc": "{p} coins, covers all.",
+      "gymTitle": "Hit the gym",
+      "gymDesc": "{c} coins, halves risk.",
+      "noCoverTitle": "No cover",
+      "noCoverDesc": "SafeHands left town.",
+      "mandateTitle": "Mandatory plan",
+      "mandateDesc": "Everyone pays about {T}. It covers {c}% of a loss.",
+      "lock": "Lock in",
+      "reply": "Reply",
+      "tap": "Tap to continue",
+      "resultsOf": "Round {r} results",
+      "SAFE": "SAFE",
+      "HIT": "HIT",
+      "COVERED": "COVERED",
+      "safe": "Safe",
+      "hit": "Hit {n}",
+      "covered": "Covered",
+      "brokePromise": "Broke a promise",
+      "bankLine": "Bank {from} to {to}.",
+      "costCover": "Cover cost you {p}.",
+      "costGym": "The gym cost you {c}.",
+      "costCoverGym": "Cover and gym cost you {p}.",
+      "costLoss": "The disaster cost you {loss}.",
+      "costMandate": "The plan cost you {T}.",
+      "costNone": "No costs this round.",
+      "breaking": "Breaking",
+      "priceOf": "Price of cover",
+      "up": "Up {p}",
+      "down": "Down {p}",
+      "same": "No change",
+      "closed": "Closed",
+      "headUp": "Last round's pool was riskier than the one before.",
+      "headDown": "Last round's pool was safer than the one before.",
+      "headSame": "The same kind of people bought cover.",
+      "headGone": "Nobody bought cover. SafeHands left town.",
+      "subUp": "So SafeHands raised the price. Safe people now have even less reason to buy.",
+      "subDown": "So SafeHands lowered the price.",
+      "subSame": "So the price stayed put.",
+      "subGone": "No more cover on sale this episode, unless you vote for a plan.",
+      "nextRound": "Round {r}",
+      "toVote": "To the vote",
+      "eventLabel": "Event card",
+      "voteIn": "The vote is in",
+      "menuTitle": "Menu",
+      "menuMission": "Your mission",
+      "menuChat": "Chat",
+      "menuClose": "Close",
+      "menuQuit": "Leave the show",
+      "results": "Full results",
+      "ranking": "Final ranking",
+      "chose": {
+        "cover": "You bought cover.",
+        "gym": "You stayed out and hit the gym.",
+        "both": "You bought cover and hit the gym.",
+        "none": "You stayed out of the pool.",
+        "noneClosed": "No cover on sale. You skipped the gym.",
+        "plan": "You were in the plan.",
+        "planGym": "You were in the plan and hit the gym.",
+        "refused": "You applied for cover and were barred.",
+        "launch": "SafeHands signed you up.",
+        "launchGym": "SafeHands signed you up. You hit the gym."
+      },
+      "launchTitle": "Launch cover",
+      "launchDesc": "SafeHands signs everyone up for the launch season, at {p} coins. After that, it's your choice.",
+      "headLaunch": "Everyone was in, so the new price is the whole table's average risk.",
+      "subLaunch": "From now on, buying cover is your choice.",
+      "debtCost": "In debt: -{n} points"
+    },
+    "claims": {
+      "RISK": {
+        "LOW": "I'm low risk.",
+        "HIGH": "I'm high risk."
+      }
+    },
+    "claim": {
+      "title": "Your claim",
+      "why": "What you say moves what everyone believes about you, and cover members vote on who to bar.",
+      "you": {
+        "LOW": "Your risk: low, {p}. {worry}.",
+        "HIGH": "Your risk: high, {p}. {worry}."
+      },
+      "opts": {
+        "LOW": {
+          "title": "I'm low risk"
+        },
+        "HIGH": {
+          "title": "I'm high risk"
+        },
+        "SILENT": {
+          "title": "Say nothing"
+        }
+      },
+      "submit": "Say it",
+      "short": {
+        "LOW": "Low risk",
+        "HIGH": "High risk",
+        "SILENT": "Said nothing",
+        "P1": "Free Market",
+        "P2": "Safety Net",
+        "P3": "Middle Way"
+      },
+      "record": "{kept} of {made} true",
+      "inLabel": "Round {r} claims",
+      "inTitle": "The claims are in",
+      "inNote": "Anyone could be lying. The cards flip at the end.",
+      "inNotePoll": "Claims work like polls: they change which rule looks able to win. Anyone could be lying."
+    },
+    "move": {
+      "risk": "Your risk:",
+      "youRead": "Audience on you: {p} high risk.",
+      "barTitle": "Bar one?",
+      "notMember": "Members can bar one.",
+      "poll": "{p} risky",
+      "pollLabel": "Audience on {name}: {p} think high risk",
+      "barPick": "You vote to bar {name}.",
+      "preview": "Mission {n}",
+      "pollTitle": "What the audience thinks"
+    },
+    "barBeat": {
+      "label": "The Bar",
+      "barred": "{name} is barred.",
+      "barredYou": "You are barred.",
+      "refused": "{name} applied for cover and was turned away.",
+      "refusedYou": "You applied for cover and were turned away.",
+      "notApplied": "No cover for them this round.",
+      "none": "Nobody was barred.",
+      "vote": "{name}: {target}",
+      "noOne": "no one",
+      "barredMany": "{names} are barred.",
+      "refusedMany": "{names} applied for cover and were turned away.",
+      "and": " and ",
+      "rule": "Members are last round's cover holders. Most of the other members voting for you bars you.",
+        "notAppliedNamed": "{names} didn't apply, so no cover this round."
+    },
+    "cards": {
+      "label": "The reveal",
+      "title": "Who was really risky?",
+      "LOW": "LOW RISK",
+      "HIGH": "HIGH RISK",
+      "TRUE": "TRUE",
+      "LIE": "LIE",
+      "stamp": "R{r} {claim}: {stamp}",
+      "noClaims": "Never made a claim.",
+      "peakLie": "{name} lied {n}. {name} was {truth}.",
+      "peakHonest": "Not one lie. Nobody tell the network.",
+      "peakLieYou": "You lied {n}. You were {truth}.",
+      "peakLieYouPlain": "You lied {n}. The cameras loved it. The receipts will too.",
+      "word": {
+        "LOW": "Low",
+        "HIGH": "High"
+      },
+      "justWorrier": "Low risk. Just a Worrier.",
+      "tooCalm": "High risk. Too calm to buy."
+    },
+    "nm": {
+      "line": "{change} in round {r} would have left you {n} coins richer.",
+      "buy": "Buying cover",
+      "out": "Staying out of the pool",
+      "gym": "Hitting the gym",
+      "noGym": "Skipping the gym",
+      "and": "{a} and {b}",
+      "bar": "Barring {name}",
+      "barNone": "Barring no one",
+      "claim": "Saying \"{claim}\"",
+      "silent": "Saying nothing",
+      "regime": "Voting {name}",
+      "train": "Training",
+      "noTrain": "Skipping training",
+      "hireComplex": "Hiring {name} for the complex job",
+      "hireSimple": "Hiring {name} for the simple job",
+      "policy": "Voting {name}",
+      "claimT": "Saying \"I trained\"",
+      "peek": "Peeking",
+      "noPeek": "Not peeking",
+      "vote": "Voting {name}",
+      "tax": "Voting a {t} tax",
+      "effort": "Working {e} hours",
+      "prize": "Voting {name} for the prize",
+      "noDonate": "Keeping your donation"
+    },
+    "myCards": {
+      "label": "Your secret cards",
+      "riskLine": "Wheel odds: {p} a round.",
+      "worry": {
+        "WORRIER": "Worrier",
+        "CALM": "Calm"
+      },
+      "worryLine": {
+        "WORRIER": "In debt after a round: -{m} points per coin owed, at most {cap}.",
+        "CALM": "In debt after a round: -1 point per coin owed, at most {cap}."
+      },
+      "unknown": "Nobody knows how many players are high risk or Worriers. Not even the host."
+    },
+    "opening": {
+      "skip": "Skip",
+      "next": "Next",
+      "go": "Let's play",
+      "menu": "What is this game?",
+      "dots": "Card {n} of {of}",
+      "c1": {
+        "headline": "A game show about fair play",
+        "body": "Live a whole life on air in five episodes. Each one is a real economics problem: luck, work, insurance, hiring, and who writes the rules."
+      },
+      "c2": {
+        "headline": "Everyone has secrets",
+        "intro": "Each round, you can:",
+        "claim": "Claim something. It can be a lie.",
+        "read": "Read the others. Who do you believe?",
+        "move": "Move: spend, vote, bar, hire.",
+        "reveal": "Reveal: every secret flips at the end. Liars get stamped."
+      },
+      "c3": {
+        "headline": "How you win",
+        "body": "You get coins and a secret mission. Your score: bank plus how well your mission went. Debt hurts. Guess others' missions for bonus points.",
+        "small": "The numbers are exaggerated. The mechanisms are real."
+      }
+    },
+    "gift": {
+      "title": "Give",
+      "desc": "Optional: up to {max} coins to someone",
+      "picked": "{n} to {name}",
+      "sheet": "Give coins",
+      "how": "Gifts are public and land after the wheel.",
+      "close": "Close",
+      "amount": "{n}",
+      "none": "No gift",
+      "gave": "{from} gave {to} {n}.",
+      "gaveYou": "{from} gave you {n}.",
+      "youGave": "You gave {to} {n}."
+    },
+    "about": {
+      "deal": "Quick and fun, Episode 3: every risk card and worry card is dealt 50/50, and nobody is told the mix. One hidden rule: at a table of 3 or 4, the risk cards are dealt again until at least one player is high risk and one is low risk. With everyone the same, there is nobody to screen out, so the episode has nothing to show. A table of 2 is never dealt again.",
+      "call": "Call it (Play): staking coins to check a claim is costly state verification. Checking costs something, so you check only when you suspect (Townsend 1979, Journal of Economic Theory 21)."
+    },
+    "times": {
+      "one": "once",
+      "two": "twice",
+      "many": "{n} times"
+    },
+    "l4": {
+      "group": {
+        "CIRCLE": "Circle",
+        "SQUARE": "Square"
+      },
+      "cards": {
+        "label": "Your card",
+        "care": "Childcare duty: yes. Long hours cost you {n} more.",
+        "noCare": "Childcare duty: no.",
+        "public": "Everyone can see every group and duty. Only training is secret.",
+        "judges": "HireBot seats, round by round: {names}."
+      },
+      "policyIn": "The policy is in",
+      "judgeIs": "HireBot this round: {name}",
+      "train": {
+        "title": "Train?",
+        "belief": "HireBot believes {p} of {group}s trained.",
+        "beliefBlind": "Blind hiring: HireBot believes {p} of everyone trained.",
+        "how": "Trained workers pass the test 80% of the time; others 30%.",
+        "tile": "Train",
+        "cost": "Costs you {c} coins this round.",
+        "costCut": "Costs you {c} this round (was {was}).",
+        "skip": "Don't train",
+        "skipDesc": "Keep the coins."
+      },
+      "claim": {
+        "youT": "Your secret: you trained.",
+        "youU": "Your secret: you didn't train.",
+        "how": "Then you take the test. HireBot ({name}) sees your claim and your result.",
+        "opts": {
+          "TRAINED": "I trained",
+          "SILENT": "Say nothing"
+        }
+      },
+      "judge": {
+        "title": "You are HireBot",
+        "pay": "Tap each worker you want on the complex job (you get +{g} if trained, -{l} if not). The rest get simple. Base 40.",
+        "hidden": "Group hidden",
+        "meterNote": "Hire past the line ({p}).",
+        "submit": "Confirm hires",
+        "passed": "passed",
+        "failed": "failed",
+        "says": "claims training",
+        "quiet": "silent"
+      },
+      "pass": "Pass",
+      "fail": "Fail",
+      "saidT": "Claims trained",
+      "saidNothing": "Silent",
+      "meter": "Meter {p}",
+      "complex": "Complex",
+      "simple": "Simple",
+      "quota": "Quota hire",
+      "policy": {
+        "title": "Change HireBot?",
+        "how": "Rounds 3 and 4 run under the policy with the most votes.",
+        "submit": "Cast my vote",
+        "short": {
+          "A": "Judge by group, as now.",
+          "B": "HireBot can't see groups.",
+          "C": "Each group gets a complex job.",
+          "D": "Childcare long hours cost 20, not 80."
+        }
+      },
+      "res": {
+        "label": "Round {r} hires",
+        "youJudged": "You judged. You earn {n}.",
+          "judgeBase": "Base {b}: you gave nobody the complex job.",
+          "judgeWhy": "Base {b}, +{gp} for trained complex hires ({g} x {gu}), -{lp} for untrained ones ({l} x {lu}). Each row shows the worker's own pay.",
+        "youComplex": "You got the complex job. You earn {n}.",
+        "youSimple": "You got the simple job. You earn {n}.",
+        "judgePay": "{name} earned {n} as HireBot.",
+        "trainCost": "Training cost you {c} of that.",
+        "pay": "Your job paid {p}.",
+        "payTrain": "Your job paid {p}; training cost you {c}.",
+          "other": "Gifts and other: {n}.",
+        "care": "(Childcare duty: long hours cost you {n}, so the flexible job pays more.)"
+      },
+      "stamp": {
+        "GOOD": "TRAINED HIRE",
+        "BAD": "UNTRAINED HIRE"
+      },
+      "everyone": "Everyone",
+      "board": {
+        "title": "HireBot's beliefs: share trained",
+        "head": "HireBot learned from last round's workers.",
+        "sub": "This round, HireBot hired from {p}."
+      },
+      "peak": {
+        "title": "Who really trained?",
+        "stamp": "R{r} {did}, {stamp}",
+        "T": "trained",
+        "U": "didn't",
+        "silent": "silent",
+        "gap": "Circles earned {n} more a round than Squares.",
+        "gapNeg": "Squares earned {n} more a round than Circles.",
+        "line": "Nobody here was prejudiced. You hired by the numbers. The numbers came from last year.",
+        "youTurnedSq": "As HireBot you turned down {n} trained Squares.",
+        "youTurned": "As HireBot you turned down {n} trained workers.",
+        "youBad": "As HireBot you made {n} bad hires.",
+        "youClean": "As HireBot you hired every trained worker you saw.",
+        "lie": "{name} lied {n}. Training, apparently, is a state of mind.",
+        "youTurnedOne": "As HireBot you turned down 1 trained worker.",
+        "youTurnedSqOne": "As HireBot you turned down 1 trained Square."
+      },
+      "sum": {
+        "lie": "{name} said \"I trained\" {n} and hadn't.",
+        "lieYou": "You said \"I trained\" {n} and hadn't."
+      }
+    },
+    "l1": {
+      "rule": {
+        "P1": {
+          "name": "Free Market",
+          "desc": "No tax."
+        },
+        "P2": {
+          "name": "Safety Net",
+          "desc": "Everyone gets at least 40."
+        },
+        "P3": {
+          "name": "Middle Way",
+          "desc": "Gap at most 100."
+        },
+        "P4": {
+          "name": "Help the Poorest",
+          "desc": "Poorest gets most."
+        }
+      },
+      "unborn": {
+        "label": "Your card",
+        "title": "You haven't been born yet.",
+        "deck": "Incomes this episode: {a}, {b}, {c} or {d}. You find out after the vote.",
+        "rules": "The rule with the most votes sets the tax. Tax is shared equally, and some leaks.",
+        "living": "Living costs {c} coins a round, taken from every bank.",
+        "list": "Rules: Free Market (no tax), Safety Net (everyone gets at least 40), Middle Way (gap at most 100), Help the Poorest."
+      },
+      "peek": {
+        "title": "Peek?",
+        "how": "New incomes are dealt this round. Pay {c} coins to see yours before you vote.",
+        "public": "Everyone will see that you peeked. Not what you saw.",
+        "yes": "Peek",
+        "yesDesc": "Costs {c} coins.",
+        "no": "Stay blind",
+        "noDesc": "Vote like round 1.",
+        "submit": "Decide"
+      },
+      "youKnow": "You peeked: income {y}.",
+      "youDont": "Income: unknown.",
+      "peekers": "Peeked: {names}.",
+      "claimOpt": "I'm voting {rule}",
+      "vote": {
+        "title": "Vote",
+        "submit": "Vote"
+      },
+      "votes": {
+        "label": "Round {r} votes",
+        "tax": "Tax: {t}",
+        "broke": "Said {rule}",
+        "tie": "A tie: drawn by lot."
+      },
+      "peekedTag": "Peeked",
+      "inc": {
+        "label": "Incomes, poorest first",
+        "you": "You got {y}. After the rule: {w}.",
+        "row": "{y}, after the rule {w}",
+        "inherit": "{name} inherited 60 coins.",
+        "peekCost": "Your peek: -{c} (in the bank line below)."
+      },
+      "toReveal": "To the reveal",
+      "peak": {
+        "title": "What did they vote?",
+        "stamp": "R{r} {rule}, {stamp}",
+        "peek": "{name} peeked. Got {y}. Voted {rule}.",
+        "peekYou": "You peeked. You got {y}. You voted {rule}.",
+        "noPeek": "Nobody peeked. Everyone voted blind.",
+        "lie": "{name} broke a promise {n}. Politics, darling."
+      },
+      "sum": {
+        "lie": "{name} said {said} and voted {did}.",
+        "lieYou": "You said {said} and voted {did}."
+      }
+    },
+    "l2": {
+      "band": {
+        "LITTLE": "A little",
+        "SOME": "Some",
+        "LOT": "A lot"
+      },
+      "silent": "Say nothing",
+      "said": "Said: {b}",
+      "cam": "{e}h on camera",
+      "poll": "{p} a lot",
+      "cards": {
+        "label": "Your card",
+        "talent": "Talent {a}",
+        "how": "Each hour of effort earns you 4 x your talent = {per} coins, plus a luck die. Hours cost you more the more you work.",
+        "secret": "Your talent, hours and die are secret. Everyone sees your total income."
+      },
+      "tax": {
+        "title": "Tax for the episode",
+        "how": "The middle vote wins (with four votes, the lower middle one). Tax is shared equally; some leaks.",
+        "none": "No tax",
+        "shared": "Shared out",
+        "submit": "Vote"
+      },
+      "effort": {
+        "tax": "Tax {t}",
+        "title": "Work {e} hours",
+        "aria": "Hours of effort",
+        "money": "Your money with average luck: {w}.",
+        "claim": "Tell the table you worked:"
+      },
+      "inc": {
+        "label": "Round {r} incomes",
+        "you": "You made {y}. Your die: {d}.",
+        "hidden": "Hours and other dice stay secret until the end.",
+        "cameras": "The cameras showed everyone's hours.",
+        "next": "To the Hustle Prize",
+        "how": "20 base + {h}h x {per} = {w} more, then your die {d}."
+      },
+      "prize": {
+        "title": "Hustle Prize: {n} coins",
+        "how": "Vote for who worked hardest. Not yourself.",
+        "submit": "Vote"
+      },
+      "won": {
+        "net": "You made {y}. After the {t} tax, the equal share and the cost of your hours: {k}.",
+        "netGifts": "Gifts: {n}.",
+        "netPrize": "Plus the prize: {n}.",
+        "label": "The Hustle Prize",
+        "you": "You won {n} coins.",
+        "one": "Prize to {name}: {n} coins.",
+        "split": "Split: {names}.",
+        "bank": "Your money this round: {w}."
+      },
+      "peak": {
+        "title": "Who really worked?",
+        "stamp": "R{r} {e}h, die {d}, {stamp}",
+        "star": "{name} won or shared the Hustle Prize {n}x. Worked {e} hours a round. Best die {d}.",
+        "starYou": "You won or shared the Hustle Prize {n}x. You worked {e} hours a round. Best die {d}.",
+        "none": "Nobody won outright. The table couldn't agree who hustled.",
+        "unlucky": "{name}: worked hard, rolled badly.",
+        "host": "Effort is invisible. Luck is loud. Our sponsor sells both."
+      },
+      "sum": {
+        "lie": "{name} overclaimed effort {n}.",
+        "lieYou": "You overclaimed effort {n}."
+      },
+      "taxIn": {
+        "label": "The tax vote",
+        "how": "The middle vote wins. It holds for the whole episode."
+      }
+    },
+    "l5": {
+      "rules": "Tax {t}, floor {F}",
+      "tax": "Tax rate",
+      "floor": "Floor: everyone gets at least",
+      "YES": "Yes",
+      "NO": "No",
+      "said": {
+        "YES": "yes",
+        "NO": "no",
+        "SILENT": "silent"
+      },
+      "cards": {
+        "label": "The finale",
+        "title": "Write the rules. Then find out where you stand.",
+        "deck": "Incomes this time: {list}.",
+        "how": "Middle votes win. After the reveal, anyone who proposes a change can pay others for votes, in secret.",
+        "life": "This time your incomes are your banks. Everyone can see them."
+      },
+      "veil": {
+        "title": "Rules behind the veil",
+        "how": "You don't know your income yet.",
+        "submit": "Submit",
+        "howLife": "You know your bank. So does everyone. Write fair rules anyway?"
+      },
+      "fair": {
+        "title": "What tax is fair?",
+        "before": "Unpaid. Just your opinion, before you know your income.",
+        "after": "Unpaid. Same question, now that you know.",
+        "submit": "Answer",
+        "beforeLife": "Unpaid. Just your opinion, before the rules land.",
+        "born": "Unpaid. Before you're born. You'll be asked again at the finale.",
+        "label": "Fair tax (unpaid, your opinion):"
+      },
+      "inc": {
+        "label": "The incomes, poorest first",
+        "labelLife": "The banks, poorest first",
+        "now": "These are the rules now. Next: change them, if you can.",
+        "next": "To the lobby"
+      },
+      "lobby": {
+        "now": "Now: {rules}",
+        "propose": "Propose: {rules}",
+        "keep": "Keep the rules",
+        "donate": "Secret donation to",
+        "donatePublic": "Donation to (public this time)",
+        "nobody": "Nobody",
+        "amount": "Amount",
+        "title": "Your amendment",
+        "keepNow": "Propose a change? Now: {rules}",
+        "yours": "Your amendment: {rules}",
+        "how": "Their claims on your amendment are shown. Money goes in secret.",
+        "howLeaked": "Their claims on your amendment are shown. Leaked Receipts: every donation is public this time."
+      },
+      "claim": {
+        "title": "How will you vote on each change?",
+        "how": "Tap Yes or No to claim it. Leave both off to say nothing."
+      },
+      "amend": {
+        "label": "Amendment {k} of {n}, from {name}",
+        "now": "Now: {rules}. Needs {n} yes votes.",
+        "passedBefore": "{name}'s amendment just passed, so these are the rules now.",
+        "got": "{name} secretly gave you {n} coins.",
+        "submit": "Vote",
+        "claims": "What they claimed: {list}"
+      },
+      "peak": {
+        "label": "The ballots",
+        "final": "Final rules: {rules}",
+        "dropped": "{name}'s amendment matched the rules already in force, so it was dropped.",
+        "am": "{name}'s {rules}: {res}, {y} yes.",
+        "passed": "passed",
+        "failed": "failed",
+        "bought": "{name} took {n} from {donor}. Voted yes.",
+        "betray": "{name} took {n} from {donor}. Voted no.",
+        "shift": "Your fair tax: {a} before, {b} after (moved {d} percentage points).",
+        "hostBought": "Money talks. Sometimes it just mumbles.",
+        "hostClean": "No money changed hands. Our sponsors are devastated.",
+        "kept": "(kept)",
+        "broke": "(broke promise)",
+        "boughtYou": "{donor} gave you {n}. You voted yes.",
+        "betrayYou": "{donor} gave you {n}. You voted no.",
+        "betrayYours": "{name} took your {n}. Voted no.",
+        "boughtYours": "{name} took your {n}. Voted yes."
+      },
+      "sum": {
+        "lie": "{name} broke a vote promise {n}.",
+        "lieYou": "You broke a vote promise {n}."
+      },
+      "short": "{t} tax, {F} floor",
+      "compact": "{t}, {F}"
+    },
+    "life": {
+      "next": "On to Episode {n}",
+      "receipts": "To the Receipts"
+    },
+    "comeback": {
+      "label": "A Second Chance",
+      "title": "The show feels sorry for you.",
+      "how": "You're last on score. Take {c} coins now, or {p} mission points. Everyone is watching.",
+      "coins": "Take {c} coins",
+      "points": "Take {p} points",
+      "rate": "Your score counts half your bank, so {c} coins are worth {half} points, plus whatever they do for your mission.",
+      "otherCoins": "{name} was last on score and took the Second Chance: +{c} coins.",
+      "otherPoints": "{name} was last on score and took the Second Chance: +{p} points."
+    },
+    "receipts": {
+      "label": "The Receipts",
+      "title": "Your life, itemized.",
+      "worked": "Ep{ep}: {name} said \"{said}\". Lie. It paid.",
+      "caught": "Ep{ep}: {name} said \"{said}\". Lie. Caught.",
+      "betrayal": "Ep5: {name} took {n} from {donor}. Voted no.",
+      "none": "Not one lie all life. The network is furious.",
+      "skip": "Skip",
+      "next": "The missions flip",
+      "said": {
+        "RISK": {
+          "LOW": "I'm low risk",
+          "HIGH": "I'm high risk"
+        },
+        "TRAINING": {
+          "TRAINED": "I trained"
+        },
+        "VOTE": {
+          "P1": "I'm voting Free Market",
+          "P2": "I'm voting Safety Net",
+          "P3": "I'm voting Middle Way"
+        },
+        "EFFORT": {
+          "LITTLE": "I worked a little",
+          "SOME": "I worked some",
+          "LOT": "I worked a lot"
+        },
+        "AMEND": {
+          "YES": "I'll vote yes",
+          "NO": "I'll vote no"
+        }
+      }
+    },
+    "card": {
+      "rank": "{name}: #{r} of {n}",
+      "you": "You",
+      "best": "Best episode: Ep{ep} {name}, bank {n}",
+      "worst": "Worst episode: Ep{ep} {name}, bank {n}",
+      "bank": "Final bank: {n}",
+      "missionDone": "Mission over the life, {mission}: improved ({a} to {b})",
+      "missionMissed": "Mission over the life, {mission}: not improved ({a} to {b})",
+      "honesty": "Lied {lies} of {made} times. Caught {caught}.",
+      "noClaims": "Never made a claim.",
+      "small": "Just for fun. Not a diagnosis.",
+      "share": "Share the card",
+      "allTrue": "Told the truth {made} of {made} times."
+    },
+    "titles": {
+      "honest": {
+        "principled": {
+          "won": "Honest and rich. Suspicious.",
+          "mid": "Clean hands, average wallet.",
+          "last": "Honest to the last coin."
+        },
+        "payday": {
+          "won": "Honest until payday.",
+          "mid": "Truthful, but flexible about taxes.",
+          "last": "Honest, and it showed."
+        }
+      },
+      "some": {
+        "principled": {
+          "won": "Lied a little. Won a lot.",
+          "mid": "Mostly true, mostly fine.",
+          "last": "Bent the truth. It bent back."
+        },
+        "payday": {
+          "won": "Principled until the bank statement.",
+          "mid": "A fair-weather fairness fan.",
+          "last": "Changed your mind and your story."
+        }
+      },
+      "liar": {
+        "principled": {
+          "won": "Lied often. Won everything.",
+          "mid": "Professional storyteller.",
+          "last": "Lied a lot. Nobody bought it."
+        },
+        "payday": {
+          "won": "Every word for sale. Sold out.",
+          "mid": "Whatever pays, whatever's fair.",
+          "last": "All bluff, no payoff."
+        }
+      },
+      "quiet": {
+        "won": "Said nothing. Won anyway.",
+        "mid": "The quiet one. Nobody knows.",
+        "last": "Silent, and it cost you."
+      }
+    },
+    "daily": {
+      "title": "Daily Life",
+      "desc": "Today's life ({day}). Same seed for everyone, against the bots. No streaks, no timers.",
+      "shareHead": "The Veil: Live, Daily Life {day}",
+      "shareHeadSeed": "The Veil: Live",
+      "shareRank": "Rank {r} of {n}",
+      "shareDaily": "Share today",
+      "shareText": "Share text",
+      "copied": "Copied"
+    },
+    "rival": {
+      "beat": "{name}, just above you, beat you by {n} points.",
+      "won": "You beat {name} by {n} points.",
+      "ask": "Rematch with the same seed?",
+      "rematch": "Rematch"
+    },
+    "ach": {
+      "label": "Achievements ({n} of {max} on this device):",
+      "DEATH_SPIRAL": {
+        "name": "Death Spiral",
+        "desc": "The pool emptied and SafeHands left town."
+      },
+      "LEMON": {
+        "name": "Lemon",
+        "desc": "High risk, said low risk, and got cover anyway."
+      },
+      "FREE_RIDER": {
+        "name": "Free Rider",
+        "desc": "Won the Hustle Prize on a little work."
+      },
+      "GLASS_CEILING": {
+        "name": "Glass Ceiling Breaker",
+        "desc": "A Square hired for the complex job."
+      },
+      "KINGMAKER": {
+        "name": "Kingmaker",
+        "desc": "Your donation bought the deciding vote."
+      },
+      "VEIL_PIERCER": {
+        "name": "Veil Piercer",
+        "desc": "Peeked, and your rule won."
+      },
+      "JACKPOT": {
+        "name": "Jackpot",
+        "desc": "Rolled the top luck face."
+      },
+      "CLEAN_RECORD": {
+        "name": "Clean Record",
+        "desc": "Five or more claims, every one true."
+      },
+      "COMEBACK_KID": {
+        "name": "Comeback Kid",
+        "desc": "Took the second chance and finished in the top two."
+      },
+      "DEBT_SURVIVOR": {
+        "name": "Debt Survivor",
+        "desc": "Went into debt and still finished in the top two."
+      },
+      "BAD_HIRE": {
+        "name": "Bad Hire",
+        "desc": "As HireBot, hired an untrained worker for the complex job."
+      },
+      "TOOK_THE_MONEY": {
+        "name": "Took the Money",
+        "desc": "Took a donation and voted no."
+      }
+    },
+    "pt": {
+      "toggle": "Playtest mode (keeps a private log on this device and adds a short survey)",
+      "open": "Playtest: a short survey",
+      "title": "Quick survey",
+      "how": "Tap your answers. Skip anything. Nothing is sent: you copy a code and give it to whoever asked you to test.",
+      "skip": "Skip",
+      "send": "Make my results code",
+      "codeHow": "Copy this code and send it back:",
+      "copy": "Copy the code",
+      "q": {
+        "oneSentence": "Explain the game in one sentence.",
+        "cared": "Which decision did you care about?",
+        "surprised": "What surprised you?",
+        "changed": "How much did your choices change the outcome?",
+        "again": "Do you want another round?",
+        "withWhom": "Who would you play this with?",
+        "unclear": "Was anything unclear at the start?",
+        "missionChanged": "Did your mission change what you did?",
+        "why": "Why did the price go up? (or what was really going on?)"
+      },
+      "a": {
+        "cared": {
+          "claim": "What I claimed",
+          "move": "My move",
+          "vote": "A vote",
+          "read": "Who to bar, hire or reward",
+          "give": "A gift",
+          "none": "None"
+        },
+        "surprised": {
+          "lie": "A lie",
+          "reveal": "The reveal",
+          "result": "My result",
+          "price": "A price or a rule",
+          "nothing": "Nothing"
+        },
+        "changed": {
+          "lot": "A lot",
+          "little": "A little",
+          "none": "Not at all"
+        },
+        "again": {
+          "yes": "Yes",
+          "maybe": "Maybe",
+          "no": "No"
+        },
+        "withWhom": {
+          "friend": "A friend",
+          "family": "Family",
+          "partner": "A partner",
+          "colleague": "A colleague",
+          "nobody": "Nobody"
+        },
+        "unclear": {
+          "yes": "Yes",
+          "no": "No"
+        },
+        "missionChanged": {
+          "yes": "Yes",
+          "bit": "A bit",
+          "no": "No"
+        }
+      },
+      "results": "Playtest results",
+      "paste": "Paste one or more results codes (one per line).",
+      "read": "Show results",
+      "bad": "{n} code(s) could not be read.",
+      "totals": "Totals",
+      "tTesters": "Testers: {n}",
+      "tReplay": "Tapped Play again within 10 s: {n} of {of}",
+      "tFirst": "Median time to first decision: {s} s",
+      "tSlow": "Longest screens: {list}",
+      "tAgain": "Another round? {list}",
+      "tWho": "Play with: {list}",
+      "rows": "One row per tester"
+    },
+    "call": {
+      "label": "Call ({n}):",
+      "none": "No one",
+      "stampCaught": "CAUGHT",
+      "stampWrong": "CALLED WRONG",
+      "caught": "{caller} called {target}. {target} was lying. +{n}.",
+      "caughtYou": "You called {target}. {target} was lying. +{n}.",
+      "wrong": "{caller} called {target}. {target} told the truth. -{n} to {target}.",
+      "wrongYou": "You called {target}. {target} told the truth. -{n} to {target}."
+    },
+    "ledger": {
+      "show": "See the money",
+      "hide": "Close",
+      "moneyTitle": "Bank {a} to {b}",
+      "scoreTitle": "Score {a} to {b}",
+      "k": {
+        "income": "Income",
+        "incomeFinale": "The finale covers living costs",
+        "rule": "The rule (tax, share, floor)",
+        "peek": "Peek",
+        "inheritance": "Inheritance",
+        "gift": "Gifts",
+        "prize": "Hustle Prize",
+        "hours": "Cost of your hours",
+        "pay": "Pay",
+        "cover": "Cover",
+        "plan": "Cover plan",
+        "gym": "Gym",
+        "loss": "Wheel hit",
+        "training": "Training",
+        "judge": "HireBot pay",
+        "donation": "Donations",
+        "call": "Calls",
+        "comeback": "Second Chance",
+        "living": "Living costs",
+        "other": "Other"
+      },
+      "s": {
+        "bank": "Half your bank change",
+        "mission": "Mission points",
+        "debt": "Debt points",
+        "guess": "Guesses and bonuses"
+      }
+    },
+    "bank": {
+      "round": "Your bank {from} to {to}: {w} this round, then -{c} living costs.",
+      "comeback": "That includes your Second Chance: +{c}.",
+      "living": "Living costs: -{c}.",
+      "pay": "Pay: +{w}."
+    }
   }
 }

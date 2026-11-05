@@ -1,5 +1,6 @@
 // Phone-width walkthrough of a full run, one human screen at a time.
 // Usage: npm run walkthrough -- [--width 375] [--seed playtest-1] [--save walkthrough-after.txt]
+//        npm run walkthrough -- --ruleset PLAY --episode 3   (a Play episode; P1 has Episode 3 only)
 // Uses an installed browser via PW_CHANNEL (default msedge) when Playwright's bundled Chromium is missing.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'vite';
@@ -13,7 +14,15 @@ const width = Number(arg('width', '375'));
 const height = Number(arg('height', '760'));
 const seed = arg('seed', 'playtest-1');
 const save = arg('save', '');
-const outDir = 'walkthrough-out';
+const ruleset = arg('ruleset', 'STUDY');
+const episode = Number(arg('episode', '3'));
+// --mode LIFE plays a whole Play life (D-155).
+const playMode = arg('mode', 'EPISODE');
+// D-141, D-145: Play tables of 2 to 4 seats, at any difficulty, with an optional stage name (D-146).
+const players = Number(arg('players', '4'));
+const difficulty = arg('difficulty', 'NORMAL');
+const humanName = arg('name', '');
+const outDir = ruleset === 'PLAY' ? (arg('mode', 'EPISODE') === 'LIFE' ? 'walkthrough-out/life' : 'walkthrough-out/play') : 'walkthrough-out';
 mkdirSync(outDir, { recursive: true });
 
 const server = await createServer({ server: { port: 5188, strictPort: false }, logLevel: 'error' });
@@ -23,6 +32,7 @@ const url = server.resolvedUrls.local[0];
 async function launch() {
   const channel = process.env.PW_CHANNEL;
   try {
+    if (process.env.PW_EXECUTABLE) return await chromium.launch({ executablePath: process.env.PW_EXECUTABLE });
     return await chromium.launch(channel ? { channel } : {});
   } catch {
     return await chromium.launch({ channel: 'msedge' });
@@ -34,16 +44,58 @@ await page.goto(url);
 await page.evaluate(() => localStorage.clear());
 await page.reload();
 await page.waitForFunction(() => '__autoplay' in window);
-await page.evaluate((s) => {
-  const st = window.__veil.getState();
-  st.updateSettings({ reducedMotion: true });
-  st.start({ mode: 'FULL_RUN', nPlayers: 4, difficulty: 'NORMAL', seed: s });
-}, seed);
+// Play's opening cards (D-139): --opening fresh shows them as a first-time player would, --opening seen
+// marks them seen first and checks they stay away. Without the flag the walkthrough starts the game directly.
+const opening = arg('opening', '');
+const openingLines = [];
+if (ruleset === 'PLAY' && opening) {
+  if (opening === 'seen') await page.evaluate(() => localStorage.setItem('veil.play.opening.seen', '1'));
+  await page.evaluate(() => {
+    const st = window.__veil.getState();
+    st.updateSettings({ reducedMotion: true });
+    st.go('playMode');
+  });
+  for (let i = 0; i < 5; i++) {
+    await page.waitForTimeout(200);
+    const o = await page.evaluate(() => {
+      const el = document.querySelector('[data-opening]');
+      const root = el || document.getElementById('root');
+      return {
+        card: el ? el.getAttribute('data-opening') : null,
+        words: (root.innerText || '').trim().split(/\s+/).filter(Boolean).length,
+        // The cards are a fixed overlay: measure the card itself, not the page behind it.
+        height: el ? el.scrollHeight : document.documentElement.scrollHeight,
+        tall: el ? el.scrollHeight > window.innerHeight : document.documentElement.scrollHeight > window.innerHeight,
+        title: document.querySelector('h1')?.innerText ?? '',
+      };
+    });
+    if (!o.card) {
+      openingLines.push(`Open  ${opening === 'seen' ? 'no cards (already seen); ' : ''}screen "${o.title}"`);
+      break;
+    }
+    await page.screenshot({ path: `${outDir}/000-opening-${o.card}.png` });
+    openingLines.push(`Open  card ${o.card}  words=${String(o.words).padStart(3)} height=${o.height}${o.tall ? ' TALLER THAN VIEWPORT' : ''}`);
+    await page.click('[data-opening-next]');
+  }
+}
+await page.evaluate(
+  ([s, rs, ep, np, df, nm, md]) => {
+    const st = window.__veil.getState();
+    st.updateSettings({ reducedMotion: true });
+    if (rs === 'PLAY') st.start({ ...(md === 'LIFE' ? { mode: 'LIFE' } : { mode: 'EPISODE', level: ep }), ruleset: 'PLAY', nPlayers: np, difficulty: df, seed: s, humanName: nm || undefined });
+    else st.start({ mode: 'FULL_RUN', nPlayers: 4, difficulty: 'NORMAL', seed: s });
+  },
+  [seed, ruleset, episode, players, difficulty, humanName, playMode],
+);
 
 /** Measure the current screen. Runs in the page. */
 function measure() {
   const g = window.__veil.getState().game;
-  const root = document.querySelector('main') || document.getElementById('root');
+  // Play screens: the top bar is part of the screen, so count the whole page (D-108).
+  const root = (g.play ? document.getElementById('root') : document.querySelector('main')) || document.getElementById('root');
+  const beat = ['data-mycards', 'data-vote', 'data-event', 'data-claims', 'data-bar', 'data-outcome', 'data-price', 'data-cards', 'data-missions']
+    .map((a) => (document.querySelector(`[${a}]`) ? a.slice(5) : ''))
+    .find(Boolean) || (document.querySelector('[data-beat-next]') ? 'beat' : '');
   const isVisible = (el) => {
     const r = el.getBoundingClientRect();
     const cs = getComputedStyle(el);
@@ -94,6 +146,9 @@ function measure() {
     round: g.round,
     kind: g.phase.kind,
     step: g.phase.step ?? '',
+    beat,
+    beatNext: !!document.querySelector('[data-beat-next]'),
+    tall: document.documentElement.scrollHeight > window.innerHeight,
     words,
     buttons,
     height: document.documentElement.scrollHeight,
@@ -110,12 +165,22 @@ for (let i = 0; i < 1000; i++) {
   await page.waitForTimeout(120);
   const m = await page.evaluate(measure);
   if (m.kind === 'END') break;
-  const group = ['VALUES_REVEAL', 'GUESS', 'RUN_DEBRIEF'].includes(m.kind) ? 'Run' : `L${m.level}`;
-  const key = `${group}-${m.kind}-${m.step || 'x'}`;
+  const group = ruleset === 'PLAY' ? `Ep${m.level}` : ['VALUES_REVEAL', 'GUESS', 'RUN_DEBRIEF'].includes(m.kind) ? 'Run' : `L${m.level}`;
+  const key = `${group}-${m.kind}-${m.step || 'x'}${m.beat ? `-${m.beat}` : ''}`;
   if (!seen.has(key)) {
     seen.add(key);
     await page.waitForTimeout(400);
     await page.screenshot({ path: `${outDir}/${String(seen.size).padStart(3, '0')}-${key}.png`, fullPage: true });
+  }
+  lines.push(
+    `${group.padEnd(4)} R${m.round} ${`${m.kind}:${m.step}${m.beat ? ` (${m.beat})` : ''}`.padEnd(32)} words=${String(m.words).padStart(4)} buttons=${String(m.buttons).padStart(2)} height=${String(m.height).padStart(5)}${m.hscroll ? ' HSCROLL' : ''}${ruleset === 'PLAY' && m.tall ? ' TALLER THAN VIEWPORT' : ''}`,
+  );
+  for (const o of m.overlaps) lines.push(`     OVERLAP: ${o}`);
+  // Play beats inside one engine screen: tap to the next beat (presentation only, no engine step).
+  if (ruleset === 'PLAY' && m.beatNext) {
+    rows.push({ ...m, group, decisions: 0 });
+    await page.click('[data-beat-next]');
+    continue;
   }
   // One human screen forward. Record which human submissions it produced.
   const added = await page.evaluate(() => {
@@ -126,15 +191,14 @@ for (let i = 0; i < 1000; i++) {
   });
   const decisions = added.filter((x) => x === 'SUBMIT_DECISION' || x === 'SUBMIT_GUESSES').length;
   rows.push({ ...m, group, decisions });
-  lines.push(
-    `${group.padEnd(4)} R${m.round} ${`${m.kind}:${m.step}`.padEnd(24)} words=${String(m.words).padStart(4)} buttons=${String(m.buttons).padStart(2)} height=${String(m.height).padStart(5)}${m.hscroll ? ' HSCROLL' : ''}`,
-  );
-  for (const o of m.overlaps) lines.push(`     OVERLAP: ${o}`);
 }
 
+// RUNPLAN B.8 realistic pace: 3 s per claim screen, 8 s per other decision screen, 4 s per beat or result
+// screen (the reveal limit), 20 s for the Receipts.
+const paceOf = (r) => (r.kind === 'RUN_DEBRIEF' ? 20 : r.decisions ? (r.step === 'CLAIM' ? 3 : 8) : 4);
 const groups = [...new Set(rows.map((r) => r.group))];
 const table = [];
-table.push(`Walkthrough: seed ${seed}, ${width}x${height}, FULL_RUN, 4 players, Normal`);
+table.push(`Walkthrough: seed ${seed}, ${width}x${height}, ${ruleset === 'PLAY' ? (playMode === 'LIFE' ? 'PLAY LIFE' : `PLAY EPISODE ${episode}`) : 'FULL_RUN'}, ${ruleset === 'PLAY' ? players : 4} players, ${ruleset === 'PLAY' ? difficulty : 'NORMAL'}${humanName ? `, name ${humanName}` : ''}`);
 table.push('');
 table.push('Group  Screens  Decisions  Words  Tallest(px)  Overlaps  HScroll');
 let tot = { s: 0, d: 0, w: 0, o: 0, h: 0 };
@@ -149,9 +213,15 @@ for (const gname of groups) {
   tot = { s: tot.s + s, d: tot.d + d, w: tot.w + w, o: tot.o + o, h: tot.h + h };
   table.push(`${gname.padEnd(6)} ${String(s).padStart(7)}  ${String(d).padStart(9)}  ${String(w).padStart(5)}  ${String(tall).padStart(11)}  ${String(o).padStart(8)}  ${String(h).padStart(7)}`);
 }
+for (const gname of groups) table.push(`Pace ${gname}: ${(rows.filter((r) => r.group === gname).reduce((a, r) => a + paceOf(r), 0) / 60).toFixed(1)} min`);
+table.push(`Pace total: ${(rows.reduce((a, r) => a + paceOf(r), 0) / 60).toFixed(1)} min`);
 table.push(`${'Total'.padEnd(6)} ${String(tot.s).padStart(7)}  ${String(tot.d).padStart(9)}  ${String(tot.w).padStart(5)}  ${''.padStart(11)}  ${String(tot.o).padStart(8)}  ${String(tot.h).padStart(7)}`);
-const text = [...table, '', 'Screens:', ...lines].join('\n');
+// Play screens must fit the viewport: one big element per screen, nothing to scroll (D-108).
+const tall = ruleset === 'PLAY' ? rows.filter((r) => r.tall).length : 0;
+if (ruleset === 'PLAY') table.push('', tall ? `FAIL: ${tall} Play screen(s) taller than ${width}x${height}.` : `PASS: every Play screen fits ${width}x${height}.`);
+const text = [...table, ...(openingLines.length ? ['', 'Opening (D-139):', ...openingLines] : []), '', 'Screens:', ...lines].join('\n');
 console.log(text);
 if (save) writeFileSync(save, text);
+if (tall) process.exitCode = 1;
 await browser.close();
 await server.close();

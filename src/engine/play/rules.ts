@@ -1,0 +1,275 @@
+// Play-mode rules (PLAY_MODE_SPEC.md Sections 4 and 6): the bank, debt stress, missions and scoring,
+// event cards and the end-of-episode card guess. Study games never reach this code (s.play is absent).
+import { valuesMetric, equalShares, effortSharesFrom } from '../scoring';
+import { argmaxCard } from '../bots/beliefs';
+import type { Rng } from '../rng';
+import type { GameState, LevelId, PlayerId, ValuesCard } from '../types';
+import { PLAY } from './params';
+import type { BankRecord, LedgerLine, PlayEvent, PlayState, ScoreParts } from './types';
+
+export const isPlay = (s: Pick<GameState, 'play'>): boolean => !!s.play;
+
+/** R3 (D-160): the living cost per round; a life has its own (LIFE_LIVING_COST). */
+export const livingCost = (s: Pick<GameState, 'mode'>): number => (s.mode === 'LIFE' ? PLAY.LIFE_LIVING_COST : PLAY.LIVING_COST);
+
+/** Event decks built so far (Episode 3; v2 Section 5 trims them). The other episodes' decks arrive with their episodes. */
+export const eventDeck = (level: LevelId): readonly string[] => (level === 3 ? PLAY.L3_DECK : (PLAY.DECKS[level] ?? []));
+
+/** Episodes playable in this build. */
+export const PLAYABLE_EPISODES: LevelId[] = [1, 2, 3, 4, 5];
+
+/**
+ * k for a mission in this game (D-151): a life uses MISSION_SCALE_LIFE, a single episode its own calibration in
+ * MISSION_SCALE_EP when it has one, else MISSION_SCALE (Episode 3's).
+ */
+export function missionScale(s: Pick<GameState, 'mode' | 'levelIndex'>, card: ValuesCard): number {
+  if (s.mode === 'LIFE') return PLAY.MISSION_SCALE_LIFE[card];
+  return PLAY.MISSION_SCALE_EP[s.levelIndex]?.[card] ?? PLAY.MISSION_SCALE[card];
+}
+
+export function initPlay(s: GameState): PlayState {
+  const start = s.mode === 'EPISODE' ? PLAY.EPISODE_STARTING_BANK : PLAY.LIFE_STARTING_BANK;
+  const per = <X>(x: X) => Object.fromEntries(s.players.map((p) => [p.id, x])) as Record<PlayerId, X>;
+  return { banks: per(start), debtStress: per(0), guessPoints: per(0), effort: per(0), event: null, events: [], bankHistory: [], episodeStart: {}, guesses: {}, honesty: {}, belief: {}, belief2: {}, joint: {}, claimLog: [], barReads: [] };
+}
+
+/** Section 4.2: points lost at the end of a round with this bank. */
+export function debtStressFor(bank: number): number {
+  return bank >= 0 ? 0 : Math.min(PLAY.DEBT_PENALTY_CAP, PLAY.DEBT_POINTS_PER_COIN * -bank);
+}
+
+/**
+ * Effort shares for the Meritocrat mission (Section 4.3: Episode 2 effort plus Episode 4 training, as in
+ * Study). Effort so far in the life (or episode); equal shares before any effort is recorded.
+ */
+export function playEffortShares(s: GameState): number[] {
+  const e = s.play?.effort;
+  const xs = s.players.map((p) => e?.[p.id] ?? 0);
+  return xs.some((x) => x > 0) ? effortSharesFrom(xs) : equalShares(s.players.length);
+}
+
+/** The mission's value on a set of banks (seat order). Same metrics as the Study Values cards. */
+export function missionValue(card: ValuesCard, banks: readonly number[], i: number, effortShares: readonly number[]): number {
+  return valuesMetric(card, banks, i, effortShares);
+}
+
+/** Section 4.3 without the guess points: bank half, mission half, minus debt stress. */
+export function scoreOnBanks(card: ValuesCard, banks: readonly number[], i: number, effortShares: readonly number[], stress: number, scale = PLAY.MISSION_SCALE[card]): number {
+  return PLAY.BANK_WEIGHT * banks[i] + PLAY.MISSION_WEIGHT * scale * missionValue(card, banks, i, effortShares) - stress;
+}
+
+const bankList = (s: GameState): number[] => s.players.map((p) => s.play!.banks[p.id]);
+
+/** A contestant's Play score now: final score if the life (or episode) ended here. */
+export function playScore(s: GameState, pid: PlayerId): number {
+  const pl = s.play!;
+  const i = s.players.findIndex((p) => p.id === pid);
+  const card = s.players[i].values;
+  return scoreOnBanks(card, bankList(s), i, playEffortShares(s), pl.debtStress[pid], missionScale(s, card)) + pl.guessPoints[pid];
+}
+
+/**
+ * What a bot (or the timeout rule) values when it decides in Play (D-95): the Play score it would have
+ * if the game ended after this round, given this round's money W for everyone (seat order). The bank
+ * moves by W minus living cost and this round's debt stress counts, so a player near debt is risk averse.
+ */
+export function playRoundValue(
+  s: GameState,
+  card: ValuesCard,
+  W: readonly number[],
+  i: number,
+  effortShares: readonly number[],
+  drift: number | null = null,
+  mult: number = stressMult(s, s.players[i].id),
+): number {
+  const pl = s.play!;
+  const banks = s.players.map((p, j) => pl.banks[p.id] + W[j] - livingCost(s));
+  const id = s.players[i].id;
+  return scoreOnBanks(card, banks, i, effortShares, pl.debtStress[id] + mult * debtStressFor(banks[i]), missionScale(s, card)) - mult * futureStress(s, banks[i], drift);
+}
+
+/**
+ * D-128: a contestant's debt-stress multiplier now: WORRIER_STRESS_MULT for a Worrier in Episode 3, else 1.
+ * Worry is private, so only the contestant's own valuation and the scoring read it.
+ */
+export function stressMult(s: GameState, pid: PlayerId): number {
+  const worry = s.levelIndex === 3 ? (s.levelState as { worry?: Record<PlayerId, string> } | null)?.worry : undefined;
+  return worry?.[pid] === 'WORRIER' ? PLAY.WORRIER_STRESS_MULT : 1;
+}
+
+/** The last round of each phase queue (a level's queue never changes once built; cached for speed only). */
+const lastRoundOf = new WeakMap<object, number>();
+
+/** The episode's rounds still to come after the current one. */
+export function roundsLeft(s: GameState): number {
+  let last = lastRoundOf.get(s.phaseQueue);
+  if (last === undefined) {
+    last = Math.max(...s.phaseQueue.map((p) => p.round));
+    lastRoundOf.set(s.phaseQueue, last);
+  }
+  return Math.max(0, last - s.round);
+}
+
+/**
+ * D-122: the debt stress a bank of `bank` after this round will still cost in the episode's later rounds,
+ * if it moves by `drift` each round: the sum over k = 1..roundsLeft of debtStressFor(bank + k x drift).
+ * Zero without a drift (DEBT_HORIZON off).
+ */
+export function futureStress(s: GameState, bank: number, drift: number | null): number {
+  if (drift === null) return 0;
+  let out = 0;
+  for (let k = 1; k <= roundsLeft(s); k++) out += debtStressFor(bank + k * drift);
+  return out;
+}
+
+/**
+ * A selfish, risk-neutral contestant's value of `w` coins this round (the simple model bots use for
+ * others, replacing Study's hardship-adjusted own money): money minus the debt stress it would cause.
+ * `j < 0` uses the table's average bank.
+ */
+export function playNet(s: GameState, j: number, w: number, drift: number | null = null, mult = 1): number {
+  const pl = s.play!;
+  const bank = j >= 0 ? pl.banks[s.players[j].id] : bankList(s).reduce((a, b) => a + b, 0) / s.players.length;
+  const after = bank + w - livingCost(s);
+  return w - mult * (debtStressFor(after) + futureStress(s, after, drift));
+}
+
+/** Ranks by Play score (1 = leading; ties share the better rank). */
+export function playRanks(s: GameState): Record<PlayerId, number> {
+  const sc = s.players.map((p) => playScore(s, p.id));
+  return Object.fromEntries(s.players.map((p, i) => [p.id, 1 + sc.filter((x) => x > sc[i] + 1e-9).length]));
+}
+
+/** G1: an episode's money lines for this round (each player's lines must sum to that player's W). */
+export function setRoundLedger(s: GameState, lines: Record<PlayerId, LedgerLine[]>): void {
+  if (s.play) s.play.pendingLedger = lines;
+}
+
+/** G1: each player's net gift money this round (received minus given), from the gifts made by each giver. */
+export function giftNet(pids: readonly PlayerId[], gifts: Record<PlayerId, { to: PlayerId; amount: number } | null | undefined>): Record<PlayerId, number> {
+  const out: Record<PlayerId, number> = Object.fromEntries(pids.map((id) => [id, 0]));
+  for (const [from, g] of Object.entries(gifts)) {
+    if (!g || !g.amount) continue;
+    out[from] -= g.amount;
+    out[g.to] += g.amount;
+  }
+  return out;
+}
+
+/** G1: a bank change between rounds (the Second Chance), shown in the next round's ledger. */
+export function addBetweenRounds(s: GameState, pid: PlayerId, line: LedgerLine): void {
+  if (!s.play) return;
+  const x = (s.play.pendingExtra ??= {});
+  (x[pid] ??= []).push(line);
+}
+
+/** G1: a contestant's score parts now (running totals); they sum to playScore. */
+export function scoreParts(s: GameState, pid: PlayerId): ScoreParts {
+  const pl = s.play!;
+  const i = s.players.findIndex((p) => p.id === pid);
+  const card = s.players[i].values;
+  return {
+    bank: PLAY.BANK_WEIGHT * pl.banks[pid],
+    mission: PLAY.MISSION_WEIGHT * missionScale(s, card) * missionValue(card, bankList(s), i, playEffortShares(s)),
+    debt: -pl.debtStress[pid],
+    guess: pl.guessPoints[pid],
+  };
+}
+
+/** Section 4.1 and 4.2: after a round, move every bank and take debt stress. */
+export function playFinishRound(s: GameState, W: readonly number[]): void {
+  const pl = s.play!;
+  const rec: BankRecord = { level: s.levelIndex, round: s.round, W: {}, banks: {}, stress: {}, ranks: {}, ledger: {}, parts: {} };
+  if (!pl.bankHistory.length) rec.partsStart = Object.fromEntries(s.players.map((p) => [p.id, scoreParts(s, p.id)]));
+  s.players.forEach((p, i) => {
+    pl.banks[p.id] += W[i] - livingCost(s);
+    const st = stressMult(s, p.id) * debtStressFor(pl.banks[p.id]);
+    pl.debtStress[p.id] += st;
+    rec.W[p.id] = W[i];
+    rec.banks[p.id] = pl.banks[p.id];
+    rec.stress[p.id] = st;
+    // G1: the ledger. Lines the episode did not itemize fall into "other" (a unit test keeps it at zero).
+    const lines = [...(pl.pendingExtra?.[p.id] ?? []), ...(pl.pendingLedger?.[p.id] ?? [{ k: 'income' as const, n: W[i] }])].filter((x) => Math.abs(x.n) > 1e-9);
+    const rest = W[i] - (pl.pendingLedger?.[p.id] ?? [{ k: 'income', n: W[i] }]).reduce((a, x) => a + x.n, 0);
+    if (Math.abs(rest) > 1e-9) lines.push({ k: 'other', n: rest });
+    lines.push({ k: 'living', n: -livingCost(s) });
+    rec.ledger![p.id] = lines;
+  });
+  for (const p of s.players) rec.parts![p.id] = scoreParts(s, p.id);
+  pl.pendingLedger = undefined;
+  pl.pendingExtra = undefined;
+  rec.ranks = playRanks(s);
+  pl.bankHistory.push(rec);
+}
+
+/** At an episode start: remember the banks and clear the event. */
+export function playStartEpisode(s: GameState, level: LevelId): void {
+  const pl = s.play!;
+  pl.episodeStart[level] = { ...pl.banks };
+  pl.event = null;
+}
+
+/**
+ * Section 6.1: before a round, draw from the game stream. Always exactly two draws (chance, card), so the
+ * stream does not depend on which card came up. A card that needs a condition the round does not meet
+ * becomes a quiet week (Paperwork Week without a mandate).
+ */
+export function playDrawEvent(s: GameState, rng: Rng): void {
+  const pl = s.play!;
+  const deck = eventDeck(s.levelIndex);
+  const u = rng.next();
+  const v = rng.next();
+  let id = deck.length && u < PLAY.EVENT_CHANCE ? deck[Math.floor(v * deck.length)] : 'QUIET';
+  let fallback: string | undefined;
+  const l3 = s.levelState as { regime?: string; insurerActive?: boolean };
+  // Paperwork Week needs a mandate; Leaked Medical Files needs a pool with a bar (v2 Section 5: only from round 2).
+  const noBar = l3.regime !== 'VOL' || !l3.insurerActive || s.round < PLAY.LEAKED_FROM_ROUND;
+  if (s.levelIndex === 3 && ((id === 'PAPERWORK' && l3.regime === 'VOL') || (id === 'LEAKED' && noBar))) {
+    fallback = id;
+    id = 'QUIET';
+  }
+  const ev: PlayEvent = { id, level: s.levelIndex, round: s.round, ...(fallback ? { fallback } : {}) };
+  pl.event = ev;
+  pl.events.push(ev);
+}
+
+/** The event in force for the current decision, or null (none, a quiet week, or outside the round itself). */
+export function activeEvent(s: GameState): PlayEvent | null {
+  const ev = s.play?.event;
+  if (!ev || ev.id === 'QUIET' || ev.level !== s.levelIndex || ev.round !== s.round) return null;
+  // The regime vote after round 2 decides about round 3, before its event is drawn (D-98).
+  if (s.phase.step === 'REGIME') return null;
+  if (!['BRIEFING', 'TALK', 'DECIDE', 'REVEAL', 'ROUND_SUMMARY'].includes(s.phase.kind)) return null;
+  return ev;
+}
+
+/** Section 7.4: one guess per contestant per episode. A human submits {target: card} or nothing. */
+export function playApplyGuess(s: GameState, from: PlayerId, guess: Record<PlayerId, ValuesCard>): boolean {
+  const entries = Object.entries(guess);
+  if (entries.length > 1) return false;
+  const pl = s.play!;
+  const level = s.levelIndex;
+  pl.guesses[level] ??= {};
+  if (entries.length === 1) {
+    const [target, card] = entries[0];
+    const correct = s.players.find((p) => p.id === target)!.values === card;
+    pl.guesses[level]![from] = { target, card, correct };
+    if (correct) pl.guessPoints[from] += PLAY.GUESS_POINTS;
+  }
+  return true;
+}
+
+/** Bots guess too (D-99): the contestant they are surest about, with their most likely card. */
+export function playBotGuesses(s: GameState): void {
+  for (const p of s.players) {
+    if (p.isHuman) continue;
+    const beliefs = s.botBeliefs[p.id] ?? {};
+    let best: { target: PlayerId; conf: number } | null = null;
+    for (const o of s.players) {
+      if (o.id === p.id || !beliefs[o.id]) continue;
+      const conf = Math.max(...Object.values(beliefs[o.id]));
+      if (!best || conf > best.conf + 1e-12) best = { target: o.id, conf };
+    }
+    if (best) playApplyGuess(s, p.id, { [best.target]: argmaxCard(beliefs[best.target]) });
+  }
+}

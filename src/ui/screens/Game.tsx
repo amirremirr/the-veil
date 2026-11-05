@@ -19,6 +19,7 @@ import { L4UI } from '../levels/L4';
 import { L5UI } from '../levels/L5';
 import type { LevelUI } from '../levels/types';
 import { LockedInPanel, ReadyButton, useOnline, useWaiting } from '../components/Online';
+import { PlayGameScreen } from '../play/PlayGame';
 
 const UI: Record<LevelId, LevelUI> = { 1: L1UI, 2: L2UI, 3: L3UI, 4: L4UI, 5: L5UI };
 
@@ -493,6 +494,8 @@ export function GameScreen() {
     window.scrollTo({ top: 0, behavior: off ? 'auto' : 'smooth' });
   }, [v?.phaseIdx, v?.levelIndex, v?.phase.kind, off]);
   if (!v) return null;
+  // Play mode has its own screens on the same engine view (Play spec 7).
+  if (v.play) return <PlayGameScreen />;
   const k = v.phase.kind;
   if (k === 'VALUES_REVEAL') return <ValuesReveal v={v} />;
   if (k === 'INTRO') return <LevelIntro v={v} />;

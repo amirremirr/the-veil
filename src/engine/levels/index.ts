@@ -5,5 +5,26 @@ import { level2 } from './level2';
 import { level3 } from './level3';
 import { level4 } from './level4';
 import { level5 } from './level5';
+import { playLevel4 } from '../play/ep4';
+import { playLevel1 } from '../play/ep1';
+import { playLevel2 } from '../play/ep2';
+import { playLevel5 } from '../play/ep5';
 
-export const LEVELS: Record<LevelId, LevelDefinition> = { 1: level1, 2: level2, 3: level3, 4: level4, 5: level5 };
+/**
+ * D-151: a level whose Play episode is its own definition. Study games (no s.play) call the Study level,
+ * unchanged; Play games call the Play episode. Every method takes the game state first, so this is a switch.
+ */
+function byRuleset(study: LevelDefinition, play: LevelDefinition): LevelDefinition {
+  const pick = (s: { play?: unknown }) => (s.play ? play : study);
+  const out = { id: study.id, rounds: study.rounds, observable: [...new Set([...study.observable, ...play.observable])] } as LevelDefinition;
+  for (const k of [...new Set([...Object.keys(study), ...Object.keys(play)])] as Array<keyof LevelDefinition>) {
+    if (typeof study[k] !== 'function' && typeof play[k] !== 'function') continue;
+    (out as unknown as Record<string, unknown>)[k] = (s: { play?: unknown }, ...rest: unknown[]) => {
+      const d = pick(s) as unknown as Record<string, (...a: unknown[]) => unknown>;
+      return d[k] ? d[k](s, ...rest) : undefined;
+    };
+  }
+  return out;
+}
+
+export const LEVELS: Record<LevelId, LevelDefinition> = { 1: byRuleset(level1, playLevel1), 2: byRuleset(level2, playLevel2), 3: level3, 4: byRuleset(level4, playLevel4), 5: byRuleset(level5, playLevel5) };

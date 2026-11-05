@@ -28,25 +28,32 @@ export function playerById(v: ViewState, id: string): VPlayer | undefined {
   return v.players.find((p) => p.id === id);
 }
 
+/** D-146: in Play your own label is the name you chose (the engine names a blank seat "You"); Study keeps "You". */
+const myPlayName = (v: ViewState) => (v.play ? playerById(v, v.viewer)?.name?.trim() : '') || t('table.you');
+
 export function nameOf(v: ViewState, id: string): string {
-  if (id === v.viewer) return t('table.you');
+  if (id === v.viewer) return myPlayName(v);
   return playerById(v, id)?.name ?? id;
 }
 
 /** First name only ("Marigold"), or "You". Used where space is tight. */
 export function shortName(v: ViewState, id: string): string {
-  if (id === v.viewer) return t('table.you');
+  if (id === v.viewer) return myPlayName(v).split(' ')[0];
   return (playerById(v, id)?.name ?? id).replace(/^Prof\. /, '').split(' ')[0];
 }
 
 export function renderMessage(v: ViewState, m: Message): string {
   const from = playerById(v, m.from);
   const msg = m.msg;
+  // Play v2 claims: one preset line each, the same for every speaker.
+  if (msg.type === 'CLAIM') return t(`play.claims.${msg.topic}.${msg.value}`);
   const level = m.level as LevelId;
   const vars: Record<string, string> = {};
-  if (msg.type === 'SUPPORT' || msg.type === 'OPPOSE') vars.option = optionName(level, msg.option);
-  if (msg.type === 'PROMISE') vars.action = actionName(level, msg.action);
-  if (msg.type === 'CLAIM_VALUES' || msg.type === 'ACCUSE') vars.cardName = cardName(msg.card);
+  // Play uses mission and Play option names in the same message templates.
+  const play = !!v.play;
+  if (msg.type === 'SUPPORT' || msg.type === 'OPPOSE') vars.option = optionName(level, msg.option, play);
+  if (msg.type === 'PROMISE') vars.action = actionName(level, msg.action, play);
+  if (msg.type === 'CLAIM_VALUES' || msg.type === 'ACCUSE') vars.cardName = cardName(msg.card, play);
   if (msg.type === 'ACCUSE') vars.target = nameOf(v, msg.target);
   const aboutHuman = msg.type === 'ACCUSE' && msg.target === v.viewer;
   const text =

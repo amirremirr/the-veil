@@ -14,7 +14,7 @@ const NAME_SLOTS = /\{(name|target|donor|to|proposer)\}/;
 // Slots the human can never fill, so no second-person variant is needed:
 // the human never accuses themselves (the engine rejects it), never gets the luck survey about
 // themselves, and is never a bot guessing.
-const NEVER_HUMAN = new Set(['talk.human.ACCUSE', 'levels.2.pollDecide', 'run.botGuessLine']);
+const NEVER_HUMAN = new Set(['talk.human.ACCUSE', 'levels.2.pollDecide', 'run.botGuessLine', 'play.summary.guess', 'play.summary.guessWrong', 'play.reactions.botReacted']);
 
 const vars = { name: 'You', target: 'You', donor: 'You', to: 'Dot', proposer: 'You', cardName: 'Egoist', option: 'Safety Net' };
 

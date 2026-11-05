@@ -3,6 +3,10 @@ import { MotionConfig } from 'framer-motion';
 import { useStore } from './store';
 import { GameScreen } from './screens/Game';
 import { About, Archives, ModeSelect, SettingsScreen, Setup, Title } from './screens/Menus';
+import { HowToPlay, PlayModeSelect, PlaySetup } from './play/Menus';
+import { useRoom } from './room';
+import { PlaytestResults } from './play/Playtest';
+import { resultsPage } from './playtest';
 import { Friends, Lobby, savedName } from './screens/Friends';
 import { ConnectionBanner, Thinking } from './components/Online';
 import { joinRoom, ROOM_SERVER, savedToken } from './room';
@@ -28,6 +32,14 @@ function openShareLink(): void {
 export function App() {
   const screen = useStore((s) => s.screen);
   const settings = useStore((s) => s.settings);
+  // Play's studio look (Play spec 7.8) on Play screens and in Play games, solo or online.
+  const playGame = useStore((s) => (s.online ? false : s.game?.ruleset === 'PLAY'));
+  const playRoom = useRoom((s) => !!s.view?.play);
+  const studio = screen === 'playMode' || screen === 'playSetup' || (screen === 'game' && (playGame || playRoom));
+  useEffect(() => {
+    if (studio) document.documentElement.setAttribute('data-ruleset', 'play');
+    else document.documentElement.removeAttribute('data-ruleset');
+  }, [studio]);
   useEffect(openShareLink, []);
   useEffect(() => {
     const root = document.documentElement;
@@ -35,9 +47,13 @@ export function App() {
     else root.setAttribute('data-theme', settings.theme);
     root.setAttribute('data-size', settings.textSize);
   }, [settings.theme, settings.textSize]);
+  if (resultsPage()) return <PlaytestResults />;
   return (
     <MotionConfig reducedMotion={settings.reducedMotion ? 'always' : 'user'}>
       {screen === 'title' && <Title />}
+      {screen === 'howPlay' && <HowToPlay />}
+      {screen === 'playMode' && <PlayModeSelect />}
+      {screen === 'playSetup' && <PlaySetup />}
       {screen === 'mode' && <ModeSelect />}
       {screen === 'setup' && <Setup />}
       {screen === 'game' && <GameScreen />}

@@ -254,7 +254,7 @@ export function MessageComposer({ v }: { v: ViewState }) {
             <select className="mt-1 min-h-[44px] w-full rounded-md border-2 border-line bg-card px-2" value={chosen} onChange={(e) => setOption(e.target.value)}>
               {opts.map((o) => (
                 <option key={o} value={o}>
-                  {type === 'PROMISE' ? actionName(v.levelIndex, o) : optionName(v.levelIndex, o)}
+                  {type === 'PROMISE' ? actionName(v.levelIndex, o, !!v.play) : optionName(v.levelIndex, o, !!v.play)}
                 </option>
               ))}
             </select>
@@ -278,7 +278,7 @@ export function MessageComposer({ v }: { v: ViewState }) {
             <select className="mt-1 min-h-[44px] w-full rounded-md border-2 border-line bg-card px-2" value={card} onChange={(e) => setCard(e.target.value as ValuesCard)}>
               {VALUES_CARDS.map((c) => (
                 <option key={c} value={c}>
-                  {cardName(c)}
+                  {cardName(c, !!v.play)}
                 </option>
               ))}
             </select>

@@ -1,0 +1,240 @@
+// Play-mode presentation logic (PLAY_MODE_SPEC.md Section 7). Pure functions of the viewer's own view, so
+// nothing here can see more than visibleState allows. Variant choices come from a hash of the game code
+// and the moment (like the Study flavor text), never from a random stream, so the game is unchanged.
+import { hashString } from '../../engine/rng';
+import { PLAY } from '../../engine/play/params';
+import type { L3Round } from '../../engine/levels/level3';
+import type { BotKey, LevelId, Message, PlayerId, ValuesCard, ViewState } from '../../engine/types';
+import type { PlayView } from '../../engine/play/types';
+import host from '../copy/play/host.json';
+import confessionals from '../copy/play/confessionals.json';
+import wheel from '../copy/play/wheel.json';
+import { fill, t } from '../i18n';
+export type OutcomeKey = 'jackpot' | 'disaster' | 'betrayal' | 'debt' | 'comeback' | 'quiet';
+export const OUTCOME_KEYS: OutcomeKey[] = ['jackpot', 'disaster', 'betrayal', 'debt', 'comeback', 'quiet'];
+
+/** A stable variant index for a moment of this game. */
+export function pick(v: Pick<ViewState, 'seed' | 'levelIndex' | 'round'>, key: string, n: number): number {
+  return n > 0 ? hashString(`${v.seed}|play|${v.levelIndex}|${v.round}|${key}`) % n : 0;
+}
+
+type Banks = Record<string, string[]>;
+
+/** One of Dash's lines; the `.you` bank when the subject is the viewer (D-38). At most 15 words each. */
+export function hostLine(key: string, variant: number, vars: Record<string, string> = {}, aboutYou = false): string {
+  const banks = host as unknown as Banks;
+  const bank = (aboutYou && banks[`${key}.you`]) || banks[key] || [];
+  return bank.length ? fill(bank[variant % bank.length], vars) : '';
+}
+
+export function confessional(bot: BotKey, key: OutcomeKey, variant: number): string {
+  const bank = (confessionals as unknown as Record<string, Record<string, string[]>>)[bot]?.[key] ?? [];
+  return bank.length ? bank[variant % bank.length] : '';
+}
+
+export function wheelSlip(variant: number): string {
+  return wheel.slips[variant % wheel.slips.length];
+}
+
+export const missionName = (c: ValuesCard) => t(`play.missions.${c}.name`);
+
+/** The event card's name, story and one-line effect, with this episode's numbers filled in. */
+export function eventText(level: LevelId, id: string, life = false): { name: string; text: string; effect: string } {
+  const vars = {
+    gym: String(PLAY.L3_EVENTS.GYM_SALE.GYM_COST),
+    base: String(id === 'GYM_SALE' ? PLAY.L3.GYM_COST : life ? PLAY.LIFE_L3_LOSS : PLAY.L3.LOSS),
+    loss: String(PLAY.L3_EVENTS.BREAKTHROUGH.LOSS),
+    extra: String(PLAY.L3_EVENTS.PAPERWORK.MANDATE_EXTRA),
+  };
+  const k = `play.events.L${level}.${id}`;
+  return { name: t(`${k}.name`), text: t(`${k}.text`), effect: t(`${k}.effect`, vars) };
+}
+
+export type Danger = 'green' | 'amber' | 'red';
+/** Section 7.1: green above DANGER_AMBER_BELOW, amber from 0 to it, red in debt. */
+export function danger(bank: number): Danger {
+  if (bank < 0) return 'red';
+  return bank > PLAY.DANGER_AMBER_BELOW ? 'green' : 'amber';
+}
+
+/** A broken promise from this round, stamped on the results screen (Section 7.3). */
+export interface Broken {
+  from: PlayerId;
+  action: string;
+}
+
+/** Messages of this level and round whose claim was checked and not kept. All of it is public. */
+export function brokenPromises(v: ViewState, step?: string): Broken[] {
+  const out: Broken[] = [];
+  for (const m of v.messages as Message[]) {
+    if (m.level !== v.levelIndex || m.round !== v.round || !m.resolved || m.kept !== false) continue;
+    if (step && m.checkStep !== step) continue;
+    if (m.msg.type === 'PROMISE') out.push({ from: m.from, action: t(`play.promises.${m.msg.action}`) });
+    if (m.msg.type === 'SUPPORT') out.push({ from: m.from, action: t('play.promises.VOTE', { option: t(`play.l3.regimes.${m.msg.option}.name`) }) });
+  }
+  return out;
+}
+
+/** What a finished Episode 3 round was about, and who it was about (Section 7.3 outcome keys). */
+export function roundOutcome(v: ViewState, r: L3Round): { key: OutcomeKey; subject: PlayerId | null } {
+  const pl = v.play!;
+  const hist = pl.bankHistory.filter((h) => h.level === v.levelIndex);
+  const now = hist[hist.length - 1];
+  const before = hist.length > 1 ? hist[hist.length - 2] : null;
+  const broken = brokenPromises(v, 'CHOICE');
+  if (broken.length) return { key: 'betrayal', subject: broken[0].from };
+  const ids = v.players.map((p) => p.id);
+  const intoDebt = ids.find((id) => now && now.banks[id] < 0 && (!before || before.banks[id] >= 0));
+  if (intoDebt) return { key: 'debt', subject: intoDebt };
+  const hit = ids.find((id) => r.events[id] && !(r.choices[id].buy && r.premium !== null) && r.regime === 'VOL');
+  if (hit) return { key: 'disaster', subject: hit };
+  if (before && now) {
+    const last = Math.max(...ids.map((id) => before.ranks[id]));
+    const up = ids.find((id) => before.ranks[id] === last && now.ranks[id] < last && last > 1);
+    if (up) return { key: 'comeback', subject: up };
+  }
+  const best = ids.reduce((a, b) => (r.W[b] > r.W[a] ? b : a), ids[0]);
+  if (r.W[best] - PLAY.LIVING_COST >= 80) return { key: 'jackpot', subject: best };
+  return { key: 'quiet', subject: null };
+}
+
+/** The bot that speaks to camera: the subject if it is a bot, otherwise one picked by the moment's hash. */
+export function confessor(v: ViewState, subject: PlayerId | null): ViewState['players'][number] | null {
+  const bots = v.players.filter((p) => !p.isHuman && p.botKey);
+  if (!bots.length) return null;
+  const s = bots.find((b) => b.id === subject);
+  return s ?? bots[pick(v, 'confessor', bots.length)];
+}
+
+/** Section 7.6: the episode's biggest moment (largest single-round bank swing, or an event card). */
+export function biggestMoment(pl: PlayView, level: LevelId): { kind: 'swing'; round: number; who: PlayerId; change: number } | { kind: 'event'; round: number; id: string } | null {
+  let best: { round: number; who: PlayerId; change: number } | null = null;
+  for (const h of pl.bankHistory.filter((x) => x.level === level))
+    for (const [who, w] of Object.entries(h.W)) {
+      const change = w - PLAY.LIVING_COST;
+      if (!best || Math.abs(change) > Math.abs(best.change)) best = { round: h.round, who, change };
+    }
+  const ev = pl.events.find((e) => e.level === level && e.id !== 'QUIET');
+  if (ev && (!best || Math.abs(best.change) < 80)) return { kind: 'event', round: ev.round, id: ev.id };
+  return best ? { kind: 'swing', ...best } : null;
+}
+
+// --- reactions (Section 7.3): presentation only, never logged, never sent with private data -----------
+
+export const REACTIONS = ['laugh', 'gasp', 'angry', 'clap', 'eyeroll'] as const;
+export type ReactionKind = (typeof REACTIONS)[number];
+export const REACTION_ICON: Record<ReactionKind, string> = { laugh: '😂', gasp: '😮', angry: '😠', clap: '👏', eyeroll: '🙄' };
+
+/** A reaction is only who reacted and how. It carries no game data at all. */
+export interface Reaction {
+  from: PlayerId;
+  kind: ReactionKind;
+}
+
+/** Which bot reactions fit an outcome, in character. */
+const BOT_REACTS: Record<BotKey, Partial<Record<OutcomeKey, ReactionKind>>> = {
+  chet: { disaster: 'laugh', betrayal: 'clap', debt: 'eyeroll', comeback: 'angry', jackpot: 'clap', quiet: 'eyeroll' },
+  marigold: { disaster: 'gasp', betrayal: 'gasp', debt: 'gasp', comeback: 'clap', jackpot: 'clap', quiet: 'clap' },
+  ugo: { disaster: 'eyeroll', betrayal: 'eyeroll', debt: 'gasp', comeback: 'clap', jackpot: 'gasp', quiet: 'eyeroll' },
+  dot: { disaster: 'eyeroll', betrayal: 'laugh', debt: 'laugh', comeback: 'eyeroll', jackpot: 'gasp', quiet: 'eyeroll' },
+};
+
+/** Bots react occasionally, from the moment's hash (never from a game stream). */
+export function botReactions(v: ViewState, key: OutcomeKey): Reaction[] {
+  const out: Reaction[] = [];
+  for (const p of v.players) {
+    if (p.isHuman || !p.botKey) continue;
+    const roll = pick(v, `react-${p.id}`, 1000) / 1000;
+    const kind = BOT_REACTS[p.botKey][key];
+    if (kind && roll < PLAY.BOT_REACTION_CHANCE) out.push({ from: p.id, kind });
+  }
+  return out;
+}
+
+/** "once", "twice" or "3 times" (AI playtest T1: "lied 1 times"). */
+export function timesWord(n: number): string {
+  return n === 1 ? t('play.times.one') : n === 2 ? t('play.times.two') : t('play.times.many', { n });
+}
+
+/** E5 fix (both fresh-eyes reviewers): one plain line on how the viewer's bank moved in the round just played. */
+/** This round's money for the viewer, from the rounded banks (the number the bank line shows), or null. */
+export function roundMoney(v: ViewState): number | null {
+  const pl = v.play;
+  if (!pl) return null;
+  const hist = pl.bankHistory;
+  const last = hist[hist.length - 1];
+  if (!last || last.level !== v.levelIndex) return null;
+  const prev = hist[hist.length - 2];
+  const from = prev ? prev.banks[v.viewer] : pl.startingBank;
+  return Math.round(last.banks[v.viewer]) - Math.round(from) + pl.livingCost;
+}
+
+export function bankLineText(v: ViewState): string | null {
+  const pl = v.play;
+  if (!pl) return null;
+  const hist = pl.bankHistory;
+  const last = hist[hist.length - 1];
+  if (!last || last.level !== v.levelIndex) return null;
+  const prev = hist[hist.length - 2];
+  const from = prev ? prev.banks[v.viewer] : pl.startingBank;
+  const to = last.banks[v.viewer];
+  // Loop cycle 2: from the rounded banks, so the line adds up exactly as shown.
+  const money = Math.round(to) - Math.round(from) + pl.livingCost;
+  const sign = (x: number) => `${x >= 0 ? '+' : ''}${Math.round(x)}`;
+  const line = t('play.bank.round', { from: Math.round(from), to: Math.round(to), w: sign(money), c: pl.livingCost });
+  // Loop cycle 16: the Second Chance coins land before Episode 4's first round, so that round's line includes them.
+  const cb = pl.comeback;
+  const firstOfEp4 = v.levelIndex === 4 && hist.filter((h) => h.level === 4).length === 1;
+  return firstOfEp4 && cb && cb.pid === v.viewer && cb.took === 'COINS' ? `${line} ${t('play.bank.comeback', { c: PLAY.COMEBACK.COINS })}` : line;
+}
+
+/**
+ * G1: rounds a list so the rounded values add up to `total` exactly (largest remainder), keeping signs.
+ * Used by "See the money" so the lines shown add up to the bank change shown.
+ */
+export function roundToTotal(xs: readonly number[], total: number): number[] {
+  const base = xs.map((x) => Math.round(x));
+  let diff = total - base.reduce((a, b) => a + b, 0);
+  const order = xs.map((x, i) => ({ i, r: x - Math.round(x) })).sort((a, b) => (diff > 0 ? b.r - a.r : a.r - b.r));
+  for (let k = 0; diff !== 0 && k < order.length * 2; k++) {
+    const { i } = order[k % order.length];
+    base[i] += diff > 0 ? 1 : -1;
+    diff += diff > 0 ? -1 : 1;
+  }
+  return base;
+}
+
+export interface LedgerRow {
+  key: string;
+  n: number;
+}
+
+/** G1: the viewer's latest round in this episode: money lines and score lines, rounded to add up as shown. */
+export function ledgerRows(v: ViewState): { from: number; to: number; money: LedgerRow[]; score: LedgerRow[]; scoreFrom: number; scoreTo: number } | null {
+  const pl = v.play;
+  if (!pl) return null;
+  const hist = pl.bankHistory;
+  const k = hist.length - 1;
+  const rec = hist[k];
+  if (!rec || rec.level !== v.levelIndex || !rec.ledger?.[v.viewer]) return null;
+  const prev = k > 0 ? hist[k - 1] : null;
+  const from = Math.round(prev ? prev.banks[v.viewer] : pl.startingBank);
+  const to = Math.round(rec.banks[v.viewer]);
+  const lines = rec.ledger[v.viewer];
+  const lifeFinale = v.mode === 'LIFE' && v.levelIndex === 5;
+  const shown = roundToTotal(lines.map((x) => x.n), to - from);
+  const money = lines.map((x, i) => ({ key: x.k === 'income' && lifeFinale ? 'incomeFinale' : x.k, n: shown[i] })).filter((r) => r.n !== 0 || r.key === 'living');
+  const a = (prev?.parts ?? rec.partsStart)?.[v.viewer];
+  const b = rec.parts?.[v.viewer];
+  let score: LedgerRow[] = [];
+  let scoreFrom = 0;
+  let scoreTo = 0;
+  if (a && b) {
+    scoreFrom = Math.round(a.bank + a.mission + a.debt + a.guess);
+    scoreTo = Math.round(b.bank + b.mission + b.debt + b.guess);
+    const d = [b.bank - a.bank, b.mission - a.mission, b.debt - a.debt, b.guess - a.guess];
+    const r = roundToTotal(d, scoreTo - scoreFrom);
+    score = ['bank', 'mission', 'debt', 'guess'].map((key, i) => ({ key, n: r[i] })).filter((x) => x.n !== 0);
+  }
+  return { from, to, money, score, scoreFrom, scoreTo };
+}

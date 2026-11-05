@@ -3,9 +3,10 @@
 // (src/engine/rules-hash.ts, generated), a hash of the parameter values in force when the game started
 // (catches in-memory changes made by simulator tools), and the commit of the build when known.
 import * as PARAMS from './params';
+import { PLAY } from './play/params';
 import { RULES_HASH } from './rules-hash';
 import { hashString } from './rng';
-import type { GameState, RulesVersion } from './types';
+import type { GameState, RulesVersion, Ruleset } from './types';
 
 export type { RulesVersion };
 
@@ -23,19 +24,33 @@ function stable(x: unknown): string {
   return JSON.stringify(x);
 }
 
+const hex = (n: number) => n.toString(16).padStart(8, '0');
+
+/** The Study params hash: Study parameters only (src/engine/params.ts), computed as before Play mode. */
 export function paramsHash(): string {
   const s = stable(PARAMS);
-  const hex = (n: number) => n.toString(16).padStart(8, '0');
   return hex(hashString(s)) + hex(hashString(`params|${s}`));
 }
 
-export function currentRules(): RulesVersion {
+/**
+ * The Play params hash (D-92): the Study rules and params hashes, every PLAY value and the ruleset name,
+ * so a Play game and a Study game never share a version, and any PLAY change gives Play a new one.
+ */
+export function playParamsHash(): string {
+  const s = `${RULES_HASH}|${paramsHash()}|${stable(PLAY)}|PLAY`;
+  return hex(hashString(s)) + hex(hashString(`play|${s}`));
+}
+
+export function currentRules(ruleset: Ruleset = 'STUDY'): RulesVersion {
   return {
     rules: RULES_HASH,
-    params: paramsHash(),
+    params: ruleset === 'PLAY' ? playParamsHash() : paramsHash(),
     commit: typeof __RULES_COMMIT__ === 'string' && __RULES_COMMIT__ ? __RULES_COMMIT__ : 'unknown',
   };
 }
+
+/** The ruleset a game or game record says it was played under (absent means STUDY). */
+const rulesetOf = (x: { ruleset?: Ruleset; config?: { ruleset?: Ruleset } }): Ruleset => x.ruleset ?? x.config?.ruleset ?? 'STUDY';
 
 /**
  * 'same': identical. 'commitOnly': a different build with identical rules and parameters (replays the
@@ -47,8 +62,8 @@ export function compareRules(recorded: RulesVersion | undefined, now: RulesVersi
 }
 
 /** A saved game can be resumed only under the rules it was started with. */
-export function canResume(game: Pick<GameState, 'rules'> | null | undefined): boolean {
-  return !!game && compareRules(game.rules) !== 'different';
+export function canResume(game: (Pick<GameState, 'rules'> & { ruleset?: Ruleset; config?: { ruleset?: Ruleset } }) | null | undefined): boolean {
+  return !!game && compareRules(game.rules, currentRules(rulesetOf(game))) !== 'different';
 }
 
 export class RulesMismatchError extends Error {
@@ -73,8 +88,8 @@ export function gameRecord(game: GameState) {
 }
 
 /** Throws RulesMismatchError unless the record's rules match this engine. */
-export function assertSameRules(record: { rules?: RulesVersion }): void {
-  const now = currentRules();
+export function assertSameRules(record: { rules?: RulesVersion; ruleset?: Ruleset; config?: { ruleset?: Ruleset } }): void {
+  const now = currentRules(rulesetOf(record));
   if (compareRules(record.rules, now) === 'different') throw new RulesMismatchError(record.rules, now);
 }
 

@@ -1,0 +1,219 @@
+// Every Play-mode number (PLAY_MODE_SPEC.md). These are overrides applied on top of the Study params for
+// a Play game only; Study params (../params.ts) are never changed for Play. They live in their own file
+// so the Study params hash reads only Study values (DECISIONS.md D-92). The Play rules version hashes
+// them together with the Study rules (src/engine/version.ts).
+import type { ValuesCard } from '../types';
+
+export const PLAY = {
+  /** Section 4.1: every contestant starts a life with this many coins. */
+  STARTING_BANK: 100,
+  /** Section 4.4: the starting bank of a single episode. Spec guess 100; tuned to 20 so one loss means debt (D-97). */
+  EPISODE_STARTING_BANK: 10,
+  /** Section 4.1: bank = bank + W - LIVING_COST after every round. */
+  LIVING_COST: 30,
+  /** R3 (D-160): a life's own starting bank, living cost per round and Episode 3 loss (tuned for life stakes). */
+  LIFE_STARTING_BANK: 10,
+  LIFE_LIVING_COST: 40,
+  LIFE_L3_LOSS: 220,
+  /** Section 4.2: points lost per coin of debt at the end of a round, capped per round. */
+  DEBT_POINTS_PER_COIN: 1,
+  DEBT_PENALTY_CAP: 40,
+  /** Section 4.3: final score = BANK_WEIGHT x bank + MISSION_WEIGHT x k x mission - debt stress. */
+  BANK_WEIGHT: 0.5,
+  MISSION_WEIGHT: 0.5,
+  /**
+   * k per mission. D-142, D-149: calibrated on single Episode 3 games (4 seats, Normal, gifts, no match) so every
+   * mission wins closest to 25% of the time (was D-96's mean-matching values 1, 1.78, 1, 1.16).
+   */
+  MISSION_SCALE: { EGOIST: 0.84, RAWLSIAN: 1.44, UTILITARIAN: 1.02, MERITOCRAT: 1.14 } as Record<ValuesCard, number>,
+  /**
+   * D-151: k per mission for a single episode, calibrated on that episode alone (4 seats, Normal) so every
+   * mission wins close to 25% of the time. Episode 3 uses MISSION_SCALE.
+   */
+  MISSION_SCALE_EP: { 1: { EGOIST: 0.65, RAWLSIAN: 2.58, UTILITARIAN: 1.1, MERITOCRAT: 1.11 }, 2: { EGOIST: 0.76, RAWLSIAN: 1.7, UTILITARIAN: 1.01, MERITOCRAT: 1.22 }, 5: { EGOIST: 0.51, RAWLSIAN: 2.14, UTILITARIAN: 1.58, MERITOCRAT: 1.35 }, 4: { EGOIST: 0.78, RAWLSIAN: 1.75, UTILITARIAN: 0.88, MERITOCRAT: 1.31 } } as Partial<Record<number, Record<ValuesCard, number>>>,
+  /** D-151: k per mission over a whole life (calibrated in T6; Episode 3's values until then). */
+  MISSION_SCALE_LIFE: { EGOIST: 0.85, RAWLSIAN: 1.47, UTILITARIAN: 1.15, MERITOCRAT: 1.19 } as Record<ValuesCard, number>,
+  /** The mission bar's full mark: start bank + this share of the episode's income minus living cost (D-102). */
+  MISSION_GOAL_SHARE: 0.8,
+  /** Section 7.4: points for a correct end-of-episode card guess. */
+  GUESS_POINTS: 15,
+  /** v2 Section 5: chance of an event card before a round (otherwise a quiet week). Was 0.6 in v1. */
+  EVENT_CHANCE: 0.4,
+  /**
+   * Episode 3 overrides of the Study Level 3 params. v2 Section 4: 4 rounds, the regime vote after round 3.
+   * Loss: spec guess 100, tuned to 140 for F-f (D-97).
+   */
+  L3: { ROUNDS: 4, VOLUNTARY_ROUNDS: 3, LOSS: 140, GYM_COST: 6 },
+  /**
+   * v2 Section 5: the Episode 3 deck in play. Paperwork Week was cut by the deck trim rule: in 2,000 bot
+   * games it changed no bot's choice in any of its 81 draws (D-115). Its numbers stay in L3_EVENTS.
+   */
+  L3_DECK: ['STORM', 'GYM_SALE', 'PRICE_WAR', 'BREAKTHROUGH', 'LEAKED'] as string[],
+  /** D-121: round 1 of Episode 3 is a launch round: SafeHands signs everyone up at the pooled price. */
+  L3_LAUNCH: true,
+  /**
+   * D-128: Episode 3's second hidden card. A Worrier's debt stress is multiplied by this (the per-round cap
+   * too, D-144). Calm players are unchanged. The author's range: 1.5 to 4.
+   */
+  WORRIER_STRESS_MULT: 3,
+  /** D-141: each seat is a Worrier with this chance, drawn on its own (like the risk card, 50/50). */
+  WORRIER_SHARE: 0.5,
+  /**
+   * D-141, a hidden rule (on after its test): at 3 or 4 seats, Episode 3's risk cards are redrawn until at
+   * least one HIGH and one LOW are dealt. Never shown in play; About mentions it.
+   */
+  L3_MIXED_DEAL: true,
+  /** D-122: bots count the debt stress a bank will still cost in the episode's later rounds. */
+  DEBT_HORIZON: true,
+  /** D-141: the seat count the Play setup screen starts on (2, 3 or 4 can be picked; bots fill the rest). */
+  DEFAULT_SEATS: 4 as 2 | 3 | 4,
+  /** v2 Section 5: Leaked Medical Files shows every risk type, only from this round of Episode 3. */
+  LEAKED_FROM_ROUND: 2,
+  /**
+   * v2 Section 3.5: each bot's honesty trait, drawn once per life from the bot stream, uniform in its
+   * personality's range. A seat played by the timeout rule uses the AUTO range (D-111).
+   */
+  HONESTY_RANGE: { chet: [0.3, 0.5], marigold: [0.85, 1], ugo: [0.55, 0.8], dot: [0.7, 0.9], AUTO: [0.7, 0.9] } as Record<string, [number, number]>,
+  /**
+   * v2 Section 3.5: coins a contestant gives up per unit of track record (share of claims true). A bot
+   * lies when gain x (1 - honesty) exceeds CREDIBILITY_VALUE x the record it loses when caught (D-112).
+   */
+  CREDIBILITY_VALUE: 6,
+  /** D-158: CREDIBILITY_VALUE per episode where it was tuned on its own (others use CREDIBILITY_VALUE). */
+  CREDIBILITY_VALUE_EP: { 1: 0.5, 2: 17, 4: 25, 5: 20 } as Partial<Record<number, number>>,
+  /** v2 Section 3.5: how far one claim moves a listener's belief, times the speaker's record (as Study's CLAIM_BELIEF_WEIGHT). */
+  CLAIM_WEIGHT: 0.5,
+  /** G4 (D-190): Episode 2's prize vote. BAYES: claims read by Bayes' rule; NORM: honest bots vote by believed effort. */
+  L2_PRIZE: { BAYES: false, NORM: false, CLAIM_WEIGHT: 0.5 },
+  /** Beliefs about a hidden fact are kept inside these bounds (as Study's BELIEF_FLOOR). */
+  BELIEF_FLOOR: 0.01,
+  /**
+   * D-133, the Bar: a member values barring an applicant at its expected saving on next round's price,
+   * times the chance it stays in, times this scale (1 = the grounded rule), against 0 for barring no one.
+   */
+  BAR_GAIN_SCALE: 2,
+  /** G2 (D-188): bots value a bar with their own mission (the barred target's lost cover counts), not only their own price saving. */
+  BAR_MISSION: true,
+  /** H1 (D-194): Call it. A call stakes CALL_STAKE on another contestant's claim; a caught lie pays the caller CALL_PAYOUT. */
+  CALL_ENABLED: true,
+  CALL_STAKE: 10,
+  CALL_PAYOUT: 20,
+  /** H3 (D-194): bots call too. Off: in 4 sweeps bot calls were right 0% to 15% of the time (target 40% to 70%). */
+  CALL_BOTS: false,
+  /** G3 (D-189): an Episode 3 bot gives only when its best gift raises its own expected Play score. */
+  GIFT_ONLY_IF_GAIN: true,
+  /**
+   * D-142, Give: once per round, on the move screen, a contestant may give one of these amounts to one other
+   * player. Gifts are public and land at the end of the round, after the wheel.
+   */
+  GIFT_AMOUNTS: [5, 10] as number[],
+  /**
+   * D-142, D-149: SafeHands adds this share to every gift: the recipient gets amount x (1 + match). Tested 0, 0.5
+   * and 1; set to 0 because with any match two players can trade the same gift every round and both gain.
+   */
+  GIFT_MATCH: 0,
+  /**
+   * D-145, difficulty in Play: the audience poll ('ALWAYS' on every screen that lists contestants, 'NORMAL'
+   * where it is today, 'NEVER' on no screen), a shift of every bot honesty range (kept inside 0 to 1), and a
+   * multiplier on BAR_GAIN_SCALE. Bots' lambda follows the Study difficulty table (x0.5 Easy, x1.5 Hard).
+   */
+  DIFFICULTY: {
+    EASY: { poll: 'ALWAYS', honestyShift: 0.15, barScale: 1 },
+    NORMAL: { poll: 'NORMAL', honestyShift: 0, barScale: 1 },
+    HARD: { poll: 'NEVER', honestyShift: -0.15, barScale: 1.5 },
+  } as Record<'EASY' | 'NORMAL' | 'HARD', { poll: 'ALWAYS' | 'NORMAL' | 'NEVER'; honestyShift: number; barScale: number }>,
+  /** Section 6.2, Episode 3 deck: each card changes one Level 3 parameter for one round. */
+  L3_EVENTS: {
+    STORM: { RISK_MULT: 1.5, RISK_CAP: 0.9 },
+    GYM_SALE: { GYM_COST: 3 },
+    PRICE_WAR: { PREMIUM_MULT: 0.8 },
+    BREAKTHROUGH: { LOSS: 50 },
+    PAPERWORK: { MANDATE_EXTRA: 5 },
+    /** v2 Section 5: every risk type is shown to the pool (no number changes). */
+    LEAKED: {},
+  },
+  /**
+   * Episode 4, The Hiring Round (v2 Section 4). Rounds 1 and 2 baseline, the policy vote, rounds 3 and 4 under
+   * the policy; the judge seat rotates (seat order, wrapping at 2 or 3 seats). Wages, costs, priors and test
+   * accuracy are Study's Level 4 values. The judge earns JUDGE_BASE + JUDGE_GAIN per skilled complex hire -
+   * JUDGE_LOSS per unskilled one; JUDGE_LOSS / (JUDGE_GAIN + JUDGE_LOSS) must equal Study's L4.THRESHOLD.
+   * JUDGE_CLAIM_WEIGHT: how far a bot judge's read moves toward "trained" on the claim "I trained", times the
+   * worker's record (D-151). METER: whether a human judge sees the HireBot meter, per difficulty (open item 2).
+   */
+  L4: { ROUNDS: 4, BASELINE_ROUNDS: 2, JUDGE_BASE: 40, JUDGE_GAIN: 20, JUDGE_LOSS: 30, METER: { EASY: true, NORMAL: true, HARD: false } as Record<string, boolean> },
+  /** R2 (D-159): how far a judge trusts "I trained": k = this x the worker's chance of being honest (0 = meter only). */
+  CLAIM_WEIGHT_EP4: 0.25,
+  /** D-151: Meritocrat effort for one round of training (Episode 2 effort is in hours, 0 to 10). */
+  L4_TRAIN_EFFORT: 5,
+  /** v1 Section 6.2, Episode 4 deck. Hiring Spree keeps the judge-pay identity by lowering JUDGE_LOSS (D-151). */
+  L4_EVENTS: {
+    SPREE: { JUDGE_LOSS: 20 },
+    RECESSION: { WAGE_GREEDY: 140 },
+    GRANT: { COST_CUT: 15 },
+    UPDATE: { UPDATE_WEIGHT: 0.3 },
+    PARTY: { FLEX_BONUS: 20 },
+  },
+  /**
+   * Episode 1, Born (v2 Section 4, D-152): 2 rounds, v1's income deck; the Peek from round 2. Study's Level 1
+   * principles, leakage, floor and gap cap are unchanged.
+   */
+  L1: { ROUNDS: 2, INCOME_DECK: [10, 40, 110, 300], PEEK_FROM_ROUND: 2 },
+  /**
+   * Episode 2, First Hustle (v2 Section 4, D-153): 3 rounds, v1's luck die; Study's talents, effort cost, leakage
+   * and tax options. BANDS: the top hour of "a little" and of "some" (claims are on a 3-step scale).
+   */
+  L2: { ROUNDS: 3, LUCK_VALUES: [-30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70], TAX_OPTIONS: [0, 0.2, 0.4, 0.6, 0.8], BANDS: [3, 6] },
+  /** v2 Section 4: the Hustle Prize, to the plurality winner of the vote (never yourself); ties split. */
+  HUSTLE_PRIZE: 30,
+  /** v1 Section 6.2 and v2 Section 5, Episode 2 deck (Security Cameras shows true effort for the round). */
+  L2_EVENTS: {
+    LUCKY: { LUCK_MULT: 1.5 },
+    OVERTIME: { TALENT_MULT: 5 },
+    BURNOUT: { EFFORT_COST: 0.6 },
+    VIRAL: { VIRAL: 80 },
+    WIFI: { LUCK_MULT: 0.5 },
+    CAMERAS: {},
+  },
+  /**
+   * Episode 5, Grand Finale (v1 Section 5, v2 Section 4, D-154): donations up to DONATION_MAX (Study 20), bots
+   * pick from DONATION_OPTIONS_BOT; in a single episode incomes are Study's deck times INCOME_SCALE.
+   */
+  L5: { DONATION_MAX: 40, DONATION_OPTIONS_BOT: [0, 10, 20, 40], INCOME_SCALE: 2, RECIPROCITY: 0.9, PROPOSAL_PLAY_VALUE: false },
+  /** v1 Section 6.2, Episode 5 deck (Quiet Finale cut by v2 Section 5). */
+  L5_EVENTS: {
+    LOBBYIST: { DONATION_MAX: 60 },
+    LEAKED_RECEIPTS: {},
+    PANIC: { ALL_BUT_ONE: 1 },
+  },
+  /** v1 Section 6.3, LIFE only: once per life, before Episode 4, the last-placed contestant takes COINS now or POINTS mission points. */
+  COMEBACK: { COINS: 120, POINTS: 40 },
+  /** v2 Section 3.4: the Receipts reel runs at most this long (it is skippable). */
+  RECEIPTS_MAX_MS: 20000,
+  /** D-180: score gaps on a life's ranking are rounded to this many points. */
+  GAP_ROUND: 10,
+  /** v2 Section 2: coins to see your own income before the vote (everyone sees that you peeked). */
+  PEEK_COST: 10,
+  /** v1 Section 6.2, Episode 1 deck. */
+  L1_EVENTS: {
+    BOOM: { INCOME_MULT: 1.2 },
+    CRASH: { INCOME_MULT: 0.8 },
+    STRIKE: { KAPPA_MULT: 2 },
+    INHERITANCE: { INHERITANCE: 60 },
+    LOTTERY: { TOP_CARD: 400 },
+  },
+  /** Event decks for the episodes after Episode 3 (Episode 3 keeps L3_DECK). */
+  DECKS: { 1: ['BOOM', 'CRASH', 'STRIKE', 'INHERITANCE', 'LOTTERY'], 2: ['LUCKY', 'OVERTIME', 'BURNOUT', 'VIRAL', 'WIFI', 'CAMERAS'], 5: ['LOBBYIST', 'LEAKED_RECEIPTS', 'PANIC'], 4: ['SPREE', 'RECESSION', 'GRANT', 'UPDATE', 'PARTY'] } as Partial<Record<number, string[]>>,
+  /** Section 7.1: the danger meter is green above this bank, amber from 0 to it, red in debt. */
+  DANGER_AMBER_BELOW: 60,
+  /** Section 7.2: every reveal sequence takes at most this long. */
+  REVEAL_MAX_MS: 4000,
+  /** Section 7.3: chance that a bot reacts to a result (presentation only, from the flavor hash). */
+  BOT_REACTION_CHANCE: 0.35,
+  /** Section 8: Play-room timers (used from P4). */
+  DECISION_SECONDS: 30,
+  RESULTS_SECONDS: 15,
+  SUMMARY_SECONDS: 45,
+};
+
+export type L3EventId = keyof typeof PLAY.L3_EVENTS;
+export const L3_EVENT_IDS = Object.keys(PLAY.L3_EVENTS) as L3EventId[];

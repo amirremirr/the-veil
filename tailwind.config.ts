@@ -17,6 +17,9 @@ export default {
         teal: token('teal'),
         amber: token('amber'),
         good: token('good'),
+        spot: token('spot'),
+        // Text on spotlight yellow: always stage blue, in light and dark (D-104).
+        onspot: token('onspot'),
       },
       fontFamily: {
         display: ['Fraunces', 'Georgia', 'serif'],

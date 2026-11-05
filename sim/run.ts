@@ -26,6 +26,12 @@ function arg(name: string, def: string): string {
   return i >= 0 && process.argv[i + 1] ? process.argv[i + 1] : def;
 }
 
+// Play mode (Play spec Section 10): `--ruleset PLAY --mode EPISODE --episode 3` runs sim/play.ts instead.
+if (arg('ruleset', 'STUDY') === 'PLAY') {
+  await import('./play');
+  process.exit(process.exitCode ?? 0);
+}
+
 const games = Number(arg('games', '2000'));
 const nPlayers = Number(arg('players', '4')) as 2 | 3 | 4;
 const difficulty = arg('difficulty', 'NORMAL') as Difficulty;

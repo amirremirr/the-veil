@@ -13,6 +13,8 @@ test.beforeEach(async ({ page }) => {
 
 async function startFullRun(page: Page, seed: string) {
   await page.getByRole('button', { name: 'Start a new life' }).click();
+  // Play mode is offered first (Play spec 8); Study is "With the economics".
+  await page.getByRole('button', { name: /With the economics/ }).click();
   await page.getByRole('button', { name: /Full game/ }).click();
   await page.getByLabel('Game code (optional)').fill(seed);
   await page.getByRole('button', { name: 'Start', exact: true }).click();
