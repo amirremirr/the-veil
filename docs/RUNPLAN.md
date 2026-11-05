@@ -162,3 +162,42 @@ Update README's Status table. Commit and push. Write "ALL DONE" as the last line
 
 ## Log
 ```
+
+---
+
+## D. Round 2 (second unattended session, same rules as Section A)
+
+Round 1 built everything, but the claim layer is dead outside Episode 3: in Episodes 1, 4 and 5 a claim earns a bot nothing, so bots never lie, and reading is trivial. A game where only one episode has bluffing breaks the spine (v2 Section 3). Round 2 fixes that, then life stakes. Same Section A rules, B lessons, quality gate, commit and push after every task, PROGRESS.md updated after every task (add rows R1 to R7). If it's after 10:00 Istanbul time, skip to R7.
+
+The principle for every fix (B.2): **a claim must pay through other players' decisions, computed from the game's payoffs.** Players who listen must also discount by credibility (the speaker's record and the table's known honesty mix), so lies pay sometimes and get caught sometimes. No invented constants.
+
+### R1. Episode 5: donations follow promises
+- Bot donors decide whom to fund using claims: a donation goes to delegates who claim "I'll vote yes" on the donor's preferred amendment, weighted by the chance they're pivotal and by their record (Ep3's (kept + 1) / (made + 2)).
+- Bot recipients now have a reason to claim yes falsely: the expected donation. Use Ep3's claim rule (gain x (1 - honesty) against CREDIBILITY_VALUE x record loss).
+- Targets: S-a 15% to 50%; lie success (claimed yes, received a donation, voted no) 30% to 75%; "Took your 40. Voted no." happens in 20% to 60% of games; E5 still passes.
+- Cut the claim screen to at most 40 words (show the amendments compactly; don't add decision screens).
+
+### R2. Episode 4: judges read claims, discounted by credibility
+- Bot judges update on "I trained" by Bayes' rule, with P(claim | untrained) estimated from public information: the worker's record and the table's honesty prior. Replace "meter only" (D-155). The meter shows the posterior including the claim.
+- Bot workers claim by Ep3's rule; the gain is the change in the chance of the complex job times the wage difference.
+- Targets: E4a and E4b pass (gating); S-a 15% to 50%; lie success 30% to 75%; training read with the claim at most 85%; contested hires at least 20%.
+- If E4b fails under every setting of PLAY.CLAIM_WEIGHT_EP4 in [0.1, 1] (at most 6 sweeps), go back to meter-only, keep the code behind the setting, and report the table.
+- Add one line to "What was really going on?": "Everyone says they trained. Talk is cheap, so the old belief about your group still decides."
+
+### R3. LIFE stakes: debt must be possible
+- F-f in a life is 0.1% (target 30% to 70%). Tune only LIFE-level Play params: `PLAY.LIFE_STARTING_BANK` (new), `PLAY.LIVING_COST` in LIFE (new override `PLAY.LIFE_LIVING_COST`), and an Episode 3 loss override for LIFE. At most 6 sweeps of 300 lives, then confirm on 1,000.
+- Also try to lift F-a (lead changes, 1.91, target 2) and F-d (89.7%, target 90%) with the same knobs. Don't tune episodes for this.
+- Measure E3a to E3d inside a life (round 1 never did) and report them.
+
+### R4. The life's first fair answer
+- Ask the unpaid "What tax rate do you think is fair?" before birth, in Episode 1's intro (v1 Section 5, Episode 1). Episode 5's second answer and the result card's title use the shift from Episode 1 to Episode 5 in LIFE mode. In EPISODE mode, Episode 5 keeps asking both.
+
+### R5. Episode 2: tune lying
+- S-a is 82% (target 15% to 50%) and lie success 13.5%. Add a per-episode `CREDIBILITY_VALUE_EP2` and tune S-a into range; report lie success and S-b. If the Hustle Prize vote ignores claims, make voters discount claims by credibility as in R2.
+
+### R6. Episode 1: claims as polls
+- Bots vote strategically under plurality: each votes for its best rule among those it believes can win, using claims as polls, discounted by record (strategic voting under plurality is real; Duverger's law). That gives claims a payoff: claiming a rule makes it look viable. Bots claim by Ep3's rule.
+- Targets: S-a at least 5%; report lie success and S-b. Episode 1 is the tutorial, so low lying is acceptable. E1 must pass.
+
+### R7. Report
+- Add a "Round 2" section at the top of `docs/AUTORUN_REPORT.md`: per task, the new sim table, what passed, what didn't, and new "Needs Amir" items. Keep "Human validation: NOT DONE". Update README Status. Commit, push. Write "ROUND 2 DONE" as the last line of PROGRESS.md.
