@@ -112,7 +112,7 @@ LOOP DONE
 | G3 Giving must sometimes pay | PARTIAL | never give fixed in Ep3 (+1.8 to -0.1); never bar +2.1 ± 1.3 and three claim rules (0.6 to 1.5 points) still beat adaptive by over 1 SE; D-189 |
 | G4 Episode 2 lies | PARTIAL | finer luck die: lie success 13.6% to 19.0% (target 30%), contested 27.7%, effort share 50.2% to 53.0%, E2 passes; D-190 |
 | G5 Dead options | DONE | Help the Poorest and an 80% tax kept as real (usually mistaken) choices, reasons in D-191 |
-| G6 Life fun targets | TODO | |
+| G6 Life fun targets | PARTIAL | card 120/40, living 40: F-a 1.95 (target 2), F-b 24.0% (pass), F-d 86.7% (miss); 1,000 lives, E checks pass; D-192 |
 | G7 Improvement loop | TODO | |
 | G8 Report | TODO | |
 

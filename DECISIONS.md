@@ -711,3 +711,15 @@ The author's third review: lie success was 98% and bar recall 23%, so lying domi
   - **Help the Poorest (Episode 1, 1.8% of bot votes).** Kept. It is the textbook maximin rule (make the poorest as well off as possible, whatever it burns), one of Study's four principles, and the one a person who has just read Rawls is most likely to try. Bots avoid it for a reason the episode teaches: with these incomes Limit the Gap raises the bottom almost as far while leaking much less (Protect-the-poorest bots chose Limit the Gap 90.6% of the time, D-188), so Help the Poorest is a real option that is usually a mistake. Removing it would remove that lesson; making it "viable" would mean changing the leak, which Study's numbers (and E1) rest on.
   - **An 80% tax (Episode 2 tax vote 0.7%, Episode 5 veil 1.2%).** Kept. It is the end of the scale, where the leak makes the whole table poorer; a player who wants to see what full redistribution does needs it on the chips, and the median-vote rule means a single 80% vote rarely wins anyway, so it costs others little. Making it viable would mean a smaller leak at high rates, a rule change no check asks for.
   - Before/after: unchanged (no rule changed). Alternative for Amir: hide both in Play behind a "show all options" toggle.
+- **D-192 [AUTORUN, review] G6: a bigger Second Chance and a lower living cost in a life.** LIFE-level knobs and the comeback card only, 5 sweeps of 300 lives, then 1,000. The card is now 120 coins or 40 points (`PLAY.COMEBACK`, was 60 or 20) and a life's living cost is 40 a round (`PLAY.LIFE_LIVING_COST`, was 45). D-172 had reverted living cost 40 on its own (no gain); with the bigger card it lifts lead changes, which is the evidence for revisiting it. A larger Episode 3 loss in a life (300) gave nothing and broke F-c; living cost 35 was no better.
+
+  | Life (bots) | before (300) | card 120/40 | + loss 300 | + living 40 | + living 35 | chosen, 1,000 lives |
+  |---|---|---|---|---|---|---|
+  | F-a lead changes (target 2) | 1.72 | 1.75 | 1.76 | 1.86 | 1.79 | **1.95 ± 0.05** |
+  | F-b last after Ep2 finishes top two (target 20%) | 18.0% | 23.0% | 24.0% | 23.0% | 23.3% | **24.0% ± 1.4** |
+  | F-c close finish (target 40%) | 48.7% | 50.3% | 39.7% | 52.7% | 60.7% | 56.4% |
+  | F-d episodes with a big moment (target 90%) | 87.5% | 87.3% | 87.7% | 87.1% | 86.7% | **86.7% ± 0.4** |
+  | F-f debt during the life (30% to 70%) | 56.7% | 56.7% | 66.0% | 48.7% | 41.3% | 47.2% |
+  | E checks | all pass | all pass | all pass | all pass | all pass | all pass (E1 +0.53, E2 -6.0, E3a 3.74, E3b +37%, E3c 91%, E3d +35%, E4a 90%, E4b 0%, E5 -0.054) |
+
+  F-b now passes; F-a ends within about one standard error of 2; F-d does not move with these knobs (it is decided inside episodes, mostly Episode 2 since the +90 face went, D-190, and Episode 4). Tuning stopped as instructed. Earlier life number for comparison (round 2, 1,000 lives): F-a 1.89, F-b 18.0%, F-d 88.0%.
