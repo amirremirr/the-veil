@@ -151,7 +151,7 @@ export function LobbyScreen({ v }: { v: ViewState }) {
     <Stage v={v} footer={<BigButton onClick={() => act({ donateTo: to, amount: to ? amount : 0 })}>{t('play.stage.lock')}</BigButton>}>
       <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.l5.lobby.yours', { rules: mine ? rules(mine) : '' })}</p>
       <h1 className="h-show mt-1 text-2xl leading-tight">{t('play.l5.lobby.donate')}</h1>
-      <p className="mt-1 text-sm">{t('play.l5.lobby.how')}</p>
+      <p className="mt-1 text-sm">{t(lv.leaked ? 'play.l5.lobby.howLeaked' : 'play.l5.lobby.how')}</p>
       <Chips opts={['', ...v.players.filter((p) => p.id !== v.viewer).map((p) => p.id)]} value={to ?? ''} onPick={(x) => setTo(x || null)} label={t('play.l5.lobby.donate')} fmt={(x) => (x ? `${shortName(v, x)}: ${said(x)}` : t('play.l5.lobby.nobody'))} />
       {to && <Chips opts={amounts} value={amount} onPick={setAmount} label={t('play.l5.lobby.amount')} fmt={coins} />}
     </Stage>

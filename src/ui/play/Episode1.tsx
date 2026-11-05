@@ -139,7 +139,7 @@ export function VotesBeat({ v, next }: { v: ViewState; next: () => void }) {
       <div className="my-auto" data-vote>
         <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.l1.votes.label', { r: v.round })}</p>
         <h1 className="h-show mt-1 text-4xl leading-tight text-spot">{ruleName(r.winner)}</h1>
-        <p className="mt-1 text-sm">{t('play.l1.votes.tax', { t: pct(r.t) })}</p>
+        <p className="mt-1 text-sm">{t('play.l1.votes.tax', { t: pct(r.t) })}{r.tie ? ` ${t('play.l1.votes.tie')}` : ''}</p>
         <ul className="mt-3 space-y-1.5">
           {v.players.map((p) => {
             const c = r.claims[p.id];
@@ -181,6 +181,7 @@ export function IncomesBeat({ v, next, last }: { v: ViewState; next: () => void;
             </li>
           ))}
         </ul>
+        {r.peeked.includes(me) && <p className="mt-2 text-sm">{t('play.l1.inc.peekCost', { c: lv.peekCost })}</p>}
         {r.inheritance && <p className="mt-2 text-sm">{t('play.l1.inc.inherit', { name: shortName(v, r.inheritance) })}</p>}
         {bankLineText(v) && <p className="mt-2 text-sm font-semibold" data-bankline>{bankLineText(v)}</p>}
       </div>

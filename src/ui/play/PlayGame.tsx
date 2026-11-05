@@ -95,7 +95,7 @@ function EpisodeIntro({ v }: { v: ViewState }) {
   return (
     <Stage v={v} footer={<BigButton onClick={() => act()}>{t('play.intro.go')}</BigButton>}>
       <p className="text-xs font-bold uppercase tracking-wider text-soft">
-        {t('play.modes.ep', { n: v.levelIndex })} · {t(`play.episodes.${v.levelIndex}.sponsor`)}
+        {t('play.modes.ep', { n: v.levelIndex })} · {t(`play.episodes.${v.levelIndex}.sponsor`)}{v.difficulty !== 'NORMAL' ? ` · ${t(`play.setup.badge.${v.difficulty}`)}` : ''}
       </p>
       <h1 className="h-show mt-1 text-5xl leading-none text-spot">{t(`play.episodes.${v.levelIndex}.name`)}</h1>
       <p className="mt-5 text-lg leading-snug" data-intro>
@@ -402,6 +402,7 @@ function MissionsBeat({ v, next }: { v: ViewState; next: () => void }) {
               <span className="w-20 truncate text-sm font-bold">{shortName(v, p.id)}</span>
               <span className="flex-1 truncate text-sm">{p.values ? missionName(p.values) : ''}</span>
               {!hidden && <span className="h-show w-10 text-end">{coins(scores[p.id] ?? 0)}</span>}
+              {hidden && p.id === v.viewer && <span className="h-show w-10 text-end">{coins(pl.mission?.score ?? 0)}</span>}
             </li>
           ))}
         </ol>

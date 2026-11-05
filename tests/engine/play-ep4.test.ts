@@ -56,3 +56,17 @@ describe('Play Episode 4', () => {
     expect(bots('det-1').play!.banks).toEqual(bots('det-1').play!.banks);
   });
 });
+
+describe('Play Episode 4 privacy (loop cycle 1)', () => {
+  it('never sends another worker training cost before the end reveal', () => {
+    const s = createInitialState({ mode: 'EPISODE', level: 4, ruleset: 'PLAY', nPlayers: 4, difficulty: 'NORMAL', seed: 'cost-1', allBots: true } as Parameters<typeof createInitialState>[0]);
+    const viewer = s.players[0].id;
+    let g = 0;
+    while (s.phase.kind !== 'END' && g++ < 5000) {
+      step(s, { type: 'ADVANCE' });
+      if (s.phase.kind === 'REVEAL' && s.phase.step === 'CARDS') break;
+      const lv = visibleState(s, viewer).levelView as { rounds: Array<{ costs?: Record<string, number> }>; current?: { costs?: Record<string, number> } };
+      for (const r of [...lv.rounds, ...(lv.current ? [lv.current] : [])]) for (const id of Object.keys(r.costs ?? {})) expect(id).toBe(viewer);
+    }
+  });
+});

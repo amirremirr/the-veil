@@ -248,6 +248,7 @@ export function HiresBeat({ v, next, last }: { v: ViewState; next: () => void; l
             );
           })}
         </ul>
+        {r.judge !== me && r.train?.[me] && <p className="mt-2 text-sm">{t('play.l4.res.trainCost', { c: coins((r.costs?.[me] ?? 0) - (v.play!.event?.id === 'GRANT' && v.play!.event.round === v.round ? PLAY.L4_EVENTS.GRANT.COST_CUT : 0)) })}</p>}
         <p className="mt-2 text-sm">{t('play.l4.res.judgePay', { name: shortName(v, r.judge!), n: coins(r.judgePay ?? 0) })}</p>
         {bankLineText(v) && <p className="mt-2 text-sm font-semibold" data-bankline>{bankLineText(v)}</p>}
       </div>

@@ -605,10 +605,12 @@ export const playLevel4: LevelDefinition = {
     const c = l.current;
     const cards = revealPrivate || (s.phase.kind === 'REVEAL' && s.phase.step === 'CARDS') || s.phase.kind === 'LEVEL_DEBRIEF' || s.phase.kind === 'GUESS';
     const hideTrain = (r: Partial<P4Round>) => {
-      if (!r.train) return r;
+      if (!r.train) return { ...r, costs: r.costs ? Object.fromEntries(Object.entries(r.costs).filter(([id]) => cards || id === viewer)) : r.costs };
       const train: Record<PlayerId, boolean> = {};
       for (const [id, v] of Object.entries(r.train)) if (cards || id === viewer || (r.job && r.job[id] === 'COMPLEX')) train[id] = v;
-      return { ...r, train, reads: undefined };
+      // Loop cycle 1 (D-167): training costs are private; only the viewer's own is sent (until the end reveal).
+      const costs = r.costs ? Object.fromEntries(Object.entries(r.costs).filter(([id]) => cards || id === viewer)) : r.costs;
+      return { ...r, train, costs, reads: undefined };
     };
     const inRound = c && !l.rounds.includes(c as P4Round);
     return {

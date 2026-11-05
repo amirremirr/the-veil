@@ -905,7 +905,11 @@
         "NORMAL": "The standard game.",
         "HARD": "No audience poll, no mission hints. Bots lie more."
       },
-      "best": "Best with 4"
+      "best": "Best with 4",
+      "badge": {
+        "EASY": "Easy",
+        "HARD": "Hard: no poll, no hints"
+      }
     },
     "episodes": {
       "1": {
@@ -1263,11 +1267,11 @@
       "noRead": "The audience read everyone right.",
       "nearMiss": "Near miss",
       "nearMissNone": "No single change would have left you richer.",
-      "ranksLabel": "The ranking so far",
+      "ranksLabel": "The ranking so far (only your own score is shown)",
       "lead": "Leading the life: {name}",
       "leadYou": "You lead the life!",
       "scoreLabel": "Your score",
-      "score": "{s} = half your bank {b} + half your mission {m}, minus debt {d}, plus guesses {g}. The ranking uses this score."
+      "score": "{s} = half your bank {b} + half your mission {m}, minus {d} debt points (from rounds you ended in debt), plus guesses {g}. The ranking uses this score."
     },
     "really": {
       "button": "What was really going on?",
@@ -1632,7 +1636,8 @@
         "youJudged": "You judged. You earn {n}.",
         "youComplex": "You got the complex job. You earn {n}.",
         "youSimple": "You got the simple job. You earn {n}.",
-        "judgePay": "{name} earned {n} as HireBot."
+        "judgePay": "{name} earned {n} as HireBot.",
+        "trainCost": "Training cost you {c} of that."
       },
       "stamp": {
         "GOOD": "GOOD HIRE",
@@ -1672,7 +1677,7 @@
         },
         "P2": {
           "name": "Safety Net",
-          "desc": "Everyone gets 40."
+          "desc": "Everyone gets at least 40."
         },
         "P3": {
           "name": "Middle Way",
@@ -1710,14 +1715,16 @@
       "votes": {
         "label": "Round {r} votes",
         "tax": "Tax: {t}",
-        "broke": "Said {rule}"
+        "broke": "Said {rule}",
+        "tie": "A tie: drawn by lot."
       },
       "peekedTag": "Peeked",
       "inc": {
         "label": "Incomes, poorest first",
         "you": "You got {y}. After the rule: {w}.",
         "row": "{y}, after the rule {w}",
-        "inherit": "{name} inherited 60 coins."
+        "inherit": "{name} inherited 60 coins.",
+        "peekCost": "Your peek: -{c}, already taken off."
       },
       "toReveal": "To the reveal",
       "peak": {
@@ -1843,7 +1850,8 @@
         "title": "Your amendment",
         "keepNow": "Propose a change? Now: {rules}",
         "yours": "Your amendment: {rules}",
-        "how": "Their claims on your amendment are shown. Money goes in secret."
+        "how": "Their claims on your amendment are shown. Money goes in secret.",
+        "howLeaked": "Their claims on your amendment are shown. Leaked Receipts: every donation is public this time."
       },
       "claim": {
         "title": "How will you vote on each change?",
