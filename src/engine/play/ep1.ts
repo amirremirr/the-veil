@@ -416,7 +416,8 @@ export const playLevel1: LevelDefinition = {
       myIncome: inRoundRevealed ? undefined : myIncome,
       deck: p1Params(s).deck,
       peekCost: PLAY.PEEK_COST,
-      preview: s.phase.kind === 'DECIDE' && s.phase.step === 'VOTE' && s.players.some((p) => p.id === viewer) ? p1Preview(s, viewer) : undefined,
+      // E5 (D-164): Hard shows no mission hints, as it shows no audience poll.
+      preview: s.difficulty !== 'HARD' && s.phase.kind === 'DECIDE' && s.phase.step === 'VOTE' && s.players.some((p) => p.id === viewer) ? p1Preview(s, viewer) : undefined,
     };
   },
 };

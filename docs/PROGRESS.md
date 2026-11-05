@@ -88,3 +88,4 @@ ALL DONE
 - E1: full life (107 screens) and Episode 3 Hard (26) captured; Reviewer A (designer) and Reviewer B (casual) saved verbatim. Both: the bank math and the ranking are never explained; A: the Mission and odds labels do the thinking; B: wanted to stop at the HireBot screen and the finale claims.
 - E2: design audit; weakest: Ep3 on Normal (no wheel hits), Ep4 judge screen, Ep5 claims and donations, the unexplained score.
 - E3: `sim/audit.ts`, 150 games per rule per episode; tables in docs/review/logic-audit.md. E4: heuristic, feel and voice review (40 lines in a life, 33 distinct).
+- E5 (group 1): 14 fixes from the ranked list (D-164); gate green.

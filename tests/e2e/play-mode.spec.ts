@@ -117,7 +117,7 @@ test('two seats on Hard: the setup line, two contestants, no audience poll on an
   await page.locator('[data-difficulty="EASY"]').click();
   await expect(page.getByText('See what the audience thinks. Bots are mostly honest.')).toBeVisible();
   await page.locator('[data-difficulty="HARD"]').click();
-  await expect(page.getByText('No audience poll. Bots lie more.')).toBeVisible();
+  await expect(page.getByText('No audience poll, no mission hints. Bots lie more.')).toBeVisible();
   await page.locator('[data-seats="2"]').click();
   await page.getByLabel('Challenge code (optional)').fill('e2e-hard');
   await page.getByRole('button', { name: 'Go live' }).click();

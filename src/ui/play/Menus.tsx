@@ -5,6 +5,7 @@ import type { Difficulty, LevelId } from '../../engine/types';
 import { PLAY } from '../../engine/play/params';
 import { PLAYABLE_EPISODES } from '../../engine/play/rules';
 import { dailySeed, istanbulDay } from './retention';
+import { playtestOn, setPlaytest } from '../playtest';
 import { useStore } from '../store';
 import { t } from '../i18n';
 import { Page } from '../components/common';
@@ -32,6 +33,17 @@ export function HowToPlay() {
       </div>
       <p className="mt-4 text-xs text-soft">{t('play.disclaimer')}</p>
     </Page>
+  );
+}
+
+/** F1: the playtest-mode switch (off by default; ?playtest=1 also turns it on for that visit). */
+function PlaytestToggle() {
+  const [on, setOn] = useState(playtestOn());
+  return (
+    <label className="mt-2 flex items-center gap-2 text-xs text-soft">
+      <input type="checkbox" checked={on} onChange={(e) => { setPlaytest(e.target.checked); setOn(e.target.checked); }} data-playtest-toggle />
+      {t('play.pt.toggle')}
+    </label>
   );
 }
 
@@ -84,6 +96,7 @@ export function PlayModeSelect() {
         </section>
       </div>
       <p className="mt-4 text-xs text-soft">{t('play.disclaimer')}</p>
+      <PlaytestToggle />
       <button type="button" className="mt-2 text-sm font-semibold underline" onClick={() => setOpening(true)}>
         {t('play.opening.menu')}
       </button>

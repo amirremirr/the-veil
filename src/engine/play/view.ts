@@ -65,6 +65,7 @@ export function playView(s: GameState, viewer: PlayerId, revealAll: boolean): Pl
     record: structuredClone(s.reliability),
     guesses,
     finalScores: revealAll ? Object.fromEntries(s.players.map((p) => [p.id, playScore(s, p.id)])) : null,
+    livingCost: livingCost(s),
     startingBank: s.mode === 'EPISODE' ? PLAY.EPISODE_STARTING_BANK : PLAY.LIFE_STARTING_BANK,
     ...(s.levelIndex === 3 && s.phase.kind !== 'VALUES_REVEAL' ? { l3: l3Numbers(s) } : {}),
   };

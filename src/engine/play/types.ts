@@ -130,6 +130,8 @@ export interface PlayView {
   /** Final scores of everyone, once every card is public. */
   finalScores: Record<PlayerId, number> | null;
   startingBank: number;
+  /** The living cost taken from every bank after each round (E5: shown on the results). */
+  livingCost: number;
   /** Episode 3: the numbers in force now (Play overrides plus this round's event), all public. */
   l3?: { loss: number; gymCost: number; gymFactor: number; pLow: number; pHigh: number; riskMult: number; riskCap: number; premiumMult: number; mandateExtra: number; loading: number; priceLoss: number; pBar: number; baseIncome: number; livingCost: number };
 }

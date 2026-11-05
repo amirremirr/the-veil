@@ -5,6 +5,8 @@ import { GameScreen } from './screens/Game';
 import { About, Archives, ModeSelect, SettingsScreen, Setup, Title } from './screens/Menus';
 import { HowToPlay, PlayModeSelect, PlaySetup } from './play/Menus';
 import { useRoom } from './room';
+import { PlaytestResults } from './play/Playtest';
+import { resultsPage } from './playtest';
 import { Friends, Lobby, savedName } from './screens/Friends';
 import { ConnectionBanner, Thinking } from './components/Online';
 import { joinRoom, ROOM_SERVER, savedToken } from './room';
@@ -45,6 +47,7 @@ export function App() {
     else root.setAttribute('data-theme', settings.theme);
     root.setAttribute('data-size', settings.textSize);
   }, [settings.theme, settings.textSize]);
+  if (resultsPage()) return <PlaytestResults />;
   return (
     <MotionConfig reducedMotion={settings.reducedMotion ? 'always' : 'user'}>
       {screen === 'title' && <Title />}

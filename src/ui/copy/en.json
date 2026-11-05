@@ -903,7 +903,7 @@
       "levels": {
         "EASY": "See what the audience thinks. Bots are mostly honest.",
         "NORMAL": "The standard game.",
-        "HARD": "No audience poll. Bots lie more."
+        "HARD": "No audience poll, no mission hints. Bots lie more."
       },
       "best": "Best with 4"
     },
@@ -960,7 +960,7 @@
       },
       "MERITOCRAT": {
         "name": "Reward hard work",
-        "line": "You win when money follows effort. With no work this episode, that means equal banks."
+        "line": "You win when money follows effort: hours worked and training count. Before anyone has worked, that means equal banks."
       }
     },
     "values": {
@@ -1265,7 +1265,9 @@
       "nearMissNone": "No single change would have left you richer.",
       "ranksLabel": "The ranking so far",
       "lead": "Leading the life: {name}",
-      "leadYou": "You lead the life!"
+      "leadYou": "You lead the life!",
+      "scoreLabel": "Your score",
+      "score": "{s} = half your bank {b} + half your mission {m}, minus debt {d}, plus guesses {g}. The ranking uses this score."
     },
     "really": {
       "button": "What was really going on?",
@@ -1430,7 +1432,8 @@
       "record": "{kept} of {made} true",
       "inLabel": "Round {r} claims",
       "inTitle": "The claims are in",
-      "inNote": "Anyone could be lying. The cards flip at the end."
+      "inNote": "Anyone could be lying. The cards flip at the end.",
+      "inNotePoll": "Claims work like polls: they change which rule looks able to win. Anyone could be lying."
     },
     "move": {
       "risk": "Your risk:",
@@ -1578,9 +1581,12 @@
         "title": "Train?",
         "belief": "HireBot believes {p} of {group}s trained.",
         "beliefBlind": "Blind hiring: HireBot believes {p} of everyone trained.",
-        "how": "Trained workers pass the test 80% of the time, others 30%.",
+        "how": "Trained workers pass the test 80% of the time; others 30%.",
         "tile": "Train",
-        "cost": "Costs you {c} coins this round."
+        "cost": "Costs you {c} coins this round.",
+        "costCut": "Costs you {c} this round (was {was}).",
+        "skip": "Don't train",
+        "skipDesc": "Keep the coins."
       },
       "claim": {
         "youT": "You trained.",
@@ -1836,14 +1842,15 @@
         "how": "Their claims on your amendment are shown. Money goes in secret."
       },
       "claim": {
-        "title": "Vote claims (tax, floor)",
+        "title": "How will you vote on each change?",
         "how": "Tap Yes or No to claim it. Leave both off to say nothing."
       },
       "amend": {
         "label": "Amendment {k} of {n}, from {name}",
         "now": "Now: {rules}. Needs {n} yes votes.",
         "got": "{name} secretly gave you {n} coins.",
-        "submit": "Vote"
+        "submit": "Vote",
+        "claims": "What they claimed: {list}"
       },
       "peak": {
         "label": "The ballots",
@@ -1855,7 +1862,9 @@
         "betray": "{name}: took your {n}. Voted no.",
         "shift": "Your fair tax: {a} before, {b} after ({d} points).",
         "hostBought": "Money talks. Sometimes it just mumbles.",
-        "hostClean": "No money changed hands. Our sponsors are devastated."
+        "hostClean": "No money changed hands. Our sponsors are devastated.",
+        "kept": "(kept)",
+        "broke": "(broke promise)"
       },
       "sum": {
         "lie": "{name} broke a vote promise {n}.",
@@ -1871,9 +1880,10 @@
     "comeback": {
       "label": "A Second Chance",
       "title": "The show feels sorry for you.",
-      "how": "You're in last place. Take {c} coins now, or {p} mission points. Everyone is watching.",
+      "how": "You're last on score. Take {c} coins now, or {p} mission points. Everyone is watching.",
       "coins": "Take {c} coins",
-      "points": "Take {p} points"
+      "points": "Take {p} points",
+      "rate": "Your score counts half your bank, so {c} coins are worth {half} points, plus whatever they do for your mission."
     },
     "receipts": {
       "label": "The Receipts",
@@ -2031,6 +2041,86 @@
         "name": "Took the Money",
         "desc": "Took a donation and voted no."
       }
+    },
+    "pt": {
+      "toggle": "Playtest mode (keeps a private log on this device and adds a short survey)",
+      "open": "Playtest: a short survey",
+      "title": "Quick survey",
+      "how": "Tap your answers. Skip anything. Nothing is sent: you copy a code and give it to whoever asked you to test.",
+      "skip": "Skip",
+      "send": "Make my results code",
+      "codeHow": "Copy this code and send it back:",
+      "copy": "Copy the code",
+      "q": {
+        "oneSentence": "Explain the game in one sentence.",
+        "cared": "Which decision did you care about?",
+        "surprised": "What surprised you?",
+        "changed": "How much did your choices change the outcome?",
+        "again": "Do you want another round?",
+        "withWhom": "Who would you play this with?",
+        "unclear": "Was anything unclear at the start?",
+        "missionChanged": "Did your mission change what you did?",
+        "why": "Why did the price go up? (or what was really going on?)"
+      },
+      "a": {
+        "cared": {
+          "claim": "What I claimed",
+          "move": "My move",
+          "vote": "A vote",
+          "read": "Who to bar, hire or reward",
+          "give": "A gift",
+          "none": "None"
+        },
+        "surprised": {
+          "lie": "A lie",
+          "reveal": "The reveal",
+          "result": "My result",
+          "price": "A price or a rule",
+          "nothing": "Nothing"
+        },
+        "changed": {
+          "lot": "A lot",
+          "little": "A little",
+          "none": "Not at all"
+        },
+        "again": {
+          "yes": "Yes",
+          "maybe": "Maybe",
+          "no": "No"
+        },
+        "withWhom": {
+          "friend": "A friend",
+          "family": "Family",
+          "partner": "A partner",
+          "colleague": "A colleague",
+          "nobody": "Nobody"
+        },
+        "unclear": {
+          "yes": "Yes",
+          "no": "No"
+        },
+        "missionChanged": {
+          "yes": "Yes",
+          "bit": "A bit",
+          "no": "No"
+        }
+      },
+      "results": "Playtest results",
+      "paste": "Paste one or more results codes (one per line).",
+      "read": "Show results",
+      "bad": "{n} code(s) could not be read.",
+      "totals": "Totals",
+      "tTesters": "Testers: {n}",
+      "tReplay": "Tapped Play again within 10 s: {n} of {of}",
+      "tFirst": "Median time to first decision: {s} s",
+      "tSlow": "Longest screens: {list}",
+      "tAgain": "Another round? {list}",
+      "tWho": "Play with: {list}",
+      "rows": "One row per tester"
+    },
+    "bank": {
+      "round": "Your bank {from} to {to}: {w} this round, then -{c} living costs.",
+      "living": "Living costs: -{c}."
     }
   }
 }

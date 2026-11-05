@@ -172,7 +172,7 @@ export function ClaimsBeat({ v, next }: { v: ViewState; next: () => void }) {
             </li>
           ))}
         </ul>
-        <p className="mt-3 text-sm text-soft">{t('play.claim.inNote')}</p>
+        <p className="mt-3 text-sm text-soft">{t(v.levelIndex === 1 ? 'play.claim.inNotePoll' : 'play.claim.inNote')}</p>
       </div>
     </Stage>
   );
@@ -243,7 +243,7 @@ export function MoveScreen({ v }: { v: ViewState }) {
               return (
                 <li key={p.id}>
                   {member ? (
-                    <button type="button" aria-pressed={bar === p.id} onClick={() => setBar(bar === p.id ? null : p.id)} className={`flex min-h-[40px] w-full items-center gap-2 rounded-xl px-2 text-start ${bar === p.id ? 'bg-stamp text-onspot' : 'bg-card'}`}>
+                    <button type="button" aria-pressed={bar === p.id} onClick={() => setBar(bar === p.id ? null : p.id)} className={`flex min-h-[44px] w-full items-center gap-2 rounded-xl px-2 text-start ${bar === p.id ? 'bg-stamp text-onspot' : 'bg-card'}`}>
                       {body}
                     </button>
                   ) : (
@@ -405,7 +405,7 @@ export function CardsReveal({ v }: { v: ViewState }) {
   const top = rows[0];
   const line = top.lies
     ? t(top.p.id === v.viewer ? 'play.cards.peakLieYou' : 'play.cards.peakLie', { name: nameOf(v, top.p.id), n: timesWord(top.lies), truth: t(`play.cards.${types[top.p.id]}`).toLowerCase() })
-    : t('play.cards.peakHonest');
+    : hostLine('peakHonest', pick(v, 'peakHonest', 6));
   return (
     <Stage v={v} footer={<BigButton onClick={() => act()}>{t('play.stage.tap')}</BigButton>}>
       <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.cards.label')}</p>
@@ -595,7 +595,7 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
             </span>
           </p>
           <p className="mt-1 text-sm text-soft">
-            {t('play.stage.bankLine', { from: coins(from), to: coins(h.banks[me]) })} {cost}
+            {t('play.stage.bankLine', { from: coins(from), to: coins(h.banks[me]) })} {cost} {t('play.bank.living', { c: v.play!.livingCost })}
           </p>
           {stress > 0 && (
             <p className="mt-1 text-sm font-bold text-stamp" data-debt>
@@ -697,5 +697,20 @@ export function PriceBeat({ v, next, onReally }: { v: ViewState; next: () => voi
         </button>
       </div>
     </Stage>
+  );
+}
+
+/** E5 fix: a list of reveal stamps where every LIE stands out. */
+export function Stamps({ items }: { items: string[] }) {
+  const lie = t('play.cards.LIE');
+  return (
+    <>
+      {items.map((x, i) => (
+        <span key={i} className={x.includes(lie) ? 'font-bold text-stamp' : ''}>
+          {i > 0 ? ' · ' : ''}
+          {x}
+        </span>
+      ))}
+    </>
   );
 }

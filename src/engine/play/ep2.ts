@@ -451,7 +451,8 @@ export const playLevel2: LevelDefinition = {
       rounds: l.rounds.map(hide),
       current: c.effort && !l.rounds.includes(c as P2Round) ? hide(c) : undefined,
       poll,
-      preview: s.phase.kind === 'DECIDE' && s.players.some((p) => p.id === viewer) && s.players.some((p) => p.id === viewer) ? p2Preview(s, viewer) : undefined,
+      // E5 (D-164): Hard shows no mission hints, as it shows no audience poll.
+      preview: s.difficulty !== 'HARD' && s.phase.kind === 'DECIDE' && s.players.some((p) => p.id === viewer) && s.players.some((p) => p.id === viewer) ? p2Preview(s, viewer) : undefined,
       myMoney: s.phase.kind === 'DECIDE' && s.phase.step === 'EFFORT' && s.players.some((p) => p.id === viewer) ? Array.from({ length: L2.EFFORT_MAX + 1 }, (_, e) => expectedW(s, idx(s, viewer), e)[idx(s, viewer)]) : undefined,
       costK: p2Params(s).costK,
       talentMult: p2Params(s).talentMult,

@@ -619,11 +619,13 @@ export const playLevel4: LevelDefinition = {
       policyVotes: l.policyVotes,
       judge: l.judge,
       myCost: s.players.some((p) => p.id === viewer) ? Math.max(0, l.costs[viewer] - p4Params(s).costCut) : undefined,
+      myCostBase: s.players.some((p) => p.id === viewer) ? l.costs[viewer] : undefined,
       rounds: l.rounds.map((r) => hideTrain(r)),
       current: inRound ? hideTrain(c!) : undefined,
       threshold: p4Params(s).threshold,
       meterShown: PLAY.L4.METER[s.difficulty],
-      preview: s.phase.kind === 'DECIDE' && (s.phase.step === 'TRAIN' || s.phase.step === 'HIRE') && s.players.some((p) => p.id === viewer) ? p4Preview(s, viewer) : undefined,
+      // E5 (D-164): Hard shows no mission hints, as it shows no audience poll.
+      preview: s.difficulty !== 'HARD' && s.phase.kind === 'DECIDE' && (s.phase.step === 'TRAIN' || s.phase.step === 'HIRE') && s.players.some((p) => p.id === viewer) ? p4Preview(s, viewer) : undefined,
       cardsOpen: cards,
     };
   },

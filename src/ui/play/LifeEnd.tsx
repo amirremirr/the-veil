@@ -10,6 +10,8 @@ import { shortName } from '../game';
 import { useMotionOff } from '../components/common';
 import { BigButton, Stage } from './OnAir';
 import { missionName } from './logic';
+import { PlaytestPanel } from './Playtest';
+import { onTap, playtestOn } from '../playtest';
 import { earned, isDaily, rivalLine, saveAchievements, shareText, type Achievement } from './retention';
 
 export interface Receipt {
@@ -228,7 +230,7 @@ export function ResultCard({ v }: { v: ViewState }) {
       bar={false}
       footer={
         <div className="flex gap-2">
-          <button type="button" className="min-h-[52px] flex-1 rounded-full bg-card font-bold" onClick={() => replay(false)}>
+          <button type="button" className="min-h-[52px] flex-1 rounded-full bg-card font-bold" onClick={() => { onTap('again'); replay(false); }}>
             {t('play.summary.again')}
           </button>
           <div className="flex-1">
@@ -252,6 +254,7 @@ export function ResultCard({ v }: { v: ViewState }) {
           {t('play.ach.label', { n: all.length, max: 12 })} {mineNow.map((a) => t(`play.ach.${a}.name`)).join(', ')}
         </p>
       )}
+      {playtestOn() && <PlaytestPanel v={v} />}
       <p className="mt-2 text-sm font-semibold" data-rival>
         {rivalLine(v)} {t('play.rival.ask')}
       </p>

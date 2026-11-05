@@ -155,3 +155,18 @@ export function botReactions(v: ViewState, key: OutcomeKey): Reaction[] {
 export function timesWord(n: number): string {
   return n === 1 ? t('play.times.one') : n === 2 ? t('play.times.two') : t('play.times.many', { n });
 }
+
+/** E5 fix (both fresh-eyes reviewers): one plain line on how the viewer's bank moved in the round just played. */
+export function bankLineText(v: ViewState): string | null {
+  const pl = v.play;
+  if (!pl) return null;
+  const hist = pl.bankHistory;
+  const last = hist[hist.length - 1];
+  if (!last || last.level !== v.levelIndex) return null;
+  const prev = hist[hist.length - 2];
+  const from = prev ? prev.banks[v.viewer] : pl.startingBank;
+  const to = last.banks[v.viewer];
+  const money = to - from + pl.livingCost;
+  const sign = (x: number) => `${x >= 0 ? '+' : ''}${Math.round(x)}`;
+  return t('play.bank.round', { from: Math.round(from), to: Math.round(to), w: sign(money), c: pl.livingCost });
+}

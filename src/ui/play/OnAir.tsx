@@ -1,6 +1,7 @@
 // Play's stage (Play spec 7.1, redesign D-108): one beat per screen, nothing to scroll at 375 x 760.
 // The top bar holds only ON AIR, the round, your bank and four small avatars with banks. The mission bar,
 // the chat log and leaving the show live in the menu.
+import { onTap as ptTap } from '../playtest';
 import { useState, type ReactNode } from 'react';
 import type { ViewState } from '../../engine/types';
 import { TALK } from '../../engine/params';
@@ -147,7 +148,7 @@ export function Stage({
   const [menu, setMenu] = useState(false);
   return (
     <div className={`flex min-h-[100dvh] flex-col ${tone === 'breaking' ? 'bg-spot text-onspot' : ''} ${onTap ? 'cursor-pointer' : ''}`} onClick={onTap} data-stage data-beat={onTap ? 'tap' : undefined}>
-      {bar && <TopBar v={v} onMenu={() => setMenu(true)} />}
+      {bar && <TopBar v={v} onMenu={() => { ptTap('menu'); setMenu(true); }} />}
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pt-3">
         <div className="flex flex-1 flex-col">{children}</div>
         {footer && (

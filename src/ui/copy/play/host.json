@@ -105,7 +105,7 @@
     "You win big. Act humble, it plays well on camera."
   ],
   "quiet": [
-    "Nobody got hurt. Boring for TV, great for you.",
+    "A quiet wheel. Boring for TV, great for you.",
     "A calm round. Our ratings are crying.",
     "Everyone survived. The Wheel of Misfortune is sulking.",
     "No disasters this round. Please act surprised anyway.",
@@ -121,10 +121,10 @@
     "Spot on! {name} would like a word with their poker face."
   ],
   "guessWrong": [
-    "Swing and a miss! {name} fooled you completely.",
+    "Swing and a miss! {name}'s mission stays a mystery.",
     "Not even close, darling. {name} is laughing backstage.",
-    "Wrong! {name} deserves an acting award.",
-    "Oh no. {name} played you like a fiddle.",
+    "Wrong! {name} hid that mission well.",
+    "Oh no. {name} kept a straight face.",
     "Nope! Better luck reading people next episode.",
     "Wrong card! Our audience saw that one coming."
   ],
@@ -183,5 +183,13 @@
     "HireBot is confident. HireBot is always confident.",
     "Data in, beliefs out. Nobody asked the data how it felt.",
     "The belief moved. Watch who trains next."
+  ],
+  "peakHonest": [
+    "Not one lie. Nobody tell the network.",
+    "Everyone told the truth. I've never been so bored.",
+    "Honest people. On my show. Security!",
+    "Zero lies. The writers are filing a complaint.",
+    "All true. Somewhere, a producer is weeping.",
+    "No lies this time. Don't get used to it."
   ]
 }

@@ -12,7 +12,7 @@ import { coins, pct } from '../labels';
 import { nameOf, shortName } from '../game';
 import { BigButton, Bubble, Face, Stage } from './OnAir';
 import { previewText } from './Episode3';
-import { timesWord } from './logic';
+import { timesWord, bankLineText } from './logic';
 
 export type L5View = {
   veil?: Record<string, Constitution>;
@@ -42,7 +42,7 @@ function Chips<X extends string | number>({ opts, value, onPick, label, fmt }: {
   return (
     <div className="mt-1 flex flex-wrap gap-1.5" role="group" aria-label={label}>
       {opts.map((o) => (
-        <button key={String(o)} type="button" aria-pressed={value === o} onClick={() => onPick(o)} className={`min-h-[40px] min-w-[44px] rounded-xl px-2 text-sm font-bold ${value === o ? 'bg-spot text-onspot' : 'bg-card'}`}>
+        <button key={String(o)} type="button" aria-pressed={value === o} onClick={() => onPick(o)} className={`min-h-[44px] min-w-[44px] rounded-xl px-2 text-sm font-bold ${value === o ? 'bg-spot text-onspot' : 'bg-card'}`}>
           {fmt(o)}
         </button>
       ))}
@@ -174,7 +174,7 @@ export function ClaimScreen5({ v }: { v: ViewState }) {
             </span>
             <span className="flex-1 text-sm font-semibold">{t('play.l5.compact', { t: pct(lv.lobby![p].proposal!.t), F: coins(lv.lobby![p].proposal!.F) })}</span>
             {['YES', 'NO'].map((o) => (
-              <button key={o} type="button" aria-label={`${t(`play.l5.${o}`)}: ${shortName(v, p)}`} aria-pressed={x[p] === o} onClick={() => setX({ ...x, [p]: x[p] === o ? 'SILENT' : o })} className={`min-h-[40px] rounded-lg px-2 text-xs font-bold ${x[p] === o ? 'bg-spot text-onspot' : 'bg-paper'}`}>
+              <button key={o} type="button" aria-label={`${t(`play.l5.${o}`)}: ${shortName(v, p)}`} aria-pressed={x[p] === o} onClick={() => setX({ ...x, [p]: x[p] === o ? 'SILENT' : o })} className={`min-h-[44px] rounded-lg px-2 text-xs font-bold ${x[p] === o ? 'bg-spot text-onspot' : 'bg-paper'}`}>
                 {t(`play.l5.${o}`)}
               </button>
             ))}
@@ -199,7 +199,7 @@ export function AmendScreen({ v }: { v: ViewState }) {
       <h1 className="h-show mt-1 text-3xl leading-tight">{rules(prop)}</h1>
       <p className="mt-1 text-sm">{t('play.l5.amend.now', { rules: rules(lv.current!), n: lv.need })}</p>
       {got > 0 && <p className="mt-1 text-sm font-bold">{t('play.l5.amend.got', { n: got, name: shortName(v, proposer) })}</p>}
-      <p className="mt-2 text-xs">{v.players.map((p) => `${shortName(v, p.id)}: ${t(`play.l5.said.${lv.claims?.[p.id]?.[proposer] ?? 'SILENT'}`)}`).join(', ')}</p>
+      <p className="mt-2 text-xs">{t('play.l5.amend.claims', { list: v.players.map((p) => `${shortName(v, p.id)} ${t(`play.l5.said.${lv.claims?.[p.id]?.[proposer] ?? 'SILENT'}`)}`).join(', ') })}</p>
       <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
         {[true, false].map((o) => (
           <button key={String(o)} type="button" aria-pressed={x === o} onClick={() => setX(o)} className={`min-h-[72px] rounded-2xl text-xl font-bold ${x === o ? 'bg-spot text-onspot' : 'bg-card'}`}>
@@ -238,7 +238,7 @@ export function AmendReveal({ v }: { v: ViewState }) {
               {v.players
                 .map((p) => {
                   const c = a.claims[p.id];
-                  const stamp = c === 'YES' || c === 'NO' ? ((c === 'YES') === !!a.votes[p.id] ? t('play.cards.TRUE') : t('play.cards.LIE')) : '';
+                  const stamp = c === 'YES' || c === 'NO' ? ((c === 'YES') === !!a.votes[p.id] ? t('play.l5.peak.kept') : t('play.l5.peak.broke')) : '';
                   return `${shortName(v, p.id)} ${t(a.votes[p.id] ? 'play.l5.YES' : 'play.l5.NO')}${stamp ? ` ${stamp}` : ''}`;
                 })
                 .join(', ')}
@@ -250,6 +250,7 @@ export function AmendReveal({ v }: { v: ViewState }) {
           {x}
         </p>
       ))}
+      {bankLineText(v) && <p className="mt-2 text-sm font-semibold" data-bankline>{bankLineText(v)}</p>}
       <p className="mt-2 text-sm">{t('play.l5.peak.shift', { a: pct(lv.fair1?.[me] ?? 0), b: pct(lv.fair2?.[me] ?? 0), d: `${shift >= 0 ? '+' : ''}${Math.round(shift * 100)}` })}</p>
       <div className="mt-2">
         <Bubble who="Dash" host text={stamps.length ? t('play.l5.peak.hostBought') : t('play.l5.peak.hostClean')} />

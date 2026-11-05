@@ -11,8 +11,8 @@ import { t } from '../i18n';
 import { coins, pct } from '../labels';
 import { nameOf, shortName } from '../game';
 import { BigButton, Bubble, Face, Stage } from './OnAir';
-import { GiftSheet, Tile, previewText, roundClaims } from './Episode3';
-import { hostLine, pick, timesWord } from './logic';
+import { GiftSheet, Stamps, Tile, previewText, roundClaims } from './Episode3';
+import { hostLine, pick, timesWord, bankLineText } from './logic';
 
 type Gift = { to: string; amount: number };
 
@@ -24,6 +24,7 @@ export type L4View = {
   policyVotes?: Record<string, Policy>;
   judge: string;
   myCost?: number;
+  myCostBase?: number;
   rounds: Array<Partial<P4Round>>;
   current?: Partial<P4Round>;
   threshold: number;
@@ -111,8 +112,9 @@ export function TrainScreen({ v }: { v: ViewState }) {
       <h1 className="h-show mt-1 text-4xl leading-tight">{t('play.l4.train.title')}</h1>
       <p className="mt-2 text-base">{t(lv.policy === 'B' ? 'play.l4.train.beliefBlind' : 'play.l4.train.belief', { group: groupName(g), p: pct(prior) })}</p>
       <p className="mt-2 text-sm">{t('play.l4.train.how')}</p>
-      <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
-        <Tile on={train} title={t('play.l4.train.tile')} desc={t('play.l4.train.cost', { c: lv.myCost ?? 0 })} note={previewText(lv.preview?.train)} onClick={() => setTrain(!train)} />
+      <div className="mt-auto grid grid-cols-3 gap-2 pt-3">
+        <Tile on={train} title={t('play.l4.train.tile')} desc={lv.myCostBase !== undefined && lv.myCostBase !== lv.myCost ? t('play.l4.train.costCut', { c: lv.myCost ?? 0, was: lv.myCostBase }) : t('play.l4.train.cost', { c: lv.myCost ?? 0 })} note={previewText(lv.preview?.train)} onClick={() => setTrain(true)} />
+        <Tile on={!train} title={t('play.l4.train.skip')} desc={t('play.l4.train.skipDesc')} onClick={() => setTrain(false)} />
         <GiftTile v={v} gift={gift} setGift={setGift} />
       </div>
     </Stage>
@@ -239,6 +241,7 @@ export function HiresBeat({ v, next, last }: { v: ViewState; next: () => void; l
           })}
         </ul>
         <p className="mt-2 text-sm">{t('play.l4.res.judgePay', { name: shortName(v, r.judge!), n: coins(r.judgePay ?? 0) })}</p>
+        {bankLineText(v) && <p className="mt-2 text-sm font-semibold" data-bankline>{bankLineText(v)}</p>}
       </div>
     </Stage>
   );
@@ -251,9 +254,10 @@ export function BeliefBeat({ v, next, onReally }: { v: ViewState; next: () => vo
   const a = r.priorsBefore!;
   const b = r.priorsAfter!;
   const voteNext = v.round === PLAY.L4.BASELINE_ROUNDS;
+  const lastRound = v.round >= PLAY.L4.ROUNDS;
   const rows: Array<[string, number, number]> = lv.policy === 'B' && a.POOL !== null && b.POOL !== null ? [[t('play.l4.everyone'), a.POOL, b.POOL]] : (['CIRCLE', 'SQUARE'] as Group[]).map((g) => [groupName(g), a[g], b[g]]);
   return (
-    <Stage v={v} bar={false} tone="breaking" onTap={next} footer={<BigButton dark onClick={next}>{voteNext ? t('play.stage.toVote') : t('play.stage.nextRound', { r: v.round + 1 })}</BigButton>}>
+    <Stage v={v} bar={false} tone="breaking" onTap={next} footer={<BigButton dark onClick={next}>{voteNext ? t('play.stage.toVote') : lastRound ? t('play.l1.toReveal') : t('play.stage.nextRound', { r: v.round + 1 })}</BigButton>}>
       <div className="my-auto" data-price>
         <p className="text-xs font-bold uppercase tracking-wider">{t('play.l4.board.title')}</p>
         {rows.map(([name, x, y]) => (
@@ -325,7 +329,7 @@ export function CardsReveal4({ v }: { v: ViewState }) {
             <Face v={v} p={p} size={22} />
             <span className="w-14 truncate text-xs font-bold">{shortName(v, p.id)}</span>
             <span className="flex-1 text-[11px] leading-tight">
-              {stamps.map((x) => t('play.l4.peak.stamp', { r: x.round, did: t(x.trained ? 'play.l4.peak.T' : 'play.l4.peak.U'), stamp: x.claimed ? t(x.trained ? 'play.cards.TRUE' : 'play.cards.LIE') : t('play.l4.peak.silent') })).join(' · ')}
+              <Stamps items={stamps.map((x) => t('play.l4.peak.stamp', { r: x.round, did: t(x.trained ? 'play.l4.peak.T' : 'play.l4.peak.U'), stamp: x.claimed ? t(x.trained ? 'play.cards.TRUE' : 'play.cards.LIE') : t('play.l4.peak.silent') }))} />
             </span>
           </li>
         ))}
@@ -334,7 +338,7 @@ export function CardsReveal4({ v }: { v: ViewState }) {
       <p className="h-show mt-2 text-xl leading-tight">{t('play.l4.peak.line')}</p>
       {record && <p className="mt-1 text-sm font-semibold">{record}</p>}
       <div className="mt-2">
-        <Bubble who="Dash" host text={top && top.lies ? t(top.p.id === me ? 'play.cards.peakLieYou' : 'play.l4.peak.lie', { name: nameOf(v, top.p.id), n: timesWord(top.lies) }) : t('play.cards.peakHonest')} />
+        <Bubble who="Dash" host text={top && top.lies ? t(top.p.id === me ? 'play.cards.peakLieYou' : 'play.l4.peak.lie', { name: nameOf(v, top.p.id), n: timesWord(top.lies) }) : hostLine('peakHonest', pick(v, 'peakHonest', 6))} />
       </div>
     </Stage>
   );

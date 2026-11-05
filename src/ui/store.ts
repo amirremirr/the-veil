@@ -1,3 +1,4 @@
+import { onDecision, startLog } from './playtest';
 import { create } from 'zustand';
 import { reduce, HUMAN_ID } from '../engine/engine';
 import { canResume } from '../engine/version';
@@ -205,6 +206,8 @@ export const useStore = create<Store>((set, get) => {
       // Solo play: one human seat with HUMAN_ID (multiplayer rooms pass several, see server/).
       const humans = [{ id: HUMAN_ID, name: config.humanName || 'You' }];
       const g = settle(reduce(null as unknown as GameState, { type: 'START_RUN', config: { ...config, humans, seed } }));
+      // F1 (D-166): the playtest log, only in playtest mode.
+      if (config.ruleset === 'PLAY') startLog({ n: config.nPlayers, d: config.difficulty, seed, mode: config.mode, ...(config.level ? { ep: config.level } : {}) });
       // A game of the other ruleset is kept on the shelf, not overwritten (D-93).
       const cur = get().game;
       const shelf = cur && rulesetOf(cur) !== rulesetOf(g) ? cur : rulesetOf(get().shelf) !== rulesetOf(g) ? get().shelf : null;
@@ -229,6 +232,7 @@ export const useStore = create<Store>((set, get) => {
       if (get().online) return roomAct(decision, guesses);
       const g = get().game;
       if (!g) return;
+      if (decision !== undefined || guesses) onDecision();
       commit(g, flowAct(g, HUMAN_ID, decision, guesses));
     },
     dismissTip(id) {

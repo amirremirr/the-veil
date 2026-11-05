@@ -21,9 +21,17 @@ import { CardsReveal1, ClaimScreen1, IncomesBeat, PeekScreen, Unborn, VoteScreen
 import { CardsReveal2, EffortScreen, IncomeScreen, MyCards2, PrizeBeat, PrizeScreen, TaxScreen, summary2 } from './Episode2';
 import { AmendReveal, AmendScreen, ClaimScreen5, FairScreen, Finale, IncomesScreen, LobbyScreen, VeilScreen, summary5 } from './Episode5';
 import { LifeEnd } from './LifeEnd';
+import { PlaytestPanel } from './Playtest';
+import { onScreen, onTap, playtestOn } from '../playtest';
 import { BeliefBeat, CardsReveal4, ClaimScreen4, HiresBeat, JudgeScreen, MyCards4, PolicyIn, PolicyScreen, TrainScreen, summary4, type L4View } from './Episode4';
 import type { NearMiss } from '../../engine/play/types';
 
+
+/** E5 fix: the viewer's bank when this episode started (a life carries banks over; the summary used the life's start). */
+function episodeStartBank(v: ViewState): number {
+  const prev = v.play!.bankHistory.filter((h) => h.level < v.levelIndex).slice(-1)[0];
+  return prev ? prev.banks[v.viewer] : v.play!.startingBank;
+}
 
 /** How many "What was really going on?" lines an episode has. */
 const reallyCount = (level: number) => ((en as unknown as { play: { really: Record<string, string[]> } }).play.really[`L${level}`] ?? []).length;
@@ -253,6 +261,7 @@ function ComebackScreen({ v }: { v: ViewState }) {
       <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.comeback.label')}</p>
       <h1 className="h-show mt-1 text-4xl leading-tight text-spot">{t('play.comeback.title')}</h1>
       <p className="mt-2 text-base">{t('play.comeback.how', { c: PLAY.COMEBACK.COINS, p: PLAY.COMEBACK.POINTS })}</p>
+      <p className="mt-2 text-sm">{t('play.comeback.rate', { c: PLAY.COMEBACK.COINS, half: PLAY.COMEBACK.COINS * PLAY.BANK_WEIGHT })}</p>
       <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
         <BigButton onClick={() => act('COINS')}>{t('play.comeback.coins', { c: PLAY.COMEBACK.COINS })}</BigButton>
         <BigButton onClick={() => act('POINTS')}>{t('play.comeback.points', { p: PLAY.COMEBACK.POINTS })}</BigButton>
@@ -489,7 +498,7 @@ function EpisodeSummary({ v }: { v: ViewState }) {
         ) : (
         <div className="flex gap-2">
           {!online && (
-            <button type="button" className="min-h-[52px] flex-1 rounded-full bg-card font-bold" onClick={() => replay(false)}>
+            <button type="button" className="min-h-[52px] flex-1 rounded-full bg-card font-bold" onClick={() => { onTap('again'); replay(false); }}>
               {t('play.summary.again')}
             </button>
           )}
@@ -504,7 +513,8 @@ function EpisodeSummary({ v }: { v: ViewState }) {
       <dl className="mt-3 space-y-3" data-summary>
         {row(t('play.summary.lieLabel'), lieText)}
         {pl.pollMode !== 'NEVER' && v.levelIndex === 3 && row(t('play.summary.readLabel'), readText)}
-        {row(t('play.bar.bank'), t('play.summary.bankChange', { from: coins(pl.startingBank), to: coins(pl.banks[v.viewer]) }))}
+        {row(t('play.bar.bank'), t('play.summary.bankChange', { from: coins(episodeStartBank(v)), to: coins(pl.banks[v.viewer]) }))}
+        {row(t('play.summary.scoreLabel'), t('play.summary.score', { s: coins(m.score), b: coins(m.bankPart), m: coins(m.missionPart), d: coins(m.stress), g: coins(m.guessPoints) }))}
         {row(missionName(m.card), complete ? t('play.summary.missionDone') : t('play.summary.missionMissed'), complete ? 'text-good' : 'text-stamp')}
         {row(t('play.summary.nearMiss'), nm ? nearMissText(v, nm) : t('play.summary.nearMissNone'))}
       </dl>
@@ -512,6 +522,7 @@ function EpisodeSummary({ v }: { v: ViewState }) {
         {t('play.really.button')}
       </button>
       {v.seed && <p className="mt-2 text-[11px] text-soft">{t('play.summary.seed', { seed: v.seed })}</p>}
+      {playtestOn() && <PlaytestPanel v={v} />}
       {sheet === 'really' && <ReallySheet v={v} onClose={() => setSheet(null)} />}
     </Stage>
   );
@@ -523,6 +534,10 @@ export function PlayGameScreen() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: off ? 'auto' : 'smooth' });
   }, [v?.phaseIdx, v?.levelIndex, v?.phase.kind, off]);
+  // F1: time per engine screen, in playtest mode only (onScreen does nothing otherwise).
+  useEffect(() => {
+    if (v) onScreen(`ep${v.levelIndex}:${v.phase.kind}:${v.phase.step ?? ''}`, v.phase.kind === 'LEVEL_DEBRIEF' || v.phase.kind === 'RUN_DEBRIEF');
+  }, [v?.phaseIdx, v?.levelIndex, v?.phase.kind]);
   if (!v || !v.play) return null;
   const k = v.phase.kind;
   const next = v.queue[v.phaseIdx + 1];

@@ -10,8 +10,8 @@ import { t } from '../i18n';
 import { coins, pct } from '../labels';
 import { nameOf, shortName } from '../game';
 import { BigButton, Bubble, Face, Stage } from './OnAir';
-import { GiftSheet, Tile, previewText } from './Episode3';
-import { timesWord } from './logic';
+import { GiftSheet, Stamps, Tile, previewText } from './Episode3';
+import { timesWord, bankLineText } from './logic';
 
 type Gift = { to: string; amount: number };
 
@@ -193,6 +193,7 @@ export function PrizeBeat({ v, next }: { v: ViewState; next: () => void }) {
         <h1 className="h-show mt-1 text-4xl leading-tight text-spot">{head}</h1>
         <p className="mt-3 text-sm">{v.players.map((p) => `${shortName(v, p.id)}: ${r.votes?.[p.id] ? shortName(v, r.votes[p.id]!) : ''}`).join(', ')}</p>
         <p className="mt-3 text-base">{t('play.l2.won.bank', { w: coins(r.W?.[v.viewer] ?? 0) })}</p>
+        {bankLineText(v) && <p className="mt-2 text-sm font-semibold" data-bankline>{bankLineText(v)}</p>}
       </div>
     </Stage>
   );
@@ -223,7 +224,7 @@ export function CardsReveal2({ v }: { v: ViewState }) {
             <Face v={v} p={p} size={22} />
             <span className="w-14 truncate text-xs font-bold">{shortName(v, p.id)}</span>
             <span className="flex-1 text-[11px] leading-tight">
-              {lv.rounds
+              <Stamps items={lv.rounds
                 .map((r, k) => {
                   const c = r.claims?.[p.id];
                   const e = r.effort?.[p.id] ?? 0;
@@ -231,7 +232,7 @@ export function CardsReveal2({ v }: { v: ViewState }) {
                   const stamp = !c || c === 'SILENT' ? t('play.l4.peak.silent') : c === b ? t('play.cards.TRUE') : t('play.cards.LIE');
                   return t('play.l2.peak.stamp', { r: k + 1, e, d: signedCoins(r.luck?.[p.id] ?? 0), stamp });
                 })
-                .join(' · ')}
+                } />
             </span>
           </li>
         ))}

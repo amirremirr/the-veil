@@ -12,8 +12,8 @@ import { t } from '../i18n';
 import { coins, pct } from '../labels';
 import { nameOf, shortName } from '../game';
 import { BigButton, Bubble, Face, Stage } from './OnAir';
-import { GiftSheet, Tile, previewText } from './Episode3';
-import { timesWord } from './logic';
+import { GiftSheet, Stamps, Tile, previewText } from './Episode3';
+import { hostLine, pick, timesWord, bankLineText } from './logic';
 
 type Gift = { to: string; amount: number };
 
@@ -182,6 +182,7 @@ export function IncomesBeat({ v, next, last }: { v: ViewState; next: () => void;
           ))}
         </ul>
         {r.inheritance && <p className="mt-2 text-sm">{t('play.l1.inc.inherit', { name: shortName(v, r.inheritance) })}</p>}
+        {bankLineText(v) && <p className="mt-2 text-sm font-semibold" data-bankline>{bankLineText(v)}</p>}
       </div>
     </Stage>
   );
@@ -207,13 +208,13 @@ export function CardsReveal1({ v }: { v: ViewState }) {
             <Face v={v} p={p} size={22} />
             <span className="w-14 truncate text-xs font-bold">{shortName(v, p.id)}</span>
             <span className="flex-1 text-[11px] leading-tight">
-              {lv.rounds
+              <Stamps items={lv.rounds
                 .map((r, k) => {
                   const c = r.claims[p.id];
                   const stamp = !c || c === 'SILENT' ? t('play.l4.peak.silent') : c === r.votes[p.id] ? t('play.cards.TRUE') : t('play.cards.LIE');
                   return t('play.l1.peak.stamp', { r: k + 1, rule: ruleName(r.votes[p.id]), stamp });
                 })
-                .join(' · ')}
+                } />
             </span>
           </li>
         ))}
@@ -222,7 +223,7 @@ export function CardsReveal1({ v }: { v: ViewState }) {
         {peekLines.length ? peekLines.map((x) => <p key={x} className="h-show text-lg leading-tight">{x}</p>) : <p className="h-show text-lg leading-tight">{t('play.l1.peak.noPeek')}</p>}
       </div>
       <div className="mt-2">
-        <Bubble who="Dash" host text={lies && lies.n ? t(lies.id === me ? 'play.cards.peakLieYou' : 'play.l1.peak.lie', { name: nameOf(v, lies.id), n: timesWord(lies.n) }) : t('play.cards.peakHonest')} />
+        <Bubble who="Dash" host text={lies && lies.n ? t(lies.id === me ? 'play.cards.peakLieYou' : 'play.l1.peak.lie', { name: nameOf(v, lies.id), n: timesWord(lies.n) }) : hostLine('peakHonest', pick(v, 'peakHonest', 6))} />
       </div>
     </Stage>
   );

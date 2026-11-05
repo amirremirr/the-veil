@@ -496,7 +496,8 @@ export const playLevel5: LevelDefinition = {
       leaked: P.leaked,
       maxDonation: P.maxDonation,
       need: P.need,
-      preview: s.phase.kind === 'DECIDE' && (s.phase.step === 'VEIL' || s.phase.step === 'FAIR_2') && s.players.some((p) => p.id === viewer) ? p5Preview(s, viewer) : undefined,
+      // E5 (D-164): Hard shows no mission hints, as it shows no audience poll.
+      preview: s.difficulty !== 'HARD' && s.phase.kind === 'DECIDE' && (s.phase.step === 'VEIL' || s.phase.step === 'FAIR_2') && s.players.some((p) => p.id === viewer) ? p5Preview(s, viewer) : undefined,
       reliability: Object.fromEntries(ids(s).map((id) => [id, reliabilityOf(s, id)])),
     };
   },

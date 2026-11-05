@@ -1061,7 +1061,8 @@ export const level3: LevelDefinition = {
             members: membersOf(s),
             myWorry: l.worry?.[viewer],
             // D-143: your own mission preview, while you decide your move.
-            preview: s.phase.kind === 'DECIDE' && s.phase.step === 'CHOICE' && s.players.some((p) => p.id === viewer) ? missionPreview(s, viewer) : undefined,
+            // E5 (D-164): Hard shows no mission hints, as it shows no audience poll.
+            preview: s.difficulty !== 'HARD' && s.phase.kind === 'DECIDE' && s.phase.step === 'CHOICE' && s.players.some((p) => p.id === viewer) ? missionPreview(s, viewer) : undefined,
             worry: revealPrivate || l.cardsRevealed ? l.worry : undefined,
           }
         : {}),
