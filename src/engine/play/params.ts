@@ -76,7 +76,7 @@ export const PLAY = {
    */
   CREDIBILITY_VALUE: 6,
   /** D-158: CREDIBILITY_VALUE per episode where it was tuned on its own (others use CREDIBILITY_VALUE). */
-  CREDIBILITY_VALUE_EP: { 5: 20 } as Partial<Record<number, number>>,
+  CREDIBILITY_VALUE_EP: { 4: 25, 5: 20 } as Partial<Record<number, number>>,
   /** v2 Section 3.5: how far one claim moves a listener's belief, times the speaker's record (as Study's CLAIM_BELIEF_WEIGHT). */
   CLAIM_WEIGHT: 0.5,
   /** Beliefs about a hidden fact are kept inside these bounds (as Study's BELIEF_FLOOR). */
@@ -124,7 +124,9 @@ export const PLAY = {
    * JUDGE_CLAIM_WEIGHT: how far a bot judge's read moves toward "trained" on the claim "I trained", times the
    * worker's record (D-151). METER: whether a human judge sees the HireBot meter, per difficulty (open item 2).
    */
-  L4: { ROUNDS: 4, BASELINE_ROUNDS: 2, JUDGE_BASE: 40, JUDGE_GAIN: 20, JUDGE_LOSS: 30, JUDGE_CLAIM_WEIGHT: 0, METER: { EASY: true, NORMAL: true, HARD: false } as Record<string, boolean> },
+  L4: { ROUNDS: 4, BASELINE_ROUNDS: 2, JUDGE_BASE: 40, JUDGE_GAIN: 20, JUDGE_LOSS: 30, METER: { EASY: true, NORMAL: true, HARD: false } as Record<string, boolean> },
+  /** R2 (D-159): how far a judge trusts "I trained": k = this x the worker's chance of being honest (0 = meter only). */
+  CLAIM_WEIGHT_EP4: 0.25,
   /** D-151: Meritocrat effort for one round of training (Episode 2 effort is in hours, 0 to 10). */
   L4_TRAIN_EFFORT: 5,
   /** v1 Section 6.2, Episode 4 deck. Hiring Spree keeps the judge-pay identity by lowering JUDGE_LOSS (D-151). */

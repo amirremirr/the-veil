@@ -63,7 +63,7 @@ ALL DONE
 | Task | Status | Notes |
 |---|---|---|
 | R1 Ep5 donations follow promises | DONE | S-a 24%, lie success 41%, took-and-voted-no 24% of games, E5 passes (D-158) |
-| R2 Ep4 judges read claims | | |
+| R2 Ep4 judges read claims | DONE | E4a/E4b pass, S-a 43%, lie success 35%; read with claim 99.5% and contested 13% fail (D-159) |
 | R3 LIFE stakes | | |
 | R4 First fair answer | | |
 | R5 Ep2 lying | | |
@@ -80,3 +80,4 @@ ALL DONE
 ### Round 2 log
 
 - R1: Episode 5 reordered (proposal with the second fair answer, claims, then donations); donors fund yes-claimers; Episode 5 walkthrough 15 screens, all 760 px, claim screen 35 words; 200 unit tests, e2e passed (D-158).
+- R2: Bayes reading of claims in Episode 4, weight 0.25, credibility value 25; 200 unit tests, e2e 15 passed, Episode 4 walkthrough every screen 760 px (D-159).

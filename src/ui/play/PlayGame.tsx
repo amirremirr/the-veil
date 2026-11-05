@@ -7,6 +7,7 @@ import { VALUES_CARDS } from '../../engine/types';
 import { PLAY } from '../../engine/play/params';
 import { useStore } from '../store';
 import { t } from '../i18n';
+import en from '../copy/en.json';
 import { coins, pct } from '../labels';
 import { nameOf, shortName, useView } from '../game';
 import { FlipCard, useMotionOff } from '../components/common';
@@ -24,6 +25,9 @@ import { BeliefBeat, CardsReveal4, ClaimScreen4, HiresBeat, JudgeScreen, MyCards
 import type { NearMiss } from '../../engine/play/types';
 
 
+/** How many "What was really going on?" lines an episode has. */
+const reallyCount = (level: number) => ((en as unknown as { play: { really: Record<string, string[]> } }).play.really[`L${level}`] ?? []).length;
+
 /** "What was really going on?": three lines on the mechanism (Play spec 7.5). */
 function ReallySheet({ v, onClose }: { v: ViewState; onClose: () => void }) {
   const online = useOnline();
@@ -31,7 +35,7 @@ function ReallySheet({ v, onClose }: { v: ViewState; onClose: () => void }) {
   return (
     <TableSheet title={t('play.really.button')} closeLabel={t('play.really.close')} onClose={onClose}>
       <ul className="space-y-2" data-really>
-        {[0, 1, 2, 3, 4].map((i) => (
+        {Array.from({ length: reallyCount(v.levelIndex) }, (_, i) => i).map((i) => (
           <li key={i}>{t(`play.really.L${v.levelIndex}.${i}`)}</li>
         ))}
       </ul>

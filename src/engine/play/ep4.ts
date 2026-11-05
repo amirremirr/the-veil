@@ -13,8 +13,7 @@ import type { LevelDefinition } from '../levels/types';
 import { POLICIES, type Group, type Job, type Policy, type Priors } from '../levels/level4';
 import { PLAY } from './params';
 import { activeEvent, missionScale, missionValue, playEffortShares, playRanks, playRoundValue, playScore } from './rules';
-import { chooseClaim, postClaims, SILENT } from './claims';
-import { reliabilityOf } from '../core';
+import { chooseClaim, honestyRange, postClaims, SILENT } from './claims';
 
 export interface Gift4 {
   to: PlayerId;
@@ -44,6 +43,8 @@ export interface P4Round {
   gifts: Record<PlayerId, Gift4>;
   /** Simulator only: a bot judge's read of each worker (meter moved by the claim). */
   reads: Record<PlayerId, number>;
+  /** Study's posterior from the group belief and the test alone (before the claim). */
+  testMeter?: Record<PlayerId, number>;
 }
 
 export interface P4State {
@@ -118,11 +119,24 @@ const workersOf = (s: GameState): PlayerId[] => ids(s).filter((id) => id !== st(
 /** Training cost this round (Training Grant takes COST_CUT off, minimum 0). */
 const costOf = (s: GameState, id: PlayerId, P: P4Params) => Math.max(0, st(s).costs[id] - P.costCut);
 
-/** A bot judge's read: the meter, moved toward "trained" by the claim, by JUDGE_CLAIM_WEIGHT x the record. */
-export function judgeRead(meter: number, claimed: boolean, reliability: number): number {
-  if (!claimed) return meter;
-  const k = PLAY.L4.JUDGE_CLAIM_WEIGHT * reliability;
-  return (1 - k) * meter + k;
+/**
+ * R2 (D-159): a judge's read of "I trained", by Bayes' rule. A trained worker always says so; an untrained one
+ * says so unless it is honest, so P(claim | untrained) = 1 - k, with k = CLAIM_WEIGHT_EP4 x the chance the worker
+ * is honest, from public facts: its record, with the table's honesty prior as the starting point. k = 0 is the
+ * meter alone.
+ */
+export function judgeRead(meter: number, claimed: boolean, k: number): number {
+  if (!claimed || k <= 0) return meter;
+  const odds = meter / Math.max(1e-9, 1 - meter) / Math.max(1e-9, 1 - Math.min(0.99, k));
+  return odds / (1 + odds);
+}
+
+/** k for a worker: CLAIM_WEIGHT_EP4 x (kept + 2 x the table's mean honesty) / (made + 2). */
+export function claimCred(s: GameState, pid: PlayerId): number {
+  const ranges = s.players.map((p) => honestyRange(s, p.isHuman || !p.botProfile ? 'AUTO' : p.botProfile.key));
+  const prior = mean(ranges.map(([lo, hi]) => (lo + hi) / 2));
+  const r = s.reliability[pid] ?? { made: 0, kept: 0 };
+  return PLAY.CLAIM_WEIGHT_EP4 * ((r.kept + 2 * prior) / (r.made + 2));
 }
 
 /** The judge's pay given the hires and the workers' true skill. */
@@ -317,10 +331,10 @@ function claimGain(s: GameState, pid: PlayerId, value: string): number {
   const P = p4Params(s);
   const trained = !!l.current!.train![pid];
   const pp = trained ? L4.PASS_IF_SKILLED : L4.PASS_IF_UNSKILLED;
-  const rel = reliabilityOf(s, pid);
+  const k = claimCred(s, pid);
   let out = 0;
   for (const pass of [true, false]) {
-    const read = judgeRead(posterior4(priorOf(l, pid), pass), value === 'TRAINED', rel);
+    const read = judgeRead(posterior4(priorOf(l, pid), pass), value === 'TRAINED', k);
     const w = read >= P.threshold - EPS ? pay4('COMPLEX', l.care[pid], l.policy, P) : P.wageSimple;
     out += (pass ? pp : 1 - pp) * w;
   }
@@ -524,7 +538,10 @@ export const playLevel4: LevelDefinition = {
         c.meter[w] = posterior4(priorOf(l, w), c.pass[w]);
       }
       // Reads use each worker's record as it stood before this round (claims are simultaneous).
-      c.reads = Object.fromEntries(c.workers!.map((w) => [w, judgeRead(c.meter![w], said[w] === 'TRAINED', reliabilityOf(s, w))]));
+      c.reads = Object.fromEntries(c.workers!.map((w) => [w, judgeRead(c.meter![w], said[w] === 'TRAINED', claimCred(s, w))]));
+      // R2: the meter the judge sees includes the claim; the test-only posterior is kept for the simulator.
+      c.testMeter = { ...c.meter };
+      c.meter = { ...c.reads };
       postClaims(s, 'TRAINING', said, (pid) => (c.train![pid] ? 'TRAINED' : 'UNTRAINED'), (v) => v === 'TRAINED', gains);
       return;
     }
