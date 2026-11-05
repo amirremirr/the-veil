@@ -481,6 +481,7 @@ export function VoteInBeat({ v, next }: { v: ViewState; next: () => void }) {
         <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.stage.voteIn')}</p>
         <p className="h-show mt-2 text-5xl leading-tight text-spot">{regimeName(lv.regime)}</p>
         <p className="mt-4 text-sm text-soft">{v.players.map((p) => `${shortName(v, p.id)}: ${regimeName(lv.regimeVotes![p.id])}`).join(' · ')}</p>
+        {lv.regimeTie && <p className="mt-1 text-sm">{t('play.l1.votes.tie')}</p>}
       </div>
     </Stage>
   );

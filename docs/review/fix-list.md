@@ -26,7 +26,7 @@ Merged from the fresh-eyes reviews (E1), the design audit (E2), the logic audit 
 | 20 | Replaying a challenge code reveals every hidden card (E3) | Not done: harmless without a leaderboard | M | Left |
 | 21 | Ep2 bank line did not match the income (tax and hour cost hidden); barred from cover with no visible own read; mission guess with no clues (cycle 9) | Net-income line; claim and own-read lines; a tell per mission on the guess screen (D-175) | S | Done |
 | 22 | Episode 2 repetitive, too many tap-through screens (cycle 9) | Not done: merging beats changes pacing tuned in R7; round count is a rule | M | Left |
-| 23 | Episode 3 big vote and Episode 4 policy vote: the tie rule is not on screen (cycle 12) | Show the tie rule on the vote result | S | Left (next cycle) |
+| 23 | Episode 3 big vote and Episode 4 policy vote: the tie rule is not on screen (cycle 12) | "A tie: drawn by lot." on both results (D-178) | S | Done |
 | 24 | Hard near-miss tip possibly overstates training's gain (cycle 12, not verified) | Audit the Episode 4 counterfactual | M | Left |
 
 ## Won't fix (with reasons, so loop cycles don't redo them)

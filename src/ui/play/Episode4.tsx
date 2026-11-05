@@ -93,6 +93,12 @@ export function PolicyIn({ v, next }: { v: ViewState; next: () => void }) {
         <p className="h-show mt-2 text-4xl leading-tight text-spot">{policyName(lv.policy)}</p>
         <p className="mt-2 text-base">{t(`levels.4.policies.${lv.policy}.desc`)}</p>
         <p className="mt-3 text-sm">{v.players.map((p) => `${shortName(v, p.id)}: ${lv.policyVotes?.[p.id] ? policyName(lv.policyVotes[p.id]) : ''}`).join(' · ')}</p>
+        {(() => {
+          const n: Record<string, number> = {};
+          for (const x of Object.values(lv.policyVotes ?? {})) n[x] = (n[x] ?? 0) + 1;
+          const top = Math.max(0, ...Object.values(n));
+          return Object.values(n).filter((c) => c === top).length > 1 ? <p className="mt-1 text-sm">{t('play.l1.votes.tie')}</p> : null;
+        })()}
       </div>
     </Stage>
   );
