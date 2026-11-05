@@ -248,6 +248,13 @@ export function AmendReveal({ v }: { v: ViewState }) {
             </li>
           ))}
       </ul>
+      {lv.amendments
+        .filter((a) => a.withdrawn)
+        .map((a) => (
+          <p key={`w-${a.proposer}`} className="mt-1 text-xs">
+            {t('play.l5.peak.dropped', { name: shortName(v, a.proposer) })}
+          </p>
+        ))}
       {stamps.map((x) => (
         <p key={x} className="h-show mt-2 text-lg leading-tight">
           {x}

@@ -157,6 +157,18 @@ export function timesWord(n: number): string {
 }
 
 /** E5 fix (both fresh-eyes reviewers): one plain line on how the viewer's bank moved in the round just played. */
+/** This round's money for the viewer, from the rounded banks (the number the bank line shows), or null. */
+export function roundMoney(v: ViewState): number | null {
+  const pl = v.play;
+  if (!pl) return null;
+  const hist = pl.bankHistory;
+  const last = hist[hist.length - 1];
+  if (!last || last.level !== v.levelIndex) return null;
+  const prev = hist[hist.length - 2];
+  const from = prev ? prev.banks[v.viewer] : pl.startingBank;
+  return Math.round(last.banks[v.viewer]) - Math.round(from) + pl.livingCost;
+}
+
 export function bankLineText(v: ViewState): string | null {
   const pl = v.play;
   if (!pl) return null;

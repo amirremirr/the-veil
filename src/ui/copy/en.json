@@ -953,22 +953,22 @@
       "EGOIST": {
         "name": "Get rich",
         "line": "Only your own bank counts.",
-        "points": "Your mission points come from your own bank."
+        "points": "Your mission points follow your own bank, scaled so all four missions are worth about the same."
       },
       "RAWLSIAN": {
         "name": "Protect the poorest",
         "line": "You win when the lowest bank at the table is high.",
-        "points": "Your mission points come from the poorest bank at the table."
+        "points": "Your mission points follow the poorest bank at the table, scaled so all four missions are worth about the same."
       },
       "UTILITARIAN": {
         "name": "Grow the pie",
         "line": "You win when the average bank is high.",
-        "points": "Your mission points come from the average bank."
+        "points": "Your mission points follow the average bank, scaled so all four missions are worth about the same."
       },
       "MERITOCRAT": {
         "name": "Reward hard work",
         "line": "You win when money follows effort: hours worked and training count. Before anyone has worked, that means equal banks.",
-        "points": "Your mission points come from the average bank, less when money doesn't follow effort."
+        "points": "Your mission points follow the average bank, less when money doesn't follow effort, scaled so all four missions are worth about the same."
       }
     },
     "values": {
@@ -1273,8 +1273,8 @@
       "lieYou": "You said \"{claim}\" {n} and were {truth}.",
       "noLie": "Nobody lied this episode.",
       "readLabel": "Biggest wrong read",
-      "read": "The audience was {p} sure {name} was {said}. {name} was {truth}.",
-      "readYou": "The audience was {p} sure you were {said}. You were {truth}.",
+      "read": "By the end, the audience was {p} sure {name} was {said}. {name} was {truth}.",
+      "readYou": "By the end, the audience was {p} sure you were {said}. You were {truth}.",
       "noRead": "By the end, the audience had everyone on the right side of 50%.",
       "nearMiss": "Near miss",
       "nearMissNone": "No single change would have left you richer.",
@@ -1865,7 +1865,7 @@
         "label": "Fair tax (unpaid, your opinion):"
       },
       "inc": {
-        "label": "The incomes, poorest first",
+        "label": "The banks, poorest first",
         "now": "These are the rules now. Next: change them, if you can.",
         "next": "To the lobby"
       },
@@ -1896,6 +1896,7 @@
       "peak": {
         "label": "The ballots",
         "final": "Final rules: {rules}",
+        "dropped": "{name}'s amendment matched the rules already in force, so it was dropped.",
         "am": "{name}'s {rules}: {res}, {y} yes.",
         "passed": "passed",
         "failed": "failed",
