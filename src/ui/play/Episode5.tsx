@@ -199,6 +199,10 @@ export function AmendScreen({ v }: { v: ViewState }) {
       <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.l5.amend.label', { k: k + 1, n: lv.order.length, name: shortName(v, proposer) })}</p>
       <h1 className="h-show mt-1 text-3xl leading-tight">{rules(prop)}</h1>
       <p className="mt-1 text-sm">{t('play.l5.amend.now', { rules: rules(lv.current!), n: lv.need })}</p>
+      {(() => {
+        const prev = lv.amendments.filter((a) => a.passed).slice(-1)[0];
+        return prev ? <p className="mt-1 text-sm font-semibold">{t('play.l5.amend.passedBefore', { name: shortName(v, prev.proposer) })}</p> : null;
+      })()}
       {got > 0 && <p className="mt-1 text-sm font-bold">{t('play.l5.amend.got', { n: got, name: shortName(v, proposer) })}</p>}
       <p className="mt-2 text-xs">{t('play.l5.amend.claims', { list: v.players.map((p) => `${shortName(v, p.id)} ${t(`play.l5.said.${lv.claims?.[p.id]?.[proposer] ?? 'SILENT'}`)}`).join(', ') })}</p>
       <div className="mt-auto grid grid-cols-2 gap-2 pt-3">

@@ -96,7 +96,7 @@ ROUND 2 DONE
 
 ### Improvement loop (after round 2)
 
-- 18 cycles, 05:30 to 09:30 Istanbul time, logged one line each in docs/review/loop-log.md; fixes D-167 to D-185 (presentation only, no rule changes); fix list and won't-fix list in docs/review/fix-list.md.
+- 19 cycles, 05:30 to 09:40 Istanbul time, logged one line each in docs/review/loop-log.md; fixes D-167 to D-186 (presentation only, no rule changes); fix list and won't-fix list in docs/review/fix-list.md.
 - Gate at the last loop commit: 206 unit tests, e2e 15 passed, walkthroughs green.
 - docs/MORNING_SUMMARY.md written for Amir; AUTORUN_REPORT.md has a loop section at the top.
 - Next run: start with fix list item 25 (a full per-round ledger).

@@ -1,12 +1,12 @@
 # AUTORUN report
 
-## The improvement loop (5 November 2026, 05:30 to 09:30 Istanbul time)
+## The improvement loop (5 November 2026, 05:30 to 09:40 Istanbul time)
 
 Every review here is AI judgment (a proxy); every number is from bot-only simulations. **No human has played anything built here.** The plain-language summary for Amir is `docs/MORNING_SUMMARY.md`.
 
-- **18 cycles** ran, alternating a fresh designer reviewer and a fresh casual-player reviewer, each given only new screenshots of a full life at 375x760 (Normal) and one Hard episode (rotating 1 to 5). One line per cycle in `docs/review/loop-log.md`.
-- Every cycle found at least one high-impact item, so the "two quiet cycles" stop never triggered; the loop was stopped at 09:30 to leave time for the summary.
-- Fixes D-167 to D-185, all presentation, copy, layout or view changes: no game rule changed in the loop, so every E and S number from round 2 still stands (the audit was not rerun for that reason).
+- **19 cycles** ran, alternating a fresh designer reviewer and a fresh casual-player reviewer, each given only new screenshots of a full life at 375x760 (Normal) and one Hard episode (rotating 1 to 5). One line per cycle in `docs/review/loop-log.md`.
+- Every cycle found at least one high-impact item, so the "two quiet cycles" stop never triggered; the loop was stopped at 09:40 to leave time for the summary.
+- Fixes D-167 to D-186, all presentation, copy, layout or view changes: no game rule changed in the loop, so every E and S number from round 2 still stands (the audit was not rerun for that reason).
 - Bugs found and fixed: "Mission complete" with a falling bank; a "{truth}" token; the life's wheel loss shown as 140 on an event card; top-bar banks spoiling the wheel; a training-cost privacy leak in Episode 4's view; a wrong-donor line in Episode 5; comeback points labelled as guesses; a childcare cost that ignored the policy; rounding that made shown sums disagree; two bugs introduced and fixed inside the loop (an Episode 5 label, "About 0 points").
 - One earlier decision revisited on evidence: four reviewers named hidden rival scores, so a life's ranking now shows a rounded gap to the players above and below (D-180).
 - Left, with reasons (fix list and won't-fix list in `docs/review/fix-list.md`): a full per-round ledger (top item for the next run), bot lie rates and mission play, debt points in unlucky lives, luck size, exact rival scores, the right mission after a wrong guess, Play multiplayer.

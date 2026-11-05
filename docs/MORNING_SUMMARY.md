@@ -17,9 +17,9 @@ You are a contestant on a satirical TV show, The Veil: Live, hosted by Dash Fort
 
 ## What the reviews and the loop found
 
-Round 2 ran two fresh-eyes reviewers and three audits, then fixed 15 of 20 ranked problems. The improvement loop then ran **18 cycles** (05:30 to 09:30), alternating a designer and a casual player who saw only fresh screenshots of a life and one Hard episode. Every cycle found at least one high-impact item, so the "two quiet cycles" stop never triggered.
+Round 2 ran two fresh-eyes reviewers and three audits, then fixed 15 of 20 ranked problems. The improvement loop then ran **19 cycles** (05:30 to 09:40), alternating a designer and a casual player who saw only fresh screenshots of a life and one Hard episode. Every cycle found at least one high-impact item, so the "two quiet cycles" stop never triggered.
 
-Fixed in the loop (D-167 to D-185): money lines that did not add up (the most common finding), "Mission complete" with a falling bank (now "improved"), a broken "{truth}" line, the wrong wheel loss on an event card, banks spoiling the wheel, host lines denying a hit, a training-cost privacy leak, a wrong-donor line, comeback points labelled as guesses, a childcare cost that ignored the policy, unexplained ties and bar votes, backwards labels. Reviewer claims were checked before acting; several were capture artifacts or wrong and are logged as rejected.
+Fixed in the loop (D-167 to D-186): money lines that did not add up (the most common finding), "Mission complete" with a falling bank (now "improved"), a broken "{truth}" line, the wrong wheel loss on an event card, banks spoiling the wheel, host lines denying a hit, a training-cost privacy leak, a wrong-donor line, comeback points labelled as guesses, a childcare cost that ignored the policy, unexplained ties and bar votes, backwards labels. Reviewer claims were checked before acting; several were capture artifacts or wrong and are logged as rejected.
 
 Left (reasons in `docs/review/fix-list.md`): a full itemized ledger per round (top item for the next run); bots that lie little and don't play to their missions; debt points swamping an unlucky life; luck swamping effort; exact rival scores; the right mission after a wrong guess; no Play multiplayer.
 
@@ -58,7 +58,7 @@ The logic audit found one dominant habit (never give in Episode 3, +1.8 ± 0.7 f
 
 - Latest commit: the head of `origin/autorun` (the last loop commit is named in `docs/review/loop-log.md`).
 - Preview: Vercel builds every pushed branch; open the project's Deployments and pick the latest `autorun` preview. The production site (https://the-veil-mauve.vercel.app) still serves `main`.
-- Challenge codes: `playtest-1`, or any loop seed (`loop9` to `loop18`), in "Challenge code" on the setup screen.
+- Challenge codes: `playtest-1`, or any loop seed (`loop9` to `loop19`), in "Challenge code" on the setup screen.
 - Playtest kit: add `?playtest=1` to the preview URL; testers send back a results code, which you paste into `?playtest=results` (see `docs/playtest/HOW_TO.md`).
 
 **Before merging to main:** the room server must be redeployed first, because the engine's rules changed and a page and a server on different rules refuse to play together. That deploy needs your approval; nothing was deployed tonight.

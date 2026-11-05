@@ -1899,6 +1899,7 @@
       "amend": {
         "label": "Amendment {k} of {n}, from {name}",
         "now": "Now: {rules}. Needs {n} yes votes.",
+        "passedBefore": "{name}'s amendment just passed, so these are the rules now.",
         "got": "{name} secretly gave you {n} coins.",
         "submit": "Vote",
         "claims": "What they claimed: {list}"
