@@ -1,5 +1,25 @@
 # AUTORUN report
 
+## Round 3: game rules and bots (5 November 2026, afternoon)
+
+Bots only and AI judgment (a proxy). **No human has played anything built here.** Plain summary: `docs/MORNING_SUMMARY.md` (Round 3 section).
+
+| Task | Status | Result |
+|---|---|---|
+| G1 Money ledger | DONE | Per-round ledger and score parts in the engine; "See the money" on every result; 50-seed sum test per episode and 6 lives; Episode 1 rounding fixed (D-187) |
+| G2 Bots play to missions | DONE | All paths use the Play score; the Bar now counts the barred player's lost cover; mission-only Episode 5 proposals tested and not kept; per-mission rates in D-188 |
+| G3 Giving must sometimes pay | PARTIAL | Ep3 "never give" +1.8 to -0.1 (gifts and bars only when they help, D-189); four rules still beat adaptive by over 1 SE (largest: Ep3 never bar +2.1 ± 1.3) |
+| G4 Episode 2 lies | PARTIAL | Finer die: lie success 13.6% to 19.0% (target 30%), effort share 50.2% to 53.0%, contested 27.7%, E2 passes (D-190) |
+| G5 Dead options | DONE | Help the Poorest and an 80% tax kept as real choices (D-191) |
+| G6 Life fun | PARTIAL | Card 120/40, living 40: F-a 1.95, F-b 24.0% (pass), F-d 86.7% (miss); 1,000 lives, all E checks pass (D-192) |
+| G7 Loop | DONE | 2 cycles; lies under the cameras fixed (D-193); stopped after a cycle with no new high-impact item, for run length |
+| G8 Report | DONE | This section, the summary, PROGRESS.md |
+
+Audit data: `docs/review/logic-audit-data-r3.json`. Per-mission rates: `sim/missions.ts`. Effort share: `sim/effortshare.ts`.
+
+**Human validation: NOT DONE.** Gates 1 and 2 are still outstanding. Before merging to main, the room server must be redeployed (it needs Amir's approval).
+
+
 ## The improvement loop (5 November 2026, 05:30 to 09:40 Istanbul time)
 
 Every review here is AI judgment (a proxy); every number is from bot-only simulations. **No human has played anything built here.** The plain-language summary for Amir is `docs/MORNING_SUMMARY.md`.

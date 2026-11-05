@@ -114,5 +114,6 @@ LOOP DONE
 | G5 Dead options | DONE | Help the Poorest and an 80% tax kept as real (usually mistaken) choices, reasons in D-191 |
 | G6 Life fun targets | PARTIAL | card 120/40, living 40: F-a 1.95 (target 2), F-b 24.0% (pass), F-d 86.7% (miss); 1,000 lives, E checks pass; D-192 |
 | G7 Improvement loop | DONE | 2 cycles (designer, casual); fixed lies under Security Cameras (D-193) and two HireBot lines; final audit of all five episodes in docs/review/logic-audit-data-r3.json |
-| G8 Report | TODO | |
+| G8 Report | DONE | Round 3 section at the top of docs/MORNING_SUMMARY.md and docs/AUTORUN_REPORT.md |
 
+ROUND 3 DONE

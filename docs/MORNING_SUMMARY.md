@@ -1,4 +1,70 @@
-# Morning summary (5 November 2026)
+# Morning summary
+
+## Round 3: how the game plays (5 November 2026, afternoon)
+
+For Amir. An unattended AI run on `autorun`. Every number is from bot-only simulations; every review is AI judgment (a proxy). No human has played any of it.
+
+### What a player would notice
+
+- **"See the money"** sits in every round's bank line. It opens a panel listing every coin (income, the rule, peek, cover, gym, wheel hit, pay, training, gifts, prize, donations, Second Chance, living costs) and every score point (half the bank change, mission points, debt points, guesses), and the lines add up exactly to the change shown. Episode 1's "after the rule" now matches the bank line to the coin.
+- **Episode 2's luck die is gentler:** eleven faces from -30 to +70 (was -30 to +90 in five steps), so hours matter more and a bluff about hours is believed more often.
+- **Episode 3 bots** give and bar only when it helps their own mission; Protect-the-poorest bots now bar less, because a barred player's lost cover counts against them.
+- **Episode 2 bots** no longer lie about their hours when the cameras show them.
+- **A whole life:** the Second Chance is 120 coins or 40 points (was 60 or 20), and living costs are 40 a round (was 45), so the player who is last after Episode 2 more often climbs back.
+
+### Before and after (bots)
+
+| Task | Measure | Before | After |
+|---|---|---|---|
+| G2 | Missions differ on their key decision (two missions at least 15 points apart, every episode) | already true: spreads 24 to 100 points | the same; bar vote by Protect-the-poorest 29.5% to 22.9% |
+| G3 | Episode 3 "never give" against adaptive play | +1.8 ± 0.7 | -0.1 ± 0.1 |
+| G4 | Episode 2 lie success (target 30% to 75%) | 13.6% | 19.0% ± 1.1 (2,000 games) |
+| G4 | Share of income differences explained by effort | 50.2% | 53.0% |
+| G4 | Contested reads (target 20%) | 19.6% | 27.7% |
+| G5 | Help the Poorest 1.8%, 80% tax 0.7% and 1.2% | | kept as real choices (reasons in D-191) |
+| G6 | F-a lead changes (target 2) | 1.89 | 1.95 ± 0.05 |
+| G6 | F-b comebacks (target 20%) | 18.0% | 24.0% ± 1.4 |
+| G6 | F-d big moments (target 90%) | 88.0% | 86.7% ± 0.4 |
+
+Every E check passes in every episode and inside a life (1,000 lives).
+
+### Audit, all five episodes (150 games each, fixed rule minus adaptive play)
+
+- Episode 1: every rule within noise except "always claim Safety Net" +1.5 ± 1.3.
+- Episode 2: "always claim a lot" +0.7 ± 0.3.
+- Episode 3: "never give" fixed (-0.1 ± 0.1); "never bar" +2.1 ± 1.3.
+- Episode 4: "always claim I trained" +0.8 ± 0.6.
+- Episode 5: nothing beats adaptive play by more than 1 SE.
+
+So the target (no rule more than 1 SE better) is met in Episode 5 only. The remaining gaps are small (under 2.5 points) and mostly say lying is cheap against these bots.
+
+### Loop
+
+2 cycles (a designer, then a casual player). Fixed: lies under the Security Cameras, and two HireBot result lines. Cycle 2 found nothing new beyond the won't-fix list; the loop stopped there because the run was long.
+
+### Five decisions made for you
+
+1. **The Bar counts the mission** (D-188): bots weigh what barring does to the barred player's money. Alternative: keep D-133's price-saving-only rule.
+2. **Episode 5 proposals keep Study's money pull** (D-188): a mission-only proposal cut lie success to 30%. Alternative: switch it on and retune donations.
+3. **Gifts and bars only when they help** (D-189): this ends "never give", but bars halved (905 to 430 per 500 games). Alternative: keep the logit noise and accept the dominant habit.
+4. **A finer, narrower Episode 2 die** (D-190), not honest bots voting by effort (that made lies fail more). Alternative: let the prize follow claims when incomes are close.
+5. **A bigger Second Chance and living cost 40** (D-192). Alternative: a second card after Episode 2.
+
+### Still unfinished
+
+- Episode 2 lie success (19%) is under its 30% floor.
+- F-a is just under 2 and F-d misses.
+- Four claim or bar rules still edge out adaptive play.
+- Bots still lie rarely on Normal.
+- No Play multiplayer.
+
+**Human validation: NOT DONE. Gates 1 and 2 are still outstanding.**
+
+Latest commit: the head of `origin/autorun`, see `git log -1 origin/autorun`. Preview: the latest `autorun` deployment in the Vercel dashboard. Before merging to main, the room server must be redeployed (rules changed), which needs your approval.
+
+---
+
+## Rounds 1 and 2 (5 November 2026, night)
 
 For Amir. All of this was done by an unattended AI run on the `autorun` branch. Every number comes from bot-only simulations and every review is AI judgment (a proxy). No human has played anything built tonight.
 
