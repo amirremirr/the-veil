@@ -1553,7 +1553,7 @@
     },
     "gift": {
       "title": "Give",
-      "desc": "Up to {max} coins to someone",
+      "desc": "Optional: up to {max} coins to someone",
       "picked": "{n} to {name}",
       "sheet": "Give coins",
       "how": "Gifts are public and land after the wheel.",
@@ -1767,7 +1767,7 @@
       },
       "tax": {
         "title": "Tax for the episode",
-        "how": "The middle vote wins. Tax is shared equally; some leaks.",
+        "how": "The middle vote wins (with four votes, the lower middle one). Tax is shared equally; some leaks.",
         "none": "No tax",
         "shared": "Shared out",
         "submit": "Vote"
