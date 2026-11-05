@@ -28,6 +28,7 @@ Merged from the fresh-eyes reviews (E1), the design audit (E2), the logic audit 
 | 22 | Episode 2 repetitive, too many tap-through screens (cycle 9) | Not done: merging beats changes pacing tuned in R7; round count is a rule | M | Left |
 | 23 | Episode 3 big vote and Episode 4 policy vote: the tie rule is not on screen (cycle 12) | "A tie: drawn by lot." on both results (D-178) | S | Done |
 | 24 | Hard near-miss tip possibly overstates training's gain (cycle 12) | Checked: the tip replays the whole episode in a sandbox and compares final banks, so training costs and changed hires are counted; the reviewer's 40 was a hand estimate | S | No change needed |
+| 25 | A full itemized ledger per round (income, tax, share, costs, gifts, prize) that sums to the bank change (named in nearly every cycle) | Not done: needs every episode's resolve to record its parts; partial lines exist in all five episodes | M | Left, top item for the next run |
 
 ## Won't fix (with reasons, so loop cycles don't redo them)
 

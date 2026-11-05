@@ -181,5 +181,9 @@ export function bankLineText(v: ViewState): string | null {
   // Loop cycle 2: from the rounded banks, so the line adds up exactly as shown.
   const money = Math.round(to) - Math.round(from) + pl.livingCost;
   const sign = (x: number) => `${x >= 0 ? '+' : ''}${Math.round(x)}`;
-  return t('play.bank.round', { from: Math.round(from), to: Math.round(to), w: sign(money), c: pl.livingCost });
+  const line = t('play.bank.round', { from: Math.round(from), to: Math.round(to), w: sign(money), c: pl.livingCost });
+  // Loop cycle 16: the Second Chance coins land before Episode 4's first round, so that round's line includes them.
+  const cb = pl.comeback;
+  const firstOfEp4 = v.levelIndex === 4 && hist.filter((h) => h.level === 4).length === 1;
+  return firstOfEp4 && cb && cb.pid === v.viewer && cb.took === 'COINS' ? `${line} ${t('play.bank.comeback', { c: PLAY.COMEBACK.COINS })}` : line;
 }

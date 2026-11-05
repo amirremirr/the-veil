@@ -2177,6 +2177,7 @@
     },
     "bank": {
       "round": "Your bank {from} to {to}: {w} this round, then -{c} living costs.",
+      "comeback": "That includes your Second Chance: +{c}.",
       "living": "Living costs: -{c}.",
       "pay": "Pay: +{w}."
     }
