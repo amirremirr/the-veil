@@ -177,6 +177,8 @@ export const PLAY = {
   COMEBACK: { COINS: 60, POINTS: 20 },
   /** v2 Section 3.4: the Receipts reel runs at most this long (it is skippable). */
   RECEIPTS_MAX_MS: 20000,
+  /** D-180: score gaps on a life's ranking are rounded to this many points. */
+  GAP_ROUND: 10,
   /** v2 Section 2: coins to see your own income before the vote (everyone sees that you peeked). */
   PEEK_COST: 10,
   /** v1 Section 6.2, Episode 1 deck. */

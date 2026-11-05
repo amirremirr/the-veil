@@ -408,6 +408,11 @@ function MissionsBeat({ v, next }: { v: ViewState; next: () => void }) {
             </li>
           ))}
         </ol>
+        {hidden && pl.gaps && (
+          <p className="mt-2 text-sm" data-gaps>
+            {[pl.gaps.above !== null ? t('play.summary.gapAbove', { n: pl.gaps.above }) : '', pl.gaps.below !== null ? t('play.summary.gapBelow', { n: pl.gaps.below }) : ''].filter(Boolean).join(' ')}
+          </p>
+        )}
       </div>
     </Stage>
   );

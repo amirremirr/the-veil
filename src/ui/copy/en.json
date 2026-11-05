@@ -1275,6 +1275,8 @@
       "readLabel": "Biggest wrong read",
       "read": "By the end, the audience was {p} sure {name} was {said}. {name} was {truth}.",
       "readYou": "By the end, the audience was {p} sure you were {said}. You were {truth}.",
+      "gapAbove": "About {n} points behind the player above you.",
+      "gapBelow": "About {n} points ahead of the player below you.",
       "noRead": "By the end, the audience had everyone on the right side of 50%.",
       "nearMiss": "Near miss",
       "nearMissNone": "No single change would have left you richer.",

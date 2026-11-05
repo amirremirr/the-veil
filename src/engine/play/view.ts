@@ -26,6 +26,19 @@ export function audiencePoll(s: GameState): PlayView['poll'] {
   return out;
 }
 
+/**
+ * D-180: the viewer's gap to the nearest score above and below, rounded to PLAY.GAP_ROUND, so a life's
+ * ranking has a margin without showing anyone's exact score (which would point at their mission).
+ */
+function gapsOf(s: GameState, viewer: PlayerId): { above: number | null; below: number | null } {
+  const me = playScore(s, viewer);
+  const others = s.players.filter((p) => p.id !== viewer).map((p) => playScore(s, p.id));
+  const up = others.filter((x) => x > me + 1e-9);
+  const down = others.filter((x) => x <= me + 1e-9);
+  const r = (x: number) => Math.round(x / PLAY.GAP_ROUND) * PLAY.GAP_ROUND;
+  return { above: up.length ? r(Math.min(...up) - me) : null, below: down.length ? r(me - Math.max(...down)) : null };
+}
+
 export function playView(s: GameState, viewer: PlayerId, revealAll: boolean): PlayView {
   const pl = s.play!;
   const i = s.players.findIndex((p) => p.id === viewer);
@@ -66,6 +79,7 @@ export function playView(s: GameState, viewer: PlayerId, revealAll: boolean): Pl
     event: pl.event ? { ...pl.event } : null,
     events: structuredClone(pl.events),
     ranks: pl.bankHistory.some((h) => h.level === s.levelIndex) ? playRanks(s) : null,
+    gaps: pl.bankHistory.some((h) => h.level === s.levelIndex) && !revealAll ? gapsOf(s, viewer) : null,
     mission,
     poll: audiencePoll(s),
     comeback: pl.comeback ?? null,

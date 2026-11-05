@@ -64,3 +64,28 @@ describe('R4: the first fair answer', () => {
     expect(l5.fair1).toEqual(s.play!.fairFirst);
   });
 });
+
+describe('D-180 score gaps', () => {
+  it('shows rounded gaps mid-life and hides them once scores are public', async () => {
+    const { playView } = await import('../../src/engine/play/view');
+    const s = createInitialState({ mode: 'LIFE', ruleset: 'PLAY', nPlayers: 4, difficulty: 'NORMAL', seed: 'gaps-1' } as Parameters<typeof createInitialState>[0]);
+    let g = 0;
+    while (!(s.phase.kind === 'LEVEL_DEBRIEF' && s.levelIndex === 2) && g++ < 20000) {
+      if (s.phase.kind === 'DECIDE' && waitingOn(s).length) {
+        for (const pid of waitingOn(s)) step(s, { type: 'SUBMIT_DECISION', from: pid, decision: autoDecision(s, pid) });
+        continue;
+      }
+      if (s.phase.kind === 'GUESS') {
+        step(s, { type: 'SUBMIT_GUESSES', from: s.players.find((p) => p.isHuman)!.id, guesses: {} });
+        continue;
+      }
+      step(s, { type: 'ADVANCE' });
+    }
+    const me = s.players.find((p) => p.isHuman)!.id;
+    const v = playView(s, me, false);
+    expect(v.gaps).toBeTruthy();
+    for (const x of [v.gaps!.above, v.gaps!.below]) if (x !== null) expect(x % PLAY.GAP_ROUND).toBe(0);
+    expect(v.gaps!.above !== null || v.gaps!.below !== null).toBe(true);
+    expect(playView(s, me, true).gaps).toBeNull();
+  });
+});

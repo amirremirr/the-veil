@@ -115,6 +115,8 @@ export interface PlayView {
    * the episode's first result: with equal banks, ranks would only show each mission's scale (D-105).
    */
   ranks: Record<PlayerId, number> | null;
+  /** D-180: rounded gaps to the nearest score above and below the viewer; null once scores are public. */
+  gaps?: { above: number | null; below: number | null } | null;
   /** The viewer's own mission and its progress. */
   /** `goal`: the mission bar's full mark, k x mission value (D-102). */
   mission: { card: ValuesCard; value: number; score: number; scale: number; bankPart: number; missionPart: number; stress: number; guessPoints: number; goal: number; startValue: number; lifeStartValue: number; episodeStress: number } | null;
