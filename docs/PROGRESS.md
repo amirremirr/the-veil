@@ -70,8 +70,8 @@ ALL DONE
 | R6 Ep1 claims as polls | DONE | S-a 22%, lie success 72%, E1 +52.6 points; S-b 84% (D-163) |
 | E1 Fresh eyes | DONE | two AI reviewers (proxy), verbatim in docs/playtest/fresh-eyes.md |
 | E2 Design audit | DONE | docs/review/design-audit.md (AI judgment, proxy) |
-| E3 Logic audit | | |
-| E4 UX audit | | |
+| E3 Logic audit | DONE | one fixed rule beats adaptive (Ep3 never give, +1.8 ± 0.7); Help the Poorest nearly dead (1.8%) |
+| E4 UX audit | DONE | docs/review/ux-audit.md (AI judgment, proxy) |
 | E5 Fixes | | |
 | F1 Playtest kit | | |
 | F2 Case study | | |
@@ -87,3 +87,4 @@ ALL DONE
 - R6: Episode 1 claims pay through strategic votes; credibility value 0.5; 201 unit tests, e2e 15 passed, Episode 1 walkthrough all 760 px (D-163). Also committed: `sim/audit.ts` (for E3) and a first draft of `docs/CASE_STUDY.md` (for F2).
 - E1: full life (107 screens) and Episode 3 Hard (26) captured; Reviewer A (designer) and Reviewer B (casual) saved verbatim. Both: the bank math and the ranking are never explained; A: the Mission and odds labels do the thinking; B: wanted to stop at the HireBot screen and the finale claims.
 - E2: design audit; weakest: Ep3 on Normal (no wheel hits), Ep4 judge screen, Ep5 claims and donations, the unexplained score.
+- E3: `sim/audit.ts`, 150 games per rule per episode; tables in docs/review/logic-audit.md. E4: heuristic, feel and voice review (40 lines in a life, 33 distinct).

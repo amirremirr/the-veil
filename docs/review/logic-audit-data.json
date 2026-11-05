@@ -1,0 +1,305 @@
+{
+  "ep1": {
+    "games": 150,
+    "rules": {
+      "always peek": {
+        "mean": -2.16,
+        "se": 1.16
+      },
+      "never peek": {
+        "mean": 0.42,
+        "se": 0.38
+      },
+      "always silent": {
+        "mean": -0.99,
+        "se": 1.17
+      },
+      "always claim Safety Net": {
+        "mean": 1.49,
+        "se": 1.31
+      },
+      "always give 10 to the poorest": {
+        "mean": -14.26,
+        "se": 1
+      }
+    },
+    "shares": {
+      "CLAIM": {
+        "P1": 0.3383,
+        "P3": 0.2017,
+        "SILENT": 0.3025,
+        "P2": 0.1575
+      },
+      "VOTE": {
+        "vote=P2 gift=no": 0.4208,
+        "vote=P1 gift=no": 0.325,
+        "vote=P3 gift=no": 0.1833,
+        "vote=P4 gift=no": 0.0175,
+        "vote=P2 gift=yes": 0.0108,
+        "vote=P3 gift=yes": 0.04,
+        "vote=P1 gift=yes": 0.0025
+      },
+      "PEEK": {
+        "false": 0.8167,
+        "true": 0.1833
+      }
+    }
+  },
+  "ep2": {
+    "games": 150,
+    "rules": {
+      "always claim a lot": {
+        "mean": 0.63,
+        "se": 0.26
+      },
+      "always silent": {
+        "mean": -0.24,
+        "se": 0.32
+      },
+      "always truthful": {
+        "mean": 0,
+        "se": 0
+      },
+      "always give 10 to the poorest": {
+        "mean": -19.65,
+        "se": 1.3
+      },
+      "never give": {
+        "mean": -0.4,
+        "se": 0.19
+      }
+    },
+    "shares": {
+      "TAX": {
+        "0": 0.47,
+        "0.4": 0.275,
+        "0.2": 0.205,
+        "0.6": 0.0433,
+        "0.8": 0.0067
+      },
+      "EFFORT": {
+        "claim=LOT gift=no": 0.5006,
+        "claim=SOME gift=no": 0.3211,
+        "claim=LITTLE gift=no": 0.0944,
+        "claim=LOT gift=yes": 0.0506,
+        "claim=SOME gift=yes": 0.0322,
+        "claim=LITTLE gift=yes": 0.0011
+      },
+      "PRIZE": {
+        "dot": 0.2472,
+        "marigold": 0.2333,
+        "ugo": 0.2728,
+        "chet": 0.2467
+      }
+    }
+  },
+  "ep3": {
+    "games": 150,
+    "rules": {
+      "always buy cover": {
+        "mean": -10.83,
+        "se": 3.87
+      },
+      "never buy cover": {
+        "mean": -24.42,
+        "se": 6.99
+      },
+      "always claim low risk": {
+        "mean": 3.32,
+        "se": 1.92
+      },
+      "always silent": {
+        "mean": -2.18,
+        "se": 2.38
+      },
+      "never bar": {
+        "mean": 1.78,
+        "se": 1.13
+      },
+      "always bar someone": {
+        "mean": -0.09,
+        "se": 0.6
+      },
+      "never give": {
+        "mean": 1.81,
+        "se": 0.67
+      }
+    },
+    "shares": {
+      "CLAIM": {
+        "LOW": 0.6095,
+        "SILENT": 0.1481,
+        "HIGH": 0.2424
+      },
+      "CHOICE": {
+        "buy=true gym=false bar=no gift=no": 0.2487,
+        "buy=true gym=false bar=no gift=yes": 0.045,
+        "buy=false gym=true bar=no gift=yes": 0.0533,
+        "buy=false gym=true bar=yes gift=no": 0.1008,
+        "buy=false gym=true bar=no gift=no": 0.2346,
+        "buy=true gym=true bar=no gift=no": 0.0504,
+        "buy=false gym=false bar=no gift=yes": 0.0146,
+        "buy=true gym=true bar=yes gift=no": 0.0163,
+        "buy=true gym=true bar=no gift=yes": 0.0133,
+        "buy=true gym=false bar=yes gift=no": 0.0858,
+        "buy=false gym=false bar=no gift=no": 0.0717,
+        "buy=true gym=false bar=yes gift=yes": 0.0163,
+        "buy=false gym=false bar=yes gift=no": 0.025,
+        "buy=false gym=true bar=yes gift=yes": 0.0138,
+        "buy=false gym=false bar=yes gift=yes": 0.0046,
+        "buy=true gym=true bar=yes gift=yes": 0.0058
+      },
+      "REGIME": {
+        "VOL": 0.4367,
+        "M50": 0.4967,
+        "M100": 0.0667
+      }
+    }
+  },
+  "ep4": {
+    "games": 150,
+    "rules": {
+      "always claim I trained": {
+        "mean": 0.83,
+        "se": 0.58
+      },
+      "always silent": {
+        "mean": 0,
+        "se": 0
+      },
+      "always train": {
+        "mean": -6.54,
+        "se": 4.46
+      },
+      "never train": {
+        "mean": -33.92,
+        "se": 5.78
+      },
+      "always give 10 to the poorest": {
+        "mean": -28.95,
+        "se": 1.67
+      }
+    },
+    "shares": {
+      "TRAIN": {
+        "train=false gift=no": 0.4217,
+        "train=true gift=no": 0.4817,
+        "train=true gift=yes": 0.0706,
+        "train=false gift=yes": 0.0261
+      },
+      "CLAIM": {
+        "SILENT": 0.4417,
+        "TRAINED": 0.5583
+      },
+      "HIRE": {
+        "complex=1 gift=no": 0.375,
+        "complex=2 gift=no": 0.2917,
+        "complex=2 gift=yes": 0.065,
+        "complex=1 gift=yes": 0.0267,
+        "complex=3 gift=no": 0.0983,
+        "complex=0 gift=no": 0.1233,
+        "complex=3 gift=yes": 0.015,
+        "complex=0 gift=yes": 0.005
+      },
+      "POLICY": {
+        "B": 0.5567,
+        "A": 0.1067,
+        "D": 0.2617,
+        "C": 0.075
+      }
+    }
+  },
+  "ep5": {
+    "games": 150,
+    "rules": {
+      "always donate the maximum": {
+        "mean": -23.3,
+        "se": 1.32
+      },
+      "never donate": {
+        "mean": -0.99,
+        "se": 0.65
+      },
+      "always claim yes": {
+        "mean": 0.15,
+        "se": 0.75
+      },
+      "always silent": {
+        "mean": -3.57,
+        "se": 0.7
+      }
+    },
+    "shares": {
+      "VEIL": {
+        "t=0.1": 0.235,
+        "t=0.2": 0.1467,
+        "t=0.6": 0.0717,
+        "t=0": 0.2733,
+        "t=0.5": 0.0333,
+        "t=0.7": 0.1017,
+        "t=0.3": 0.0833,
+        "t=0.8": 0.0117,
+        "t=0.4": 0.0433
+      },
+      "FAIR_1": {
+        "0": 0.5883,
+        "0.3": 0.1717,
+        "0.8": 0.17,
+        "0.7": 0.04,
+        "0.4": 0.03
+      },
+      "FAIR_2": {
+        "proposal=yes": 0.97,
+        "proposal=no": 0.03
+      },
+      "CLAIM": {
+        "claims=YES/NO/YES/YES": 0.0617,
+        "claims=NO/YES/NO/NO": 0.0467,
+        "claims=NO/NO/NO/YES": 0.05,
+        "claims=NO/NO": 0.02,
+        "claims=YES/YES": 0.02,
+        "claims=YES/NO/NO/YES": 0.055,
+        "claims=NO/NO/YES/YES": 0.0783,
+        "claims=NO/YES/YES/NO": 0.05,
+        "claims=YES/NO/YES/NO": 0.0517,
+        "claims=YES/YES/YES/YES": 0.1783,
+        "claims=NO/YES/NO/YES": 0.0517,
+        "claims=NO/NO/NO": 0.0083,
+        "claims=YES/YES/NO": 0.01,
+        "claims=NO/NO/YES": 0.005,
+        "claims=NO/YES/NO": 0.0033,
+        "claims=YES/YES/NO/NO": 0.0817,
+        "claims=YES/YES/NO/YES": 0.06,
+        "claims=NO/NO/YES/NO": 0.04,
+        "claims=YES/NO/NO/NO": 0.03,
+        "claims=YES/YES/YES/NO": 0.0433,
+        "claims=NO/YES/YES": 0.0033,
+        "claims=NO/YES/YES/YES": 0.0417,
+        "claims=YES/NO/NO": 0.0033,
+        "claims=YES/YES/YES": 0.0067
+      },
+      "LOBBY": {
+        "donate=0": 0.6392,
+        "donate=40": 0.1065,
+        "donate=10": 0.1495,
+        "donate=20": 0.1048
+      },
+      "AMEND_0": {
+        "true": 0.57,
+        "false": 0.43
+      },
+      "AMEND_1": {
+        "false": 0.45,
+        "true": 0.55
+      },
+      "AMEND_2": {
+        "true": 0.5336,
+        "false": 0.4664
+      },
+      "AMEND_3": {
+        "true": 0.5458,
+        "false": 0.4542
+      }
+    }
+  }
+}
