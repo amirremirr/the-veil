@@ -19,6 +19,7 @@ const players = Number(arg('players', '4'));
 const difficulty = arg('difficulty', 'NORMAL');
 const seed = arg('seed', `ai-${persona.toLowerCase()}`);
 const name = arg('name', 'Ana');
+let ledgerShot = false;
 const outDir = arg('out', `docs/playtest/shots/${mode === 'LIFE' ? 'life' : `ep${episode}`}-${persona.toLowerCase()}`);
 mkdirSync(outDir, { recursive: true });
 
@@ -77,6 +78,15 @@ for (let i = 0; i < 1500; i++) {
   const key = `${String(n).padStart(3, '0')}-ep${m.level}-r${m.round}-${m.kind}${m.step ? `-${m.step}` : ''}`;
   await page.screenshot({ path: `${outDir}/${key}.jpg`, type: 'jpeg', quality: 55 });
   lines.push(`## ${key} (${m.words} words${m.tall ? ', TALL' : ''}${m.hscroll ? ', HSCROLL' : ''})`, m.text, '');
+  // G1: the first time a result has "See the money", also capture the ledger open (then close it).
+  if (!ledgerShot && (await page.locator('[data-ledger]').count())) {
+    ledgerShot = true;
+    await page.locator('[data-ledger]').first().click();
+    await page.waitForTimeout(100);
+    await page.screenshot({ path: `${outDir}/${key}-ledger.jpg`, type: 'jpeg', quality: 55 });
+    lines.push(`## ${key}-ledger`, (await page.getByRole('dialog').innerText()).replace(/\s+/g, ' '), '');
+    await page.getByRole('dialog').getByRole('button').last().click();
+  }
   if (m.beatNext) {
     await page.click('[data-beat-next]');
     continue;

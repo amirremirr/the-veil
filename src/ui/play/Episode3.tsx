@@ -8,6 +8,7 @@ import type { Message, ViewState } from '../../engine/types';
 import { PLAY } from '../../engine/play/params';
 import { useStore } from '../store';
 import { t } from '../i18n';
+import { MoneyLedger } from './Ledger';
 import { coins, pct, signed } from '../labels';
 import { nameOf, shortName, useTalkFrom } from '../game';
 import { useMotionOff } from '../components/common';
@@ -602,7 +603,7 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
           </p>
           <p className="mt-1 text-sm text-soft">
             {t('play.stage.bankLine', { from: coins(from), to: coins(h.banks[me]) })} {t('play.bank.pay', { w: coins(v.play!.l3?.baseIncome ?? 0) })} {cost} {t('play.bank.living', { c: v.play!.livingCost })}
-          </p>
+          <MoneyLedger v={v} /></p>
           {stress > 0 && (
             <p className="mt-1 text-sm font-bold text-stamp" data-debt>
               {t('play.stage.debtCost', { n: Math.round(stress) })}

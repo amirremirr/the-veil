@@ -10,7 +10,7 @@ import { ALL_CONSTITUTIONS, bandOf, constitutionWealth, olsSlope, supermajority,
 import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import type { LevelDefinition } from '../levels/types';
 import { PLAY } from './params';
-import { activeEvent, missionScale, missionValue, playEffortShares, playRoundValue, livingCost } from './rules';
+import { activeEvent, missionScale, missionValue, playEffortShares, playRoundValue, livingCost, setRoundLedger } from './rules';
 import { chooseClaim, credibilityValue, expectedRecord, honestyOf, postClaims, SILENT } from './claims';
 
 export interface Lobby5 {
@@ -229,6 +229,15 @@ function finalize(s: GameState): void {
   if (l.W) return;
   const W = withDonations(s, asRound(s, constitutionWealth(incomesOf(s), l.current!)), l.lobby);
   l.W = Object.fromEntries(ids(s).map((id, i) => [id, W[i]]));
+  // G1: the money lines. In a life the rules act on the banks and the finale covers the living cost (asRound).
+  const inc = incomesOf(s);
+  const after = constitutionWealth(inc, l.current!);
+  const don = withDonations(s, inc.map(() => 0), l.lobby);
+  setRoundLedger(s, Object.fromEntries(ids(s).map((id, i) => [id, [
+    { k: 'income' as const, n: s.mode === 'LIFE' ? livingCost(s) : inc[i] },
+    { k: 'rule' as const, n: after[i] - inc[i] },
+    { k: 'donation' as const, n: don[i] },
+  ]])));
   finishRound(s, W, playEffortShares(s), headline(s, 'l5.play', {}));
 }
 

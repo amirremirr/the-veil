@@ -4,7 +4,7 @@ import { botParams, botRng, finishRound, gameRng, headline, ids, idx, playerOf, 
 import { equalShares, mean, ownNet, roundScore } from '../scoring';
 import { missionScale, missionValue } from '../play/rules';
 import { PLAY } from '../play/params';
-import { activeEvent, isPlay, livingCost, playNet, playRoundValue, roundsLeft } from '../play/rules';
+import { activeEvent, isPlay, livingCost, playNet, playRoundValue, roundsLeft, setRoundLedger } from '../play/rules';
 import { audienceBelief, beliefAfterClaim, checkClaims, chooseClaim, initFactBeliefs, observe, postClaims, revealFacts, SILENT } from '../play/claims';
 import { reliabilityOf } from '../core';
 import { ceOfLottery, logitChoice, logitProbs } from '../bots/utility';
@@ -948,6 +948,22 @@ export const level3: LevelDefinition = {
     else if (l.regime !== 'VOL') key = 'l3.mandatory';
     else if (before !== null && l.nextPremium !== null && l.nextPremium > before + 1e-9) key = 'l3.premiumUp';
     else if (nEvents * 2 >= pids.length) key = 'l3.manyEvents';
+    if (isPlay(s)) {
+      // G1: the round's money, line by line (pay, cover or the plan, gym, the wheel, gifts).
+      const cov = l.regime === 'VOL' ? 0 : coverage(l.regime, P);
+      setRoundLedger(s, Object.fromEntries(pids.map((id, i) => {
+        const bought = l.regime === 'VOL' && choices[i].buy && premium !== null;
+        const loss = !events[i] ? 0 : l.regime === 'VOL' ? (bought ? 0 : -P.LOSS) : -(1 - cov) * P.LOSS;
+        return [id, [
+          { k: 'pay' as const, n: P.BASE_INCOME },
+          { k: 'cover' as const, n: bought ? -premium! : 0 },
+          { k: 'plan' as const, n: l.regime === 'VOL' ? 0 : -(T ?? 0) },
+          { k: 'gym' as const, n: choices[i].gym ? -P.GYM_COST : 0 },
+          { k: 'loss' as const, n: loss },
+          { k: 'gift' as const, n: giftNet?.[id] ?? 0 },
+        ]];
+      })));
+    }
     finishRound(s, Wend, equalShares(pids.length), headline(s, key, { premium: Math.round(l.nextPremium ?? 0), events: nEvents }));
   },
   talkMenu(s, phase) {

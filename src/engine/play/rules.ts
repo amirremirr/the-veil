@@ -5,7 +5,7 @@ import { argmaxCard } from '../bots/beliefs';
 import type { Rng } from '../rng';
 import type { GameState, LevelId, PlayerId, ValuesCard } from '../types';
 import { PLAY } from './params';
-import type { PlayEvent, PlayState } from './types';
+import type { BankRecord, LedgerLine, PlayEvent, PlayState, ScoreParts } from './types';
 
 export const isPlay = (s: Pick<GameState, 'play'>): boolean => !!s.play;
 
@@ -140,10 +140,47 @@ export function playRanks(s: GameState): Record<PlayerId, number> {
   return Object.fromEntries(s.players.map((p, i) => [p.id, 1 + sc.filter((x) => x > sc[i] + 1e-9).length]));
 }
 
+/** G1: an episode's money lines for this round (each player's lines must sum to that player's W). */
+export function setRoundLedger(s: GameState, lines: Record<PlayerId, LedgerLine[]>): void {
+  if (s.play) s.play.pendingLedger = lines;
+}
+
+/** G1: each player's net gift money this round (received minus given), from the gifts made by each giver. */
+export function giftNet(pids: readonly PlayerId[], gifts: Record<PlayerId, { to: PlayerId; amount: number } | null | undefined>): Record<PlayerId, number> {
+  const out: Record<PlayerId, number> = Object.fromEntries(pids.map((id) => [id, 0]));
+  for (const [from, g] of Object.entries(gifts)) {
+    if (!g || !g.amount) continue;
+    out[from] -= g.amount;
+    out[g.to] += g.amount;
+  }
+  return out;
+}
+
+/** G1: a bank change between rounds (the Second Chance), shown in the next round's ledger. */
+export function addBetweenRounds(s: GameState, pid: PlayerId, line: LedgerLine): void {
+  if (!s.play) return;
+  const x = (s.play.pendingExtra ??= {});
+  (x[pid] ??= []).push(line);
+}
+
+/** G1: a contestant's score parts now (running totals); they sum to playScore. */
+export function scoreParts(s: GameState, pid: PlayerId): ScoreParts {
+  const pl = s.play!;
+  const i = s.players.findIndex((p) => p.id === pid);
+  const card = s.players[i].values;
+  return {
+    bank: PLAY.BANK_WEIGHT * pl.banks[pid],
+    mission: PLAY.MISSION_WEIGHT * missionScale(s, card) * missionValue(card, bankList(s), i, playEffortShares(s)),
+    debt: -pl.debtStress[pid],
+    guess: pl.guessPoints[pid],
+  };
+}
+
 /** Section 4.1 and 4.2: after a round, move every bank and take debt stress. */
 export function playFinishRound(s: GameState, W: readonly number[]): void {
   const pl = s.play!;
-  const rec = { level: s.levelIndex, round: s.round, W: {} as Record<PlayerId, number>, banks: {} as Record<PlayerId, number>, stress: {} as Record<PlayerId, number>, ranks: {} as Record<PlayerId, number> };
+  const rec: BankRecord = { level: s.levelIndex, round: s.round, W: {}, banks: {}, stress: {}, ranks: {}, ledger: {}, parts: {} };
+  if (!pl.bankHistory.length) rec.partsStart = Object.fromEntries(s.players.map((p) => [p.id, scoreParts(s, p.id)]));
   s.players.forEach((p, i) => {
     pl.banks[p.id] += W[i] - livingCost(s);
     const st = stressMult(s, p.id) * debtStressFor(pl.banks[p.id]);
@@ -151,7 +188,16 @@ export function playFinishRound(s: GameState, W: readonly number[]): void {
     rec.W[p.id] = W[i];
     rec.banks[p.id] = pl.banks[p.id];
     rec.stress[p.id] = st;
+    // G1: the ledger. Lines the episode did not itemize fall into "other" (a unit test keeps it at zero).
+    const lines = [...(pl.pendingExtra?.[p.id] ?? []), ...(pl.pendingLedger?.[p.id] ?? [{ k: 'income' as const, n: W[i] }])].filter((x) => Math.abs(x.n) > 1e-9);
+    const rest = W[i] - (pl.pendingLedger?.[p.id] ?? [{ k: 'income', n: W[i] }]).reduce((a, x) => a + x.n, 0);
+    if (Math.abs(rest) > 1e-9) lines.push({ k: 'other', n: rest });
+    lines.push({ k: 'living', n: -livingCost(s) });
+    rec.ledger![p.id] = lines;
   });
+  for (const p of s.players) rec.parts![p.id] = scoreParts(s, p.id);
+  pl.pendingLedger = undefined;
+  pl.pendingExtra = undefined;
   rec.ranks = playRanks(s);
   pl.bankHistory.push(rec);
 }

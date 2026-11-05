@@ -7,6 +7,7 @@ import { BANDS } from '../../engine/play/ep2';
 import { PLAY } from '../../engine/play/params';
 import { useStore } from '../store';
 import { t } from '../i18n';
+import { MoneyLedger } from './Ledger';
 import { coins, pct } from '../labels';
 import { fmt1 } from '../components/Money';
 import { nameOf, shortName } from '../game';
@@ -212,7 +213,7 @@ export function PrizeBeat({ v, next }: { v: ViewState; next: () => void }) {
         <h1 className="h-show mt-1 text-4xl leading-tight text-spot">{head}</h1>
         <p className="mt-3 text-sm">{v.players.map((p) => `${shortName(v, p.id)}: ${r.votes?.[p.id] ? shortName(v, r.votes[p.id]!) : ''}`).join(', ')}</p>
         <p className="mt-2 text-sm" data-net>{t('play.l2.won.net', { y: coins(r.y?.[v.viewer] ?? 0), t: pct(lv.t ?? 0), k: coins((roundMoney(v) ?? r.W?.[v.viewer] ?? 0) - (r.prize?.[v.viewer] ?? 0) - giftNet) })}{r.prize?.[v.viewer] ? ` ${t('play.l2.won.netPrize', { n: coins(r.prize[v.viewer]) })}` : ''}{giftNet ? ` ${t('play.l2.won.netGifts', { n: `${giftNet > 0 ? '+' : ''}${coins(giftNet)}` })}` : ''}</p>
-        {bankLineText(v) && <p className="mt-2 text-sm font-semibold" data-bankline>{bankLineText(v)}</p>}
+        {bankLineText(v) && <p className="mt-2 text-sm font-semibold" data-bankline>{bankLineText(v)}<MoneyLedger v={v} /></p>}
       </div>
     </Stage>
   );

@@ -75,7 +75,12 @@ export function playView(s: GameState, viewer: PlayerId, revealAll: boolean): Pl
   return {
     banks: { ...pl.banks },
     debtStress: { ...pl.debtStress },
-    bankHistory: structuredClone(pl.bankHistory),
+    // G1: the ledger and score parts are private (training costs, mission points): only the viewer's own.
+    bankHistory: pl.bankHistory.map((h) => {
+      const { ledger, parts, partsStart, ...rest } = structuredClone(h);
+      const mine = <X>(r: Record<PlayerId, X> | undefined) => (r && r[viewer] !== undefined ? { [viewer]: r[viewer] } : undefined);
+      return { ...rest, ...(revealAll ? { ledger, parts, partsStart } : { ledger: mine(ledger), parts: mine(parts), partsStart: mine(partsStart) }) };
+    }),
     event: pl.event ? { ...pl.event } : null,
     events: structuredClone(pl.events),
     ranks: pl.bankHistory.some((h) => h.level === s.levelIndex) ? playRanks(s) : null,

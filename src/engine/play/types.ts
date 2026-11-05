@@ -11,7 +11,27 @@ export interface PlayEvent {
 }
 
 /** Bank after every finished round, in seat order of the record. */
+/** G1: one line of a round's money ledger. */
+export type LedgerKey = 'income' | 'rule' | 'peek' | 'inheritance' | 'gift' | 'prize' | 'hours' | 'pay' | 'cover' | 'gym' | 'loss' | 'plan' | 'training' | 'judge' | 'donation' | 'comeback' | 'living' | 'other';
+export interface LedgerLine {
+  k: LedgerKey;
+  n: number;
+}
+/** G1: how a round moved a contestant's score: half the bank change, the mission part, debt points, guesses. */
+export interface ScoreParts {
+  bank: number;
+  mission: number;
+  debt: number;
+  guess: number;
+}
+
 export interface BankRecord {
+  /** G1: the round's money, line by line; sums exactly to the bank change since the previous record. */
+  ledger?: Record<PlayerId, LedgerLine[]>;
+  /** G1: the score parts after the round (each a running total), to show the score change line by line. */
+  parts?: Record<PlayerId, ScoreParts>;
+  /** G1: the score parts before the first round of the game (only on the first record). */
+  partsStart?: Record<PlayerId, ScoreParts>;
   level: LevelId;
   round: number;
   /** Money earned this round (W). */
@@ -43,6 +63,10 @@ export interface PlayState {
   fairFirst?: Record<PlayerId, number>;
   /** v1 Section 6.3, LIFE only: the comeback card, once per life. */
   comeback?: { pid: PlayerId; took: 'COINS' | 'POINTS' };
+  /** G1: the current round's money lines, set by the episode just before the round finishes. */
+  pendingLedger?: Record<PlayerId, LedgerLine[]>;
+  /** G1: bank changes made between rounds (the Second Chance), carried into the next round's ledger. */
+  pendingExtra?: Record<PlayerId, LedgerLine[]>;
   /** The current round's event (cleared at the start of each episode). */
   event: PlayEvent | null;
   /** Every event drawn, in order. */

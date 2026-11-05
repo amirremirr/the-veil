@@ -103,3 +103,16 @@ ROUND 2 DONE
 
 LOOP DONE
 
+## Round 3 (game rules and bots)
+
+| Task | Status | Notes |
+|---|---|---|
+| G1 Money ledger | DONE | "See the money" on every result; 50-seed sum test per episode; Episode 1 rounding fixed (D-187) |
+| G2 Bots play to missions | TODO | |
+| G3 Giving must sometimes pay | TODO | |
+| G4 Episode 2 lies | TODO | |
+| G5 Dead options | TODO | |
+| G6 Life fun targets | TODO | |
+| G7 Improvement loop | TODO | |
+| G8 Report | TODO | |
+

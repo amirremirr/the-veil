@@ -12,7 +12,7 @@ import { logitChoice } from '../bots/utility';
 import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import type { LevelDefinition } from '../levels/types';
 import { PLAY } from './params';
-import { activeEvent, missionScale, missionValue, playRoundValue, livingCost } from './rules';
+import { activeEvent, giftNet, missionScale, missionValue, playRoundValue, livingCost, setRoundLedger } from './rules';
 import { chooseClaim, postClaims, SILENT } from './claims';
 
 type Gift = { to: PlayerId; amount: number };
@@ -402,6 +402,18 @@ export const playLevel2: LevelDefinition = {
     const round = { ...(c as P2Round), votes, winners, prize, W: Object.fromEntries(pids.map((id, i) => [id, W[i]])) };
     l.rounds.push(round);
     l.current = round;
+    const P2 = p2Params(s);
+    const gn = giftNet(pids, c.gifts ?? {});
+    setRoundLedger(s, Object.fromEntries(pids.map((id) => {
+      const hours = -P2.costK * c.effort![id] * c.effort![id];
+      return [id, [
+        { k: 'income' as const, n: c.y![id] },
+        { k: 'rule' as const, n: c.W![id] - c.y![id] - hours },
+        { k: 'hours' as const, n: hours },
+        { k: 'prize' as const, n: prize[id] },
+        { k: 'gift' as const, n: gn[id] },
+      ]];
+    })));
     finishRound(s, W, effortSharesFrom(pids.map((id) => pl.effort![id])), headline(s, 'l2.play', {}));
   },
   talkMenu() {

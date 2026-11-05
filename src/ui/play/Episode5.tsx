@@ -8,6 +8,7 @@ import { L5 } from '../../engine/params';
 import { PLAY } from '../../engine/play/params';
 import { useStore } from '../store';
 import { t } from '../i18n';
+import { MoneyLedger } from './Ledger';
 import { coins, pct } from '../labels';
 import { nameOf, shortName } from '../game';
 import { BigButton, Bubble, Face, Stage } from './OnAir';
@@ -264,7 +265,7 @@ export function AmendReveal({ v }: { v: ViewState }) {
           {x}
         </p>
       ))}
-      {bankLineText(v) && <p className="mt-2 text-sm font-semibold" data-bankline>{bankLineText(v)}</p>}
+      {bankLineText(v) && <p className="mt-2 text-sm font-semibold" data-bankline>{bankLineText(v)}<MoneyLedger v={v} /></p>}
       <p className="mt-2 text-sm">{t('play.l5.peak.shift', { a: pct(lv.fair1?.[me] ?? 0), b: pct(lv.fair2?.[me] ?? 0), d: `${shift >= 0 ? '+' : ''}${Math.round(shift * 100)}` })}</p>
       <div className="mt-2">
         <Bubble who="Dash" host text={stamps.length ? t('play.l5.peak.hostBought') : t('play.l5.peak.hostClean')} />

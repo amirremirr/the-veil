@@ -187,3 +187,54 @@ export function bankLineText(v: ViewState): string | null {
   const firstOfEp4 = v.levelIndex === 4 && hist.filter((h) => h.level === 4).length === 1;
   return firstOfEp4 && cb && cb.pid === v.viewer && cb.took === 'COINS' ? `${line} ${t('play.bank.comeback', { c: PLAY.COMEBACK.COINS })}` : line;
 }
+
+/**
+ * G1: rounds a list so the rounded values add up to `total` exactly (largest remainder), keeping signs.
+ * Used by "See the money" so the lines shown add up to the bank change shown.
+ */
+export function roundToTotal(xs: readonly number[], total: number): number[] {
+  const base = xs.map((x) => Math.round(x));
+  let diff = total - base.reduce((a, b) => a + b, 0);
+  const order = xs.map((x, i) => ({ i, r: x - Math.round(x) })).sort((a, b) => (diff > 0 ? b.r - a.r : a.r - b.r));
+  for (let k = 0; diff !== 0 && k < order.length * 2; k++) {
+    const { i } = order[k % order.length];
+    base[i] += diff > 0 ? 1 : -1;
+    diff += diff > 0 ? -1 : 1;
+  }
+  return base;
+}
+
+export interface LedgerRow {
+  key: string;
+  n: number;
+}
+
+/** G1: the viewer's latest round in this episode: money lines and score lines, rounded to add up as shown. */
+export function ledgerRows(v: ViewState): { from: number; to: number; money: LedgerRow[]; score: LedgerRow[]; scoreFrom: number; scoreTo: number } | null {
+  const pl = v.play;
+  if (!pl) return null;
+  const hist = pl.bankHistory;
+  const k = hist.length - 1;
+  const rec = hist[k];
+  if (!rec || rec.level !== v.levelIndex || !rec.ledger?.[v.viewer]) return null;
+  const prev = k > 0 ? hist[k - 1] : null;
+  const from = Math.round(prev ? prev.banks[v.viewer] : pl.startingBank);
+  const to = Math.round(rec.banks[v.viewer]);
+  const lines = rec.ledger[v.viewer];
+  const lifeFinale = v.mode === 'LIFE' && v.levelIndex === 5;
+  const shown = roundToTotal(lines.map((x) => x.n), to - from);
+  const money = lines.map((x, i) => ({ key: x.k === 'income' && lifeFinale ? 'incomeFinale' : x.k, n: shown[i] })).filter((r) => r.n !== 0 || r.key === 'living');
+  const a = (prev?.parts ?? rec.partsStart)?.[v.viewer];
+  const b = rec.parts?.[v.viewer];
+  let score: LedgerRow[] = [];
+  let scoreFrom = 0;
+  let scoreTo = 0;
+  if (a && b) {
+    scoreFrom = Math.round(a.bank + a.mission + a.debt + a.guess);
+    scoreTo = Math.round(b.bank + b.mission + b.debt + b.guess);
+    const d = [b.bank - a.bank, b.mission - a.mission, b.debt - a.debt, b.guess - a.guess];
+    const r = roundToTotal(d, scoreTo - scoreFrom);
+    score = ['bank', 'mission', 'debt', 'guess'].map((key, i) => ({ key, n: r[i] })).filter((x) => x.n !== 0);
+  }
+  return { from, to, money, score, scoreFrom, scoreTo };
+}

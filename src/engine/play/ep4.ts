@@ -12,7 +12,7 @@ import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import type { LevelDefinition } from '../levels/types';
 import { POLICIES, type Group, type Job, type Policy, type Priors } from '../levels/level4';
 import { PLAY } from './params';
-import { activeEvent, missionScale, missionValue, playEffortShares, playRanks, playRoundValue, playScore, livingCost } from './rules';
+import { activeEvent, addBetweenRounds, giftNet, missionScale, missionValue, playEffortShares, playRanks, playRoundValue, playScore, livingCost, setRoundLedger } from './rules';
 import { chooseClaim, honestyRange, postClaims, SILENT } from './claims';
 
 export interface Gift4 {
@@ -500,7 +500,10 @@ export const playLevel4: LevelDefinition = {
     const g = gameRng(s);
     if (step === 'COMEBACK') {
       const [pid, took] = Object.entries(decisions)[0] as [PlayerId, 'COINS' | 'POINTS'];
-      if (took === 'COINS') s.play!.banks[pid] += PLAY.COMEBACK.COINS;
+      if (took === 'COINS') {
+        s.play!.banks[pid] += PLAY.COMEBACK.COINS;
+        addBetweenRounds(s, pid, { k: 'comeback', n: PLAY.COMEBACK.COINS });
+      }
       else s.play!.guessPoints[pid] += PLAY.COMEBACK.POINTS;
       s.play!.comeback = { pid, took };
       return;
@@ -578,6 +581,14 @@ export const playLevel4: LevelDefinition = {
     l.priors = nextPriors4(l, c.workers!, c.train!, P.updateWeight);
     c.priorsAfter = { ...l.priors };
     l.rounds.push(c as P4Round);
+    const gn = giftNet(s.players.map((p) => p.id), c.gifts!);
+    setRoundLedger(s, Object.fromEntries(s.players.map((p) => [p.id, p.id === l.judge
+      ? [{ k: 'judge' as const, n: jp.pay }, { k: 'gift' as const, n: gn[p.id] }]
+      : [
+          { k: 'pay' as const, n: pay4(job[p.id], l.care[p.id], l.policy, P) },
+          { k: 'training' as const, n: c.train![p.id] ? -costOf(s, p.id, P) : 0 },
+          { k: 'gift' as const, n: gn[p.id] },
+        ]])));
     finishRound(s, W, playEffortShares(s), headline(s, 'l4.play', {}));
   },
   talkMenu() {

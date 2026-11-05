@@ -13,7 +13,7 @@ import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import { VALUES_CARDS } from '../types';
 import type { LevelDefinition } from '../levels/types';
 import { PLAY } from './params';
-import { activeEvent, missionScale, missionValue, playEffortShares, playRoundValue, livingCost } from './rules';
+import { activeEvent, giftNet, missionScale, missionValue, playEffortShares, playRoundValue, livingCost, setRoundLedger } from './rules';
 import { chooseClaim, credibilityValue, expectedRecord, honestyOf, postClaims, SILENT } from './claims';
 import { VALUES_PRIOR } from '../params';
 
@@ -378,6 +378,14 @@ export const playLevel1: LevelDefinition = {
       ...(inheritance ? { inheritance } : {}),
     });
     for (const p2 of s.players) p2.privateInfo.income = l.dealt[p2.id];
+    const gn = giftNet(pids, gifts);
+    setRoundLedger(s, Object.fromEntries(pids.map((id, i) => [id, [
+      { k: 'income' as const, n: l.dealt[id] },
+      { k: 'rule' as const, n: out.W[i] - l.dealt[id] },
+      { k: 'peek' as const, n: l.peeked.includes(id) ? -PLAY.PEEK_COST : 0 },
+      { k: 'inheritance' as const, n: inheritance === id ? P.inheritance : 0 },
+      { k: 'gift' as const, n: gn[id] },
+    ]])));
     finishRound(s, W, playEffortShares(s), headline(s, `l1.play.${p}`, {}));
   },
   talkMenu() {

@@ -2177,6 +2177,39 @@
       "tWho": "Play with: {list}",
       "rows": "One row per tester"
     },
+    "ledger": {
+      "show": "See the money",
+      "hide": "Close",
+      "moneyTitle": "Bank {a} to {b}",
+      "scoreTitle": "Score {a} to {b}",
+      "k": {
+        "income": "Income",
+        "incomeFinale": "The finale covers living costs",
+        "rule": "The rule (tax, share, floor)",
+        "peek": "Peek",
+        "inheritance": "Inheritance",
+        "gift": "Gifts",
+        "prize": "Hustle Prize",
+        "hours": "Cost of your hours",
+        "pay": "Pay",
+        "cover": "Cover",
+        "plan": "Cover plan",
+        "gym": "Gym",
+        "loss": "Wheel hit",
+        "training": "Training",
+        "judge": "HireBot pay",
+        "donation": "Donations",
+        "comeback": "Second Chance",
+        "living": "Living costs",
+        "other": "Other"
+      },
+      "s": {
+        "bank": "Half your bank change",
+        "mission": "Mission points",
+        "debt": "Debt points",
+        "guess": "Guesses and bonuses"
+      }
+    },
     "bank": {
       "round": "Your bank {from} to {to}: {w} this round, then -{c} living costs.",
       "comeback": "That includes your Second Chance: +{c}.",
