@@ -40,6 +40,7 @@ const PLAY_SCRIPT: Partial<Record<number, Record<string, (g: GameState) => unkno
     CLAIM: () => ({}),
   },
   4: {
+    COMEBACK: () => 'COINS',
     TRAIN: () => ({ train: true, gift: null }),
     CLAIM: () => 'TRAINED',
     HIRE: (g) => ({ hires: Object.fromEntries(g.players.filter((p) => p.id !== (g.levelState as { judge: string }).judge).map((p) => [p.id, 'COMPLEX'])), gift: null }),
@@ -111,6 +112,7 @@ export function personaDecision(g: GameState, persona: string, step: string | un
   if (g.levelIndex === 4 && g.play) {
     const l = g.levelState as { judge: string; current?: { meter?: Record<string, number>; train?: Record<string, boolean> } };
     const workers = g.players.filter((p) => p.id !== l.judge).map((p) => p.id);
+    if (step === 'COMEBACK') return persona === 'CAREFUL' ? 'POINTS' : 'COINS';
     if (step === 'TRAIN') return { train: persona === 'CAREFUL' ? (me.publicInfo as { group?: string }).group === 'CIRCLE' : persona === 'SKIMMER', gift: null };
     if (step === 'CLAIM') return persona === 'BLUFFER' ? 'TRAINED' : persona === 'SKIMMER' ? 'SILENT' : l.current?.train?.[me.id] ? 'TRAINED' : 'SILENT';
     if (step === 'HIRE')

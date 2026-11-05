@@ -16,11 +16,13 @@ const seed = arg('seed', 'playtest-1');
 const save = arg('save', '');
 const ruleset = arg('ruleset', 'STUDY');
 const episode = Number(arg('episode', '3'));
+// --mode LIFE plays a whole Play life (D-155).
+const playMode = arg('mode', 'EPISODE');
 // D-141, D-145: Play tables of 2 to 4 seats, at any difficulty, with an optional stage name (D-146).
 const players = Number(arg('players', '4'));
 const difficulty = arg('difficulty', 'NORMAL');
 const humanName = arg('name', '');
-const outDir = ruleset === 'PLAY' ? 'walkthrough-out/play' : 'walkthrough-out';
+const outDir = ruleset === 'PLAY' ? (arg('mode', 'EPISODE') === 'LIFE' ? 'walkthrough-out/life' : 'walkthrough-out/play') : 'walkthrough-out';
 mkdirSync(outDir, { recursive: true });
 
 const server = await createServer({ server: { port: 5188, strictPort: false }, logLevel: 'error' });
@@ -77,13 +79,13 @@ if (ruleset === 'PLAY' && opening) {
   }
 }
 await page.evaluate(
-  ([s, rs, ep, np, df, nm]) => {
+  ([s, rs, ep, np, df, nm, md]) => {
     const st = window.__veil.getState();
     st.updateSettings({ reducedMotion: true });
-    if (rs === 'PLAY') st.start({ mode: 'EPISODE', level: ep, ruleset: 'PLAY', nPlayers: np, difficulty: df, seed: s, humanName: nm || undefined });
+    if (rs === 'PLAY') st.start({ ...(md === 'LIFE' ? { mode: 'LIFE' } : { mode: 'EPISODE', level: ep }), ruleset: 'PLAY', nPlayers: np, difficulty: df, seed: s, humanName: nm || undefined });
     else st.start({ mode: 'FULL_RUN', nPlayers: 4, difficulty: 'NORMAL', seed: s });
   },
-  [seed, ruleset, episode, players, difficulty, humanName],
+  [seed, ruleset, episode, players, difficulty, humanName, playMode],
 );
 
 /** Measure the current screen. Runs in the page. */
@@ -191,9 +193,12 @@ for (let i = 0; i < 1000; i++) {
   rows.push({ ...m, group, decisions });
 }
 
+// RUNPLAN B.8 realistic pace: 3 s per claim screen, 8 s per other decision screen, 4 s per beat or result
+// screen (the reveal limit), 20 s for the Receipts.
+const paceOf = (r) => (r.kind === 'RUN_DEBRIEF' ? 20 : r.decisions ? (r.step === 'CLAIM' ? 3 : 8) : 4);
 const groups = [...new Set(rows.map((r) => r.group))];
 const table = [];
-table.push(`Walkthrough: seed ${seed}, ${width}x${height}, ${ruleset === 'PLAY' ? `PLAY EPISODE ${episode}` : 'FULL_RUN'}, ${ruleset === 'PLAY' ? players : 4} players, ${ruleset === 'PLAY' ? difficulty : 'NORMAL'}${humanName ? `, name ${humanName}` : ''}`);
+table.push(`Walkthrough: seed ${seed}, ${width}x${height}, ${ruleset === 'PLAY' ? (playMode === 'LIFE' ? 'PLAY LIFE' : `PLAY EPISODE ${episode}`) : 'FULL_RUN'}, ${ruleset === 'PLAY' ? players : 4} players, ${ruleset === 'PLAY' ? difficulty : 'NORMAL'}${humanName ? `, name ${humanName}` : ''}`);
 table.push('');
 table.push('Group  Screens  Decisions  Words  Tallest(px)  Overlaps  HScroll');
 let tot = { s: 0, d: 0, w: 0, o: 0, h: 0 };
@@ -208,6 +213,8 @@ for (const gname of groups) {
   tot = { s: tot.s + s, d: tot.d + d, w: tot.w + w, o: tot.o + o, h: tot.h + h };
   table.push(`${gname.padEnd(6)} ${String(s).padStart(7)}  ${String(d).padStart(9)}  ${String(w).padStart(5)}  ${String(tall).padStart(11)}  ${String(o).padStart(8)}  ${String(h).padStart(7)}`);
 }
+for (const gname of groups) table.push(`Pace ${gname}: ${(rows.filter((r) => r.group === gname).reduce((a, r) => a + paceOf(r), 0) / 60).toFixed(1)} min`);
+table.push(`Pace total: ${(rows.reduce((a, r) => a + paceOf(r), 0) / 60).toFixed(1)} min`);
 table.push(`${'Total'.padEnd(6)} ${String(tot.s).padStart(7)}  ${String(tot.d).padStart(9)}  ${String(tot.w).padStart(5)}  ${''.padStart(11)}  ${String(tot.o).padStart(8)}  ${String(tot.h).padStart(7)}`);
 // Play screens must fit the viewport: one big element per screen, nothing to scroll (D-108).
 const tall = ruleset === 'PLAY' ? rows.filter((r) => r.tall).length : 0;

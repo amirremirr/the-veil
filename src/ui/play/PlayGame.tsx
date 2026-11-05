@@ -19,6 +19,7 @@ import { eventText, hostLine, missionName, pick, timesWord } from './logic';
 import { CardsReveal1, ClaimScreen1, IncomesBeat, PeekScreen, Unborn, VoteScreen1, VotesBeat, summary1 } from './Episode1';
 import { CardsReveal2, EffortScreen, IncomeScreen, MyCards2, PrizeBeat, PrizeScreen, TaxScreen, summary2 } from './Episode2';
 import { AmendReveal, AmendScreen, ClaimScreen5, FairScreen, Finale, IncomesScreen, LobbyScreen, VeilScreen, summary5 } from './Episode5';
+import { LifeEnd } from './LifeEnd';
 import { BeliefBeat, CardsReveal4, ClaimScreen4, HiresBeat, JudgeScreen, MyCards4, PolicyIn, PolicyScreen, TrainScreen, summary4, type L4View } from './Episode4';
 import type { NearMiss } from '../../engine/play/types';
 
@@ -239,6 +240,22 @@ function DecisionFlow5({ v }: { v: ViewState }) {
   return <AmendScreen key={stepId} v={v} />;
 }
 
+/** v1 Section 6.3: the comeback card, offered on air to the contestant in last place after Episode 3. */
+function ComebackScreen({ v }: { v: ViewState }) {
+  const act = useStore((s) => s.act);
+  return (
+    <Stage v={v} footer={null}>
+      <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.comeback.label')}</p>
+      <h1 className="h-show mt-1 text-4xl leading-tight text-spot">{t('play.comeback.title')}</h1>
+      <p className="mt-2 text-base">{t('play.comeback.how', { c: PLAY.COMEBACK.COINS, p: PLAY.COMEBACK.POINTS })}</p>
+      <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
+        <BigButton onClick={() => act('COINS')}>{t('play.comeback.coins', { c: PLAY.COMEBACK.COINS })}</BigButton>
+        <BigButton onClick={() => act('POINTS')}>{t('play.comeback.points', { p: PLAY.COMEBACK.POINTS })}</BigButton>
+      </div>
+    </Stage>
+  );
+}
+
 /** Episode 4's beats and decision screens (D-151). */
 function DecisionFlow4({ v }: { v: ViewState }) {
   const online = useOnline();
@@ -265,6 +282,7 @@ function DecisionFlow4({ v }: { v: ViewState }) {
         <LockedInPanel v={v} />
       </Stage>
     );
+  if (stepId === 'COMEBACK') return <ComebackScreen v={v} />;
   if (stepId === 'POLICY') return <PolicyScreen v={v} />;
   if (stepId === 'CLAIM') return <ClaimScreen4 v={v} />;
   if (stepId === 'HIRE') return <JudgeScreen v={v} />;
@@ -458,6 +476,9 @@ function EpisodeSummary({ v }: { v: ViewState }) {
       v={v}
       bar={false}
       footer={
+        v.mode === 'LIFE' && v.phase.kind === 'LEVEL_DEBRIEF' ? (
+          <BigButton onClick={() => act()}>{v.levelIndex < 5 ? t('play.life.next', { n: v.levelIndex + 1 }) : t('play.life.receipts')}</BigButton>
+        ) : (
         <div className="flex gap-2">
           {!online && (
             <button type="button" className="min-h-[52px] flex-1 rounded-full bg-card font-bold" onClick={() => replay(false)}>
@@ -468,6 +489,7 @@ function EpisodeSummary({ v }: { v: ViewState }) {
             <BigButton onClick={menu}>{t('play.summary.menu')}</BigButton>
           </div>
         </div>
+        )
       }
     >
       <h1 className="h-show text-3xl leading-tight text-spot">{t('play.summary.title')}</h1>
@@ -499,6 +521,7 @@ export function PlayGameScreen() {
   if (k === 'VALUES_REVEAL') return <MissionReveal v={v} />;
   if (k === 'INTRO') return <EpisodeIntro v={v} />;
   if (k === 'GUESS') return <EpisodeGuess v={v} />;
+  if (v.mode === 'LIFE' && (k === 'RUN_DEBRIEF' || k === 'END')) return <LifeEnd v={v} />;
   if (k === 'LEVEL_DEBRIEF' || k === 'END') return <EpisodeSummary v={v} />;
   if (v.levelIndex === 5) {
     if (k === 'DECIDE') return <DecisionFlow5 key={`${v.levelIndex}-${v.phaseIdx}`} v={v} />;

@@ -48,10 +48,9 @@ export function PlayModeSelect() {
       <h1 className="h-show mb-1 text-3xl">{t('play.modes.title')}</h1>
       <p className="mb-4 text-sm italic">{t('play.tagline')}</p>
       <div className="space-y-3">
-        <button type="button" className="choice block p-4" disabled aria-disabled>
+        <button type="button" className="choice block p-4" data-life onClick={() => useStore.setState({ setupFor: { mode: 'LIFE' }, screen: 'playSetup' })}>
           <span className="h-show block text-2xl">{t('play.modes.life')}</span>
           <span className="mt-1 block text-sm text-soft">{t('play.modes.lifeDesc')}</span>
-          <span className="label mt-1 block">{t('play.modes.soon')}</span>
         </button>
         <section className="form-card p-3" aria-labelledby="one-ep">
           <h2 id="one-ep" className="h-show text-xl">
@@ -94,15 +93,13 @@ export function PlaySetup() {
     <Page narrow>
       <BackLink onClick={() => go('playMode')} />
       <section className="form-card p-4">
-        <p className="label">
-          {t('play.modes.ep', { n: setupFor.level ?? 3 })} · {t(`play.episodes.${setupFor.level ?? 3}.name`)}
-        </p>
+        <p className="label">{setupFor.mode === 'LIFE' ? t('play.modes.life') : `${t('play.modes.ep', { n: setupFor.level ?? 3 })} · ${t(`play.episodes.${setupFor.level ?? 3}.name`)}`}</p>
         <h1 className="h-show text-2xl">{t('play.setup.title')}</h1>
         <form
           className="mt-3 space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
-            start({ mode: 'EPISODE', level: setupFor.level ?? 3, ruleset: 'PLAY', nPlayers: n, difficulty, seed, humanName: name.trim() || undefined });
+            start({ ...(setupFor.mode === 'LIFE' ? { mode: 'LIFE' as const } : { mode: 'EPISODE' as const, level: setupFor.level ?? 3 }), ruleset: 'PLAY', nPlayers: n, difficulty, seed, humanName: name.trim() || undefined });
           }}
         >
           <fieldset>

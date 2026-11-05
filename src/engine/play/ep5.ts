@@ -411,7 +411,7 @@ export const playLevel5: LevelDefinition = {
     const l = st(s);
     const P = p5Params(s);
     const done = s.phase.kind === 'REVEAL' && s.phase.step === 'AMENDMENTS';
-    const open = revealPrivate || done || s.phase.kind === 'ROUND_SUMMARY' || s.phase.kind === 'GUESS' || s.phase.kind === 'LEVEL_DEBRIEF';
+    const open = revealPrivate || done || ['ROUND_SUMMARY', 'GUESS', 'LEVEL_DEBRIEF', 'RUN_DEBRIEF', 'END'].includes(s.phase.kind);
     const lobby = l.lobby
       ? Object.fromEntries(
           Object.entries(l.lobby).map(([id, lb]) => [id, open || P.leaked || id === viewer || lb.donateTo === viewer ? lb : { ...lb, donateTo: null, amount: 0 }]),

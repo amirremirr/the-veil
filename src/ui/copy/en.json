@@ -1849,6 +1849,106 @@
         "lieYou": "You broke {n} vote promises."
       },
       "short": "{t} tax, {F} floor"
+    },
+    "life": {
+      "next": "On to Episode {n}",
+      "receipts": "To the Receipts"
+    },
+    "comeback": {
+      "label": "A Second Chance",
+      "title": "The show feels sorry for you.",
+      "how": "You're in last place. Take {c} coins now, or {p} mission points. Everyone is watching.",
+      "coins": "Take {c} coins",
+      "points": "Take {p} points"
+    },
+    "receipts": {
+      "label": "The Receipts",
+      "title": "Your life, itemized.",
+      "worked": "Ep{ep}: {name} said \"{said}\". Lie. It paid.",
+      "caught": "Ep{ep}: {name} said \"{said}\". Lie. Caught.",
+      "betrayal": "Ep5: {name} took {n} from {donor}. Voted no.",
+      "none": "Not one lie all life. The network is furious.",
+      "skip": "Skip",
+      "next": "The missions flip",
+      "said": {
+        "RISK": {
+          "LOW": "I'm low risk",
+          "HIGH": "I'm high risk"
+        },
+        "TRAINING": {
+          "TRAINED": "I trained"
+        },
+        "VOTE": {
+          "P1": "I'm voting Free Market",
+          "P2": "I'm voting Safety Net",
+          "P3": "I'm voting Middle Way"
+        },
+        "EFFORT": {
+          "LITTLE": "I worked a little",
+          "SOME": "I worked some",
+          "LOT": "I worked a lot"
+        },
+        "AMEND": {
+          "YES": "I'll vote yes",
+          "NO": "I'll vote no"
+        }
+      }
+    },
+    "card": {
+      "rank": "{name}: #{r} of {n}",
+      "you": "You",
+      "best": "Best: Ep{ep} {name}, {n}",
+      "worst": "Worst: Ep{ep} {name}, {n}",
+      "bank": "Final bank: {n}",
+      "missionDone": "Mission {mission}: done",
+      "missionMissed": "Mission {mission}: missed",
+      "honesty": "Lied {lies} of {made} times. Caught {caught}.",
+      "noClaims": "Never made a claim.",
+      "small": "Just for fun. Not a diagnosis.",
+      "share": "Share the card"
+    },
+    "titles": {
+      "honest": {
+        "principled": {
+          "won": "Honest and rich. Suspicious.",
+          "mid": "Clean hands, average wallet.",
+          "last": "Honest to the last coin."
+        },
+        "payday": {
+          "won": "Honest until payday.",
+          "mid": "Truthful, but flexible about taxes.",
+          "last": "Honest, and it showed."
+        }
+      },
+      "some": {
+        "principled": {
+          "won": "Lied a little. Won a lot.",
+          "mid": "Mostly true, mostly fine.",
+          "last": "Bent the truth. It bent back."
+        },
+        "payday": {
+          "won": "Principled until the bank statement.",
+          "mid": "A fair-weather fairness fan.",
+          "last": "Changed your mind and your story."
+        }
+      },
+      "liar": {
+        "principled": {
+          "won": "Lied often. Won everything.",
+          "mid": "Professional storyteller.",
+          "last": "Lied a lot. Nobody bought it."
+        },
+        "payday": {
+          "won": "Every word for sale. Sold out.",
+          "mid": "Whatever pays, whatever's fair.",
+          "last": "All bluff, no payoff."
+        }
+      },
+      "quiet": {
+        "won": "Said nothing. Won anyway.",
+        "mid": "The quiet one. Nobody knows.",
+        "last": "Silent, and it cost you."
+      }
     }
   }
 }
