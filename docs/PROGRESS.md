@@ -65,7 +65,7 @@ ALL DONE
 | R1 Ep5 donations follow promises | DONE | S-a 24%, lie success 41%, took-and-voted-no 24% of games, E5 passes (D-158) |
 | R2 Ep4 judges read claims | DONE | E4a/E4b pass, S-a 43%, lie success 35%; read with claim 99.5% and contested 13% fail (D-159) |
 | R3 LIFE stakes | DONE | F-f 48.5%; E3a-d pass in a life; F-a 1.89, F-b 18%, F-d 88% fail (D-160) |
-| R4 First fair answer | | |
+| R4 First fair answer | DONE | asked before birth in Episode 1 of a life; E5 passes (D-161) |
 | R5 Ep2 lying | | |
 | R6 Ep1 claims as polls | | |
 | E1 Fresh eyes | | |
@@ -82,3 +82,4 @@ ALL DONE
 - R1: Episode 5 reordered (proposal with the second fair answer, claims, then donations); donors fund yes-claimers; Episode 5 walkthrough 15 screens, all 760 px, claim screen 35 words; 200 unit tests, e2e passed (D-158).
 - R2: Bayes reading of claims in Episode 4, weight 0.25, credibility value 25; 200 unit tests, e2e 15 passed, Episode 4 walkthrough every screen 760 px (D-159).
 - R3: life start 10, living cost 45, Episode 3 loss 220 in a life; 200 unit tests, e2e 15 passed, life walkthrough 111 screens all 760 px (D-160).
+- R4: first fair answer in Episode 1 (LIFE), Episode 5 asks only the second in a life; 201 unit tests, e2e 15 passed, life walkthrough all 760 px (D-161).

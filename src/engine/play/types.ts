@@ -39,6 +39,8 @@ export interface PlayState {
   effort?: Record<PlayerId, number>;
   /** D-155, LIFE only: the game state at the current episode's start (JSON), for the near-miss replay. Never in a view. */
   episodeSnap?: string;
+  /** R4, LIFE only: every contestant's first unpaid fair-tax answer, given before birth in Episode 1. */
+  fairFirst?: Record<PlayerId, number>;
   /** v1 Section 6.3, LIFE only: the comeback card, once per life. */
   comeback?: { pid: PlayerId; took: 'COINS' | 'POINTS' };
   /** The current round's event (cleared at the start of each episode). */

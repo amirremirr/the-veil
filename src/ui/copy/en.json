@@ -1815,7 +1815,8 @@
         "before": "Unpaid. Just your opinion, before you know your income.",
         "after": "Unpaid. Same question, now that you know.",
         "submit": "Answer",
-        "beforeLife": "Unpaid. Just your opinion, before the rules land."
+        "beforeLife": "Unpaid. Just your opinion, before the rules land.",
+        "born": "Unpaid. Before you're born. You'll be asked again at the finale."
       },
       "inc": {
         "label": "The incomes, poorest first",

@@ -2,7 +2,8 @@
 // income. Round 1 is the pure veil; in round 2 anyone may pay PEEK_COST to see their own income first, and
 // everyone sees who peeked. Claims are about votes. Study's Level 1 principles and tax solver are reused;
 // Study games never reach this file (the Level 1 dispatcher sends only Play games here).
-import { BOT, L1 } from '../params';
+import { BOT, L1, L5 } from '../params';
+import { fairBefore } from './ep5';
 import { botParams, botRng, finishRound, gameRng, headline, ids, idx, orderedDraws, playerOf, pluralityResolve, pluralityWinnerDist, reliabilityOf } from '../core';
 import { afterTaxEqualRebate, PRINCIPLES, solvePrinciple, taxGrid, type PrincipleId } from '../tax';
 import { mean } from '../scoring';
@@ -201,10 +202,12 @@ export const playLevel1: LevelDefinition = {
     pl.belief = {};
     pl.belief2 = {};
   },
-  phases() {
+  phases(s) {
     const out: Phase[] = [];
     for (let r = 1; r <= PLAY.L1.ROUNDS; r++) {
       out.push({ kind: 'BRIEFING', round: r });
+      // R4 (D-161): in a life, the unpaid "What tax rate is fair?" before birth (v1 Section 5, Episode 1).
+      if (r === 1 && s.mode === 'LIFE') out.push({ kind: 'DECIDE', step: 'FAIR_1', round: 1 });
       if (r >= PLAY.L1.PEEK_FROM_ROUND) out.push({ kind: 'DECIDE', step: 'PEEK', round: r });
       out.push({ kind: 'DECIDE', step: 'CLAIM', round: r }, { kind: 'DECIDE', step: 'VOTE', round: r }, { kind: 'REVEAL', step: 'VOTE', round: r }, { kind: 'ROUND_SUMMARY', round: r });
     }
@@ -238,6 +241,7 @@ export const playLevel1: LevelDefinition = {
   },
   validate(s, step, pid, d) {
     if (step === 'PEEK') return typeof d === 'boolean' ? d : null;
+    if (step === 'FAIR_1') return L5.TAX_OPTIONS.some((t) => Math.abs(t - (d as number)) < 1e-9) ? d : null;
     if (step === 'CLAIM') return d === SILENT || CLAIMABLE.includes(d as PrincipleId) ? d : null;
     const c = d as { vote?: unknown; gift?: Gift | null };
     if (!c || !PRINCIPLES.includes(c.vote as PrincipleId)) return null;
@@ -247,6 +251,7 @@ export const playLevel1: LevelDefinition = {
   },
   botDecide(s, botId, step) {
     if (step === 'PEEK') return botPeek(s, botId);
+    if (step === 'FAIR_1') return fairBefore(s, botId);
     if (step === 'CLAIM') {
       const v = intendedVote(s, botId);
       // Talk does not move a bot's own payoff in this model, so a lie never gains coins (lieGain 0): a bot claims
@@ -268,6 +273,10 @@ export const playLevel1: LevelDefinition = {
   },
   resolve(s, step, decisions) {
     const l = st(s);
+    if (step === 'FAIR_1') {
+      s.play!.fairFirst = decisions as Record<PlayerId, number>;
+      return;
+    }
     if (step === 'PEEK') {
       l.peeked = ids(s).filter((id) => decisions[id] === true);
       for (const id of l.peeked) playerOf(s, id).privateInfo.income = l.dealt[id];

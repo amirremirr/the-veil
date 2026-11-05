@@ -206,6 +206,11 @@ function metricBestTax(s: GameState, card: ValuesCard, F: number, i: number, inc
 }
 
 /** Study's fair-answer rule (programmed: E5 is labeled as such): the mission's best tax, mixed toward the money-best tax once incomes are known. */
+/** R4 (D-161): the first fair answer before anything is known (no floor yet), as Episode 5's "before". Programmed, as E5. */
+export function fairBefore(s: GameState, pid: PlayerId): number {
+  return metricBestTax(s, playerOf(s, pid).values, 0, 0, orderedDraws(p5Deck(), s.players.length));
+}
+
 function botFair(s: GameState, pid: PlayerId, after: boolean): number {
   const l = st(s);
   const me = playerOf(s, pid);
@@ -251,6 +256,8 @@ export const playLevel5: LevelDefinition = {
   rounds: 1,
   init(s) {
     s.levelState = { incomesRevealed: false, order: [], amendments: [] } satisfies P5State;
+    // R4 (D-161): in a life, the first fair answer was given before birth, in Episode 1.
+    if (s.mode === 'LIFE' && s.play!.fairFirst) (s.levelState as P5State).fair1 = { ...s.play!.fairFirst };
     const pl = s.play!;
     pl.joint = {};
     pl.belief = {};
@@ -260,7 +267,7 @@ export const playLevel5: LevelDefinition = {
     const out: Phase[] = [
       { kind: 'BRIEFING', round: 1 },
       { kind: 'DECIDE', step: 'VEIL', round: 1 },
-      { kind: 'DECIDE', step: 'FAIR_1', round: 1 },
+      ...(s.mode === 'LIFE' && s.play!.fairFirst ? [] : [{ kind: 'DECIDE' as const, step: 'FAIR_1', round: 1 }]),
       { kind: 'REVEAL', step: 'INCOMES', round: 1 },
       { kind: 'DECIDE', step: 'FAIR_2', round: 1 },
       { kind: 'DECIDE', step: 'CLAIM', round: 1 },

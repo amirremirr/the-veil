@@ -49,3 +49,18 @@ describe('Play LIFE', () => {
     expect(count(T)).toBeGreaterThanOrEqual(20);
   });
 });
+
+describe('R4: the first fair answer', () => {
+  it('is asked in Episode 1 of a life, carried to Episode 5, and Episode 5 asks only the second', () => {
+    const s = createInitialState({ mode: 'LIFE', ruleset: 'PLAY', nPlayers: 4, difficulty: 'NORMAL', seed: 'fair-1', allBots: true } as Parameters<typeof createInitialState>[0]);
+    const steps: string[] = [];
+    let g = 0;
+    while (s.phase.kind !== 'END' && g++ < 20000) {
+      if (s.phase.kind === 'INTRO') for (const q of s.phaseQueue) if (q.step?.startsWith('FAIR')) steps.push(`${s.levelIndex}:${q.step}`);
+      step(s, { type: 'ADVANCE' });
+    }
+    expect(steps).toEqual(['1:FAIR_1', '5:FAIR_2']);
+    const l5 = s.levelState as { fair1: Record<string, number> };
+    expect(l5.fair1).toEqual(s.play!.fairFirst);
+  });
+});

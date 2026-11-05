@@ -164,7 +164,7 @@ function DecisionFlow1({ v }: { v: ViewState }) {
   const { done } = useWaiting(v);
   const stepId = v.phase.step;
   const ev = v.play!.event;
-  const firstScreen = stepId === 'PEEK' || (stepId === 'CLAIM' && v.round < PLAY.L1.PEEK_FROM_ROUND);
+  const firstScreen = stepId === 'PEEK' || stepId === 'FAIR_1' || (stepId === 'CLAIM' && v.round < PLAY.L1.PEEK_FROM_ROUND && v.mode !== 'LIFE');
   const beats: Array<'cards' | 'event' | 'claims'> = [];
   if (firstScreen && v.round === 1) beats.push('cards');
   if (firstScreen && ev && ev.id !== 'QUIET' && ev.round === v.round && ev.level === v.levelIndex) beats.push('event');
@@ -184,6 +184,7 @@ function DecisionFlow1({ v }: { v: ViewState }) {
       </Stage>
     );
   if (stepId === 'PEEK') return <PeekScreen v={v} />;
+  if (stepId === 'FAIR_1') return <FairScreen v={v} />;
   if (stepId === 'CLAIM') return <ClaimScreen1 v={v} />;
   return <VoteScreen1 v={v} />;
 }
