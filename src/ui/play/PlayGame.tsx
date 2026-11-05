@@ -339,7 +339,7 @@ function ResultsFlow({ v }: { v: ViewState }) {
 function EpisodeGuess({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
   const others = v.players.filter((p) => p.id !== v.viewer);
-  const [target, setTarget] = useState(others[0]?.id ?? '');
+  const [target, setTarget] = useState('');
   const [card, setCard] = useState<ValuesCard | null>(null);
   return (
     <Stage
@@ -350,7 +350,7 @@ function EpisodeGuess({ v }: { v: ViewState }) {
             {t('play.guess.skip')}
           </button>
           <div className="flex-[2]">
-            <BigButton disabled={!card} onClick={() => card && act(undefined, { [target]: card })}>
+            <BigButton disabled={!card || !target} onClick={() => card && target && act(undefined, { [target]: card })}>
               {t('play.guess.submit')}
             </BigButton>
           </div>

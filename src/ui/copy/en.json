@@ -1286,7 +1286,7 @@
       "lead": "Leading the life: {name}",
       "leadYou": "You lead the life!",
       "scoreLabel": "Your score",
-      "score": "{s} = half your bank {b} + half your mission {m}, minus {d} debt points this life ({e} this episode), plus guesses {g}. The ranking uses this score."
+      "score": "{s} = half your bank {b} + half your mission {m}, minus {d} debt points this life ({e} this episode), plus guesses and Second Chance points {g}. The ranking uses this score."
     },
     "really": {
       "button": "What was really going on?",
@@ -1593,7 +1593,7 @@
       },
       "cards": {
         "label": "Your card",
-        "care": "Childcare duty: yes. Long hours cost you 80 more.",
+        "care": "Childcare duty: yes. Long hours cost you {n} more.",
         "noCare": "Childcare duty: no.",
         "public": "Everyone can see every group and duty. Only training is secret.",
         "judges": "HireBot seats, round by round: {names}."
@@ -1661,7 +1661,7 @@
         "pay": "Your job paid {p}.",
         "payTrain": "Your job paid {p}; training cost you {c}.",
           "other": "Gifts and other: {n}.",
-        "care": "(Childcare duty: long hours cost you 80, so the flexible job pays more.)"
+        "care": "(Childcare duty: long hours cost you {n}, so the flexible job pays more.)"
       },
       "stamp": {
         "GOOD": "TRAINED HIRE",

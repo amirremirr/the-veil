@@ -6,6 +6,7 @@ import type { P4Preview, P4Round } from '../../engine/play/ep4';
 import type { Group, Job, Policy, Priors } from '../../engine/levels/level4';
 import { POLICIES } from '../../engine/levels/level4';
 import { PLAY } from '../../engine/play/params';
+import { L4 } from '../../engine/params';
 import { useStore } from '../store';
 import { t } from '../i18n';
 import { coins, pct } from '../labels';
@@ -75,7 +76,7 @@ export function MyCards4({ v, next }: { v: ViewState; next: () => void }) {
       <div className="my-auto" data-mycards>
         <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.l4.cards.label')}</p>
         <p className="h-show mt-2 text-5xl leading-none text-spot">{groupName(lv.groups[me])}</p>
-        <p className="mt-3 text-base">{t(lv.care[me] ? 'play.l4.cards.care' : 'play.l4.cards.noCare')}</p>
+        <p className="mt-3 text-base">{t(lv.care[me] ? 'play.l4.cards.care' : 'play.l4.cards.noCare', { n: L4.CHAOS_COST })}</p>
         <p className="mt-3 text-base">{t('play.l4.cards.public')}</p>
         <p className="mt-3 text-sm font-semibold">{t('play.l4.cards.judges', { names: order.map((p) => shortName(v, p.id)).join(', ') })}</p>
         {v.play!.comeback && v.play!.comeback.pid !== v.viewer && (
@@ -259,7 +260,7 @@ export function HiresBeat({ v, next, last }: { v: ViewState; next: () => void; l
             );
           })}
         </ul>
-        {r.judge !== me && r.jobPay?.[me] !== undefined && <p className="mt-2 text-sm">{t(r.train?.[me] ? 'play.l4.res.payTrain' : 'play.l4.res.pay', { p: coins(r.jobPay[me]), c: coins(Math.max(0, (r.costs?.[me] ?? 0) - (v.play!.event?.id === 'GRANT' && v.play!.event.round === v.round ? PLAY.L4_EVENTS.GRANT.COST_CUT : 0))) })}{lv.care[me] && r.job?.[me] === 'COMPLEX' ? ` ${t('play.l4.res.care')}` : ''}{(() => { const cost = r.train?.[me] ? Math.max(0, (r.costs?.[me] ?? 0) - (v.play!.event?.id === 'GRANT' && v.play!.event.round === v.round ? PLAY.L4_EVENTS.GRANT.COST_CUT : 0)) : 0; const other = Math.round((W[me] ?? 0) - r.jobPay![me] + cost); return other ? ` ${t('play.l4.res.other', { n: `${other > 0 ? '+' : ''}${other}` })}` : ''; })()}</p>}
+        {r.judge !== me && r.jobPay?.[me] !== undefined && <p className="mt-2 text-sm">{t(r.train?.[me] ? 'play.l4.res.payTrain' : 'play.l4.res.pay', { p: coins(r.jobPay[me]), c: coins(Math.max(0, (r.costs?.[me] ?? 0) - (v.play!.event?.id === 'GRANT' && v.play!.event.round === v.round ? PLAY.L4_EVENTS.GRANT.COST_CUT : 0))) })}{lv.care[me] && r.job?.[me] === 'COMPLEX' ? ` ${t('play.l4.res.care', { n: lv.policy === 'D' ? L4.CHAOS_COST_SUBSIDIZED : L4.CHAOS_COST })}` : ''}{(() => { const cost = r.train?.[me] ? Math.max(0, (r.costs?.[me] ?? 0) - (v.play!.event?.id === 'GRANT' && v.play!.event.round === v.round ? PLAY.L4_EVENTS.GRANT.COST_CUT : 0)) : 0; const other = Math.round((W[me] ?? 0) - r.jobPay![me] + cost); return other ? ` ${t('play.l4.res.other', { n: `${other > 0 ? '+' : ''}${other}` })}` : ''; })()}</p>}
         <p className="mt-2 text-sm">{t('play.l4.res.judgePay', { name: shortName(v, r.judge!), n: coins(r.judgePay ?? 0) })}</p>
         {bankLineText(v) && <p className="mt-2 text-sm font-semibold" data-bankline>{bankLineText(v)}</p>}
       </div>

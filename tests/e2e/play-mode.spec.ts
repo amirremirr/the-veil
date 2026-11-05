@@ -65,6 +65,7 @@ async function playThrough(page: Page, o: { gift?: boolean; noPoll?: boolean } =
       seen.wheels++;
       await page.getByRole('button', { name: 'Tap to continue' }).click();
     } else if (await page.getByRole('heading', { name: 'Guess a mission' }).count()) {
+      await page.getByRole('group', { name: 'Who?' }).getByRole('button').first().click();
       await page.getByRole('button', { name: 'Get rich' }).click();
       await page.getByRole('button', { name: 'Lock in my guess' }).click();
     } else throw new Error(`unknown screen: ${(await page.locator('body').innerText()).slice(0, 200)}`);
