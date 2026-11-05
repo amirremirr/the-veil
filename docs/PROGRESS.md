@@ -68,7 +68,7 @@ ALL DONE
 | R4 First fair answer | DONE | asked before birth in Episode 1 of a life; E5 passes (D-161) |
 | R5 Ep2 lying | DONE | S-a 82% to 54% (target 50%); E2 checks pass; lie success 14% (D-162) |
 | R6 Ep1 claims as polls | DONE | S-a 22%, lie success 72%, E1 +52.6 points; S-b 84% (D-163) |
-| E1 Fresh eyes | | |
+| E1 Fresh eyes | DONE | two AI reviewers (proxy), verbatim in docs/playtest/fresh-eyes.md |
 | E2 Design audit | | |
 | E3 Logic audit | | |
 | E4 UX audit | | |
@@ -85,3 +85,4 @@ ALL DONE
 - R4: first fair answer in Episode 1 (LIFE), Episode 5 asks only the second in a life; 201 unit tests, e2e 15 passed, life walkthrough all 760 px (D-161).
 - R5: Episode 2 credibility value 17; 201 unit tests, e2e passed (D-162).
 - R6: Episode 1 claims pay through strategic votes; credibility value 0.5; 201 unit tests, e2e 15 passed, Episode 1 walkthrough all 760 px (D-163). Also committed: `sim/audit.ts` (for E3) and a first draft of `docs/CASE_STUDY.md` (for F2).
+- E1: full life (107 screens) and Episode 3 Hard (26) captured; Reviewer A (designer) and Reviewer B (casual) saved verbatim. Both: the bank math and the ranking are never explained; A: the Mission and odds labels do the thinking; B: wanted to stop at the HireBot screen and the finale claims.
