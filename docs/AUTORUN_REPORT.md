@@ -1,5 +1,63 @@
 # AUTORUN report
 
+## Round 2 and the big-picture review (5 November 2026, about 03:45 to 05:30 Istanbul time)
+
+Every number here comes from bot-only simulations, and every review is AI judgment (a proxy). **No human has played anything built here.**
+
+### What each task did
+
+| Task | Status | Result |
+|---|---|---|
+| R1 Episode 5: donations follow promises | DONE | Claims come before donations; donors fund "yes" claimers by record and pivotality. S-a 24.3%, lie success 40.9%, "Took your 40. Voted no." in 23.5% of games, E5 passes (D-158). |
+| R2 Episode 4: judges read claims | DONE | Bayes' rule with the worker's record and the table's honesty prior (weight 0.25; 0.5 and 1 broke E4b). E4a 90.0%, E4b 0.0%, S-a 42.6%, lie success 34.7%. Training read with the claim 99.5% and contested hires 13.2% still miss (D-159). |
+| R3 Life stakes | DONE | Life start 10, living cost 45, Episode 3 loss 220 in a life. Debt in 48.5% of lives (was 0.1%). E3a to E3d measured inside a life for the first time, all pass. F-a 1.89, F-b 18% and F-d 88% still miss (D-160). |
+| R4 First fair answer | DONE | Asked before birth in Episode 1 of a life; Episode 5 asks only the second; E5 passes (D-161). |
+| R5 Episode 2 lying | DONE | S-a 82% to 54% (target 50%): fewer lies would flip the gating "claimed effort exceeds true effort" check (D-162). |
+| R6 Episode 1 claims as polls | DONE | Claims pay through strategic votes. S-a 21.8%, lie success 72.4%, E1 +52.6 points (D-163). |
+| E1 Fresh eyes | DONE | Two AI reviewers saw only screenshots (`docs/playtest/fresh-eyes.md`). |
+| E2 to E4 Audits | DONE | `docs/review/design-audit.md`, `logic-audit.md`, `ux-audit.md`. |
+| E5 Fixes | DONE | 15 of 20 ranked fixes made (`docs/review/fix-list.md`, D-164); Reviewer B re-run on the new screens. |
+| F1 Playtest kit | DONE | `?playtest=1`, survey, results code, `?playtest=results`, `docs/playtest/HOW_TO.md` (D-166). |
+| F2 Case study | DONE | `docs/CASE_STUDY.md` (D-165). |
+
+### Simulator checks after round 2 (bots only)
+
+| Episode | E checks | Claim layer |
+|---|---|---|
+| 1 Born | E1 +52.6 points (pass) | S-a 21.8%, lie success 72.4%, S-b 83.7% |
+| 2 First Hustle | E2 -5.37 (pass), claimed over true +0.034 h (pass) | S-a 54.1%, lie success 13.6%, S-b 96.2% |
+| 3 Bad Luck Season | E3a to E3d pass (unchanged) | lie success 67.5%, S-b 82.6%, bar recall 31.3% |
+| 4 The Hiring Round | E4a 90.0%, E4b 0.0% (pass) | S-a 42.6%, lie success 34.7%, read with claim 99.5% |
+| 5 Grand Finale | E5 -0.175 (pass, programmed) | S-a 24.3%, lie success 40.9%, betrayal in 23.5% of games |
+| Life (1,000) | every E check passes, E3 inside a life too | F-f 48.5%, F-a 1.89, F-b 18%, F-c 48.5%, F-d 88% |
+
+### The big-picture verdict (AI judgment, a proxy)
+
+- **Episode 1:** strongest moment, the Peek (public, costly signalling); weakest, a claim before anyone knows anything. A first-timer would likely not ask for another round of it alone: it is the tutorial.
+- **Episode 2:** strongest, the dice reveal ("Effort is invisible. Luck is loud."); weakest, a tax vote that bots keep near zero. Maybe another round: the prize vote is fun.
+- **Episode 3:** strongest, being barred, and the death spiral when it happens; weakest, a season on Normal where the wheel never hits. On Hard the designer would play again.
+- **Episode 4:** strongest, the belief board drifting from "the numbers"; weakest, the judge screen (both reviewers stalled there before E5's rewrite).
+- **Episode 5:** strongest, the bribe and the fair-answer shift ("the best idea in the game"); weakest, the claim and donation screens before E5.
+- **The life:** the score was never explained, so the ending felt arbitrary ("lost by 55 while ahead"); E5 now explains the score and itemizes every bank change. Reviewer A would play it "gladly with 4 to 6 friends on phones", not solo on Normal.
+
+### Fixes made in E5 and left
+
+Made: bank lines on every result, the score explained, the life summary's start-bank bug, Episode 4's "Round 5" button, a "Don't train" tile, plainer Episode 5 claims and ballots, the comeback exchange rate, host lines that contradicted the screen, varied honest-peak lines, LIE stamps in red, a "claims work like polls" line, 44 px chips, no mission hints on Hard, and a plain-language judge screen. Left: the wheel's luck on Normal, multiplayer, feedback on a wrong mission guess, one layout for the claim verb, the challenge-code replay exploit.
+
+### New "Needs Amir" items
+
+- Hard now hides the mission hints (D-164); Easy and Normal keep them (v2 B.6).
+- Episode 2 can't hit both S-a and the added E2 check: choose which matters more (D-162).
+- Episode 4's training read with the claim stays near 100% while E4b holds (D-159).
+- Life stakes: start 10, living cost 45, Episode 3 loss 220 in a life (D-160).
+- Episode 5 order changed: proposal with the second fair answer, claims, then donations (D-158).
+
+**Human validation: NOT DONE.** Gates 1 and 2 are still outstanding.
+
+---
+
+# Round 1
+
 For Amir. One unattended session on 5 November 2026, about 01:20 to 03:45 Istanbul time, on branch `autorun`. Every number below comes from bot-only simulations. It describes the bots, not people. **No human has played anything built here.**
 
 ## 1. What was built

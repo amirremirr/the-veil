@@ -105,3 +105,70 @@ I wouldn't replay solo on Normal. I'd try Hard once more, because the lies make 
 4. **Make disaster real and tune the stakes.** Guarantee at least one wheel hit per episode, ideally to someone at the table, and scale bribes and the finale floor to bank sizes.
 5. **Cut and clarify.** Simplify the HireBot screen (067) and the finale claim and donation flow (096–097). Add feedback to the mission guess, or drop it to once per run. Fix the host lines that contradict what's on screen.
 
+## Reviewer B again, after the E5 fixes (a new reviewer, same instructions)
+
+Captured again with the same seeds after E5 (107 and 26 screens). Note on the capture: the persona's choices are submitted by a script, not by tapping, so a screenshot can show the screen's default selection (for example "Don't train" ticked, or the slider at 5 hours) while the submitted choice differs. Points 4's "Don't train checked but you trained", "5 hours shown vs 6" and "yes claims I never made" come from that, not from the game.
+
+**1. What I thought I was supposed to do on each kind of screen**
+
+- **Mission card (001):** Got it. I'm secretly trying to "reward hard work." Clear and fun.
+- **Episode intros and "Tap to continue" cards:** Read the setup and laugh at the sponsor joke. These were fine.
+- **"What tax is fair?" (004, 095):** It says "unpaid," so I figured it was a quiz with no right answer. I didn't know why it was being asked.
+- **Claims (005, 011, 041, 071, 096):** Tell the table something, and lying is allowed. I understood that. But in ep5 (096), "Say it" sends yes/no votes on other people's proposals, and I never picked any. Later the game says Ana claimed "yes" on everything (098–101).
+- **Vote and choice cards (007, 012, 044, 048, 058, 070):** Pick a card. I mostly picked whichever "Mission +" number was biggest, because I didn't understand anything else on the card.
+- **Work slider (023, 027):** Slide the hours and say how much I worked. Clear.
+- **Hustle Prize, Bar one?, HireBot (025, 048, 067):** Vote for someone or bar someone. The percentages ("63% a lot", "98% risky") meant nothing to me.
+- **Results and yellow "BREAKING" cards:** Look at my bank and move on. I stopped checking the maths around ep3.
+- **Episode summaries (018, 039, 063…):** These are supposed to explain my score. They made it more confusing.
+
+**2. Where I got lost**
+
+- **009:** Safety Net says "Everyone gets 40," but I got 61. And there's a "-45 living costs" that nobody mentioned before.
+- **013:** Free Market won with only 1 vote out of 4. Why?
+- **013–014:** I paid 10 coins to peek, but I can't see that cost anywhere in the bank maths.
+- **036:** The slider said "Work 5 hours," but the reveal says I worked 6 hours every round.
+- **045, 050, 053:** My bank goes up even after I pay for cover plus 45 living costs. There's hidden income that nobody explained.
+- **042, 060:** "Calm" vs "Worrier." I still don't know what being a Worrier does.
+- **049 vs 054:** Ugo gets barred, then shows as "Covered" the next round.
+- **066–067:** Circle, Square, childcare duty, "Simple", "line 60%". This is where I gave up understanding.
+- **072:** I trained (cost 30), but the 30 coins don't show up in my bank.
+- **077, 082:** "Don't train" has the checkmark, then the next screen says "You trained."
+- **Every summary:** "minus debt 19" keeps appearing even when my bank is positive.
+- **Rankings (017, 038, 062, 088, 104):** I came 4th every time and no scores were shown, even after I "completed" my mission. On hard mode (025) the scores were finally shown, which helped.
+- **097:** "Leaked Receipts: every donation is shown," then the next screen says "Money goes in secret."
+- **Hard mode:** Nothing told me it was harder. It looked the same, except the wheel cost 140 instead of 220.
+
+**3. What made me laugh or care**
+
+- The host Dash is genuinely funny: "Our lawyers say this is entertainment. Our accountants disagree." "The weather department has filed a complaint against the weather."
+- Chet's "Bad luck is a mindset. Mine is excellent," right after he loses 140 coins.
+- The sponsor names (Grindset Energy Drinks, Paid for by Friends of Whoever Wins).
+- I cared in ep1 when I peeked, saw I was the poorest, and Free Market left me with 0. That stung in a good way.
+- In ep2 I liked catching Ugo's lie on camera.
+- I was mildly hurt at 053 to be barred while low-risk people sailed through.
+
+**4. When I wanted to stop**
+
+At ep4 (066–067). By then I'd come last three times with no idea why, the numbers didn't add up, and then shapes and percent meters showed up. Ep3's wheel also never hit anyone, so nothing exciting happened. Dash even jokes "our ratings are crying," and he's right.
+
+**5. Would I play again?**
+
+Probably not, unless someone explained the scoring to me first. The vibe, the jokes and the game-show framing are great, and I'd show a friend the host lines. But I did what my mission asked, was told "Mission complete," and still came dead last every time, so it felt like my choices didn't matter. The end card says "Honest to the last coin" and offers a rematch, but I don't know what I'd do differently.
+
+**6. Top 5 problems, worst first**
+
+1. **Coins and score don't add up.** There's hidden income, missing costs (peek, training), a "debt 19" that never goes away, and "you got 61" when the card said 40. I stopped trusting the numbers.
+2. **The ranking gives no feedback.** I was 4th every time with no scores shown, even with my mission complete. I can't learn anything from that.
+3. **Too many new systems, explained in one line each.** Talent times effort plus a die, insurance pools, Calm/Worrier, Circle/Square and HireBot beliefs, amendments with bribes. Ep4 was where I gave up.
+4. **The screens contradict themselves.** 5 hours shown vs 6 hours counted, "Don't train" checked but "You trained," "shown" vs "secret" donations, Ugo barred then covered, and my "yes" claims that I never made.
+5. **Choices are labelled only with "Mission +X" numbers and percentages,** so I picked the biggest number instead of thinking. Ties and plurality wins (Free Market with 1 vote, Half cover in a 2–2 tie) go unexplained, and I couldn't tell hard mode was any harder.
+
+## Before and after (summary, AI judgment)
+
+| Problem | Before E5 | After E5 |
+|---|---|---|
+| Bank math | "I stopped trying to follow the coins" | Living costs now noticed ("-45 living costs"), but peek and training costs still invisible: still the top problem |
+| Score and ranking | "Nobody ever told me what the score is" | The summary formula was read, but "debt 19" (debt points so far) and ranks without scores still confuse |
+| Episode 4 | "Totally lost" | Still "where I gave up" |
+| Episode 5 | "No idea what I was voting on" | No complaint about the vote screens; one about Leaked Receipts vs "in secret" |
+| Wanted to play again | "Maybe once" | "Probably not, unless someone explained the scoring" |
