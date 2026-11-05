@@ -167,7 +167,7 @@ Update README's Status table. Commit and push. Write "ALL DONE" as the last line
 
 ## D. Round 2 (second unattended session, same rules as Section A)
 
-Round 1 built everything, but the claim layer is dead outside Episode 3: in Episodes 1, 4 and 5 a claim earns a bot nothing, so bots never lie, and reading is trivial. A game where only one episode has bluffing breaks the spine (v2 Section 3). Round 2 fixes that, then life stakes. Same Section A rules, B lessons, quality gate, commit and push after every task, PROGRESS.md updated after every task (add rows R1 to R7). Order: R1 to R6, then Section E (E1 to E5), then R7 last. If it's after 09:30 Istanbul time, skip to R7.
+Round 1 built everything, but the claim layer is dead outside Episode 3: in Episodes 1, 4 and 5 a claim earns a bot nothing, so bots never lie, and reading is trivial. A game where only one episode has bluffing breaks the spine (v2 Section 3). Round 2 fixes that, then life stakes. Same Section A rules, B lessons, quality gate, commit and push after every task, PROGRESS.md updated after every task (add rows R1 to R7). Order: R1 to R6, then Section E (E1 to E5), then Section F (F1, F2), then R7 last. If it's after 09:45 Istanbul time, skip to R7.
 
 The principle for every fix (B.2): **a claim must pay through other players' decisions, computed from the game's payoffs.** Players who listen must also discount by credibility (the speaker's record and the table's known honesty mix), so lies pay sometimes and get caught sometimes. No invented constants.
 
@@ -199,7 +199,7 @@ The principle for every fix (B.2): **a claim must pay through other players' dec
 - Bots vote strategically under plurality: each votes for its best rule among those it believes can win, using claims as polls, discounted by record (strategic voting under plurality is real; Duverger's law). That gives claims a payoff: claiming a rule makes it look viable. Bots claim by Ep3's rule.
 - Targets: S-a at least 5%; report lie success and S-b. Episode 1 is the tutorial, so low lying is acceptable. E1 must pass.
 
-### R7. Report (always last, after Section E)
+### R7. Report (always last, after Sections E and F)
 - Add a "Round 2 and the big-picture review" section at the top of `docs/AUTORUN_REPORT.md`: per task, the new sim table, what passed, what didn't, the big-picture verdict from E2 and E5 (per episode: strongest moment, weakest moment, would a first-timer want another round, and why), the fixes made in E5 and the ones left, and new "Needs Amir" items. Keep "Human validation: NOT DONE". Update README Status. Commit, push. Write "ROUND 2 DONE" as the last line of PROGRESS.md.
 
 ---
@@ -241,3 +241,19 @@ Use the simulator. For each episode, measure:
 - Implement from the top, as many as time allows (aim for 10 or more). Copy, layout, pacing, feedback, voice and UI changes are free. Game-logic changes are allowed when E3 shows a dominant strategy, a dead option or an exploit, **only if every E check still passes**; record each as a D-entry with [AUTORUN, review].
 - After each group of fixes: the quality gate, walkthroughs, commit and push.
 - Finish by rerunning E1's Reviewer B (a new subagent, fresh) on the updated screenshots, and save the before and after comparison in `docs/playtest/fresh-eyes.md`.
+
+---
+
+## F. Ready for later (after E5, before R7)
+
+### F1. A self-running playtest kit (for when people play later; nobody plays tonight)
+- **Playtest mode:** a URL flag `?playtest=1` (and a menu toggle). Off by default; normal play is unchanged.
+- **Silent log**, in memory and local storage with try/catch, never sent anywhere: per screen, the time spent; time from first screen to first decision; taps on "back" or the menu; whether "Play again" was tapped within 10 seconds of the summary; the seats, difficulty, challenge code and episode; whether the player lied, barred, gave or peeked. Nothing about other players' private cards.
+- **Short survey after the episode**, skippable, mostly taps: the stranger-test questions in v2 Section 8.3 plus "Was anything unclear at the start?" and "Did your mission change what you did?". At most two free-text boxes.
+- **Results code:** "Send results" builds a compact code (JSON compressed and base64url, at most about 600 characters) with a copy button and Web Share. No server, no deploy.
+- **Results page** at `?playtest=results`: paste one or more codes; it shows one row per tester and the totals (replay rate, median time to first decision, the screens where people spent the longest, survey answers).
+- Tests: the code round-trips exactly; the log holds no private information about other players; playtest mode off changes nothing (walkthrough word counts unchanged).
+- A one-page `docs/playtest/HOW_TO.md` for Amir: make a Vercel shareable link, the message to send friends, how to read the results page.
+
+### F2. A case study draft (for professors and employers)
+- `docs/CASE_STUDY.md`, at most about 1,500 words, plain prose: the question the game asks; the economics in each episode with sources (as in README Methods); the design principles; how Episode 3 went from "clear but not fun" to the social version, with the numbers from each tuning round (D-110 to D-149); what the AI reviewers found; what is still unproven, stated plainly ("no human has played it yet"). No marketing language, no em dashes.
