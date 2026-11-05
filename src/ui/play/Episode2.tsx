@@ -43,7 +43,7 @@ export function MyCards2({ v, next }: { v: ViewState; next: () => void }) {
       <div className="my-auto" data-mycards>
         <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.l2.cards.label')}</p>
         <p className="h-show mt-2 text-5xl leading-none text-spot">{t('play.l2.cards.talent', { a: lv.myTalent })}</p>
-        <p className="mt-3 text-base">{t('play.l2.cards.how', { per: coins(lv.talentMult * lv.myTalent) })}</p>
+        <p className="mt-3 text-base">{t('play.l2.cards.how', { per: fmt1(lv.talentMult * lv.myTalent) })}</p>
         <p className="mt-3 text-base">{t('play.l2.cards.secret')}</p>
       </div>
     </Stage>

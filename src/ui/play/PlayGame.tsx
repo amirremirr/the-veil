@@ -110,7 +110,7 @@ function EpisodeIntro({ v }: { v: ViewState }) {
 
 function EventBeat({ v, next }: { v: ViewState; next: () => void }) {
   const ev = v.play!.event!;
-  const txt = eventText(v.levelIndex, ev.id);
+  const txt = eventText(v.levelIndex, ev.id, v.mode === 'LIFE');
   return (
     <Stage v={v} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
       <div className="my-auto" data-event={ev.id}>

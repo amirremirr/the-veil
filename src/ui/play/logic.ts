@@ -39,10 +39,10 @@ export function wheelSlip(variant: number): string {
 export const missionName = (c: ValuesCard) => t(`play.missions.${c}.name`);
 
 /** The event card's name, story and one-line effect, with this episode's numbers filled in. */
-export function eventText(level: LevelId, id: string): { name: string; text: string; effect: string } {
+export function eventText(level: LevelId, id: string, life = false): { name: string; text: string; effect: string } {
   const vars = {
     gym: String(PLAY.L3_EVENTS.GYM_SALE.GYM_COST),
-    base: String(id === 'GYM_SALE' ? PLAY.L3.GYM_COST : PLAY.L3.LOSS),
+    base: String(id === 'GYM_SALE' ? PLAY.L3.GYM_COST : life ? PLAY.LIFE_L3_LOSS : PLAY.L3.LOSS),
     loss: String(PLAY.L3_EVENTS.BREAKTHROUGH.LOSS),
     extra: String(PLAY.L3_EVENTS.PAPERWORK.MANDATE_EXTRA),
   };

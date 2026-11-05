@@ -1475,7 +1475,8 @@
       "barredMany": "{names} are barred.",
       "refusedMany": "{names} applied for cover and were turned away.",
       "and": " and ",
-      "notAppliedNamed": "{names} didn't apply, so no cover this round."
+      "rule": "Members are last round's cover holders. Most of the other members voting for you bars you.",
+        "notAppliedNamed": "{names} didn't apply, so no cover this round."
     },
     "cards": {
       "label": "The reveal",
@@ -1607,8 +1608,8 @@
         "skipDesc": "Keep the coins."
       },
       "claim": {
-        "youT": "You trained.",
-        "youU": "You didn't train.",
+        "youT": "Your secret: you trained.",
+        "youU": "Your secret: you didn't train.",
         "how": "Then you take the test. HireBot ({name}) sees your claim and your result.",
         "opts": {
           "TRAINED": "I trained",
@@ -1657,8 +1658,8 @@
         "care": "(Childcare duty: long hours cost you 80, so the flexible job pays more.)"
       },
       "stamp": {
-        "GOOD": "GOOD HIRE",
-        "BAD": "BAD HIRE"
+        "GOOD": "TRAINED HIRE",
+        "BAD": "UNTRAINED HIRE"
       },
       "everyone": "Everyone",
       "board": {

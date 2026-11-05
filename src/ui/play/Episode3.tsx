@@ -365,6 +365,7 @@ export function BarBeat({ v, next }: { v: ViewState; next: () => void }) {
         <p className="mt-4 text-sm text-soft">
           {b.members.map((m) => t('play.barBeat.vote', { name: shortName(v, m), target: b.votes[m] ? shortName(v, b.votes[m]!) : t('play.barBeat.noOne') })).join(' · ')}
         </p>
+        <p className="mt-1 text-xs text-soft">{t('play.barBeat.rule')}</p>
       </div>
     </Stage>
   );
