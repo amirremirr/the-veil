@@ -1617,10 +1617,10 @@
       },
       "judge": {
         "title": "You are HireBot",
-        "pay": "Complex hire: +{g} if trained, -{l} if not. Base 40.",
+        "pay": "Tap a worker for the complex job (you get +{g} if trained, -{l} if not). The rest get simple. Base 40.",
         "hidden": "Group hidden",
         "meterNote": "Hire past the line ({p}).",
-        "submit": "Hire",
+        "submit": "Confirm hires",
         "passed": "passed",
         "failed": "failed",
         "says": "claims training",
