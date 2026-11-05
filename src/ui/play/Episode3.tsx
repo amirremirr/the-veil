@@ -676,7 +676,7 @@ export function PriceBeat({ v, next, onReally }: { v: ViewState; next: () => voi
       <div className="my-auto">
         <p className="text-xs font-bold uppercase tracking-wider">{t('play.stage.priceOf')}</p>
         <p className="mt-1 flex items-baseline gap-3" data-price>
-          <span className="h-show text-4xl line-through opacity-60">{fmt1(from)}</span>
+          {(to === null || fmt1(to) !== fmt1(from)) && <span className="h-show text-4xl line-through opacity-60">{fmt1(from)}</span>}
           <span className={`h-show leading-none ${to === null ? 'text-5xl' : 'text-8xl'}`}>{to === null ? t('play.stage.closed') : fmt1(to)}</span>
         </p>
         {to !== null && (

@@ -523,7 +523,7 @@ function EpisodeSummary({ v }: { v: ViewState }) {
         {row(t('play.summary.lieLabel'), lieText)}
         {pl.pollMode !== 'NEVER' && v.levelIndex === 3 && row(t('play.summary.readLabel'), readText)}
         {row(t('play.bar.bank'), t('play.summary.bankChange', { from: coins(episodeStartBank(v)), to: coins(pl.banks[v.viewer]) }))}
-        {row(t('play.summary.scoreLabel'), `${t('play.summary.score', { s: coins(m.score), b: coins(m.bankPart), m: coins(m.missionPart), d: coins(m.stress), e: coins(m.episodeStress), g: coins(m.guessPoints) })} ${t(`play.missions.${m.card}.points`)}`)}
+        {row(t('play.summary.scoreLabel'), `${t('play.summary.score', { s: coins(m.score), b: coins(m.bankPart), m: String(Math.round(m.score) - Math.round(m.bankPart) + Math.round(m.stress) - Math.round(m.guessPoints)), d: coins(m.stress), e: coins(m.episodeStress), g: coins(m.guessPoints) })} ${t(`play.missions.${m.card}.points`)}`)}
         {row(missionName(m.card), complete ? t('play.summary.missionDone') : t('play.summary.missionMissed'), complete ? 'text-good' : 'text-stamp')}
         {row(t('play.summary.nearMiss'), nm ? nearMissText(v, nm) : t('play.summary.nearMissNone'))}
       </dl>
