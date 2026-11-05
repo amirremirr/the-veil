@@ -49,6 +49,21 @@ export function MyCards2({ v, next }: { v: ViewState; next: () => void }) {
   );
 }
 
+/** Loop cycle 4: the tax vote's result and who voted what, before the first hustle. */
+export function TaxIn({ v, next }: { v: ViewState; next: () => void }) {
+  const lv = lv2(v);
+  return (
+    <Stage v={v} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
+      <div className="my-auto" data-vote>
+        <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.l2.taxIn.label')}</p>
+        <p className="h-show mt-2 text-5xl leading-none text-spot">{pct(lv.t ?? 0)}</p>
+        <p className="mt-2 text-base">{t('play.l2.taxIn.how')}</p>
+        <p className="mt-3 text-sm">{v.players.map((p) => `${shortName(v, p.id)}: ${pct(lv.tVotes?.[p.id] ?? 0)}`).join(', ')}</p>
+      </div>
+    </Stage>
+  );
+}
+
 export function TaxScreen({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
   const [x, setX] = useState<number | null>(null);
@@ -192,7 +207,6 @@ export function PrizeBeat({ v, next }: { v: ViewState; next: () => void }) {
         <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.l2.won.label')}</p>
         <h1 className="h-show mt-1 text-4xl leading-tight text-spot">{head}</h1>
         <p className="mt-3 text-sm">{v.players.map((p) => `${shortName(v, p.id)}: ${r.votes?.[p.id] ? shortName(v, r.votes[p.id]!) : ''}`).join(', ')}</p>
-        <p className="mt-3 text-base">{t('play.l2.won.bank', { w: coins(r.W?.[v.viewer] ?? 0) })}</p>
         {bankLineText(v) && <p className="mt-2 text-sm font-semibold" data-bankline>{bankLineText(v)}</p>}
       </div>
     </Stage>

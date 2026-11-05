@@ -1693,11 +1693,12 @@
         "label": "Your card",
         "title": "You haven't been born yet.",
         "deck": "Incomes this episode: {a}, {b}, {c} or {d}. You find out after the vote.",
-        "rules": "The rule with the most votes sets the tax. Tax is shared equally, and some leaks."
+        "rules": "The rule with the most votes sets the tax. Tax is shared equally, and some leaks.",
+        "living": "Living costs {c} coins a round, taken from every bank."
       },
       "peek": {
         "title": "Peek?",
-        "how": "Pay {c} coins to see your income before you vote.",
+        "how": "New incomes are dealt this round. Pay {c} coins to see yours before you vote.",
         "public": "Everyone will see that you peeked. Not what you saw.",
         "yes": "Peek",
         "yesDesc": "Costs {c} coins.",
@@ -1725,7 +1726,7 @@
         "you": "You got {y}. After the rule: {w}.",
         "row": "{y}, after the rule {w}",
         "inherit": "{name} inherited 60 coins.",
-        "peekCost": "Your peek: -{c}, already taken off."
+        "peekCost": "Your peek: -{c} (in the bank line below)."
       },
       "toReveal": "To the reveal",
       "peak": {
@@ -1793,8 +1794,8 @@
       "peak": {
         "title": "Who really worked?",
         "stamp": "R{r} {e}h, die {d}, {stamp}",
-        "star": "{name} won the Hustle Prize {n}x. Worked {e} hours a round. Best die {d}.",
-        "starYou": "You won the Hustle Prize {n}x. You worked {e} hours a round. Best die {d}.",
+        "star": "{name} won or shared the Hustle Prize {n}x. Worked {e} hours a round. Best die {d}.",
+        "starYou": "You won or shared the Hustle Prize {n}x. You worked {e} hours a round. Best die {d}.",
         "none": "Nobody won outright. The table couldn't agree who hustled.",
         "unlucky": "{name}: worked hard, rolled badly.",
         "host": "Effort is invisible. Luck is loud. Our sponsor sells both."
@@ -1802,6 +1803,10 @@
       "sum": {
         "lie": "{name} overclaimed effort {n}.",
         "lieYou": "You overclaimed effort {n}."
+      },
+      "taxIn": {
+        "label": "The tax vote",
+        "how": "The middle vote wins. It holds for the whole episode."
       }
     },
     "l5": {

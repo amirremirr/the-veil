@@ -40,6 +40,7 @@ export function Unborn({ v, next }: { v: ViewState; next: () => void }) {
         <p className="h-show mt-2 text-4xl leading-tight text-spot">{t('play.l1.unborn.title')}</p>
         <p className="mt-3 text-base">{t('play.l1.unborn.deck', { a: coins(lv.deck[0]), b: coins(lv.deck[1]), c: coins(lv.deck[2]), d: coins(lv.deck[3]) })}</p>
         <p className="mt-3 text-base">{t('play.l1.unborn.rules')}</p>
+        <p className="mt-3 text-sm">{t('play.l1.unborn.living', { c: v.play!.livingCost })}</p>
       </div>
     </Stage>
   );
@@ -135,7 +136,7 @@ export function VotesBeat({ v, next }: { v: ViewState; next: () => void }) {
   const lv = lv1(v);
   const r = lv.rounds[lv.rounds.length - 1];
   return (
-    <Stage v={v} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
+    <Stage v={v} bar={false} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
       <div className="my-auto" data-vote>
         <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.l1.votes.label', { r: v.round })}</p>
         <h1 className="h-show mt-1 text-4xl leading-tight text-spot">{ruleName(r.winner)}</h1>
@@ -170,13 +171,13 @@ export function IncomesBeat({ v, next, last }: { v: ViewState; next: () => void;
     <Stage v={v} onTap={next} footer={<BigButton beatNext={!last} onClick={next}>{last ? t('play.l1.toReveal') : t('play.stage.nextRound', { r: v.round + 1 })}</BigButton>}>
       <div className="my-auto" data-outcome>
         <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.l1.inc.label')}</p>
-        <h1 className="h-show mt-1 text-3xl leading-tight text-spot">{t('play.l1.inc.you', { y: coins(r.incomes[me]), w: coins(r.W[me]) })}</h1>
+        <h1 className="h-show mt-1 text-3xl leading-tight text-spot">{t('play.l1.inc.you', { y: coins(r.incomes[me]), w: coins(r.post[me]) })}</h1>
         <ul className="mt-3 space-y-1.5">
           {order.map((p) => (
             <li key={p.id} className="flex items-center gap-2 rounded-xl bg-card px-2 py-1.5">
               <Face v={v} p={p} size={24} />
               <span className="w-16 truncate text-sm font-bold">{shortName(v, p.id)}</span>
-              <span className="flex-1 text-sm">{t('play.l1.inc.row', { y: coins(r.incomes[p.id]), w: coins(r.W[p.id]) })}</span>
+              <span className="flex-1 text-sm">{t('play.l1.inc.row', { y: coins(r.incomes[p.id]), w: coins(r.post[p.id]) })}</span>
               {r.peeked.includes(p.id) && <span className="text-[11px] font-bold">{t('play.l1.peekedTag')}</span>}
             </li>
           ))}

@@ -18,7 +18,7 @@ import { BigButton, Bubble, Face, Stage } from './OnAir';
 import { BarBeat, CardsReveal, ClaimScreen, ClaimsBeat, MoveScreen, MyCardsBeat, PriceBeat, RegimeScreen, VoteInBeat, WheelBeat, claimsOpen, hasPriceBeat, regimeName, roundClaims, type L3View } from './Episode3';
 import { eventText, hostLine, missionName, pick, timesWord } from './logic';
 import { CardsReveal1, ClaimScreen1, IncomesBeat, PeekScreen, Unborn, VoteScreen1, VotesBeat, summary1 } from './Episode1';
-import { CardsReveal2, EffortScreen, IncomeScreen, MyCards2, PrizeBeat, PrizeScreen, TaxScreen, summary2 } from './Episode2';
+import { CardsReveal2, TaxIn, EffortScreen, IncomeScreen, MyCards2, PrizeBeat, PrizeScreen, TaxScreen, summary2 } from './Episode2';
 import { AmendReveal, AmendScreen, ClaimScreen5, FairScreen, Finale, IncomesScreen, LobbyScreen, VeilScreen, summary5 } from './Episode5';
 import { LifeEnd } from './LifeEnd';
 import { PlaytestPanel } from './Playtest';
@@ -211,12 +211,13 @@ function DecisionFlow2({ v }: { v: ViewState }) {
   const stepId = v.phase.step;
   const ev = v.play!.event;
   const firstScreen = stepId === 'TAX' || (stepId === 'EFFORT' && v.round > 1);
-  const beats: Array<'cards' | 'event'> = [];
+  const beats: Array<'cards' | 'event' | 'tax'> = [];
   if (firstScreen && v.round === 1) beats.push('cards');
+  if (stepId === 'EFFORT' && v.round === 1) beats.push('tax');
   if (firstScreen && ev && ev.id !== 'QUIET' && ev.round === v.round && ev.level === v.levelIndex) beats.push('event');
   const [k, setK] = useState(0);
   const next = () => setK((x) => x + 1);
-  if (k < beats.length) return beats[k] === 'cards' ? <MyCards2 v={v} next={next} /> : <EventBeat v={v} next={next} />;
+  if (k < beats.length) return beats[k] === 'cards' ? <MyCards2 v={v} next={next} /> : beats[k] === 'tax' ? <TaxIn v={v} next={next} /> : <EventBeat v={v} next={next} />;
   if (online && done)
     return (
       <Stage v={v}>

@@ -590,7 +590,7 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
       {done ? (
         <div className="mt-3 text-center" aria-live="polite">
           <p className="flex items-baseline justify-center gap-3">
-            <span className={`h-show text-5xl ${change < 0 ? 'text-stamp' : 'text-spot'}`}>{signed(Math.round(change))}</span>
+            <span className={`h-show text-5xl ${change < 0 ? 'text-stamp' : 'text-spot'}`}>{signed(Math.round(h.banks[me]) - Math.round(from))}</span>
             <span className="text-base font-semibold" data-chose>
               {t(`play.stage.chose.${chose}`)}
             </span>
