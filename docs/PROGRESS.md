@@ -73,8 +73,8 @@ ALL DONE
 | E3 Logic audit | DONE | one fixed rule beats adaptive (Ep3 never give, +1.8 ± 0.7); Help the Poorest nearly dead (1.8%) |
 | E4 UX audit | DONE | docs/review/ux-audit.md (AI judgment, proxy) |
 | E5 Fixes | | |
-| F1 Playtest kit | | |
-| F2 Case study | | |
+| F1 Playtest kit | DONE | ?playtest=1, survey, results code, ?playtest=results (D-166) |
+| F2 Case study | DONE | docs/CASE_STUDY.md (D-165) |
 | R7 Report | | |
 
 ### Round 2 log
@@ -89,3 +89,4 @@ ALL DONE
 - E2: design audit; weakest: Ep3 on Normal (no wheel hits), Ep4 judge screen, Ep5 claims and donations, the unexplained score.
 - E3: `sim/audit.ts`, 150 games per rule per episode; tables in docs/review/logic-audit.md. E4: heuristic, feel and voice review (40 lines in a life, 33 distinct).
 - E5 (group 1): 14 fixes from the ranked list (D-164); gate green.
+- F1: playtest kit (`src/ui/playtest.ts`, `src/ui/play/Playtest.tsx`, `tests/engine/playtest.test.ts`, `docs/playtest/HOW_TO.md`). F2: case study draft. Gate: 204 unit tests, e2e 15 passed, walkthroughs unchanged with playtest mode off.
