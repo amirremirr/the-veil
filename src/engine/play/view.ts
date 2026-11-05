@@ -68,6 +68,7 @@ export function playView(s: GameState, viewer: PlayerId, revealAll: boolean): Pl
     ranks: pl.bankHistory.some((h) => h.level === s.levelIndex) ? playRanks(s) : null,
     mission,
     poll: audiencePoll(s),
+    comeback: pl.comeback ?? null,
     pollMode: PLAY.DIFFICULTY[s.difficulty].poll,
     record: structuredClone(s.reliability),
     guesses,

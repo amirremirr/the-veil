@@ -1420,7 +1420,7 @@
     },
     "claim": {
       "title": "Your claim",
-      "why": "What you say moves the audience poll, and the poll decides who gets barred from cover.",
+      "why": "What you say moves what everyone believes about you, and cover members vote on who to bar.",
       "you": {
         "LOW": "Your risk: low, {p}. {worry}.",
         "HIGH": "Your risk: high, {p}. {worry}."
@@ -1866,7 +1866,8 @@
         "label": "Fair tax (unpaid, your opinion):"
       },
       "inc": {
-        "label": "The banks, poorest first",
+        "label": "The incomes, poorest first",
+        "labelLife": "The banks, poorest first",
         "now": "These are the rules now. Next: change them, if you can.",
         "next": "To the lobby"
       },
@@ -1875,6 +1876,7 @@
         "propose": "Propose: {rules}",
         "keep": "Keep the rules",
         "donate": "Secret donation to",
+        "donatePublic": "Donation to (public this time)",
         "nobody": "Nobody",
         "amount": "Amount",
         "title": "Your amendment",
@@ -1930,7 +1932,9 @@
       "how": "You're last on score. Take {c} coins now, or {p} mission points. Everyone is watching.",
       "coins": "Take {c} coins",
       "points": "Take {p} points",
-      "rate": "Your score counts half your bank, so {c} coins are worth {half} points, plus whatever they do for your mission."
+      "rate": "Your score counts half your bank, so {c} coins are worth {half} points, plus whatever they do for your mission.",
+      "otherCoins": "{name} was last on score and took the Second Chance: +{c} coins.",
+      "otherPoints": "{name} was last on score and took the Second Chance: +{p} points."
     },
     "receipts": {
       "label": "The Receipts",

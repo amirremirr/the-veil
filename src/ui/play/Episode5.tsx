@@ -122,7 +122,7 @@ export function IncomesScreen({ v }: { v: ViewState }) {
   const order = v.players.slice().sort((a, b) => (inc[a.id] ?? 0) - (inc[b.id] ?? 0));
   return (
     <Stage v={v} footer={<BigButton onClick={() => act()}>{t('play.l5.inc.next')}</BigButton>}>
-      <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.l5.inc.label')}</p>
+      <p className="text-xs font-bold uppercase tracking-wider text-soft">{t(v.mode === 'LIFE' ? 'play.l5.inc.labelLife' : 'play.l5.inc.label')}</p>
       <h1 className="h-show mt-1 text-3xl leading-tight text-spot">{lv.adopted ? rules(lv.adopted) : ''}</h1>
       <ul className="mt-3 space-y-1.5" data-outcome>
         {order.map((p) => (
@@ -151,7 +151,7 @@ export function LobbyScreen({ v }: { v: ViewState }) {
   return (
     <Stage v={v} footer={<BigButton onClick={() => act({ donateTo: to, amount: to ? amount : 0 })}>{t('play.stage.lock')}</BigButton>}>
       <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.l5.lobby.yours', { rules: mine ? rules(mine) : '' })}</p>
-      <h1 className="h-show mt-1 text-2xl leading-tight">{t('play.l5.lobby.donate')}</h1>
+      <h1 className="h-show mt-1 text-2xl leading-tight">{t(v.play!.event?.id === 'LEAKED_RECEIPTS' ? 'play.l5.lobby.donatePublic' : 'play.l5.lobby.donate')}</h1>
       <p className="mt-1 text-sm">{t(lv.leaked ? 'play.l5.lobby.howLeaked' : 'play.l5.lobby.how')}</p>
       <Chips opts={['', ...v.players.filter((p) => p.id !== v.viewer).map((p) => p.id)]} value={to ?? ''} onPick={(x) => setTo(x || null)} label={t('play.l5.lobby.donate')} fmt={(x) => (x ? `${shortName(v, x)}: ${said(x)}` : t('play.l5.lobby.nobody'))} />
       {to && <Chips opts={amounts} value={amount} onPick={setAmount} label={t('play.l5.lobby.amount')} fmt={coins} />}
