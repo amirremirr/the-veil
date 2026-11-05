@@ -100,11 +100,17 @@ function asRound(s: GameState, W: number[]): number[] {
 function botProposal(s: GameState, pid: PlayerId): Constitution | null {
   const i = idx(s, pid);
   const inc = incomesOf(s);
-  const { sigma } = botParams(s, pid);
   const Ws = ALL_CONSTITUTIONS.map((c) => asRound(s, constitutionWealth(inc, c)));
-  const bestS = ALL_CONSTITUTIONS[argmax(Ws.map((W) => value(s, i, W)))];
-  const bestW = ALL_CONSTITUTIONS[argmax(Ws.map((W) => W[i]))];
-  const prop = { t: snap((1 - sigma) * bestS.t + sigma * bestW.t, L5.TAX_OPTIONS), F: snap((1 - sigma) * bestS.F + sigma * bestW.F, L5.FLOOR_OPTIONS) };
+  // G2 (D-188): the Play value already weighs the bot's own bank and its mission; Study's extra pull toward
+  // the money-best constitution (sigma) counted own money twice, so the proposal is the Play-value best.
+  const prop = PLAY.L5.PROPOSAL_PLAY_VALUE
+    ? ALL_CONSTITUTIONS[argmax(Ws.map((W) => value(s, i, W)))]
+    : (() => {
+        const { sigma } = botParams(s, pid);
+        const bestS = ALL_CONSTITUTIONS[argmax(Ws.map((W) => value(s, i, W)))];
+        const bestW = ALL_CONSTITUTIONS[argmax(Ws.map((W) => W[i]))];
+        return { t: snap((1 - sigma) * bestS.t + sigma * bestW.t, L5.TAX_OPTIONS), F: snap((1 - sigma) * bestS.F + sigma * bestW.F, L5.FLOOR_OPTIONS) };
+      })();
   return same(prop, st(s).current!) ? null : prop;
 }
 

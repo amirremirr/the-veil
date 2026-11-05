@@ -435,7 +435,28 @@ function barGain(s: GameState, pool: PlayerId[], voter: PlayerId, target: Player
   const without = inPool.filter((k) => k !== target);
   const risk = (k: PlayerId) => (k === voter ? selfRisk : expectedRisk(beliefOf(k), P));
   const diff = P.LOADING * P.PRICE_LOSS * (mean(inPool.map(risk)) - mean(without.map(risk)));
-  return PLAY.BAR_GAIN_SCALE * PLAY.DIFFICULTY[s.difficulty].barScale * pStay * diff;
+  const saving = PLAY.BAR_GAIN_SCALE * PLAY.DIFFICULTY[s.difficulty].barScale * pStay * diff;
+  if (!PLAY.BAR_MISSION) return saving;
+  // G2 (D-188): valued with the voter's own mission, in coin-equivalents of the voter's own money. The saving
+  // goes to the voter; a barred target who would have bought loses cover this round (keeps the premium,
+  // bears the expected loss), which a Protect-the-poorest or Grow-the-pie voter counts against the bar.
+  const premium = currentPremium(s);
+  const vi = idx(s, voter);
+  const ti = idx(s, target);
+  const card = playerOf(s, voter).values;
+  const eq = equalShares(s.players.length);
+  const W0 = s.players.map(() => 0);
+  const W1 = W0.slice();
+  W1[vi] += saving;
+  if (premium !== null) {
+    const bT = beliefOf(target);
+    W1[ti] += publicBuyChance(s, target, bT) * (premium - expectedRisk(bT, P) * P.LOSS);
+  }
+  const coin = W0.slice();
+  coin[vi] += 1;
+  const v0 = playRoundValue(s, card, W0, vi, eq);
+  const unit = Math.max(1e-6, playRoundValue(s, card, coin, vi, eq) - v0);
+  return (playRoundValue(s, card, W1, vi, eq) - v0) / unit;
 }
 
 /** A member's bar options (no one, then every other contestant) and their values in coins (D-133). */

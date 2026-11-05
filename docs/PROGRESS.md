@@ -108,7 +108,7 @@ LOOP DONE
 | Task | Status | Notes |
 |---|---|---|
 | G1 Money ledger | DONE | "See the money" on every result; 50-seed sum test per episode; Episode 1 rounding fixed (D-187) |
-| G2 Bots play to missions | TODO | |
+| G2 Bots play to missions | DONE | all paths use the Play score; the Bar now counts the target's lost cover; Ep5 Play-value proposals tested and not kept (lie success 39% to 30%); per-mission table in D-188 |
 | G3 Giving must sometimes pay | TODO | |
 | G4 Episode 2 lies | TODO | |
 | G5 Dead options | TODO | |

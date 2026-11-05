@@ -662,3 +662,23 @@ The author's third review: lie success was 98% and bar recall 23%, so lying domi
   | E1 peekers' Free Market gap | 0.500 (2,000 games: +52.6 points) | 0.500 ± 0.049 |
   | Lie success | 72.4% | 72.4% ± 2.9 |
   | S-a | 21.8% | 20.8% ± 1.0 (300 games) |
+- **D-188 [AUTORUN, review] G2: bots play to their missions.** Checked every bot decision path: cover, gym, give, claim and the mandate vote (Episode 3), votes and peeks (1), tax, effort, the prize vote and gifts (2), train, hire, the policy vote and gifts (4), proposals, votes and donations (5) all score options with `playRoundValue`, the same Play score a human is scored by (half own bank plus the bot's own mission, minus debt points). Two paths used own money only. (1) **The Bar (Episode 3)** valued a bar by the voter's own price saving (D-133). It is now valued with the voter's mission (`PLAY.BAR_MISSION`): the saving goes to the voter, and a barred target who would have bought keeps the premium but bears the expected loss; the result is in coin-equivalents of the voter's own money, so a mission-neutral bar keeps its old value. (2) **Episode 5 proposals** mix the Play-value best constitution with the money-best one (Study's sigma), which counts own money twice. A Play-value-only proposal was tested and **not kept** (`PLAY.L5.PROPOSAL_PLAY_VALUE: false`): on the same 500 seeds it cut lie success from 39.2% to 29.7% (target 30% to 75%) and "Took your 40. Voted no." from 22.6% to 18.4% (target 20% to 60%), while missions already differ by 40 to 100 points in Episode 5. Alternative for Amir: switch it on and retune donations.
+
+  Per-mission decision rates (bots, Normal, `npx tsx sim/missions.ts`, 60 games per episode; Episode 3 at 100): the target (two missions at least 15 points apart on the decision each cares most about) already held in every episode before the change.
+
+  | Episode | Decision | Egoist | Protect the poorest | Grow the pie | Reward hard work | Spread |
+  |---|---|---|---|---|---|---|
+  | 1 | Vote Limit the Gap (the floor-raising rule here) | 7.4% | 90.6% | 3.3% | 7.8% | 87 |
+  | 1 | Give | 0% | 24.0% (91% to the poorest) | 0% | 0% | 24 |
+  | 2 | Tax vote 40% or more | 33.3% | 51.1% | 24.1% | 10.4% | 41 |
+  | 2 | Give | 0% | 49.6% | 0% | 0% | 50 |
+  | 3 | Vote for the mandate | 52.5% | 83.1% | 49.4% | 61.3% | 34 |
+  | 3 | Give | 0% | 29.5% (85% to the poorest) | 29.2% | 26.9% | 30 |
+  | 3 | Bar someone: before / after | 23.6 / 23.9% | 29.5 / 22.9% | 25.6 / 25.3% | 25.3 / 26.6% | 6 / 4 |
+  | 4 | Policy: Cheaper Childcare or quota | 37.0% | 21.3% | 31.9% | 43.5% | 22 |
+  | 4 | Give | 0% | 50.4% | 0% | 0% | 50 |
+  | 5 | Veil tax 40% or more | 5.4% | 100% | 0% | 6.7% | 100 |
+  | 5 | Donate | 19.1% | 78.4% | 12.0% | 33.3% | 66 |
+  | 5 | Yes on a tax rise | 51.0% | 79.1% | 38.6% | 41.2% | 41 |
+
+  Egoists never give; Protect-the-poorest bots give most and to the poorest. Grow-the-pie bots do not back the mandate more than Egoists (49% vs 53%): with these numbers the mandate's leak costs the average about as much as it saves, so that is their mission working, not a bug. Episode 3 checks, 500 games, before (round 2) / after: E3a 2.83 / 2.99, E3b +24.1% / +23.8%, E3c 67.6% / 65.5%, E3d +39.9% / +36.9% (all pass), lie success 67.5% / 70.0%, bar recall 31.3% / 28.1% (reported, missed before too), F-e 24.4 to 26.4% each. Why reviewers still say bots "don't play to their missions": the decisions differ, but a player sees few of them (others' gifts and bars are shown once per round), and bots lie only where it pays. The card guess now has the vote and gift patterns above to read.

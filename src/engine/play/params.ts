@@ -90,6 +90,8 @@ export const PLAY = {
    * times the chance it stays in, times this scale (1 = the grounded rule), against 0 for barring no one.
    */
   BAR_GAIN_SCALE: 2,
+  /** G2 (D-188): bots value a bar with their own mission (the barred target's lost cover counts), not only their own price saving. */
+  BAR_MISSION: true,
   /**
    * D-142, Give: once per round, on the move screen, a contestant may give one of these amounts to one other
    * player. Gifts are public and land at the end of the round, after the wheel.
@@ -166,7 +168,7 @@ export const PLAY = {
    * Episode 5, Grand Finale (v1 Section 5, v2 Section 4, D-154): donations up to DONATION_MAX (Study 20), bots
    * pick from DONATION_OPTIONS_BOT; in a single episode incomes are Study's deck times INCOME_SCALE.
    */
-  L5: { DONATION_MAX: 40, DONATION_OPTIONS_BOT: [0, 10, 20, 40], INCOME_SCALE: 2, RECIPROCITY: 0.9 },
+  L5: { DONATION_MAX: 40, DONATION_OPTIONS_BOT: [0, 10, 20, 40], INCOME_SCALE: 2, RECIPROCITY: 0.9, PROPOSAL_PLAY_VALUE: false },
   /** v1 Section 6.2, Episode 5 deck (Quiet Finale cut by v2 Section 5). */
   L5_EVENTS: {
     LOBBYIST: { DONATION_MAX: 60 },
