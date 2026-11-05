@@ -13,6 +13,7 @@ import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import type { LevelDefinition } from '../levels/types';
 import { PLAY } from './params';
 import { activeEvent, giftNet, missionScale, missionValue, playRoundValue, livingCost, setRoundLedger } from './rules';
+import { botCall, callChance, callsThisRound, settleCalls, validCall } from './calls';
 import { chooseClaim, honestyOf, postClaims, SILENT } from './claims';
 
 type Gift = { to: PlayerId; amount: number };
@@ -109,6 +110,9 @@ export function readEffort(s: GameState, obs: PlayerId, _target: PlayerId, y: nu
   return out.map((x) => x / z);
 }
 
+/** H1: contestants with a claim on record this round (made on the effort screen). */
+const claimants2 = (s: GameState): PlayerId[] => ids(s).filter((id) => { const c = st(s).current.claims?.[id]; return !!c && c !== SILENT; });
+
 const expEffort = (b: number[]) => b.reduce((a, x, i) => a + x * BAND_MID[BANDS[i]], 0);
 
 /** A bot's believed effort of everyone this episode (its own is known), averaged over rounds read so far. */
@@ -155,7 +159,14 @@ function claimGain(s: GameState, pid: PlayerId, value: string, e: number): numbe
   const mine = value !== SILENT && !p2Params(s).cameras ? (1 - k) * e + k * BAND_MID[value as Band] : e;
   const rivals = others.map((o) => mean(st(s).rounds.map((r) => expEffort(r.beliefs[pid]?.[o] ?? [1 / 3, 1 / 3, 1 / 3])).concat([BAND_MID.SOME])));
   const top = Math.max(...rivals);
-  return mine > top + 1e-9 ? PLAY.HUSTLE_PRIZE : mine > top - 1e-9 ? PLAY.HUSTLE_PRIZE / 2 : 0;
+  const raw = mine > top + 1e-9 ? PLAY.HUSTLE_PRIZE : mine > top - 1e-9 ? PLAY.HUSTLE_PRIZE / 2 : 0;
+  if (value === SILENT || value === bandOf(e)) return raw;
+  // H2 (D-194): a lie can be called. Others read the claim against the income they expect (average luck); a
+  // caught liar pays the payout and cannot win the prize, so the lie keeps its gain only if nobody calls.
+  const P = p2Params(s);
+  const y = gross(st(s).talents[pid], e, mean(P.luck), P.talentMult);
+  const pc = callChance(s, pid, (obs) => 1 - readEffort(s, obs, pid, y, value, rel, P, P.cameras ? e : null)[BANDS.indexOf(value as Band)]);
+  return (1 - pc) * raw - pc * PLAY.CALL_PAYOUT;
 }
 
 function botEffort(s: GameState, pid: PlayerId): { effort: number; claim: string; gift: Gift | null } {
@@ -351,7 +362,13 @@ export const playLevel2: LevelDefinition = {
   },
   validate(s, step, pid, d) {
     if (step === 'TAX') return PLAY.L2.TAX_OPTIONS.includes(d as number) ? d : null;
-    if (step === 'PRIZE') return typeof d === 'string' && d !== pid && ids(s).includes(d) ? d : null;
+    if (step === 'PRIZE') {
+      // H1 (D-194): the prize vote may carry a call ({ vote, call }); a plain id is a vote without a call.
+      const o = (typeof d === 'string' ? { vote: d } : (d ?? {})) as { vote?: unknown; call?: unknown };
+      if (typeof o.vote !== 'string' || o.vote === pid || !ids(s).includes(o.vote)) return null;
+      const call = validCall(s, pid, o.call, claimants2(s));
+      return call ? { vote: o.vote, call } : o.vote;
+    }
     if (step === 'EFFORT') {
       const c = d as { effort?: unknown; claim?: unknown; gift?: Gift | null };
       if (!c || !Number.isInteger(c.effort) || (c.effort as number) < 0 || (c.effort as number) > L2.EFFORT_MAX) return null;
@@ -366,7 +383,15 @@ export const playLevel2: LevelDefinition = {
   botDecide(s, botId, step) {
     if (step === 'TAX') return PLAY.L2.TAX_OPTIONS[logitChoice(taxValues(s, botId), botParams(s, botId).lambda, botRng(s))];
     if (step === 'EFFORT') return botEffort(s, botId);
-    return botPrize(s, botId);
+    const vote = botPrize(s, botId);
+    // H2 (D-194): call the claim it most doubts, if the bet pays with its own beliefs and mission.
+    const cur = st(s).current;
+    const call = botCall(s, botId, claimants2(s), (t) => {
+      const b = cur.beliefs?.[botId]?.[t];
+      const cl = cur.claims?.[t];
+      return b && cl && cl !== SILENT ? 1 - b[BANDS.indexOf(cl as Band)] : null;
+    });
+    return call ? { vote, call } : vote;
   },
   resolve(s, step, decisions) {
     const l = st(s);
@@ -403,13 +428,19 @@ export const playLevel2: LevelDefinition = {
     }
     // PRIZE: plurality of votes (never yourself); ties split. Then gifts, effort for the Meritocrat, finish.
     const c = l.current;
-    const votes = Object.fromEntries(pids.map((id) => [id, decisions[id] as PlayerId]));
+    const norm = (d: unknown) => (typeof d === 'string' ? { vote: d, call: null } : (d as { vote: PlayerId; call?: PlayerId | null }));
+    const votes = Object.fromEntries(pids.map((id) => [id, norm(decisions[id]).vote]));
+    // H1 (D-194): calls first. A caught liar cannot win the prize this round; the true hours become public.
+    const lied = (t: PlayerId) => c.claims![t] !== SILENT && c.claims![t] !== bandOf(c.effort![t]);
+    const callNet = settleCalls(s, Object.fromEntries(pids.map((id) => [id, norm(decisions[id]).call ?? null])), lied);
+    const caught = new Set(callsThisRound(s).filter((x) => x.lie).map((x) => x.target));
+    for (const x of callsThisRound(s)) for (const o of s.players) if (o.id !== x.target && c.beliefs![o.id]) c.beliefs![o.id][x.target] = BANDS.map((b) => (bandOf(c.effort![x.target]) === b ? 1 : 0));
     const tally: Record<PlayerId, number> = {};
-    for (const v of Object.values(votes)) tally[v] = (tally[v] ?? 0) + 1;
-    const top = Math.max(...Object.values(tally));
-    const winners = pids.filter((id) => tally[id] === top);
+    for (const v of Object.values(votes)) if (!caught.has(v)) tally[v] = (tally[v] ?? 0) + 1;
+    const top = Math.max(0, ...Object.values(tally));
+    const winners = top > 0 ? pids.filter((id) => tally[id] === top) : [];
     const prize = Object.fromEntries(pids.map((id) => [id, winners.includes(id) ? PLAY.HUSTLE_PRIZE / winners.length : 0]));
-    let W = pids.map((id) => c.W![id] + prize[id]);
+    let W = pids.map((id) => c.W![id] + prize[id] + callNet[id]);
     for (const [from, gf] of Object.entries(c.gifts ?? {})) W = withGift(s, W, idx(s, from), gf);
     const pl = s.play!;
     pl.effort ??= Object.fromEntries(pids.map((id) => [id, 0]));
@@ -427,6 +458,7 @@ export const playLevel2: LevelDefinition = {
         { k: 'hours' as const, n: hours },
         { k: 'prize' as const, n: prize[id] },
         { k: 'gift' as const, n: gn[id] },
+        { k: 'call' as const, n: callNet[id] },
       ]];
     })));
     finishRound(s, W, effortSharesFrom(pids.map((id) => pl.effort![id])), headline(s, 'l2.play', {}));

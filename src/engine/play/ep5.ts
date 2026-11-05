@@ -10,6 +10,7 @@ import { ALL_CONSTITUTIONS, bandOf, constitutionWealth, olsSlope, supermajority,
 import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import type { LevelDefinition } from '../levels/types';
 import { PLAY } from './params';
+import { botCall, callChance, coinValue, settleCalls, validCall } from './calls';
 import { activeEvent, missionScale, missionValue, playEffortShares, playRoundValue, livingCost, setRoundLedger } from './rules';
 import { chooseClaim, credibilityValue, expectedRecord, honestyOf, postClaims, SILENT } from './claims';
 
@@ -32,6 +33,8 @@ export interface Amend5 {
 }
 
 export interface P5State {
+  /** H1 (D-194): each contestant's money from calls, paid when the ballots land. */
+  callNet?: Record<PlayerId, number>;
   veil?: Record<PlayerId, Constitution>;
   adopted?: Constitution;
   current?: Constitution;
@@ -50,6 +53,9 @@ export interface P5State {
 const st = (s: GameState) => s.levelState as P5State;
 const same = (a: Constitution, b: Constitution) => Math.abs(a.t - b.t) < 1e-9 && a.F === b.F;
 const snap = (x: number, grid: readonly number[]) => grid.reduce((a, b) => (Math.abs(b - x) < Math.abs(a - x) - 1e-9 ? b : a), grid[0]);
+/** H1: one call per contestant in the finale; claimants on amendment k (a yes or no on record). */
+const calledAlready = (s: GameState, pid: PlayerId) => (s.play?.calls ?? []).some((c) => c.level === s.levelIndex && c.caller === pid);
+const claimants5 = (s: GameState, k: number): PlayerId[] => { const l = st(s); const pr = l.order?.[k]; return pr ? ids(s).filter((id) => l.claims?.[id]?.[pr] === 'YES' || l.claims?.[id]?.[pr] === 'NO') : []; };
 const amendIndex = (step: string) => (step.startsWith('AMEND_') ? Number(step.slice(6)) : -1);
 
 export function p5Params(s: GameState) {
@@ -233,7 +239,7 @@ function botFair(s: GameState, pid: PlayerId, after: boolean): number {
 function finalize(s: GameState): void {
   const l = st(s);
   if (l.W) return;
-  const W = withDonations(s, asRound(s, constitutionWealth(incomesOf(s), l.current!)), l.lobby);
+  const W = withDonations(s, asRound(s, constitutionWealth(incomesOf(s), l.current!)), l.lobby).map((w, i) => w + (l.callNet?.[ids(s)[i]] ?? 0));
   l.W = Object.fromEntries(ids(s).map((id, i) => [id, W[i]]));
   // G1: the money lines. In a life the rules act on the banks and the finale covers the living cost (asRound).
   const inc = incomesOf(s);
@@ -243,6 +249,7 @@ function finalize(s: GameState): void {
     { k: 'income' as const, n: s.mode === 'LIFE' ? livingCost(s) : inc[i] },
     { k: 'rule' as const, n: after[i] - inc[i] },
     { k: 'donation' as const, n: don[i] },
+    { k: 'call' as const, n: l.callNet?.[id] ?? 0 },
   ]])));
   finishRound(s, W, playEffortShares(s), headline(s, 'l5.play', {}));
 }
@@ -346,7 +353,14 @@ export const playLevel5: LevelDefinition = {
       if (!c || typeof c !== 'object') return null;
       return Object.fromEntries(st(s).order.map((p) => [p, c[p] === 'YES' || c[p] === 'NO' ? c[p] : SILENT]));
     }
-    if (amendIndex(step) >= 0) return typeof d === 'boolean' ? d : null;
+    if (amendIndex(step) >= 0) {
+      // H1 (D-194): a vote may carry a call ({ vote, call }) on another contestant's claim about this amendment.
+      if (typeof d === 'boolean') return d;
+      const o = d as { vote?: unknown; call?: unknown } | null;
+      if (!o || typeof o.vote !== 'boolean') return null;
+      const call = calledAlready(s, pid) ? null : validCall(s, pid, o.call, claimants5(s, amendIndex(step)));
+      return call ? { vote: o.vote, call } : o.vote;
+    }
     return null;
   },
   botDecide(s, pid, step) {
@@ -380,10 +394,19 @@ export const playLevel5: LevelDefinition = {
     if (claimed === 'YES' || claimed === 'NO') {
       const want = claimed === 'YES';
       const gain = want ? -gap : gap;
-      const loss = credibilityValue(s) * (expectedRecord(s, pid, 'TRUE') - expectedRecord(s, pid, 'LIE'));
+      // H2 (D-194): breaking the promise can be called (the payout, in the bot's own points, adds to the loss).
+      const pc = callChance(s, pid, (_obs) => { const q = pYes(s, pid, k, l.current!).p; return want ? 1 - q : q; });
+      const loss = credibilityValue(s) * (expectedRecord(s, pid, 'TRUE') - expectedRecord(s, pid, 'LIE')) + pc * PLAY.CALL_PAYOUT * coinValue(s, idx(s, pid));
       vote = gain * (1 - honestyOf(s, pid)) > loss + 1e-9 ? !want : want;
     }
-    return vote;
+    if (calledAlready(s, pid)) return vote;
+    const call = botCall(s, pid, claimants5(s, k), (t) => {
+      const c = l.claims?.[t]?.[l.order[k]];
+      if (c !== 'YES' && c !== 'NO') return null;
+      const q = pYes(s, t, k, l.current!).p;
+      return c === 'YES' ? 1 - q : q;
+    });
+    return call ? { vote, call } : vote;
   },
   resolve(s, step, decisions) {
     const l = st(s);
@@ -442,7 +465,11 @@ export const playLevel5: LevelDefinition = {
     if (same(proposal, l.current!)) {
       l.amendments.push({ proposer, proposal, statusQuo: { ...l.current! }, votes: {}, claims, yes: 0, need: P.need, passed: false, withdrawn: true });
     } else {
-      const votes = decisions as Record<PlayerId, boolean>;
+      const norm = (d: unknown) => (typeof d === 'boolean' ? { vote: d, call: null } : (d as { vote: boolean; call?: PlayerId | null }));
+      const votes = Object.fromEntries(pids.map((id) => [id, norm(decisions[id]).vote])) as Record<PlayerId, boolean>;
+      // H1 (D-194): calls on this amendment's claims are checked now; they are paid when the ballots land.
+      const net = settleCalls(s, Object.fromEntries(pids.map((id) => [id, norm(decisions[id]).call ?? null])), (t) => (claims[t] === 'YES' || claims[t] === 'NO') && (claims[t] === 'YES') !== votes[t], false);
+      l.callNet = Object.fromEntries(pids.map((id) => [id, (l.callNet?.[id] ?? 0) + net[id]]));
       const yes = Object.values(votes).filter(Boolean).length;
       const passed = yes >= P.need;
       l.amendments.push({ proposer, proposal, statusQuo: { ...l.current! }, votes, claims, yes, need: P.need, passed });

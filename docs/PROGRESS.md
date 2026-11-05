@@ -117,3 +117,14 @@ LOOP DONE
 | G8 Report | DONE | Round 3 section at the top of docs/MORNING_SUMMARY.md and docs/AUTORUN_REPORT.md |
 
 ROUND 3 DONE
+
+## Round 4: Call it
+
+| Task | Status | Notes |
+|---|---|---|
+| H1 The rule | DONE (engine) | `src/engine/play/calls.ts`; consequences in all five episodes; spec 3.7; tests/engine/play-calls.test.ts |
+| H2 Bots | DONE (engine) | bots call by expected Play value; claims weigh call risk; a call reveals the fact |
+| H3 Tune and check | TODO | |
+| H4 Screens and voice | TODO | |
+| H5 Report | TODO | |
+

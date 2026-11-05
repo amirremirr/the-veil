@@ -530,7 +530,9 @@ describe('Give (D-142)', () => {
         const d = s.levelResults[3] as L3Debrief;
         const hist = s.play!.bankHistory.filter((h) => h.level === 3);
         d.rounds.forEach((r, n) => {
-          for (const p of s.players) expect(hist[n].W[p.id]).toBeCloseTo(r.W[p.id] + r.giftNet![p.id], 9);
+          // H1 (D-194): calls settle in the same round; their money is the ledger's "call" line.
+          const call = (id: string) => hist[n].ledger?.[id]?.find((x) => x.k === 'call')?.n ?? 0;
+          for (const p of s.players) expect(hist[n].W[p.id]).toBeCloseTo(r.W[p.id] + r.giftNet![p.id] + call(p.id), 9);
           for (const [from, g] of Object.entries(r.gifts!)) {
             gifts++;
             expect(PLAY.GIFT_AMOUNTS).toContain(g.amount);

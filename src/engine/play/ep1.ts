@@ -14,6 +14,7 @@ import { VALUES_CARDS } from '../types';
 import type { LevelDefinition } from '../levels/types';
 import { PLAY } from './params';
 import { activeEvent, giftNet, missionScale, missionValue, playEffortShares, playRoundValue, livingCost, setRoundLedger } from './rules';
+import { botCall, callChance, coinValue, settleCalls, validCall } from './calls';
 import { chooseClaim, credibilityValue, expectedRecord, honestyOf, postClaims, SILENT } from './claims';
 import { VALUES_PRIOR } from '../params';
 
@@ -44,6 +45,8 @@ export interface P1State {
 }
 
 const st = (s: GameState) => s.levelState as P1State;
+/** H1: contestants with a claim on record this round. */
+const claimantsOf = (s: GameState): PlayerId[] => ids(s).filter((id) => { const c = st(s).claims?.[id]; return !!c && c !== SILENT; });
 /** D-152: the claims map to Study's principles: Free Market = No Tax (P1), Safety Net (P2), Middle Way = Limit the Gap (P3). */
 export const CLAIMABLE: PrincipleId[] = ['P1', 'P2', 'P3'];
 const GRID = taxGrid(L1.TAX_GRID_STEP, L1.TAX_GRID_MAX);
@@ -282,7 +285,7 @@ export const playLevel1: LevelDefinition = {
     if (!c || !PRINCIPLES.includes(c.vote as PrincipleId)) return null;
     const gf = c.gift;
     const gift = gf && typeof gf.to === 'string' && gf.to !== pid && ids(s).includes(gf.to) && PLAY.GIFT_AMOUNTS.includes(gf.amount) ? { to: gf.to, amount: gf.amount } : null;
-    return { vote: c.vote, gift };
+    return { vote: c.vote, gift, call: validCall(s, pid, (c as { call?: unknown }).call, claimantsOf(s)) };
   },
   botDecide(s, botId, step) {
     if (step === 'PEEK') return botPeek(s, botId);
@@ -301,10 +304,16 @@ export const playLevel1: LevelDefinition = {
     if (claimed && claimed !== SILENT) {
       const best = u.indexOf(Math.max(...u));
       const gain = u[best] - u[PRINCIPLES.indexOf(claimed as PrincipleId)];
-      const loss = credibilityValue(s) * (expectedRecord(s, botId, 'TRUE') - expectedRecord(s, botId, 'LIE'));
+      // H2 (D-194): breaking the promise can be called; the expected payout, in the bot's own points, adds to the loss.
+      const pc = callChance(s, botId, (obs) => 1 - predictVote(s, obs, botId)[PRINCIPLES.indexOf(claimed as PrincipleId)]);
+      const loss = credibilityValue(s) * (expectedRecord(s, botId, 'TRUE') - expectedRecord(s, botId, 'LIE')) + pc * PLAY.CALL_PAYOUT * coinValue(s, idx(s, botId));
       vote = gain * (1 - honestyOf(s, botId)) > loss + 1e-9 ? PRINCIPLES[best] : (claimed as PrincipleId);
     }
-    return { vote, gift: bestGift(s, botId, vote) };
+    const call = botCall(s, botId, claimantsOf(s), (t) => {
+      const c = st(s).claims?.[t];
+      return c && c !== SILENT ? 1 - predictVote(s, botId, t)[PRINCIPLES.indexOf(c as PrincipleId)] : null;
+    });
+    return { vote, gift: bestGift(s, botId, vote), call };
   },
   resolve(s, step, decisions) {
     const l = st(s);
@@ -335,7 +344,7 @@ export const playLevel1: LevelDefinition = {
     const P = p1Params(s);
     const g = gameRng(s);
     const pids = ids(s);
-    const ds = pids.map((id) => decisions[id] as { vote: PrincipleId; gift: Gift | null });
+    const ds = pids.map((id) => decisions[id] as { vote: PrincipleId; gift: Gift | null; call?: PlayerId | null });
     const { winner, tie, counts } = pluralityResolve(
       ds.map((d) => PRINCIPLES.indexOf(d.vote)),
       PRINCIPLES.length,
@@ -378,6 +387,9 @@ export const playLevel1: LevelDefinition = {
       ...(inheritance ? { inheritance } : {}),
     });
     for (const p2 of s.players) p2.privateInfo.income = l.dealt[p2.id];
+    // H1 (D-194): calls settle when the ballots land (Episode 1: only the payment applies).
+    const callNet = settleCalls(s, Object.fromEntries(pids.map((id, i) => [id, ds[i].call ?? null])), (t) => ds[pids.indexOf(t)].vote !== l.claims?.[t]);
+    W = W.map((w, i) => w + callNet[pids[i]]);
     const gn = giftNet(pids, gifts);
     setRoundLedger(s, Object.fromEntries(pids.map((id, i) => [id, [
       { k: 'income' as const, n: l.dealt[id] },
@@ -385,6 +397,7 @@ export const playLevel1: LevelDefinition = {
       { k: 'peek' as const, n: l.peeked.includes(id) ? -PLAY.PEEK_COST : 0 },
       { k: 'inheritance' as const, n: inheritance === id ? P.inheritance : 0 },
       { k: 'gift' as const, n: gn[id] },
+      { k: 'call' as const, n: callNet[id] },
     ]])));
     finishRound(s, W, playEffortShares(s), headline(s, `l1.play.${p}`, {}));
   },

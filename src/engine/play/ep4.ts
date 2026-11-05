@@ -12,8 +12,9 @@ import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import type { LevelDefinition } from '../levels/types';
 import { POLICIES, type Group, type Job, type Policy, type Priors } from '../levels/level4';
 import { PLAY } from './params';
+import { botCall, callChance, callsOn, callsThisRound, settleCalls, validCall } from './calls';
 import { activeEvent, addBetweenRounds, giftNet, missionScale, missionValue, playEffortShares, playRanks, playRoundValue, playScore, livingCost, setRoundLedger } from './rules';
-import { chooseClaim, honestyRange, postClaims, SILENT } from './claims';
+import { chooseClaim, claimsOf, honestyRange, postClaims, SILENT } from './claims';
 
 export interface Gift4 {
   to: PlayerId;
@@ -240,6 +241,9 @@ function expectedW(s: GameState, i: number, mine: { trained?: boolean; job?: Rec
   });
 }
 
+/** H1: workers with a training claim on record this round. */
+const claimants4 = (s: GameState): PlayerId[] => { const c = claimsOf(s.messages, s.levelIndex, s.round); return ids(s).filter((id) => c[id] === 'TRAINED'); };
+
 const withGift = (W: number[], i: number, g: Gift4 | null | undefined, s: GameState) => {
   if (!g) return W;
   const out = W.slice();
@@ -340,17 +344,22 @@ function claimGain(s: GameState, pid: PlayerId, value: string): number {
     const w = read >= P.threshold - EPS ? pay4('COMPLEX', l.care[pid], l.policy, P) : P.wageSimple;
     out += (pass ? pp : 1 - pp) * w;
   }
-  return out;
+  if (value !== 'TRAINED' || trained || !callsOn(s)) return out;
+  // H2 (D-194): HireBot may call the claim; a caught liar gets the simple job and pays the payout.
+  const pc = callChance(s, pid, (obs) => (obs === l.judge ? 1 - mean([true, false].map((pass) => judgeRead(posterior4(priorOf(l, pid), pass), true, k))) : null));
+  return (1 - pc) * out + pc * (P.wageSimple - PLAY.CALL_PAYOUT);
 }
 
-function botHire(s: GameState, pid: PlayerId): { hires: Record<PlayerId, Job>; gift: Gift4 | null } {
+function botHire(s: GameState, pid: PlayerId): { hires: Record<PlayerId, Job>; gift: Gift4 | null; call: PlayerId | null } {
   const l = st(s);
   const P = p4Params(s);
   const c = l.current!;
   const hires: Record<PlayerId, Job> = {};
   for (const w of workersOf(s)) hires[w] = c.reads![w] >= P.threshold - EPS ? 'COMPLEX' : 'SIMPLE';
   const i = idx(s, pid);
-  return { hires, gift: bestGift(s, i, expectedW(s, i, { job: hires }, P)) };
+  // H2 (D-194): HireBot calls the training claim it most doubts (its read is its belief), if the bet pays.
+  const call = botCall(s, pid, claimants4(s), (t) => (c.reads?.[t] !== undefined ? 1 - c.reads[t] : null));
+  return { hires, gift: bestGift(s, i, expectedW(s, i, { job: hires }, P)), call };
 }
 
 /** A bot's policy vote: its expected Play value over the two policy rounds, everyone by the threshold rule. */
@@ -473,7 +482,7 @@ export const playLevel4: LevelDefinition = {
       if (!c || typeof c.hires !== 'object' || !c.hires) return null;
       const hires: Record<PlayerId, Job> = {};
       for (const w of workersOf(s)) hires[w] = c.hires[w] === 'COMPLEX' ? 'COMPLEX' : 'SIMPLE';
-      return { hires, gift: gift(c.gift) };
+      return { hires, gift: gift(c.gift), call: validCall(s, pid, (c as { call?: unknown }).call, claimants4(s)) };
     }
     return null;
   },
@@ -552,8 +561,12 @@ export const playLevel4: LevelDefinition = {
     }
     // HIRE: quota, pay, gifts, the belief update, finish the round.
     const P = p4Params(s);
-    const d = decisions[l.judge] as { hires: Record<PlayerId, Job>; gift: Gift4 | null };
+    const d = decisions[l.judge] as { hires: Record<PlayerId, Job>; gift: Gift4 | null; call?: PlayerId | null };
     if (d.gift) c.gifts![l.judge] = d.gift;
+    // H1 (D-194): a call is checked before hiring; a caught liar gets the simple job this round.
+    const said4 = claimsOf(s.messages, s.levelIndex, s.round);
+    const callNet = settleCalls(s, { [l.judge]: d.call ?? null }, (t) => said4[t] === 'TRAINED' && !c.train![t]);
+    for (const x of callsThisRound(s)) if (x.lie) d.hires = { ...d.hires, [x.target]: 'SIMPLE' };
     c.chosen = d.hires;
     const { job, picks } = applyQuota(s, d.hires, c.meter!, g);
     c.job = job;
@@ -572,7 +585,7 @@ export const playLevel4: LevelDefinition = {
       if (m.kept) s.reliability[m.from].kept++;
     }
     c.jobPay = Object.fromEntries(c.workers!.map((w) => [w, pay4(job[w], l.care[w], l.policy, P)]));
-    let W = s.players.map((p) => (p.id === l.judge ? jp.pay : pay4(job[p.id], l.care[p.id], l.policy, P) - (c.train![p.id] ? costOf(s, p.id, P) : 0)));
+    let W = s.players.map((p) => (p.id === l.judge ? jp.pay : pay4(job[p.id], l.care[p.id], l.policy, P) - (c.train![p.id] ? costOf(s, p.id, P) : 0)) + callNet[p.id]);
     for (const [from, gf] of Object.entries(c.gifts!)) W = withGift(W, idx(s, from), gf, s);
     c.W = Object.fromEntries(s.players.map((p, i) => [p.id, W[i]]));
     const pl = s.play!;
@@ -583,11 +596,12 @@ export const playLevel4: LevelDefinition = {
     l.rounds.push(c as P4Round);
     const gn = giftNet(s.players.map((p) => p.id), c.gifts!);
     setRoundLedger(s, Object.fromEntries(s.players.map((p) => [p.id, p.id === l.judge
-      ? [{ k: 'judge' as const, n: jp.pay }, { k: 'gift' as const, n: gn[p.id] }]
+      ? [{ k: 'judge' as const, n: jp.pay }, { k: 'gift' as const, n: gn[p.id] }, { k: 'call' as const, n: callNet[p.id] }]
       : [
           { k: 'pay' as const, n: pay4(job[p.id], l.care[p.id], l.policy, P) },
           { k: 'training' as const, n: c.train![p.id] ? -costOf(s, p.id, P) : 0 },
           { k: 'gift' as const, n: gn[p.id] },
+          { k: 'call' as const, n: callNet[p.id] },
         ]])));
     finishRound(s, W, playEffortShares(s), headline(s, 'l4.play', {}));
   },

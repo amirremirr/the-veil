@@ -94,6 +94,10 @@ export const PLAY = {
   BAR_GAIN_SCALE: 2,
   /** G2 (D-188): bots value a bar with their own mission (the barred target's lost cover counts), not only their own price saving. */
   BAR_MISSION: true,
+  /** H1 (D-194): Call it. A call stakes CALL_STAKE on another contestant's claim; a caught lie pays the caller CALL_PAYOUT. */
+  CALL_ENABLED: true,
+  CALL_STAKE: 10,
+  CALL_PAYOUT: 20,
   /** G3 (D-189): an Episode 3 bot gives only when its best gift raises its own expected Play score. */
   GIFT_ONLY_IF_GAIN: true,
   /**

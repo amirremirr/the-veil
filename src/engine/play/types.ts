@@ -12,7 +12,7 @@ export interface PlayEvent {
 
 /** Bank after every finished round, in seat order of the record. */
 /** G1: one line of a round's money ledger. */
-export type LedgerKey = 'income' | 'rule' | 'peek' | 'inheritance' | 'gift' | 'prize' | 'hours' | 'pay' | 'cover' | 'gym' | 'loss' | 'plan' | 'training' | 'judge' | 'donation' | 'comeback' | 'living' | 'other';
+export type LedgerKey = 'income' | 'rule' | 'peek' | 'inheritance' | 'gift' | 'prize' | 'hours' | 'pay' | 'cover' | 'gym' | 'loss' | 'plan' | 'training' | 'judge' | 'donation' | 'comeback' | 'call' | 'living' | 'other';
 export interface LedgerLine {
   k: LedgerKey;
   n: number;
@@ -23,6 +23,15 @@ export interface ScoreParts {
   mission: number;
   debt: number;
   guess: number;
+}
+
+/** H1 (D-194): one call. `lie`: the called claim was false (CAUGHT); otherwise CALLED WRONG. */
+export interface CallRecord {
+  level: LevelId;
+  round: number;
+  caller: PlayerId;
+  target: PlayerId;
+  lie: boolean;
 }
 
 export interface BankRecord {
@@ -63,6 +72,8 @@ export interface PlayState {
   fairFirst?: Record<PlayerId, number>;
   /** v1 Section 6.3, LIFE only: the comeback card, once per life. */
   comeback?: { pid: PlayerId; took: 'COINS' | 'POINTS' };
+  /** H1 (D-194): every call so far (public). */
+  calls?: CallRecord[];
   /** G1: the current round's money lines, set by the episode just before the round finishes. */
   pendingLedger?: Record<PlayerId, LedgerLine[]>;
   /** G1: bank changes made between rounds (the Second Chance), carried into the next round's ledger. */

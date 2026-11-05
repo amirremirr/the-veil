@@ -81,6 +81,14 @@ Players learn four verbs in Episode 1 and use them all life. This is what makes 
 - Habits are learnable on purpose (mastery), and the per-life draw stops them being certain.
 - Bots read claims with the existing rule (fixed weight x speaker record). They also read actions: buying history, peeking, training. Record in DECISIONS.md exactly which actions update which beliefs.
 
+### 3.7 CALL (Round 4, D-194)
+- After the claims are shown, each contestant may **call** one other contestant's claim per round, by staking `PLAY.CALL_STAKE` (10) coins. The call sits on the existing move screen; no new decision screen.
+- The called claim is checked at once and the result is public. A lie: the liar pays the caller `PLAY.CALL_PAYOUT` (20; the stake comes back), is stamped **CAUGHT**, and the record counts a broken word. True: the caller pays the claimant the stake and is stamped **CALLED WRONG**. Several callers on one claim each stake and are each paid (or pay) separately.
+- What a caught lie means: Episode 1 and Episode 5 (vote promises), checked when the ballots land, the payment only. Episode 2 (hours), the true hours become public and a caught liar cannot win the Hustle Prize that round. Episode 3 (risk), checked before the pool resolves; a caught liar who applied is turned away and pays nothing for cover. Episode 4 (training), checked before hiring; a caught liar gets the simple job. In Episode 4 only HireBot has a move after the claims, so only HireBot can call; in Episode 5 a contestant may call once, on any amendment's screen.
+- Payments are bank money and appear in "See the money". In a life, coins carry over.
+- Bots call when the bet's expected Play value is positive with their own belief that the claim is false and their own mission (risk-neutral: a belief above STAKE / (STAKE + PAYOUT) = 1/3). A bot's claim rule weighs the chance of being called, predicted from the others' beliefs, times the cost of being caught (the payout, and the lie's gain where the consequence voids it). A call reveals the checked fact to everyone.
+- The idea is costly state verification (Townsend 1979): checking costs something, so you check only when you suspect.
+
 ---
 
 ### 3.6 Difficulty changes what you see (D-145)

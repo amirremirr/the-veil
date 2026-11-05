@@ -5,8 +5,9 @@ import { equalShares, mean, ownNet, roundScore } from '../scoring';
 import { missionScale, missionValue } from '../play/rules';
 import { PLAY } from '../play/params';
 import { activeEvent, isPlay, livingCost, playNet, playRoundValue, roundsLeft, setRoundLedger } from '../play/rules';
-import { audienceBelief, beliefAfterClaim, checkClaims, chooseClaim, initFactBeliefs, observe, postClaims, revealFacts, SILENT } from '../play/claims';
+import { audienceBelief, beliefAfterClaim, checkClaims, chooseClaim, claimsOf, initFactBeliefs, observe, postClaims, revealFacts, SILENT } from '../play/claims';
 import { reliabilityOf } from '../core';
+import { botCall, callChance, callsOn, callsThisRound, settleCalls, validCall } from '../play/calls';
 import { ceOfLottery, logitChoice, logitProbs } from '../bots/utility';
 import { flavorIndex } from '../rng';
 import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
@@ -24,6 +25,8 @@ export interface Choice {
   bar?: PlayerId | null;
   /** Play only (D-142): a gift to one other contestant this round, or null. */
   gift?: Gift | null;
+  /** Play only (H1, D-194): a call on another contestant's risk claim this round, or null. */
+  call?: PlayerId | null;
 }
 
 /** D-142: a gift of `amount` coins (one of PLAY.GIFT_AMOUNTS) to `to`. */
@@ -418,6 +421,9 @@ function voterBelief(s: GameState, voter: PlayerId, j: PlayerId): number {
   return s.play!.belief[voter]?.[j] ?? audienceBelief(s, j) ?? playPrior(s);
 }
 
+/** H1: contestants with a risk claim on record this round. */
+const claimants3 = (s: GameState): PlayerId[] => { const c = claimsOf(s.messages, s.levelIndex, s.round); return ids(s).filter((id) => c[id] === 'LOW' || c[id] === 'HIGH'); };
+
 /** A contestant's expected risk (no gym), given a belief that they are high risk. */
 const expectedRisk = (b: number, P: L3Params) => b * P.P_HIGH + (1 - b) * P.P_LOW;
 
@@ -556,7 +562,16 @@ function claimGainFn(s: GameState, pid: PlayerId): (value: string) => number {
 
 function botClaim(s: GameState, pid: PlayerId): { value: string; lieGain: number } {
   const type = st(s).types[pid];
-  return chooseClaim(s, pid, type, type === 'HIGH' ? 'LOW' : 'HIGH', claimGainFn(s, pid));
+  const g = claimGainFn(s, pid);
+  // H2 (D-194): a lie can be called. Others' doubt is their belief against the claim; a caught liar is turned
+  // away from cover (the lie's gain is lost) and pays the payout.
+  const withCalls = (value: string) => {
+    const raw = g(value);
+    if (value === SILENT || value === type || !callsOn(s)) return raw;
+    const pc = callChance(s, pid, (obs) => (value === 'LOW' ? voterBelief(s, obs, pid) : 1 - voterBelief(s, obs, pid)));
+    return (1 - pc) * raw - pc * PLAY.CALL_PAYOUT;
+  };
+  return chooseClaim(s, pid, type, type === 'HIGH' ? 'LOW' : 'HIGH', withCalls);
 }
 
 /**
@@ -849,6 +864,7 @@ export const level3: LevelDefinition = {
         // D-142: one gift, of a listed amount, to someone else at the table.
         const gf = c.gift;
         out.gift = gf && typeof gf.to === 'string' && gf.to !== pid && ids(s).includes(gf.to) && PLAY.GIFT_AMOUNTS.includes(gf.amount) ? { to: gf.to, amount: gf.amount } : null;
+        out.call = validCall(s, pid, c.call, claimants3(s));
       }
       return out;
     }
@@ -876,7 +892,10 @@ export const level3: LevelDefinition = {
       const pStay = canBuy ? logitProbs([best(false), best(true)], lambda)[1] : 0;
       if (isPlay(s)) {
         const bar = botBarVote(s, botId, pStay);
-        return { buy, gym, bar, gift: botGift(s, botId, { buy, gym }, lambda) };
+        // H2 (D-194): call the risk claim it most doubts, if the bet pays with its own beliefs and mission.
+        const said = claimsOf(s.messages, s.levelIndex, s.round);
+        const call = botCall(s, botId, claimants3(s), (t) => (said[t] === 'LOW' ? voterBelief(s, botId, t) : said[t] === 'HIGH' ? 1 - voterBelief(s, botId, t) : null));
+        return { buy, gym, bar, gift: botGift(s, botId, { buy, gym }, lambda), call };
       }
       return { buy, gym };
     }
@@ -909,6 +928,7 @@ export const level3: LevelDefinition = {
     let choices = pids.map((id) => decisions[id] as Choice);
     // Play v2, the Bar: a strict majority of last round's members bars one applicant, who gets no cover.
     let bar: L3Bar | undefined;
+    let callNet: Record<PlayerId, number> | undefined;
     let applied: Record<PlayerId, boolean> | undefined;
     if (isPlay(s)) {
       applied = Object.fromEntries(pids.map((id, i) => [id, choices[i].buy]));
@@ -925,6 +945,15 @@ export const level3: LevelDefinition = {
             if (j !== m && choices[k].buy) s.play!.barReads.push({ level: s.levelIndex, round: s.round, member: m, target: j, belief: voterBelief(s, m, j) });
       }
       choices = choices.map((c, i) => ({ buy: c.buy && !bar?.barred.includes(pids[i]), gym: c.gym }));
+      // H1 (D-194): calls are checked before the pool resolves. A caught liar who applied is turned away
+      // (misrepresentation voids the policy) and pays nothing for cover; the checked fact becomes public.
+      const said = claimsOf(s.messages, s.levelIndex, s.round);
+      const lied = (t: PlayerId) => (said[t] === 'LOW' || said[t] === 'HIGH') && said[t] !== l.types[t];
+      callNet = settleCalls(s, Object.fromEntries(pids.map((id) => [id, (decisions[id] as Choice).call ?? null])), lied);
+      for (const x of callsThisRound(s)) {
+        if (x.lie) choices = choices.map((c, i) => (pids[i] === x.target ? { buy: false, gym: c.gym } : c));
+        observe(s, x.target, (fact) => (fact === (l.types[x.target] === 'HIGH') ? 1 : 0));
+      }
     }
     const pEff = pids.map((id, i) => pEffOf(l.types[id], choices[i].gym, P));
     const pBase = pids.map((id, i) => pBaseOf(l.types[id], choices[i].gym, P));
@@ -946,7 +975,7 @@ export const level3: LevelDefinition = {
         giftNet[gf.to] += received;
       }
     }
-    const Wend = giftNet ? W.map((w, i) => w + giftNet![pids[i]]) : W;
+    const Wend = giftNet ? W.map((w, i) => w + giftNet![pids[i]] + (callNet?.[pids[i]] ?? 0)) : W;
     let exited = false;
     const before = l.nextPremium;
     if (l.regime === 'VOL' && l.insurerActive) {
@@ -991,6 +1020,7 @@ export const level3: LevelDefinition = {
           { k: 'gym' as const, n: choices[i].gym ? -P.GYM_COST : 0 },
           { k: 'loss' as const, n: loss },
           { k: 'gift' as const, n: giftNet?.[id] ?? 0 },
+          { k: 'call' as const, n: callNet?.[id] ?? 0 },
         ]];
       })));
     }
