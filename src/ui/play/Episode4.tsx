@@ -169,8 +169,16 @@ export function JudgeScreen({ v }: { v: ViewState }) {
                 <Face v={v} p={p} size={24} />
                 <span className="w-16 truncate text-sm font-bold">{shortName(v, w)}</span>
                 <span className="flex-1 text-xs leading-tight">
-                  {lv.policy === 'B' ? t('play.l4.judge.hidden') : groupName(lv.groups[w])}, {t(c.pass?.[w] ? 'play.l4.pass' : 'play.l4.fail')}, {t(claims[w] === 'TRAINED' ? 'play.l4.saidT' : 'play.l4.saidNothing')}
-                  {lv.meterShown && c.meter && <span className="block font-bold">{t('play.l4.meter', { p: pct(c.meter[w]) })}</span>}
+                  {lv.policy === 'B' ? t('play.l4.judge.hidden') : groupName(lv.groups[w])}, {t(c.pass?.[w] ? 'play.l4.judge.passed' : 'play.l4.judge.failed')}, {t(claims[w] === 'TRAINED' ? 'play.l4.judge.says' : 'play.l4.judge.quiet')}
+                  {lv.meterShown && c.meter && (
+                    <span className="mt-0.5 flex items-center gap-1" aria-label={t('play.l4.meter', { p: pct(c.meter[w]) })}>
+                      <span className="relative h-1.5 w-16 rounded bg-paper" aria-hidden>
+                        <span className="absolute inset-y-0 left-0 rounded bg-good" style={{ width: `${Math.round(c.meter[w] * 100)}%` }} />
+                        <span className="absolute inset-y-[-2px] w-0.5 bg-ink" style={{ left: `${Math.round(lv.threshold * 100)}%` }} />
+                      </span>
+                      <span className="font-bold">{pct(c.meter[w])}</span>
+                    </span>
+                  )}
                 </span>
                 <span className="text-right text-xs font-bold">
                   {t(on ? 'play.l4.complex' : 'play.l4.simple')}

@@ -17,7 +17,7 @@ Merged from the fresh-eyes reviews (E1), the design audit (E2), the logic audit 
 | 11 | Peak screens of Episodes 1, 2 and 4 read like logs (E4) | LIE stamps in bold red | S | Done |
 | 12 | Episode 1's round-1 claim feels pointless (A) | The claims beat says "Claims work like polls: they change which rule looks able to win." (and R6 gives claims a real effect) | S | Done |
 | 13 | Tap targets of 40 px (E4) | 44 px everywhere in Play | S | Done |
-| 14 | Episode 4 judge screen is "a spreadsheet" (A, B) | Not done: needs a redesign of the row (one meter bar, words instead of codes) | M | Left |
+| 14 | Episode 4 judge screen is "a spreadsheet" (A, B) | Plain words ("Square, passed, claims training"), a meter bar with the hiring line marked, "Complex hire: +20 if trained, -30 if not. Base 40." | M | Done |
 | 15 | "Mission +N" and the odds readouts do the thinking (A) | Hard now hides the mission hints, as it already hides the poll; Easy and Normal keep them (v2 B.6) | S | Done on Hard (D-164), Needs Amir |
 | 16 | The wheel hit nobody all Episode 3 on Normal (A) | Not done: a game-logic change to the draw; the Episode 3 checks were tuned on the current odds | M | Left |
 | 17 | Multiplayer and a discussion phase (A's top change) | Not done: needs the room server | L | Left |
