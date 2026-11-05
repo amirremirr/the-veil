@@ -87,7 +87,7 @@ function EpisodeIntro({ v }: { v: ViewState }) {
       </p>
       <h1 className="h-show mt-1 text-5xl leading-none text-spot">{t(`play.episodes.${v.levelIndex}.name`)}</h1>
       <p className="mt-5 text-lg leading-snug" data-intro>
-        {t(`play.episodes.${v.levelIndex}.intro`, { loss: n?.loss ?? 0 })}
+        {t(v.mode === 'LIFE' && v.levelIndex === 5 ? 'play.episodes.5.introLife' : `play.episodes.${v.levelIndex}.intro`, { loss: n?.loss ?? 0 })}
       </p>
       <div className="mt-auto pt-4">
         <Bubble who="Dash" host text={hostLine('welcome', pick(v, 'welcome', 6))} />
@@ -367,7 +367,10 @@ function EpisodeGuess({ v }: { v: ViewState }) {
 function MissionsBeat({ v, next }: { v: ViewState; next: () => void }) {
   const pl = v.play!;
   const scores = pl.finalScores ?? {};
-  const ranked = v.players.slice().sort((a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0));
+  // AI playtest (T7): in a life the cards stay hidden until the end, so rank by the public ranks, without scores.
+  const hidden = !pl.finalScores;
+  const rk = pl.ranks ?? {};
+  const ranked = v.players.slice().sort((a, b) => (hidden ? (rk[a.id] ?? 9) - (rk[b.id] ?? 9) : (scores[b.id] ?? 0) - (scores[a.id] ?? 0)));
   const myGuess = pl.guesses[v.levelIndex]?.[v.viewer];
   const guessLine = myGuess
     ? hostLine(myGuess.correct ? 'guessRight' : 'guessWrong', pick(v, 'guess', 6), { name: nameOf(v, myGuess.target) })
@@ -376,15 +379,15 @@ function MissionsBeat({ v, next }: { v: ViewState; next: () => void }) {
     <Stage v={v} bar={false} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
       <div className="my-auto" data-missions>
         <Bubble who="Dash" host text={guessLine} />
-        <p className="mt-5 text-xs font-bold uppercase tracking-wider text-soft">{t('play.summary.missionsLabel')}</p>
-        <h1 className="h-show mt-1 text-3xl leading-tight text-spot">{ranked[0].id === v.viewer ? t('play.summary.winnerYou') : t('play.summary.winner', { name: shortName(v, ranked[0].id) })}</h1>
+        <p className="mt-5 text-xs font-bold uppercase tracking-wider text-soft">{t(hidden ? 'play.summary.ranksLabel' : 'play.summary.missionsLabel')}</p>
+        <h1 className="h-show mt-1 text-3xl leading-tight text-spot">{ranked[0].id === v.viewer ? t(hidden ? 'play.summary.leadYou' : 'play.summary.winnerYou') : t(hidden ? 'play.summary.lead' : 'play.summary.winner', { name: shortName(v, ranked[0].id) })}</h1>
         <ol className="mt-3 space-y-1.5" aria-label={t('play.stage.ranking')}>
           {ranked.map((p, i) => (
             <li key={p.id} className={`flex items-center gap-2 rounded-xl px-2 py-1.5 ${p.id === v.viewer ? 'bg-spot text-onspot' : 'bg-card'}`}>
               <span className="h-show w-5 text-lg">{i + 1}</span>
               <span className="w-20 truncate text-sm font-bold">{shortName(v, p.id)}</span>
               <span className="flex-1 truncate text-sm">{p.values ? missionName(p.values) : ''}</span>
-              <span className="h-show w-10 text-end">{coins(scores[p.id] ?? 0)}</span>
+              {!hidden && <span className="h-show w-10 text-end">{coins(scores[p.id] ?? 0)}</span>}
             </li>
           ))}
         </ol>

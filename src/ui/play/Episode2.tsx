@@ -11,6 +11,7 @@ import { coins, pct } from '../labels';
 import { nameOf, shortName } from '../game';
 import { BigButton, Bubble, Face, Stage } from './OnAir';
 import { GiftSheet, Tile, previewText } from './Episode3';
+import { timesWord } from './logic';
 
 type Gift = { to: string; amount: number };
 
@@ -156,7 +157,7 @@ export function PrizeScreen({ v }: { v: ViewState }) {
     <Stage v={v} footer={<BigButton disabled={!x} onClick={() => act(x)}>{t('play.l2.prize.submit')}</BigButton>}>
       <h1 className="h-show text-3xl leading-tight">{t('play.l2.prize.title', { n: PLAY.HUSTLE_PRIZE })}</h1>
       <p className="mt-1 text-sm">{t('play.l2.prize.how')}</p>
-      <ul className="mt-2 space-y-1.5" role="group" aria-label={t('play.l2.prize.title', { n: PLAY.HUSTLE_PRIZE })}>
+      <ul className="mt-2 space-y-1.5" aria-label={t('play.l2.prize.title', { n: PLAY.HUSTLE_PRIZE })}>
         {v.players
           .filter((p) => p.id !== v.viewer)
           .map((p) => {
@@ -254,5 +255,5 @@ export function summary2(v: ViewState): { lie: string } {
   }).length;
   const top = v.players.slice().sort((a, b) => lies(b.id) - lies(a.id))[0];
   const n = lies(top.id);
-  return { lie: n ? t(top.id === v.viewer ? 'play.l2.sum.lieYou' : 'play.l2.sum.lie', { name: nameOf(v, top.id), n }) : t('play.summary.noLie') };
+  return { lie: n ? t(top.id === v.viewer ? 'play.l2.sum.lieYou' : 'play.l2.sum.lie', { name: nameOf(v, top.id), n: timesWord(n) }) : t('play.summary.noLie') };
 }

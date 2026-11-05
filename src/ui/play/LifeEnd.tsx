@@ -180,7 +180,7 @@ export function ResultCard({ v }: { v: ViewState }) {
     t('play.card.worst', { ep: worst, name: t(`play.episodes.${worst}.name`), n: coins(ch[worst] ?? 0) }),
     t('play.card.bank', { n: coins(v.play!.banks[v.viewer]) }),
     t(m.scale * m.value >= m.goal ? 'play.card.missionDone' : 'play.card.missionMissed', { mission: missionName(m.card) }),
-    h.made ? t('play.card.honesty', { lies: h.lies, made: h.made, caught: h.caught }) : t('play.card.noClaims'),
+    !h.made ? t('play.card.noClaims') : h.lies ? t('play.card.honesty', { lies: h.lies, made: h.made, caught: h.caught }) : t('play.card.allTrue', { made: h.made }),
   ];
   const ref = useRef<HTMLDivElement>(null);
   const share = async () => {

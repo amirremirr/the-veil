@@ -455,7 +455,6 @@ export function RegimeScreen({ v }: { v: ViewState }) {
       <h1 className="h-show text-4xl">{t('play.l3.regimeTitle')}</h1>
       <p className="mt-1 text-sm text-soft">{t('play.l3.regimeDecide')}</p>
       <div className="mt-3">
-        <LatestMessage v={v} />
       </div>
       <div className="mt-auto space-y-2 pt-3" role="group" aria-label={t('play.l3.regimeTitle')}>
         {REGIMES.map((r) => (

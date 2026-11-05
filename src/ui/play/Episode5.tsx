@@ -12,6 +12,7 @@ import { coins, pct } from '../labels';
 import { nameOf, shortName } from '../game';
 import { BigButton, Bubble, Face, Stage } from './OnAir';
 import { previewText } from './Episode3';
+import { timesWord } from './logic';
 
 export type L5View = {
   veil?: Record<string, Constitution>;
@@ -55,7 +56,7 @@ export function Finale({ v, next }: { v: ViewState; next: () => void }) {
       <div className="my-auto" data-mycards>
         <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.l5.cards.label')}</p>
         <p className="h-show mt-2 text-4xl leading-tight text-spot">{t('play.l5.cards.title')}</p>
-        <p className="mt-3 text-base">{t('play.l5.cards.deck', { list: L5.INCOME_DECK.map((y) => coins(y * PLAY.L5.INCOME_SCALE)).join(', ') })}</p>
+        <p className="mt-3 text-base">{v.mode === 'LIFE' ? t('play.l5.cards.life') : t('play.l5.cards.deck', { list: L5.INCOME_DECK.map((y) => coins(y * PLAY.L5.INCOME_SCALE)).join(', ') })}</p>
         <p className="mt-3 text-base">{t('play.l5.cards.how')}</p>
       </div>
     </Stage>
@@ -73,7 +74,7 @@ export function VeilScreen({ v }: { v: ViewState }) {
   return (
     <Stage v={v} footer={<BigButton disabled={k < 0} onClick={() => act({ t: tx, F })}>{t('play.l5.veil.submit')}</BigButton>}>
       <h1 className="h-show text-3xl leading-tight">{t('play.l5.veil.title')}</h1>
-      <p className="mt-1 text-sm">{t('play.l5.veil.how')}</p>
+      <p className="mt-1 text-sm">{t(v.mode === 'LIFE' ? 'play.l5.veil.howLife' : 'play.l5.veil.how')}</p>
       <p className="mt-3 text-sm font-bold">{t('play.l5.tax')}</p>
       <Chips opts={L5.TAX_OPTIONS} value={tx} onPick={setT} label={t('play.l5.tax')} fmt={pct} />
       <p className="mt-3 text-sm font-bold">{t('play.l5.floor')}</p>
@@ -91,7 +92,7 @@ export function FairScreen({ v }: { v: ViewState }) {
   return (
     <Stage v={v} footer={<BigButton disabled={x === null} onClick={() => act(x)}>{t('play.l5.fair.submit')}</BigButton>}>
       <h1 className="h-show text-3xl leading-tight">{t('play.l5.fair.title')}</h1>
-      <p className="mt-1 text-sm">{t(after ? 'play.l5.fair.after' : 'play.l5.fair.before')}</p>
+      <p className="mt-1 text-sm">{t(after ? 'play.l5.fair.after' : v.mode === 'LIFE' ? 'play.l5.fair.beforeLife' : 'play.l5.fair.before')}</p>
       <div className="mt-auto pt-3">
         <Chips opts={L5.TAX_OPTIONS} value={x} onPick={setX} label={t('play.l5.fair.title')} fmt={pct} />
       </div>
@@ -163,12 +164,12 @@ export function ClaimScreen5({ v }: { v: ViewState }) {
       <ul className="mt-3 space-y-1.5">
         {lv.order.map((p) => (
           <li key={p} className="flex items-center gap-2 rounded-xl bg-card px-2 py-1.5">
-            <span aria-label={shortName(v, p)}>
+            <span>
               <Face v={v} p={v.players.find((q) => q.id === p)!} size={24} />
             </span>
             <span className="flex-1 text-sm font-semibold">{t('play.l5.short', { t: pct(lv.lobby![p].proposal!.t), F: coins(lv.lobby![p].proposal!.F) })}</span>
             {['YES', 'NO'].map((o) => (
-              <button key={o} type="button" aria-pressed={x[p] === o} onClick={() => setX({ ...x, [p]: x[p] === o ? 'SILENT' : o })} className={`min-h-[40px] rounded-lg px-2 text-xs font-bold ${x[p] === o ? 'bg-spot text-onspot' : 'bg-paper'}`}>
+              <button key={o} type="button" aria-label={`${t(`play.l5.${o}`)}: ${shortName(v, p)}`} aria-pressed={x[p] === o} onClick={() => setX({ ...x, [p]: x[p] === o ? 'SILENT' : o })} className={`min-h-[40px] rounded-lg px-2 text-xs font-bold ${x[p] === o ? 'bg-spot text-onspot' : 'bg-paper'}`}>
                 {t(`play.l5.${o}`)}
               </button>
             ))}
@@ -257,5 +258,5 @@ export function summary5(v: ViewState): { lie: string } {
   const top = v.players
     .map((p) => ({ id: p.id, n: lv.amendments.filter((a) => !a.withdrawn && (a.claims[p.id] === 'YES' || a.claims[p.id] === 'NO') && (a.claims[p.id] === 'YES') !== !!a.votes[p.id]).length }))
     .sort((a, b) => b.n - a.n)[0];
-  return { lie: top && top.n ? t(top.id === v.viewer ? 'play.l5.sum.lieYou' : 'play.l5.sum.lie', { name: nameOf(v, top.id), n: top.n }) : t('play.summary.noLie') };
+  return { lie: top && top.n ? t(top.id === v.viewer ? 'play.l5.sum.lieYou' : 'play.l5.sum.lie', { name: nameOf(v, top.id), n: timesWord(top.n) }) : t('play.summary.noLie') };
 }

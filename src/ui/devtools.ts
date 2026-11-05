@@ -97,6 +97,10 @@ export function personaDecision(g: GameState, persona: string, step: string | un
     }
     if (step === 'REGIME') return persona === 'CAREFUL' ? 'M50' : 'VOL';
   }
+  if (g.levelIndex === 5 && g.play) {
+    if (step === 'CLAIM') return persona === 'SKIMMER' ? {} : Object.fromEntries(((g.levelState as { order: string[] }).order ?? []).map((p) => [p, 'YES']));
+    if (step === 'LOBBY') return persona === 'SKIMMER' ? { donateTo: null, amount: 0, proposal: null } : { donateTo: null, amount: 0, proposal: { t: 0.3, F: 40 } };
+  }
   if (g.levelIndex === 2 && g.play) {
     if (step === 'TAX') return persona === 'CAREFUL' ? 0.2 : 0;
     if (step === 'EFFORT') return { effort: persona === 'SKIMMER' ? 5 : persona === 'BLUFFER' ? 2 : 6, claim: persona === 'SKIMMER' ? 'SILENT' : persona === 'BLUFFER' ? 'LOT' : 'SOME', gift: null };

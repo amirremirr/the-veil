@@ -941,7 +941,8 @@
         "name": "Grand Finale: Rewrite the Rules",
         "pitch": "Write the rules, then find out where you stand.",
         "sponsor": "Paid for by Friends of Whoever Wins",
-        "intro": "Write the rules before you know your income. Then the incomes land, and you can propose changes and pay for votes. Secretly."
+        "intro": "Write the rules before you know your income. Then the incomes land, and you can propose changes and pay for votes. Secretly.",
+        "introLife": "Your banks are on the table. Write the rules for sharing them, then propose changes and pay for votes. Secretly."
       }
     },
     "missions": {
@@ -1162,15 +1163,15 @@
       "regimes": {
         "VOL": {
           "name": "Keep the market",
-          "desc": "Buy cover if you want, at SafeHands' price."
+          "desc": "Buy cover if you want."
         },
         "M50": {
           "name": "Half cover for all",
-          "desc": "Everyone pays in and gets half of any loss back."
+          "desc": "Everyone pays in, gets half a loss back."
         },
         "M100": {
           "name": "Full cover for all",
-          "desc": "Everyone pays in and gets every loss back."
+          "desc": "Everyone pays in, gets a loss back."
         }
       },
       "regimeSubmit": "Cast my vote",
@@ -1261,7 +1262,10 @@
       "readYou": "The audience was {p} sure you were {said}. You were {truth}.",
       "noRead": "The audience read everyone right.",
       "nearMiss": "Near miss",
-      "nearMissNone": "No single change would have left you richer."
+      "nearMissNone": "No single change would have left you richer.",
+      "ranksLabel": "The ranking so far",
+      "lead": "Leading the life: {name}",
+      "leadYou": "You lead the life!"
     },
     "really": {
       "button": "What was really going on?",
@@ -1572,7 +1576,7 @@
       "train": {
         "title": "Train?",
         "belief": "HireBot believes {p} of {group}s trained.",
-        "beliefBlind": "HireBot can't see groups: it believes {p} of everyone trained.",
+        "beliefBlind": "Blind hiring: HireBot believes {p} of everyone trained.",
         "how": "Trained workers pass the test 80% of the time, others 30%.",
         "tile": "Train",
         "cost": "Costs you {c} coins this round."
@@ -1627,7 +1631,7 @@
       "board": {
         "title": "HireBot's beliefs: share trained",
         "head": "HireBot learned from last round's workers.",
-        "sub": "A worker is hired complex when the meter reaches {p}."
+        "sub": "This round, HireBot hired from {p}."
       },
       "peak": {
         "title": "Who really trained?",
@@ -1777,8 +1781,8 @@
         "host": "Effort is invisible. Luck is loud. Our sponsor sells both."
       },
       "sum": {
-        "lie": "{name} overclaimed effort {n} times.",
-        "lieYou": "You overclaimed effort {n} times."
+        "lie": "{name} overclaimed effort {n}.",
+        "lieYou": "You overclaimed effort {n}."
       }
     },
     "l5": {
@@ -1796,18 +1800,21 @@
         "label": "The finale",
         "title": "Write the rules. Then find out where you stand.",
         "deck": "Incomes this time: {list}.",
-        "how": "Middle votes win. After the reveal, anyone can propose a change and pay for votes in secret."
+        "how": "Middle votes win. After the reveal, anyone can propose a change and pay for votes in secret.",
+        "life": "This time your incomes are your banks. Everyone can see them."
       },
       "veil": {
         "title": "Rules behind the veil",
         "how": "You don't know your income yet.",
-        "submit": "Submit"
+        "submit": "Submit",
+        "howLife": "You know your bank. So does everyone. Write fair rules anyway?"
       },
       "fair": {
         "title": "What tax is fair?",
         "before": "Unpaid. Just your opinion, before you know your income.",
         "after": "Unpaid. Same question, now that you know.",
-        "submit": "Answer"
+        "submit": "Answer",
+        "beforeLife": "Unpaid. Just your opinion, before the rules land."
       },
       "inc": {
         "label": "The incomes, poorest first",
@@ -1845,8 +1852,8 @@
         "hostClean": "No money changed hands. Our sponsors are devastated."
       },
       "sum": {
-        "lie": "{name} broke {n} vote promises.",
-        "lieYou": "You broke {n} vote promises."
+        "lie": "{name} broke a vote promise {n}.",
+        "lieYou": "You broke a vote promise {n}."
       },
       "short": "{t} tax, {F} floor"
     },
@@ -1905,7 +1912,8 @@
       "honesty": "Lied {lies} of {made} times. Caught {caught}.",
       "noClaims": "Never made a claim.",
       "small": "Just for fun. Not a diagnosis.",
-      "share": "Share the card"
+      "share": "Share the card",
+      "allTrue": "Told the truth {made} of {made} times."
     },
     "titles": {
       "honest": {
