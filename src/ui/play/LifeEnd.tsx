@@ -10,6 +10,7 @@ import { shortName } from '../game';
 import { useMotionOff } from '../components/common';
 import { BigButton, Stage } from './OnAir';
 import { missionName } from './logic';
+import { earned, isDaily, rivalLine, saveAchievements, shareText, type Achievement } from './retention';
 
 export interface Receipt {
   kind: 'worked' | 'caught' | 'betrayal';
@@ -183,8 +184,26 @@ export function ResultCard({ v }: { v: ViewState }) {
     !h.made ? t('play.card.noClaims') : h.lies ? t('play.card.honesty', { lies: h.lies, made: h.made, caught: h.caught }) : t('play.card.allTrue', { made: h.made }),
   ];
   const ref = useRef<HTMLDivElement>(null);
+  const mineNow = useMemo(() => earned(v), [v]);
+  const [all, setAll] = useState<Achievement[]>([]);
+  useEffect(() => setAll(saveAchievements(mineNow)), [mineNow]);
+  const [copied, setCopied] = useState(false);
+  const shareTextNow = async () => {
+    const text = shareText(v);
+    const nav = navigator as Navigator & { share?: (d: unknown) => Promise<void> };
+    try {
+      if (nav.share && /Mobi|Android/i.test(navigator.userAgent)) {
+        await nav.share({ text });
+        return;
+      }
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+    }
+  };
   const share = async () => {
-    const canvas = drawCard(title, lines);
+    const canvas = drawCard(title, mineNow.length ? [...lines, mineNow.map((a) => t(`play.ach.${a}.name`)).join(', ')] : lines);
     const blob: Blob | null = await new Promise((res) => canvas.toBlob((b) => res(b), 'image/png'));
     if (!blob) return;
     const file = new File([blob], 'the-veil-live.png', { type: 'image/png' });
@@ -228,9 +247,25 @@ export function ResultCard({ v }: { v: ViewState }) {
         </ul>
         <p className="mt-3 text-[11px]">{t('play.card.small')}</p>
       </div>
-      <button type="button" className="mt-3 min-h-[48px] rounded-full bg-card font-bold" onClick={share} data-share>
-        {t('play.card.share')}
-      </button>
+      {mineNow.length > 0 && (
+        <p className="mt-2 text-xs font-semibold" data-achievements>
+          {t('play.ach.label', { n: all.length, max: 12 })} {mineNow.map((a) => t(`play.ach.${a}.name`)).join(', ')}
+        </p>
+      )}
+      <p className="mt-2 text-sm font-semibold" data-rival>
+        {rivalLine(v)} {t('play.rival.ask')}
+      </p>
+      <div className="mt-2 grid grid-cols-3 gap-2">
+        <button type="button" className="min-h-[48px] rounded-full bg-card text-sm font-bold" onClick={share} data-share>
+          {t('play.card.share')}
+        </button>
+        <button type="button" className="min-h-[48px] rounded-full bg-card text-sm font-bold" onClick={shareTextNow} data-share-text>
+          {copied ? t('play.daily.copied') : t(isDaily(v) ? 'play.daily.shareDaily' : 'play.daily.shareText')}
+        </button>
+        <button type="button" className="min-h-[48px] rounded-full bg-card text-sm font-bold" onClick={() => replay(true)} data-rematch>
+          {t('play.rival.rematch')}
+        </button>
+      </div>
     </Stage>
   );
 }

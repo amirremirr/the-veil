@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { Difficulty, LevelId } from '../../engine/types';
 import { PLAY } from '../../engine/play/params';
 import { PLAYABLE_EPISODES } from '../../engine/play/rules';
+import { dailySeed, istanbulDay } from './retention';
 import { useStore } from '../store';
 import { t } from '../i18n';
 import { Page } from '../components/common';
@@ -51,6 +52,15 @@ export function PlayModeSelect() {
         <button type="button" className="choice block p-4" data-life onClick={() => useStore.setState({ setupFor: { mode: 'LIFE' }, screen: 'playSetup' })}>
           <span className="h-show block text-2xl">{t('play.modes.life')}</span>
           <span className="mt-1 block text-sm text-soft">{t('play.modes.lifeDesc')}</span>
+        </button>
+        <button
+          type="button"
+          className="choice block p-4"
+          data-daily
+          onClick={() => useStore.getState().start({ mode: 'LIFE', ruleset: 'PLAY', nPlayers: 4, difficulty: 'NORMAL', seed: dailySeed() })}
+        >
+          <span className="h-show block text-2xl">{t('play.daily.title')}</span>
+          <span className="mt-1 block text-sm text-soft">{t('play.daily.desc', { day: istanbulDay() })}</span>
         </button>
         <section className="form-card p-3" aria-labelledby="one-ep">
           <h2 id="one-ep" className="h-show text-xl">

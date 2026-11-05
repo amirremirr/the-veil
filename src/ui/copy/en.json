@@ -1957,6 +1957,73 @@
         "mid": "The quiet one. Nobody knows.",
         "last": "Silent, and it cost you."
       }
+    },
+    "daily": {
+      "title": "Daily Life",
+      "desc": "Today's life ({day}). Same seed for everyone, against the bots. No streaks, no timers.",
+      "shareHead": "The Veil: Live, Daily Life {day}",
+      "shareHeadSeed": "The Veil: Live",
+      "shareRank": "Rank {r} of {n}",
+      "shareDaily": "Share today",
+      "shareText": "Share text",
+      "copied": "Copied"
+    },
+    "rival": {
+      "beat": "{name} beat you by {n}.",
+      "won": "You beat {name} by {n}.",
+      "ask": "Rematch with the same seed?",
+      "rematch": "Rematch"
+    },
+    "ach": {
+      "label": "Achievements ({n} of {max} on this device):",
+      "DEATH_SPIRAL": {
+        "name": "Death Spiral",
+        "desc": "The pool emptied and SafeHands left town."
+      },
+      "LEMON": {
+        "name": "Lemon",
+        "desc": "High risk, said low risk, and got cover anyway."
+      },
+      "FREE_RIDER": {
+        "name": "Free Rider",
+        "desc": "Won the Hustle Prize on a little work."
+      },
+      "GLASS_CEILING": {
+        "name": "Glass Ceiling Breaker",
+        "desc": "A Square hired for the complex job."
+      },
+      "KINGMAKER": {
+        "name": "Kingmaker",
+        "desc": "Your donation bought the deciding vote."
+      },
+      "VEIL_PIERCER": {
+        "name": "Veil Piercer",
+        "desc": "Peeked, and your rule won."
+      },
+      "JACKPOT": {
+        "name": "Jackpot",
+        "desc": "Rolled the top luck face."
+      },
+      "CLEAN_RECORD": {
+        "name": "Clean Record",
+        "desc": "Five or more claims, every one true."
+      },
+      "COMEBACK_KID": {
+        "name": "Comeback Kid",
+        "desc": "Took the second chance and finished in the top two."
+      },
+      "DEBT_SURVIVOR": {
+        "name": "Debt Survivor",
+        "desc": "Went into debt and still finished in the top two."
+      },
+      "BAD_HIRE": {
+        "name": "Bad Hire",
+        "desc": "As HireBot, hired an untrained worker for the complex job."
+      },
+      "TOOK_THE_MONEY": {
+        "name": "Took the Money",
+        "desc": "Took a donation and voted no."
+      }
     }
   }
 }
