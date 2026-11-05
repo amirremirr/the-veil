@@ -109,9 +109,9 @@ LOOP DONE
 |---|---|---|
 | G1 Money ledger | DONE | "See the money" on every result; 50-seed sum test per episode; Episode 1 rounding fixed (D-187) |
 | G2 Bots play to missions | DONE | all paths use the Play score; the Bar now counts the target's lost cover; Ep5 Play-value proposals tested and not kept (lie success 39% to 30%); per-mission table in D-188 |
-| G3 Giving must sometimes pay | TODO | |
-| G4 Episode 2 lies | TODO | |
-| G5 Dead options | TODO | |
+| G3 Giving must sometimes pay | PARTIAL | never give fixed in Ep3 (+1.8 to -0.1); never bar +2.1 ± 1.3 and three claim rules (0.6 to 1.5 points) still beat adaptive by over 1 SE; D-189 |
+| G4 Episode 2 lies | PARTIAL | finer luck die: lie success 13.6% to 19.0% (target 30%), contested 27.7%, effort share 50.2% to 53.0%, E2 passes; D-190 |
+| G5 Dead options | DONE | Help the Poorest and an 80% tax kept as real (usually mistaken) choices, reasons in D-191 |
 | G6 Life fun targets | TODO | |
 | G7 Improvement loop | TODO | |
 | G8 Report | TODO | |

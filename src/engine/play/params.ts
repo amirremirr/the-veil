@@ -156,7 +156,7 @@ export const PLAY = {
    * Episode 2, First Hustle (v2 Section 4, D-153): 3 rounds, v1's luck die; Study's talents, effort cost, leakage
    * and tax options. BANDS: the top hour of "a little" and of "some" (claims are on a 3-step scale).
    */
-  L2: { ROUNDS: 3, LUCK_VALUES: [-30, 0, 10, 30, 90], TAX_OPTIONS: [0, 0.2, 0.4, 0.6, 0.8], BANDS: [3, 6] },
+  L2: { ROUNDS: 3, LUCK_VALUES: [-30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70], TAX_OPTIONS: [0, 0.2, 0.4, 0.6, 0.8], BANDS: [3, 6] },
   /** v2 Section 4: the Hustle Prize, to the plurality winner of the vote (never yourself); ties split. */
   HUSTLE_PRIZE: 30,
   /** v1 Section 6.2 and v2 Section 5, Episode 2 deck (Security Cameras shows true effort for the round). */

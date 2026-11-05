@@ -101,7 +101,7 @@ export function readEffort(s: GameState, obs: PlayerId, _target: PlayerId, y: nu
       const k = Math.min(0.99, PLAY.L2_PRIZE.CLAIM_WEIGHT * rel);
       out = out.map((x, i) => x * (BANDS[i] === claim ? 1 : 1 - k));
     } else {
-      const k = PLAY.CLAIM_WEIGHT * rel;
+      const k = Math.min(1, PLAY.L2_PRIZE.CLAIM_WEIGHT * rel);
       out = out.map((x, i) => (1 - k) * x + (BANDS[i] === claim ? k : 0));
     }
   }
@@ -149,7 +149,7 @@ function taxValues(s: GameState, pid: PlayerId): number[] {
 function claimGain(s: GameState, pid: PlayerId, value: string, e: number): number {
   const others = ids(s).filter((x) => x !== pid);
   const rel = reliabilityOf(s, pid);
-  const k = PLAY.CLAIM_WEIGHT * rel;
+  const k = Math.min(1, PLAY.L2_PRIZE.CLAIM_WEIGHT * rel);
   // Before the incomes, a listener expects the true band on average; the claim pulls toward the claimed band.
   const mine = value !== SILENT ? (1 - k) * e + k * BAND_MID[value as Band] : e;
   const rivals = others.map((o) => mean(st(s).rounds.map((r) => expEffort(r.beliefs[pid]?.[o] ?? [1 / 3, 1 / 3, 1 / 3])).concat([BAND_MID.SOME])));

@@ -682,3 +682,32 @@ The author's third review: lie success was 98% and bar recall 23%, so lying domi
   | 5 | Yes on a tax rise | 51.0% | 79.1% | 38.6% | 41.2% | 41 |
 
   Egoists never give; Protect-the-poorest bots give most and to the poorest. Grow-the-pie bots do not back the mandate more than Egoists (49% vs 53%): with these numbers the mandate's leak costs the average about as much as it saves, so that is their mission working, not a bug. Episode 3 checks, 500 games, before (round 2) / after: E3a 2.83 / 2.99, E3b +24.1% / +23.8%, E3c 67.6% / 65.5%, E3d +39.9% / +36.9% (all pass), lie success 67.5% / 70.0%, bar recall 31.3% / 28.1% (reported, missed before too), F-e 24.4 to 26.4% each. Why reviewers still say bots "don't play to their missions": the decisions differ, but a player sees few of them (others' gifts and bars are shown once per round), and bots lie only where it pays. The card guess now has the vote and gift patterns above to read.
+- **D-189 [AUTORUN, review] G3: giving (and barring) only when it helps.** The cause of "never give beats adaptive play" in Episode 3 (+1.8 ± 0.7): the bot valued each gift correctly (its Play score with the gift, mission and debt points included, over every wheel outcome), but then chose between its best gift and no gift by the binary logit rule on the gain, so a gift that cost it 2 points was still made about 40% of the time. Episodes 1, 2 and 4 already give only when the gift raises the giver's score. Fixed in the valuation, not with a bonus (`PLAY.GIFT_ONLY_IF_GAIN`): an Episode 3 bot never makes a gift that lowers its own expected score, and the same rule now covers bar votes (bars that lower the voter's value are dropped from the logit choice, in the bot's vote, the bar-chance model and the preview alike). A further test, `BAR_GAIN_SCALE` 1 instead of 2 (the price saving without D-133's doubling), failed F-f and pushed lie success to 84%, so it was reverted.
+
+  | Episode 3, 500 games (seeds play-) | before | gifts only | gifts and bars |
+  |---|---|---|---|
+  | Audit, never give (150 games) | +1.7 ± 0.7 | -0.1 ± 0.1 | -0.1 ± 0.1 |
+  | Audit, never bar | +1.1 ± 1.0 | +4.4 ± 1.6 | +2.1 ± 1.3 |
+  | E3a / E3b / E3c / E3d | 2.99 / +23.8% / 65.5% / +36.9% | | 2.89 / +28.0% / 83.5% / +46.0% (all pass) |
+  | Bars per 500 games, recall | 905, 28.1% | | 430, 20.7% |
+  | Lie success | 70.0% | | 77.7% (just above 75%) |
+
+  Not fixed: "never bar" still beats adaptive play by 1.6 SE. The likely missing cost is that a bar shrinks the pool and can push SafeHands out of the market, which the bar's value (next round's price only) does not see. Needs Amir: model the exit risk in the bar's value, or accept it.
+- **D-190 [AUTORUN, review] G4: Episode 2's luck die is finer and narrower.** What made the Hustle Prize see through lies: gross income. With five die faces (-30, 0, 10, 30, 90) and the talent deck, an income usually fits only one effort band, so a voter's read barely moves on a claim, and a liar (who worked less) loses to a true hard worker. The die now has eleven faces from -30 to +70 in steps of 10 (`PLAY.L2.LUCK_VALUES`; same mean 20, standard deviation 32 instead of 40), so more incomes fit two bands and claims matter more. Two other fixes were tried and not kept: honest bots voting by believed effort (`PLAY.L2_PRIZE.NORM`, lie success fell to 4 to 9%: voters then read effort from income even more) and claim weight 1 (three times the lies, the same 8.5% success, contested reads down to 11%). Bayes' rule as in D-159 (`BAYES`) was not run: when income is ambiguous, a multiplicative update moves the read less than the current mix, so it could only lower lie success. 4 sweeps of 500 games, then 2,000:
+
+  | Episode 2 | before (500) | after (500) | after (2,000) |
+  |---|---|---|---|
+  | E2 slope (gate) | -5.33 | -5.33 | -5.37 ± 0.08 |
+  | Claimed over true, hours (gate) | +0.026 | +0.043 | +0.050 ± 0.008 |
+  | Lie success (target 30% to 75%) | 12.2% | 18.9% | 19.0% ± 1.1 |
+  | Contested reads (target 20%) | 19.6% | 27.7% | 27.7% |
+  | B.1 read from income alone (at most 80%) | 65.9% | 60.7% | 60.2% |
+  | Share of income differences explained by effort (`sim/effortshare.ts`, 300 games) | 50.2% ± 1.1 | 53.0% ± 1.1 | |
+  | S-a | 55.3% | 56.7% | 55.5% |
+  | F-d big moment | 88.8% | 82.6% | 84.8% (the +90 jackpot face is gone) |
+
+  Lie success still misses its floor: a liar has worked less, so winning the prize means beating a hard worker whose income backs the same claim. Needs Amir: accept it, or let the prize go to the best claim when incomes are close.
+- **D-191 [AUTORUN, review] G5: the two nearly dead options stay, as real choices.** No rule change.
+  - **Help the Poorest (Episode 1, 1.8% of bot votes).** Kept. It is the textbook maximin rule (make the poorest as well off as possible, whatever it burns), one of Study's four principles, and the one a person who has just read Rawls is most likely to try. Bots avoid it for a reason the episode teaches: with these incomes Limit the Gap raises the bottom almost as far while leaking much less (Protect-the-poorest bots chose Limit the Gap 90.6% of the time, D-188), so Help the Poorest is a real option that is usually a mistake. Removing it would remove that lesson; making it "viable" would mean changing the leak, which Study's numbers (and E1) rest on.
+  - **An 80% tax (Episode 2 tax vote 0.7%, Episode 5 veil 1.2%).** Kept. It is the end of the scale, where the leak makes the whole table poorer; a player who wants to see what full redistribution does needs it on the chips, and the median-vote rule means a single 80% vote rarely wins anyway, so it costs others little. Making it viable would mean a smaller leak at high rates, a rule change no check asks for.
+  - Before/after: unchanged (no rule changed). Alternative for Amir: hide both in Play behind a "show all options" toggle.
