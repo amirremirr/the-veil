@@ -1653,6 +1653,7 @@
       "res": {
         "label": "Round {r} hires",
         "youJudged": "You judged. You earn {n}.",
+          "judgeBase": "Base {b}: you gave nobody the complex job.",
           "judgeWhy": "Base {b}, +{gp} for trained complex hires ({g}), -{lp} for untrained ones ({l}). Each row shows the worker's own pay.",
         "youComplex": "You got the complex job. You earn {n}.",
         "youSimple": "You got the simple job. You earn {n}.",
