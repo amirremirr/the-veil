@@ -166,7 +166,8 @@ export function bankLineText(v: ViewState): string | null {
   const prev = hist[hist.length - 2];
   const from = prev ? prev.banks[v.viewer] : pl.startingBank;
   const to = last.banks[v.viewer];
-  const money = to - from + pl.livingCost;
+  // Loop cycle 2: from the rounded banks, so the line adds up exactly as shown.
+  const money = Math.round(to) - Math.round(from) + pl.livingCost;
   const sign = (x: number) => `${x >= 0 ? '+' : ''}${Math.round(x)}`;
   return t('play.bank.round', { from: Math.round(from), to: Math.round(to), w: sign(money), c: pl.livingCost });
 }

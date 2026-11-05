@@ -1271,7 +1271,7 @@
       "lead": "Leading the life: {name}",
       "leadYou": "You lead the life!",
       "scoreLabel": "Your score",
-      "score": "{s} = half your bank {b} + half your mission {m}, minus {d} debt points (from rounds you ended in debt), plus guesses {g}. The ranking uses this score."
+      "score": "{s} = half your bank {b} + half your mission {m}, minus {d} debt points this life ({e} this episode), plus guesses {g}. The ranking uses this score."
     },
     "really": {
       "button": "What was really going on?",
@@ -1872,7 +1872,7 @@
         "failed": "failed",
         "bought": "{name} took {n} from {donor}. Voted yes.",
         "betray": "{name}: took your {n}. Voted no.",
-        "shift": "Your fair tax: {a} before, {b} after ({d} points).",
+        "shift": "Your fair tax: {a} before, {b} after (moved {d} percentage points).",
         "hostBought": "Money talks. Sometimes it just mumbles.",
         "hostClean": "No money changed hands. Our sponsors are devastated.",
         "kept": "(kept)",
@@ -1998,8 +1998,8 @@
       "copied": "Copied"
     },
     "rival": {
-      "beat": "{name} beat you by {n}.",
-      "won": "You beat {name} by {n}.",
+      "beat": "{name}, just above you, beat you by {n} points.",
+      "won": "You beat {name} by {n} points.",
       "ask": "Rematch with the same seed?",
       "rematch": "Rematch"
     },

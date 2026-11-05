@@ -449,7 +449,8 @@ function EpisodeSummary({ v }: { v: ViewState }) {
   const lv = v.levelView as L3View;
   const types = lv.types ?? {};
   const m = pl.mission!;
-  const complete = m.scale * m.value >= m.goal;
+  // Loop cycle 2 (D-168): complete when the mission's value grew this episode.
+  const complete = m.value > m.startValue + 1e-9;
   const res = v.levelResults[v.levelIndex] as { nearMiss?: NearMiss | null } | undefined;
   const nm = res?.nearMiss ?? null;
   // Biggest lie: the contestant with the most claims stamped LIE. Biggest wrong read: the audience's
@@ -515,7 +516,7 @@ function EpisodeSummary({ v }: { v: ViewState }) {
         {row(t('play.summary.lieLabel'), lieText)}
         {pl.pollMode !== 'NEVER' && v.levelIndex === 3 && row(t('play.summary.readLabel'), readText)}
         {row(t('play.bar.bank'), t('play.summary.bankChange', { from: coins(episodeStartBank(v)), to: coins(pl.banks[v.viewer]) }))}
-        {row(t('play.summary.scoreLabel'), t('play.summary.score', { s: coins(m.score), b: coins(m.bankPart), m: coins(m.missionPart), d: coins(m.stress), g: coins(m.guessPoints) }))}
+        {row(t('play.summary.scoreLabel'), t('play.summary.score', { s: coins(m.score), b: coins(m.bankPart), m: coins(m.missionPart), d: coins(m.stress), e: coins(m.episodeStress), g: coins(m.guessPoints) }))}
         {row(missionName(m.card), complete ? t('play.summary.missionDone') : t('play.summary.missionMissed'), complete ? 'text-good' : 'text-stamp')}
         {row(t('play.summary.nearMiss'), nm ? nearMissText(v, nm) : t('play.summary.nearMissNone'))}
       </dl>

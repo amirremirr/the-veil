@@ -56,7 +56,7 @@ export function receipts(v: ViewState): Receipt[] {
     const xs = v.players.map((p) => ch[p.id][m.level] ?? 0).sort((a, b) => a - b);
     const med = (xs[Math.floor((xs.length - 1) / 2)] + xs[Math.ceil((xs.length - 1) / 2)]) / 2;
     const worked = (ch[m.from][m.level] ?? 0) > med;
-    out.push({ kind: worked ? 'worked' : 'caught', level: m.level as LevelId, pid: m.from, text: t(`play.receipts.${worked ? 'worked' : 'caught'}`, { name: shortName(v, m.from), said: claimText(m), ep: m.level }) });
+    out.push({ kind: worked ? 'worked' : 'caught', level: m.level as LevelId, pid: m.from, text: t(`play.receipts.${worked ? 'worked' : 'caught'}`, { name: shortName(v, m.from), said: claimText(m), ep: `${m.level} R${m.round}` }) });
   }
   const lv5 = v.levelIndex === 5 ? (v.levelView as { lobby?: Record<string, { donateTo: string | null; amount: number }>; amendments?: Array<{ proposer: string; votes: Record<string, boolean>; withdrawn?: boolean }> }) : null;
   for (const [from, lb] of Object.entries(lv5?.lobby ?? {})) {
@@ -182,7 +182,7 @@ export function ResultCard({ v }: { v: ViewState }) {
     t('play.card.best', { ep: best, name: t(`play.episodes.${best}.name`), n: coins(ch[best] ?? 0) }),
     t('play.card.worst', { ep: worst, name: t(`play.episodes.${worst}.name`), n: coins(ch[worst] ?? 0) }),
     t('play.card.bank', { n: coins(v.play!.banks[v.viewer]) }),
-    t(m.scale * m.value >= m.goal ? 'play.card.missionDone' : 'play.card.missionMissed', { mission: missionName(m.card) }),
+    t(m.value > m.lifeStartValue + 1e-9 ? 'play.card.missionDone' : 'play.card.missionMissed', { mission: missionName(m.card) }),
     !h.made ? t('play.card.noClaims') : h.lies ? t('play.card.honesty', { lies: h.lies, made: h.made, caught: h.caught }) : t('play.card.allTrue', { made: h.made }),
   ];
   const ref = useRef<HTMLDivElement>(null);

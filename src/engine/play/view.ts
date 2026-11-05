@@ -45,6 +45,13 @@ export function playView(s: GameState, viewer: PlayerId, revealAll: boolean): Pl
       guessPoints: pl.guessPoints[viewer],
       score: playScore(s, viewer),
       goal: missionGoal(s),
+      // Loop cycle 2 (D-168): the mission's value when this episode started (and the life's start), to say whether it grew.
+      startValue: (() => {
+        const eb = pl.episodeStart[s.levelIndex];
+        return eb ? missionValue(me.values, s.players.map((p) => eb[p.id]), i, playEffortShares(s)) : value;
+      })(),
+      lifeStartValue: missionValue(me.values, s.players.map(() => (s.mode === 'EPISODE' ? PLAY.EPISODE_STARTING_BANK : PLAY.LIFE_STARTING_BANK)), i, playEffortShares(s)),
+      episodeStress: pl.bankHistory.filter((h) => h.level === s.levelIndex).reduce((a, h) => a + (h.stress[viewer] ?? 0), 0),
     };
   }
   const guesses: PlayView['guesses'] = {};

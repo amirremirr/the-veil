@@ -34,3 +34,8 @@ Merged from the fresh-eyes reviews (E1), the design audit (E2), the logic audit 
 | Force the wheel to hit someone each episode | A rule change not justified by a dominant habit, dead option or exploit; the E3 checks were tuned on the current odds. |
 | Show other players' missions after a wrong guess in a life | The spec keeps missions hidden until the end of a life (v1 7.4 for a single episode only). |
 | A discussion or accusation phase | A new phase and a new verb; out of scope for copy and UI fixes, and bots can't parse free text (v2 3.1). |
+| Make Episode 3 gifts pay (the audit's one dominant habit: "never give" +1.8 ± 0.7 for a bot seat) | Bots give when it raises their mission this round, and it costs them a little overall; a human is never forced to give. Changing gift value would change every episode's mission balance; not worth the risk without people's data. |
+| Show every player's score on the ranking during a life | Scores reveal missions (each mission has its own scale); v1 shows ranks only until cards are public. Your own score is now shown. |
+| Cap the Episode 2 die at about ±25 | A rule change that would weaken E2's "luck hides effort" (B.1 66%); not a dominant habit or an exploit. |
+| Break ties by claims or a revote | A rule change; ties are now explained on screen ("A tie: drawn by lot."). |
+| Never repeat an event card in an episode; give Hard its own twist | Rule changes not justified by the audit; Hard already differs (no poll, no hints, bots lie more). |

@@ -115,7 +115,7 @@ export interface PlayView {
   ranks: Record<PlayerId, number> | null;
   /** The viewer's own mission and its progress. */
   /** `goal`: the mission bar's full mark, k x mission value (D-102). */
-  mission: { card: ValuesCard; value: number; score: number; scale: number; bankPart: number; missionPart: number; stress: number; guessPoints: number; goal: number } | null;
+  mission: { card: ValuesCard; value: number; score: number; scale: number; bankPart: number; missionPart: number; stress: number; guessPoints: number; goal: number; startValue: number; lifeStartValue: number; episodeStress: number } | null;
   /**
    * v2 Section 3.2: the audience poll on READ screens, the average over the other bots of their belief that
    * each contestant's hidden fact is true (Episode 3: high risk). Null when the episode has no poll now.
