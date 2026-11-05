@@ -952,19 +952,23 @@
     "missions": {
       "EGOIST": {
         "name": "Get rich",
-        "line": "Only your own bank counts."
+        "line": "Only your own bank counts.",
+        "points": "Your mission points come from your own bank."
       },
       "RAWLSIAN": {
         "name": "Protect the poorest",
-        "line": "You win when the lowest bank at the table is high."
+        "line": "You win when the lowest bank at the table is high.",
+        "points": "Your mission points come from the poorest bank at the table."
       },
       "UTILITARIAN": {
         "name": "Grow the pie",
-        "line": "You win when the average bank is high."
+        "line": "You win when the average bank is high.",
+        "points": "Your mission points come from the average bank."
       },
       "MERITOCRAT": {
         "name": "Reward hard work",
-        "line": "You win when money follows effort: hours worked and training count. Before anyone has worked, that means equal banks."
+        "line": "You win when money follows effort: hours worked and training count. Before anyone has worked, that means equal banks.",
+        "points": "Your mission points come from the average bank, less when money doesn't follow effort."
       }
     },
     "values": {
@@ -1663,7 +1667,9 @@
         "youTurned": "As HireBot you turned down {n} trained workers.",
         "youBad": "As HireBot you made {n} bad hires.",
         "youClean": "As HireBot you hired every trained worker you saw.",
-        "lie": "{name} lied {n}. Training, apparently, is a state of mind."
+        "lie": "{name} lied {n}. Training, apparently, is a state of mind.",
+        "youTurnedOne": "As HireBot you turned down 1 trained worker.",
+        "youTurnedSqOne": "As HireBot you turned down 1 trained Square."
       },
       "sum": {
         "lie": "{name} said \"I trained\" {n} and hadn't.",
@@ -1694,7 +1700,8 @@
         "title": "You haven't been born yet.",
         "deck": "Incomes this episode: {a}, {b}, {c} or {d}. You find out after the vote.",
         "rules": "The rule with the most votes sets the tax. Tax is shared equally, and some leaks.",
-        "living": "Living costs {c} coins a round, taken from every bank."
+        "living": "Living costs {c} coins a round, taken from every bank.",
+        "list": "Rules: Free Market (no tax), Safety Net (everyone gets at least 40), Middle Way (gap at most 100), Help the Poorest."
       },
       "peek": {
         "title": "Peek?",
@@ -1824,7 +1831,7 @@
         "label": "The finale",
         "title": "Write the rules. Then find out where you stand.",
         "deck": "Incomes this time: {list}.",
-        "how": "Middle votes win. After the reveal, anyone can propose a change and pay for votes in secret.",
+        "how": "Middle votes win. After the reveal, anyone who proposes a change can pay others for votes, in secret.",
         "life": "This time your incomes are your banks. Everyone can see them."
       },
       "veil": {
@@ -1839,7 +1846,8 @@
         "after": "Unpaid. Same question, now that you know.",
         "submit": "Answer",
         "beforeLife": "Unpaid. Just your opinion, before the rules land.",
-        "born": "Unpaid. Before you're born. You'll be asked again at the finale."
+        "born": "Unpaid. Before you're born. You'll be asked again at the finale.",
+        "label": "Fair tax (unpaid, your opinion):"
       },
       "inc": {
         "label": "The incomes, poorest first",

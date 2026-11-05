@@ -40,6 +40,7 @@ export function Unborn({ v, next }: { v: ViewState; next: () => void }) {
         <p className="h-show mt-2 text-4xl leading-tight text-spot">{t('play.l1.unborn.title')}</p>
         <p className="mt-3 text-base">{t('play.l1.unborn.deck', { a: coins(lv.deck[0]), b: coins(lv.deck[1]), c: coins(lv.deck[2]), d: coins(lv.deck[3]) })}</p>
         <p className="mt-3 text-base">{t('play.l1.unborn.rules')}</p>
+        <p className="mt-2 text-sm">{t('play.l1.unborn.list')}</p>
         <p className="mt-3 text-sm">{t('play.l1.unborn.living', { c: v.play!.livingCost })}</p>
       </div>
     </Stage>

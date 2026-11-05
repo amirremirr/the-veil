@@ -322,9 +322,9 @@ export function CardsReveal4({ v }: { v: ViewState }) {
   const record = !judged.length
     ? null
     : turnedSq
-      ? t('play.l4.peak.youTurnedSq', { n: turnedSq })
+      ? t(turnedSq === 1 ? 'play.l4.peak.youTurnedSqOne' : 'play.l4.peak.youTurnedSq', { n: turnedSq })
       : turnedDown.length
-        ? t('play.l4.peak.youTurned', { n: turnedDown.length })
+        ? t(turnedDown.length === 1 ? 'play.l4.peak.youTurnedOne' : 'play.l4.peak.youTurned', { n: turnedDown.length })
         : badHires
           ? t('play.l4.peak.youBad', { n: badHires })
           : t('play.l4.peak.youClean');

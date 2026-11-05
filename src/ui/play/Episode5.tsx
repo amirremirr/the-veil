@@ -100,6 +100,7 @@ export function FairScreen({ v }: { v: ViewState }) {
     <Stage v={v} footer={<BigButton disabled={x === null} onClick={() => act(after ? { fair: x, proposal: proposing ? prop : null } : x)}>{t('play.l5.fair.submit')}</BigButton>}>
       <h1 className="h-show text-3xl leading-tight">{t('play.l5.fair.title')}</h1>
       <p className="mt-1 text-sm">{t(after ? 'play.l5.fair.after' : v.levelIndex === 1 ? 'play.l5.fair.born' : v.mode === 'LIFE' ? 'play.l5.fair.beforeLife' : 'play.l5.fair.before')}</p>
+      {after && <p className="mt-2 text-sm font-bold">{t('play.l5.fair.label')}</p>}
       <Chips opts={L5.TAX_OPTIONS} value={x} onPick={setX} label={t('play.l5.fair.title')} fmt={pct} />
       {after && cur && (
         <section className="mt-auto pt-3" aria-label={t('play.l5.lobby.title')}>

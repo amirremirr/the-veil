@@ -39,3 +39,5 @@ Merged from the fresh-eyes reviews (E1), the design audit (E2), the logic audit 
 | Cap the Episode 2 die at about ±25 | A rule change that would weaken E2's "luck hides effort" (B.1 66%); not a dominant habit or an exploit. |
 | Break ties by claims or a revote | A rule change; ties are now explained on screen ("A tie: drawn by lot."). |
 | Never repeat an event card in an episode; give Hard its own twist | Rule changes not justified by the audit; Hard already differs (no poll, no hints, bots lie more). |
+| Bots that lie more often and act more like their missions (designer reviewers in E1, cycle 2 and cycle 4) | Named by several reviewers, so it is real evidence, but the fix is a bot-rule change: lie rates are tuned per episode (S-a 22% to 54%, D-158 to D-163) and any change moves every E and S check. Left for Amir with the evidence: in one game, a reveal often shows "zero lies" because bots lie only when it pays. Needs Amir. |
+| Feedback on a wrong guess in a life | Done in part (the line now says what you guessed, D-169); the right answer stays hidden until the end of a life (spec). |
