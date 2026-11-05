@@ -410,7 +410,7 @@ function MissionsBeat({ v, next }: { v: ViewState; next: () => void }) {
         </ol>
         {hidden && pl.gaps && (
           <p className="mt-2 text-sm" data-gaps>
-            {[pl.gaps.above !== null ? t('play.summary.gapAbove', { n: pl.gaps.above }) : '', pl.gaps.below !== null ? t('play.summary.gapBelow', { n: pl.gaps.below }) : ''].filter(Boolean).join(' ')}
+            {[pl.gaps.above !== null ? t(pl.gaps.above ? 'play.summary.gapAbove' : 'play.summary.gapAboveClose', { n: pl.gaps.above }) : '', pl.gaps.below !== null ? t(pl.gaps.below ? 'play.summary.gapBelow' : 'play.summary.gapBelowClose', { n: pl.gaps.below }) : ''].filter(Boolean).join(' ')}
           </p>
         )}
       </div>

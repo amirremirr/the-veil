@@ -232,7 +232,9 @@ export function HiresBeat({ v, next, last }: { v: ViewState; next: () => void; l
   const workers = r.workers ?? [];
   const me = v.viewer;
   const W = r.W ?? {};
-  const youLine = r.judge === me ? t('play.l4.res.youJudged', { n: coins(r.judgePay ?? 0) }) : t(r.job?.[me] === 'COMPLEX' ? 'play.l4.res.youComplex' : 'play.l4.res.youSimple', { n: coins(W[me] ?? 0) });
+  const nGood = (r.workers ?? []).filter((w) => r.job?.[w] === 'COMPLEX' && r.good?.includes(w)).length;
+  const nBad = (r.workers ?? []).filter((w) => r.job?.[w] === 'COMPLEX' && !r.good?.includes(w)).length;
+  const youLine = r.judge === me ? `${t('play.l4.res.youJudged', { n: coins(r.judgePay ?? 0) })} ${t('play.l4.res.judgeWhy', { b: coins((r.judgePay ?? 0) - nGood * PLAY.L4.JUDGE_GAIN + nBad * PLAY.L4.JUDGE_LOSS), g: nGood, gp: nGood * PLAY.L4.JUDGE_GAIN, l: nBad, lp: nBad * PLAY.L4.JUDGE_LOSS })}` : t(r.job?.[me] === 'COMPLEX' ? 'play.l4.res.youComplex' : 'play.l4.res.youSimple', { n: coins(W[me] ?? 0) });
   return (
     <Stage v={v} onTap={next} footer={<BigButton beatNext={!last} onClick={next}>{last ? t('play.stage.nextRound', { r: v.round + 1 }) : t('play.stage.tap')}</BigButton>}>
       <div className="my-auto" data-outcome>

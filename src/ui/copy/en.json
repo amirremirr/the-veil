@@ -1277,6 +1277,8 @@
       "readYou": "By the end, the audience was {p} sure you were {said}. You were {truth}.",
       "gapAbove": "About {n} points behind the player above you.",
       "gapBelow": "About {n} points ahead of the player below you.",
+      "gapAboveClose": "Within a few points of the player above you.",
+      "gapBelowClose": "Within a few points of the player below you.",
       "noRead": "By the end, the audience had everyone on the right side of 50%.",
       "nearMiss": "Near miss",
       "nearMissNone": "No single change would have left you richer.",
@@ -1651,6 +1653,7 @@
       "res": {
         "label": "Round {r} hires",
         "youJudged": "You judged. You earn {n}.",
+          "judgeWhy": "Base {b}, +{gp} for trained complex hires ({g}), -{lp} for untrained ones ({l}). Each row shows the worker's own pay.",
         "youComplex": "You got the complex job. You earn {n}.",
         "youSimple": "You got the simple job. You earn {n}.",
         "judgePay": "{name} earned {n} as HireBot.",
