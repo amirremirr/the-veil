@@ -13,7 +13,7 @@ Run mode: all tasks T0 to T9 in one session (owner's instruction for this run), 
 | T6 LIFE, Receipts, result card | DONE | see log | all E checks pass in a life; F-f 0.1% (D-155) |
 | T7 AI playtest life, polish | DONE | see log | AI playtest (proxy); 7 clarity fixes; axe 0 violations (D-156) |
 | T8 Retention (conditional) | DONE | see log | Daily Life, share grid, 12 achievements, rival line; party link and multiplayer skipped (D-157) |
-| T9 Report | | | |
+| T9 Report | DONE | see log | docs/AUTORUN_REPORT.md, README Status updated |
 
 ## Needs Amir
 
@@ -54,3 +54,6 @@ None.
 - T6: LIFE mode (engine, menu, comeback card, per-episode near-miss snapshot), the Receipts, result card v2 (`src/ui/play/LifeEnd.tsx`, `tests/engine/play-life.test.ts`). Gate: typecheck, build, 198 unit tests, e2e 14 passed, life walkthrough 111 screens all 760 px, 9.9 min at pace. Life sim 1,000 lives: every E check passes (D-155). Two worker restarts during T6; no work lost.
 - T7: AI playtest (proxy, not human evidence) of a full life: `docs/playtest/ai-life.md`. Fixes in D-156. axe on 74 screens: 0 violations. Gate: typecheck, build, 198 unit tests, e2e 14 passed, life walkthrough 111 screens, all 760 px, 9.9 min at pace.
 - T8: Daily Life, share text, achievements, rival line (`src/ui/play/retention.ts`, `tests/engine/play-retention.test.ts`, `tests/e2e/life.spec.ts`). Gate: typecheck, build, 200 unit tests, e2e 15 passed, Daily Life walkthrough 110 screens all 760 px. Party link and Play multiplayer skipped: need the room server.
+- T9: final report `docs/AUTORUN_REPORT.md`; README Status table updated. Episode 3 confirming run under the final rules (500 games): every gate passes. Human validation (Gates 1 and 2) NOT DONE. Merging to `main` needs the room server redeployed first.
+
+ALL DONE
