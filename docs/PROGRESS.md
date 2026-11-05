@@ -122,9 +122,10 @@ ROUND 3 DONE
 
 | Task | Status | Notes |
 |---|---|---|
-| H1 The rule | DONE (engine) | `src/engine/play/calls.ts`; consequences in all five episodes; spec 3.7; tests/engine/play-calls.test.ts |
-| H2 Bots | DONE (engine) | bots call by expected Play value; claims weigh call risk; a call reveals the fact |
-| H3 Tune and check | TODO | |
-| H4 Screens and voice | TODO | |
-| H5 Report | TODO | |
+| H1 The rule | DONE | `src/engine/play/calls.ts`; consequences in all five episodes; spec 3.7; tests/engine/play-calls.test.ts |
+| H2 Bots | DONE, bot calls off | bots call by expected Play value; claims weigh call risk; a call reveals the fact |
+| H3 Tune and check | PARTIAL | 4 sweeps; bot calls right 0% to 18% (target 40% to 70%); fallback CALL_BOTS off; audit unchanged from Round 3; E checks unchanged (D-194) |
+| H4 Screens and voice | DONE | chips on all move screens, stamps, 12 Dash lines, Receipts, explainers, About; Ep3 move 71 words, Ep4 hire 80 (over 65, mostly pre-existing) |
+| H5 Report | DONE | Round 4 section at the top of docs/MORNING_SUMMARY.md and docs/AUTORUN_REPORT.md |
 
+ROUND 4 DONE

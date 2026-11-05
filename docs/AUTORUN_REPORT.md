@@ -1,5 +1,22 @@
 # AUTORUN report
 
+## Round 4: Call it (5 November 2026, evening)
+
+Bots only and AI judgment (a proxy). **No human has played anything built here.** Plain summary: `docs/MORNING_SUMMARY.md` (Round 4 section). Details: D-194.
+
+| Task | Status | Result |
+|---|---|---|
+| H1 The rule | DONE | `src/engine/play/calls.ts`; consequences in all five episodes; spec 3.7; unit tests |
+| H2 Bots | DONE, bot calls off | Bots price calls with their own beliefs and mission, and weigh being called |
+| H3 Tune and check | PARTIAL | 4 sweeps; bot calls right 0% to 18% (target 40% to 70%); fallback `CALL_BOTS` off; audit and E checks unchanged from Round 3 |
+| H4 Screens | DONE | Call chips, CAUGHT / CALLED WRONG, 12 Dash lines, Receipts, explainers, About |
+| H5 Report | DONE | This section, the summary, PROGRESS.md |
+
+Audit data: `docs/review/logic-audit-data-r4.json`. Call numbers: `sim/calls.ts`.
+
+**Human validation: NOT DONE.** Gates 1 and 2 are still outstanding. Before merging to main, the room server must be redeployed (it needs Amir's approval).
+
+
 ## Round 3: game rules and bots (5 November 2026, afternoon)
 
 Bots only and AI judgment (a proxy). **No human has played anything built here.** Plain summary: `docs/MORNING_SUMMARY.md` (Round 3 section).

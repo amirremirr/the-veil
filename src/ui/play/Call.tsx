@@ -20,15 +20,16 @@ export function claimantsNow(v: ViewState, filter?: (value: string) => boolean):
   return [...out];
 }
 
-/** The call chips: "Call it (10): No one, Ana, Chet". Compact, so the move screen stays within its words. */
+/** The call chips: "Call (10): Ana Chet" (tap a name again to clear). Compact, so the move screen stays short. */
 export function CallChips({ v, claimants, value, onPick }: { v: ViewState; claimants: string[]; value: string | null; onPick: (x: string | null) => void }) {
   if (!claimants.length) return null;
-  const opts: Array<string | null> = [null, ...claimants];
+  // No "No one" chip: tap a selected name again to clear (fewer words on a full move screen).
+  const opts: Array<string | null> = [...claimants];
   return (
     <div className="mt-2 flex flex-wrap items-center gap-1.5" role="group" aria-label={t('play.call.label', { n: PLAY.CALL_STAKE })} data-call>
       <span className="text-sm font-bold">{t('play.call.label', { n: PLAY.CALL_STAKE })}</span>
       {opts.map((o) => (
-        <button key={o ?? 'none'} type="button" aria-pressed={value === o} onClick={() => onPick(o)} className={`min-h-[44px] min-w-[44px] rounded-xl px-2 text-sm font-bold ${value === o ? 'bg-stamp text-onspot' : 'bg-card'}`}>
+        <button key={o ?? 'none'} type="button" aria-pressed={value === o} onClick={() => onPick(value === o ? null : o)} className={`min-h-[44px] min-w-[44px] rounded-xl px-2 text-sm font-bold ${value === o ? 'bg-stamp text-onspot' : 'bg-card'}`}>
           {o ? shortName(v, o) : t('play.call.none')}
         </button>
       ))}

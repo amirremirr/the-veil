@@ -1,5 +1,68 @@
 # Morning summary
 
+## Round 4: Call it (5 November 2026, evening)
+
+For Amir. An unattended AI run on `autorun`. Numbers are from bot-only simulations; reviews are AI judgment (a proxy).
+
+### What a player notices
+
+- Every move screen after the claims has **"Call (10):"** with the names of the players who made a claim. Tap one to stake 10 coins on their claim being a lie.
+- If they lied, they pay you 20 and get a **CAUGHT** stamp. If they told the truth, you pay them 10 and get **CALLED WRONG**. Dash reacts, the money shows in "See the money", and the call goes into the Receipts.
+- **A caught lie costs something in its episode:**
+  - Episode 2: the liar can't win the Hustle Prize that round, and their true hours become public.
+  - Episode 3: if they applied for cover, they are turned away.
+  - Episode 4: they get the simple job. Only HireBot can call here, because it is the only player with a move after the claims.
+  - Episodes 1 and 5: only the payment applies.
+- **The computer players never call.** They do weigh the risk that you will call them, so they bluff less against you.
+
+### Audit, all five episodes (150 games each, fixed rule minus adaptive play, points)
+
+| Episode | Round 3 | Round 4 |
+|---|---|---|
+| 1 | claim Safety Net +1.5 ± 1.3; others within noise | the same; always call -8.0 ± 1.3; never call 0.0 |
+| 2 | claim a lot +0.7 ± 0.3 | the same; always call -15.7 ± 1.2; never call 0.0 |
+| 3 | never bar +2.1 ± 1.3; never give -0.1 | the same; always call -22.6 ± 4.6; never call 0.0 |
+| 4 | claim I trained +0.8 ± 0.6 | the same; always call -7.0 ± 0.4; never call 0.0 |
+| 5 | nothing over 1 SE | the same; always call -6.0 ± 0.4; never call 0.0 |
+
+The bot-only numbers are identical to Round 3, because bots don't call and bot-only tables have no human caller. So the target (no rule more than 1 SE better than adaptive play) is still missed in Episodes 1 to 4. Calling blindly is a clear loss.
+
+### Lie success and calls, per episode (bots)
+
+Lie success is unchanged: Ep1 72.4%, Ep2 19.0%, Ep3 77.7%, Ep4 34.7%, Ep5 39.2%. Episode 2 is still under 30%, and Episode 3 is just over 75%.
+
+With bot calls switched on (best sweep, stakes 15/15), calls happened in 76%, 37%, 8%, 9% and 45% of rounds, and were right only 0.2%, 1.7%, 0%, 3.8% and 15.4% of the time (target 40% to 70%).
+
+### Stakes chosen
+
+10 to call, 20 to the caller for a caught lie (the spec's numbers). Four sweeps (10/20 and 15/15, fixed-weight reads, then Bayes' rule with a table prior and with each personality's own prior) all left calls mostly wrong. The cause: the risk of being called works, so bots stop lying, but callers can't see that and keep calling true claims.
+
+### E checks
+
+All pass, unchanged from Round 3:
+- Episodes: E1, E2 and the claimed-over-true check, E3a to E3d, E4a and E4b, E5.
+- A life (1,000 lives): every check, plus F-b 24.0%, F-e 22.6% to 26.3%, F-f 47.2%.
+
+### Decisions made for you
+
+1. **Bots don't call** (`PLAY.CALL_BOTS: false`). Their calls were right at most 18% of the time, and a truthful human would have farmed them. Alternative: let bots learn from public call results and switch it on.
+2. **Episode 4: only HireBot calls.** It is the only player with a move after the claims. Alternative: a call step for the workers (a new screen).
+3. **Episode 5: one call per player, on any amendment screen.** Alternative: one per amendment.
+4. **Episode 2: the call and the prize vote go in together**, and calls settle first. Alternative: a separate screen that shows the true hours before the vote.
+5. **A lie's chance of being false uses each personality's honesty range** (public in the spec), updated by the record. Alternative: the table average.
+
+### Still unfinished
+
+- The audit and lie-success targets are unmet (see above).
+- The Episode 3 move screen is 71 words and Episode 4's hire screen is 80, over the 65-word limit. Most of that is older than this round.
+- The reveal screens don't repeat the CAUGHT stamps yet; they show on the round results and in the Receipts.
+
+**Human validation: NOT DONE. Gates 1 and 2 are still outstanding.**
+
+Latest commit: the head of `origin/autorun`. Preview: the latest `autorun` deployment in the Vercel dashboard. Before merging to main, the room server must be redeployed (the rules changed), which needs your approval.
+
+---
+
 ## Round 3: how the game plays (5 November 2026, afternoon)
 
 For Amir. An unattended AI run on `autorun`. Every number is from bot-only simulations; every review is AI judgment (a proxy). No human has played any of it.

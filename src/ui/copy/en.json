@@ -1462,7 +1462,7 @@
     },
     "move": {
       "risk": "Your risk:",
-      "youRead": "The audience thinks you are high risk: {p}. What you claim and what you buy move it.",
+      "youRead": "Audience on you: {p} high risk.",
       "barTitle": "Bar one?",
       "notMember": "Members can bar one.",
       "poll": "{p} risky",
@@ -2185,7 +2185,7 @@
       "rows": "One row per tester"
     },
     "call": {
-      "label": "Call it ({n}):",
+      "label": "Call ({n}):",
       "none": "No one",
       "stampCaught": "CAUGHT",
       "stampWrong": "CALLED WRONG",
