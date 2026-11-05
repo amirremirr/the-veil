@@ -226,7 +226,7 @@ export function CardsReveal1({ v }: { v: ViewState }) {
         {peekLines.length ? peekLines.map((x) => <p key={x} className="h-show text-lg leading-tight">{x}</p>) : <p className="h-show text-lg leading-tight">{t('play.l1.peak.noPeek')}</p>}
       </div>
       <div className="mt-2">
-        <Bubble who="Dash" host text={lies && lies.n ? t(lies.id === me ? 'play.cards.peakLieYou' : 'play.l1.peak.lie', { name: nameOf(v, lies.id), n: timesWord(lies.n) }) : hostLine('peakHonest', pick(v, 'peakHonest', 6))} />
+        <Bubble who="Dash" host text={lies && lies.n ? t(lies.id === me ? 'play.cards.peakLieYouPlain' : 'play.l1.peak.lie', { name: nameOf(v, lies.id), n: timesWord(lies.n) }) : hostLine('peakHonest', pick(v, 'peakHonest', 6))} />
       </div>
     </Stage>
   );

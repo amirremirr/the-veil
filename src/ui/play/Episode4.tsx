@@ -347,7 +347,7 @@ export function CardsReveal4({ v }: { v: ViewState }) {
       <p className="h-show mt-2 text-xl leading-tight">{t('play.l4.peak.line')}</p>
       {record && <p className="mt-1 text-sm font-semibold">{record}</p>}
       <div className="mt-2">
-        <Bubble who="Dash" host text={top && top.lies ? t(top.p.id === me ? 'play.cards.peakLieYou' : 'play.l4.peak.lie', { name: nameOf(v, top.p.id), n: timesWord(top.lies) }) : hostLine('peakHonest', pick(v, 'peakHonest', 6))} />
+        <Bubble who="Dash" host text={top && top.lies ? t(top.p.id === me ? 'play.cards.peakLieYouPlain' : 'play.l4.peak.lie', { name: nameOf(v, top.p.id), n: timesWord(top.lies) }) : hostLine('peakHonest', pick(v, 'peakHonest', 6))} />
       </div>
     </Stage>
   );

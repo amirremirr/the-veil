@@ -8,6 +8,7 @@ import { PLAY } from '../../engine/play/params';
 import { useStore } from '../store';
 import { t } from '../i18n';
 import { coins, pct } from '../labels';
+import { fmt1 } from '../components/Money';
 import { nameOf, shortName } from '../game';
 import { BigButton, Bubble, Face, Stage } from './OnAir';
 import { GiftSheet, Stamps, Tile, previewText } from './Episode3';
@@ -145,7 +146,7 @@ export function IncomeScreen({ v }: { v: ViewState }) {
     <Stage v={v} footer={<BigButton onClick={() => act()}>{t('play.l2.inc.next')}</BigButton>}>
       <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.l2.inc.label', { r: v.round })}</p>
       <h1 className="h-show mt-1 text-3xl leading-tight text-spot">{t('play.l2.inc.you', { y: coins(c.y?.[me] ?? 0), d: signedCoins(c.luck?.[me] ?? 0) })}</h1>
-      <p className="mt-1 text-sm">{t('play.l2.inc.how', { h: c.effort?.[me] ?? 0, per: coins(lv.talentMult * lv.myTalent), w: coins((c.effort?.[me] ?? 0) * lv.talentMult * lv.myTalent), d: signedCoins(c.luck?.[me] ?? 0) })}</p>
+      <p className="mt-1 text-sm">{t('play.l2.inc.how', { h: c.effort?.[me] ?? 0, per: fmt1(lv.talentMult * lv.myTalent), w: coins((c.effort?.[me] ?? 0) * lv.talentMult * lv.myTalent), d: signedCoins(c.luck?.[me] ?? 0) })}</p>
       <ul className="mt-3 space-y-1.5" data-outcome>
         {v.players.map((p) => (
           <li key={p.id} className="flex items-center gap-2 rounded-xl bg-card px-2 py-1.5">
