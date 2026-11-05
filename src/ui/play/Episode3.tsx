@@ -355,7 +355,7 @@ export function BarBeat({ v, next }: { v: ViewState; next: () => void }) {
   const idle = b.refused.length ? b.barred.filter((x) => !b.refused.includes(x)) : [];
   const subIdle = idle.length ? ` ${t('play.barBeat.notAppliedNamed', { names: names(idle) })}` : '';
   return (
-    <Stage v={v} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
+    <Stage v={v} bar={false} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
       <div className="my-auto text-center" data-bar={b.barred.join(' ') || 'none'}>
         <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.barBeat.label')}</p>
         <p className={`h-show mt-2 text-5xl leading-tight ${b.barred.length ? 'text-stamp' : 'text-spot'}`}>{head}</p>
@@ -560,6 +560,7 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
   return (
     <Stage
       v={v}
+      bar={false}
       onTap={advance}
       footer={
         <BigButton beatNext={!last} onClick={advance}>

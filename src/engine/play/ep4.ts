@@ -38,6 +38,8 @@ export interface P4Round {
   quotaPicks: PlayerId[];
   W: Record<PlayerId, number>;
   judgePay: number;
+  /** Loop cycle 8: each worker's job pay before training costs and gifts (shown to that worker). */
+  jobPay?: Record<PlayerId, number>;
   good: PlayerId[];
   bad: PlayerId[];
   gifts: Record<PlayerId, Gift4>;
@@ -566,6 +568,7 @@ export const playLevel4: LevelDefinition = {
       s.reliability[m.from].made++;
       if (m.kept) s.reliability[m.from].kept++;
     }
+    c.jobPay = Object.fromEntries(c.workers!.map((w) => [w, pay4(job[w], l.care[w], l.policy, P)]));
     let W = s.players.map((p) => (p.id === l.judge ? jp.pay : pay4(job[p.id], l.care[p.id], l.policy, P) - (c.train![p.id] ? costOf(s, p.id, P) : 0)));
     for (const [from, gf] of Object.entries(c.gifts!)) W = withGift(W, idx(s, from), gf, s);
     c.W = Object.fromEntries(s.players.map((p, i) => [p.id, W[i]]));

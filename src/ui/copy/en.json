@@ -1246,8 +1246,8 @@
       "momentSwingYou": "Round {r}: you {change} coins.",
       "bankChange": "Your bank: {from} to {to}",
       "mission": "Your mission: {name}",
-      "missionDone": "Mission complete",
-      "missionMissed": "Mission not complete",
+      "missionDone": "Mission this episode: complete",
+      "missionMissed": "Mission this episode: not complete",
       "guess": "Your guess: {name} is out to {mission}.",
       "guessRight": "Correct, +{pts} points.",
       "guessWrong": "Wrong. {name} was out to {mission}.",
@@ -1642,7 +1642,10 @@
         "youComplex": "You got the complex job. You earn {n}.",
         "youSimple": "You got the simple job. You earn {n}.",
         "judgePay": "{name} earned {n} as HireBot.",
-        "trainCost": "Training cost you {c} of that."
+        "trainCost": "Training cost you {c} of that.",
+        "pay": "Your job paid {p}.",
+        "payTrain": "Your job paid {p}; training cost you {c}.",
+        "care": "(Childcare duty: long hours cost you 80, so the flexible job pays more.)"
       },
       "stamp": {
         "GOOD": "GOOD HIRE",
