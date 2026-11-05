@@ -102,7 +102,7 @@ function EpisodeIntro({ v }: { v: ViewState }) {
         {t(v.mode === 'LIFE' && v.levelIndex === 5 ? 'play.episodes.5.introLife' : `play.episodes.${v.levelIndex}.intro`, { loss: n?.loss ?? 0 })}
       </p>
       <div className="mt-auto pt-4">
-        <Bubble who="Dash" host text={hostLine('welcome', pick(v, 'welcome', 6))} />
+        <Bubble who="Dash" host text={hostLine('welcome', (pick({ ...v, levelIndex: 1, round: 0 }, 'welcome', 6) + v.levelIndex) % 6)} />
       </div>
     </Stage>
   );

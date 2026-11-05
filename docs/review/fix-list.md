@@ -47,3 +47,5 @@ Merged from the fresh-eyes reviews (E1), the design audit (E2), the logic audit 
 | Feedback on a wrong guess in a life | Done in part (the line now says what you guessed, D-169); the right answer stays hidden until the end of a life (spec). |
 | Cap debt points per episode or per life | A scoring change (v1 4.2 caps per round only); an unlucky life can end around -600 points. Needs Amir: the alternative is a per-episode cap. |
 | Hard versus Normal economies | Not a difference: a single episode (start 10, living cost 30) and a life (start 10, living cost 45, loss 220) have different stakes by design (D-160). |
+| Make Help the Poorest a claim in Episode 1 (cycles 10 and 14) | The spec lists three claims (D-152); adding one changes Episode 1's claim layer and its S checks. Needs Amir. |
+| Make the gym less of a sure thing in Episode 3 (cycle 14) | A balance change; the audit found no dominant habit around the gym (the one dominant habit is "never give"). |

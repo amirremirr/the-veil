@@ -31,7 +31,8 @@ export function episodeChanges(v: ViewState): Record<string, Record<number, numb
     for (const l of [1, 2, 3, 4, 5]) {
       const last = hist.filter((h) => h.level === l).slice(-1)[0];
       if (!last) continue;
-      out[p.id][l] = last.banks[p.id] - prev;
+      // Loop cycle 14: from rounded banks, so "bank -72" matches the banks shown (387 to 315).
+      out[p.id][l] = Math.round(last.banks[p.id]) - Math.round(prev);
       prev = last.banks[p.id];
     }
   }

@@ -1620,7 +1620,7 @@
       },
       "judge": {
         "title": "You are HireBot",
-        "pay": "Tap a worker for the complex job (you get +{g} if trained, -{l} if not). The rest get simple. Base 40.",
+        "pay": "Tap each worker you want on the complex job (you get +{g} if trained, -{l} if not). The rest get simple. Base 40.",
         "hidden": "Group hidden",
         "meterNote": "Hire past the line ({p}).",
         "submit": "Confirm hires",
@@ -1657,6 +1657,7 @@
         "trainCost": "Training cost you {c} of that.",
         "pay": "Your job paid {p}.",
         "payTrain": "Your job paid {p}; training cost you {c}.",
+          "other": "Gifts and other: {n}.",
         "care": "(Childcare duty: long hours cost you 80, so the flexible job pays more.)"
       },
       "stamp": {
