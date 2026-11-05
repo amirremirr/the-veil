@@ -98,6 +98,8 @@ export const PLAY = {
   CALL_ENABLED: true,
   CALL_STAKE: 10,
   CALL_PAYOUT: 20,
+  /** H3 (D-194): bots call too. Off: in 4 sweeps bot calls were right 0% to 15% of the time (target 40% to 70%). */
+  CALL_BOTS: false,
   /** G3 (D-189): an Episode 3 bot gives only when its best gift raises its own expected Play score. */
   GIFT_ONLY_IF_GAIN: true,
   /**

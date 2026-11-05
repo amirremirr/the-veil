@@ -139,6 +139,8 @@ export interface NearMiss {
 export interface PlayView {
   /** v1 Section 6.3: the comeback card's taker and choice, public on air. */
   comeback?: { pid: PlayerId; took: 'COINS' | 'POINTS' } | null;
+  /** H1 (D-194): every call so far, public (it is TV). */
+  calls?: CallRecord[];
   /** Public (it is TV): every bank, debt stress, the bank history and every event. */
   banks: Record<PlayerId, number>;
   debtStress: Record<PlayerId, number>;

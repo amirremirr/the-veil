@@ -8,6 +8,7 @@ import { PLAY } from '../../engine/play/params';
 import { useStore } from '../store';
 import { t } from '../i18n';
 import { MoneyLedger } from './Ledger';
+import { CallChips, CallResults, claimantsNow } from './Call';
 import { coins, pct } from '../labels';
 import { fmt1 } from '../components/Money';
 import { nameOf, shortName } from '../game';
@@ -170,9 +171,10 @@ export function PrizeScreen({ v }: { v: ViewState }) {
   const lv = lv2(v);
   const c = lv.current!;
   const [x, setX] = useState<string | null>(null);
+  const [call, setCall] = useState<string | null>(null);
   const poll = v.play!.pollMode === 'NEVER' ? {} : lv.poll;
   return (
-    <Stage v={v} footer={<BigButton disabled={!x} onClick={() => act(x)}>{t('play.l2.prize.submit')}</BigButton>}>
+    <Stage v={v} footer={<BigButton disabled={!x} onClick={() => act(call ? { vote: x, call } : x)}>{t('play.l2.prize.submit')}</BigButton>}>
       <h1 className="h-show text-3xl leading-tight">{t('play.l2.prize.title', { n: PLAY.HUSTLE_PRIZE })}</h1>
       <p className="mt-1 text-sm">{t('play.l2.prize.how')}</p>
       <ul className="mt-2 space-y-1.5" aria-label={t('play.l2.prize.title', { n: PLAY.HUSTLE_PRIZE })}>
@@ -194,6 +196,7 @@ export function PrizeScreen({ v }: { v: ViewState }) {
             );
           })}
       </ul>
+      <CallChips v={v} claimants={claimantsNow(v)} value={call} onPick={setCall} />
     </Stage>
   );
 }
@@ -214,6 +217,7 @@ export function PrizeBeat({ v, next }: { v: ViewState; next: () => void }) {
         <p className="mt-3 text-sm">{v.players.map((p) => `${shortName(v, p.id)}: ${r.votes?.[p.id] ? shortName(v, r.votes[p.id]!) : ''}`).join(', ')}</p>
         <p className="mt-2 text-sm" data-net>{t('play.l2.won.net', { y: coins(r.y?.[v.viewer] ?? 0), t: pct(lv.t ?? 0), k: coins((roundMoney(v) ?? r.W?.[v.viewer] ?? 0) - (r.prize?.[v.viewer] ?? 0) - giftNet) })}{r.prize?.[v.viewer] ? ` ${t('play.l2.won.netPrize', { n: coins(r.prize[v.viewer]) })}` : ''}{giftNet ? ` ${t('play.l2.won.netGifts', { n: `${giftNet > 0 ? '+' : ''}${coins(giftNet)}` })}` : ''}</p>
         {bankLineText(v) && <p className="mt-2 text-sm font-semibold" data-bankline>{bankLineText(v)}<MoneyLedger v={v} /></p>}
+        <CallResults v={v} />
       </div>
     </Stage>
   );

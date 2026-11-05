@@ -10,6 +10,7 @@ import { PLAY } from '../../engine/play/params';
 import { useStore } from '../store';
 import { t } from '../i18n';
 import { MoneyLedger } from './Ledger';
+import { CallChips, CallResults, claimantsNow } from './Call';
 import { coins, pct } from '../labels';
 import { nameOf, shortName } from '../game';
 import { BigButton, Bubble, Face, Stage } from './OnAir';
@@ -98,9 +99,10 @@ export function VoteScreen1({ v }: { v: ViewState }) {
   const [vote, setVote] = useState<PrincipleId | null>(null);
   const [gift, setGift] = useState<Gift | null>(null);
   const [giving, setGiving] = useState(false);
+  const [call, setCall] = useState<string | null>(null);
   const pv = lv.preview;
   return (
-    <Stage v={v} footer={<BigButton disabled={!vote} onClick={() => act({ vote, gift })}>{t('play.l1.vote.submit')}</BigButton>}>
+    <Stage v={v} footer={<BigButton disabled={!vote} onClick={() => act({ vote, gift, call })}>{t('play.l1.vote.submit')}</BigButton>}>
       <p className="text-base font-semibold leading-snug">{knowLine(v)}</p>
       {lv.peeked.length > 0 && <p className="text-sm">{t('play.l1.peekers', { names: lv.peeked.map((id) => shortName(v, id)).join(', ') })}</p>}
       <div className="mt-2 grid grid-cols-2 gap-2" role="group" aria-label={t('play.l1.vote.title')}>
@@ -108,6 +110,7 @@ export function VoteScreen1({ v }: { v: ViewState }) {
           <Tile key={p} on={vote === p} title={ruleName(p)} desc={t(`play.l1.rule.${p}.desc`)} note={previewText(pv?.vote[p])} onClick={() => setVote(p)} />
         ))}
       </div>
+      <CallChips v={v} claimants={claimantsNow(v)} value={call} onPick={setCall} />
       <div className="mt-auto grid grid-cols-2 gap-2 pt-2">
         <Tile
           on={!!gift}
@@ -190,6 +193,7 @@ export function IncomesBeat({ v, next, last }: { v: ViewState; next: () => void;
         {r.peeked.includes(me) && <p className="mt-2 text-sm">{t('play.l1.inc.peekCost', { c: lv.peekCost })}</p>}
         {r.inheritance && <p className="mt-2 text-sm">{t('play.l1.inc.inherit', { name: shortName(v, r.inheritance) })}</p>}
         {bankLineText(v) && <p className="mt-2 text-sm font-semibold" data-bankline>{bankLineText(v)}<MoneyLedger v={v} /></p>}
+        <CallResults v={v} />
       </div>
     </Stage>
   );

@@ -1,6 +1,7 @@
 // H1 (D-194): Call it. Calls move money between caller and claimant only, are stamped, and a caught lie has
 // its episode's consequence that round.
-import { describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { PLAY } from '../../src/engine/play/params';
 import { createInitialState, step } from '../../src/engine/engine';
 import type { GameState, LevelId } from '../../src/engine/types';
 import type { P2State } from '../../src/engine/play/ep2';
@@ -15,6 +16,14 @@ function bots(level: LevelId, seed: string): GameState {
 }
 
 describe('H1 Call it', () => {
+  // Bot calls are off in play (D-194); the mechanism is tested with them on.
+  const was = PLAY.CALL_BOTS;
+  beforeAll(() => {
+    (PLAY as { CALL_BOTS: boolean }).CALL_BOTS = true;
+  });
+  afterAll(() => {
+    (PLAY as { CALL_BOTS: boolean }).CALL_BOTS = was;
+  });
   for (const level of [1, 2, 3, 4, 5] as LevelId[]) {
     it(`Episode ${level}: call money nets to zero every round`, () => {
       let calls = 0;
@@ -31,7 +40,7 @@ describe('H1 Call it', () => {
   }
   it('consequences: no prize for a caught liar (Ep2), no cover (Ep3), the simple job (Ep4)', () => {
     let seen = 0;
-    for (let k = 0; k < 25; k++) {
+    for (let k = 0; k < 80; k++) {
       const s2 = bots(2, `cq2-${k}`);
       for (const c of (s2.play!.calls ?? []).filter((x) => x.lie)) {
         const r = (s2.levelState as P2State).rounds[c.round - 1];

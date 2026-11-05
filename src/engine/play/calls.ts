@@ -4,6 +4,7 @@
 // true claim costs the caller the stake, paid to the claimant, and is stamped CALLED WRONG. Each episode
 // says what a caught lie means there (calls.ts only handles the money, the stamps, the record and the bots).
 import { reliabilityOf } from '../core';
+import { honestyRange } from './claims';
 import type { GameState, PlayerId } from '../types';
 import { PLAY } from './params';
 import { isPlay, playEffortShares, playRoundValue } from './rules';
@@ -76,7 +77,7 @@ export function coinValue(s: GameState, i: number): number {
  * best bet if its expected value is positive (risk-neutral, that is a belief above STAKE / (STAKE + PAYOUT)).
  */
 export function botCall(s: GameState, pid: PlayerId, claimants: readonly PlayerId[], pFalse: (target: PlayerId) => number | null): PlayerId | null {
-  if (!callsOn(s)) return null;
+  if (!callsOn(s) || !PLAY.CALL_BOTS) return null;
   const i = s.players.findIndex((p) => p.id === pid);
   const card = s.players[i].values;
   const eff = playEffortShares(s);
@@ -109,11 +110,30 @@ export function callChance(s: GameState, pid: PlayerId, pFalseBy: (obs: PlayerId
   const line = PLAY.CALL_STAKE / (PLAY.CALL_STAKE + PLAY.CALL_PAYOUT);
   let none = 1;
   for (const o of s.players) {
-    if (o.id === pid) continue;
+    if (o.id === pid || (!PLAY.CALL_BOTS && !o.isHuman)) continue;
     const p = pFalseBy(o.id);
     if (p !== null && p > line) none *= 1 - Math.min(1, p);
   }
   return 1 - none;
+}
+
+/**
+ * H2 (D-194): a bot's belief that a claim is false, by Bayes' rule. `pTrue` is its belief that the claimed
+ * value is true from the evidence alone; an honest speaker always says the truth and a dishonest one says the
+ * claimed value whatever is true, so the claim multiplies the odds of "true" by 1 / (1 - h). The speaker's
+ * honesty h is its own personality's honesty prior updated by its public record (as HireBot reads claims, D-159).
+ */
+export function lieBelief(s: GameState, target: PlayerId, pTrue: number): number {
+  // The speaker's personality is public (v2 3.5: Chet lies often, Marigold almost never), so the prior is the
+  // midpoint of its own honesty range (a human's is the AUTO range), updated by its public record.
+  const tp = s.players.find((p) => p.id === target);
+  const [lo, hi] = honestyRange(s, !tp || tp.isHuman || !tp.botProfile ? 'AUTO' : tp.botProfile.key);
+  const h0 = (lo + hi) / 2;
+  const r = s.reliability[target] ?? { made: 0, kept: 0 };
+  const h = Math.min(0.99, (r.kept + 2 * h0) / (r.made + 2));
+  const p = Math.min(1, Math.max(0, pTrue));
+  const f = (1 - p) * (1 - h);
+  return f + p > 0 ? f / (f + p) : 0;
 }
 
 /** Re-exported for episodes that weigh a caught lie's record cost. */

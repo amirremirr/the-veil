@@ -10,6 +10,7 @@ import { L4 } from '../../engine/params';
 import { useStore } from '../store';
 import { t } from '../i18n';
 import { MoneyLedger } from './Ledger';
+import { CallChips, CallResults, claimantsNow } from './Call';
 import { coins, pct } from '../labels';
 import { nameOf, shortName } from '../game';
 import { BigButton, Bubble, Face, Stage } from './OnAir';
@@ -164,9 +165,10 @@ export function JudgeScreen({ v }: { v: ViewState }) {
   const workers = c.workers ?? [];
   const [hires, setHires] = useState<Record<string, Job>>(() => Object.fromEntries(workers.map((w) => [w, 'SIMPLE' as Job])));
   const [gift, setGift] = useState<Gift | null>(null);
+  const [call, setCall] = useState<string | null>(null);
   const claims = roundClaims(v);
   return (
-    <Stage v={v} footer={<BigButton onClick={() => act({ hires, gift })}>{t('play.l4.judge.submit')}</BigButton>}>
+    <Stage v={v} footer={<BigButton onClick={() => act({ hires, gift, call })}>{t('play.l4.judge.submit')}</BigButton>}>
       <h1 className="h-show text-3xl leading-tight">{t('play.l4.judge.title')}</h1>
       <p className="mt-1 text-sm">{t('play.l4.judge.pay', { g: PLAY.L4.JUDGE_GAIN, l: PLAY.L4.JUDGE_LOSS })}</p>
       <ul className="mt-2 space-y-1.5" aria-label={t('play.l4.judge.title')}>
@@ -201,6 +203,7 @@ export function JudgeScreen({ v }: { v: ViewState }) {
         })}
       </ul>
       {lv.meterShown && <p className="mt-1 text-xs">{t('play.l4.judge.meterNote', { p: pct(lv.threshold) })}</p>}
+      <CallChips v={v} claimants={claimantsNow(v, (x) => x === 'TRAINED')} value={call} onPick={setCall} />
       <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
         <GiftTile v={v} gift={gift} setGift={setGift} />
       </div>
@@ -264,6 +267,7 @@ export function HiresBeat({ v, next, last }: { v: ViewState; next: () => void; l
         {r.judge !== me && r.jobPay?.[me] !== undefined && <p className="mt-2 text-sm">{t(r.train?.[me] ? 'play.l4.res.payTrain' : 'play.l4.res.pay', { p: coins(r.jobPay[me]), c: coins(Math.max(0, (r.costs?.[me] ?? 0) - (v.play!.event?.id === 'GRANT' && v.play!.event.round === v.round ? PLAY.L4_EVENTS.GRANT.COST_CUT : 0))) })}{lv.care[me] && r.job?.[me] === 'COMPLEX' ? ` ${t('play.l4.res.care', { n: lv.policy === 'D' ? L4.CHAOS_COST_SUBSIDIZED : L4.CHAOS_COST })}` : ''}{(() => { const cost = r.train?.[me] ? Math.max(0, (r.costs?.[me] ?? 0) - (v.play!.event?.id === 'GRANT' && v.play!.event.round === v.round ? PLAY.L4_EVENTS.GRANT.COST_CUT : 0)) : 0; const other = Math.round((W[me] ?? 0) - r.jobPay![me] + cost); return other ? ` ${t('play.l4.res.other', { n: `${other > 0 ? '+' : ''}${other}` })}` : ''; })()}</p>}
         <p className="mt-2 text-sm">{t('play.l4.res.judgePay', { name: shortName(v, r.judge!), n: coins(r.judgePay ?? 0) })}</p>
         {bankLineText(v) && <p className="mt-2 text-sm font-semibold" data-bankline>{bankLineText(v)}<MoneyLedger v={v} /></p>}
+        <CallResults v={v} />
       </div>
     </Stage>
   );

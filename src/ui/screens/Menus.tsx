@@ -327,6 +327,8 @@ export function About() {
           <p className="font-semibold">{t('play.disclaimer')}</p>
           {/* D-141: Play's one hidden dealing rule, stated here and never in play. */}
           <p data-about-deal>{t('play.about.deal')}</p>
+          {/* D-194: the source for Call it, kept off the play screens. */}
+          <p data-about-call>{t('play.about.call')}</p>
           <p className="text-soft">{t('about.noTracking')}</p>
           <p className="text-soft">{t('about.rooms')}</p>
         </div>

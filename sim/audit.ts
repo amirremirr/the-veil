@@ -21,6 +21,28 @@ const keep = (_s: GameState, _p: string, _st: string, a: unknown) => a;
 const other = (s: GameState, pid: string) => s.players.find((p) => p.id !== pid)!.id;
 const poorest = (s: GameState, pid: string) => s.players.filter((p) => p.id !== pid).sort((a, b) => s.play!.banks[a.id] - s.play!.banks[b.id])[0].id;
 
+
+// H3 (D-194): "always call" stakes on the first other contestant whose claim can be called this round.
+const MOVE: Record<number, (st: string) => boolean> = { 1: (st) => st === 'VOTE', 2: (st) => st === 'PRIZE', 3: (st) => st === 'CHOICE', 4: (st) => st === 'HIRE', 5: (st) => st.startsWith('AMEND_') };
+const withCall = (a: unknown, call: string | null): unknown => {
+  if (typeof a === 'string') return { vote: a, call };
+  if (typeof a === 'boolean') return { vote: a, call };
+  return { ...(a as object), call };
+};
+function callRule(level: number, on: boolean): Rule {
+  return (s, p, st, a) => {
+    if (!MOVE[level](st)) return a;
+    if (!on) return withCall(a, null);
+    for (const o of s.players) {
+      if (o.id === p) continue;
+      const x = withCall(a, o.id);
+      const v = LEVELS[level as LevelId].validate(s, st, p, x) as { call?: string } | null;
+      if (v && typeof v === 'object' && v.call === o.id) return x;
+    }
+    return a;
+  };
+}
+
 const RULES: Record<number, Record<string, Rule>> = {
   1: {
     'always peek': (_s, _p, st, a) => (st === 'PEEK' ? true : a),
@@ -67,6 +89,11 @@ const RULES: Record<number, Record<string, Rule>> = {
     'always silent': (_s, p, st, a) => (st === 'CLAIM' ? Object.fromEntries(Object.keys(a as object).map((k) => [k, k === p ? 'YES' : 'SILENT'])) : a),
   },
 };
+
+for (const lv of [1, 2, 3, 4, 5]) {
+  RULES[lv]['always call'] = callRule(lv, true);
+  RULES[lv]['never call'] = callRule(lv, false);
+}
 
 function playOne(level: LevelId, seed: string, rule: Rule | null, counts?: Record<string, Record<string, number>>): number {
   const s = createInitialState({ mode: 'EPISODE', level, ruleset: 'PLAY', nPlayers: 4, difficulty: 'NORMAL', seed, allBots: true } as Parameters<typeof createInitialState>[0]);

@@ -9,6 +9,7 @@ import { PLAY } from '../../engine/play/params';
 import { useStore } from '../store';
 import { t } from '../i18n';
 import { MoneyLedger } from './Ledger';
+import { CallChips, CallResults, claimantsNow } from './Call';
 import { coins, pct, signed } from '../labels';
 import { nameOf, shortName, useTalkFrom } from '../game';
 import { useMotionOff } from '../components/common';
@@ -195,11 +196,12 @@ export function MoveScreen({ v }: { v: ViewState }) {
   const [bar, setBar] = useState<string | null>(null);
   const [gift, setGift] = useState<Gift | null>(null);
   const [giving, setGiving] = useState(false);
+  const [call, setCall] = useState<string | null>(null);
   const mandatory = lv.regime !== 'VOL';
   const canBuy = !mandatory && lv.premium !== null;
   const members = lv.members ?? [];
   const member = members.includes(v.viewer);
-  const decision: Choice = { buy: canBuy && buy, gym, bar: member ? bar : null, gift };
+  const decision: Choice = { buy: canBuy && buy, gym, bar: member ? bar : null, gift, call };
   const cover = lv.regime === 'M50' ? 50 : 100;
   const T = n.loading * (cover / 100) * n.loss * n.pBar + n.mandateExtra;
   const claims = roundClaims(v);
@@ -260,6 +262,7 @@ export function MoveScreen({ v }: { v: ViewState }) {
           {member && bar && <p className="mt-1 text-xs font-semibold">{t('play.move.barPick', { name: shortName(v, bar) })}</p>}
         </section>
       )}
+      <CallChips v={v} claimants={claimantsNow(v)} value={call} onPick={setCall} />
       <div className="mt-auto grid grid-cols-3 gap-2 pt-3">
         {launch ? (
           <Tile on disabled title={t('play.stage.launchTitle')} desc={t('play.stage.launchDesc', { p: fmt1(lv.premium!) })} />
@@ -604,6 +607,7 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
           <p className="mt-1 text-sm text-soft">
             {t('play.stage.bankLine', { from: coins(from), to: coins(h.banks[me]) })} {t('play.bank.pay', { w: coins(v.play!.l3?.baseIncome ?? 0) })} {cost} {t('play.bank.living', { c: v.play!.livingCost })}
           <MoneyLedger v={v} /></p>
+          <CallResults v={v} />
           {stress > 0 && (
             <p className="mt-1 text-sm font-bold text-stamp" data-debt>
               {t('play.stage.debtCost', { n: Math.round(stress) })}

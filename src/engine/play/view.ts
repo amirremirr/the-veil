@@ -88,6 +88,7 @@ export function playView(s: GameState, viewer: PlayerId, revealAll: boolean): Pl
     mission,
     poll: audiencePoll(s),
     comeback: pl.comeback ?? null,
+    calls: (pl.calls ?? []).map((c) => ({ ...c })),
     pollMode: PLAY.DIFFICULTY[s.difficulty].poll,
     record: structuredClone(s.reliability),
     guesses,

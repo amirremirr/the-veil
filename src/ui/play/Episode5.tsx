@@ -9,6 +9,7 @@ import { PLAY } from '../../engine/play/params';
 import { useStore } from '../store';
 import { t } from '../i18n';
 import { MoneyLedger } from './Ledger';
+import { CallChips, CallResults } from './Call';
 import { coins, pct } from '../labels';
 import { nameOf, shortName } from '../game';
 import { BigButton, Bubble, Face, Stage } from './OnAir';
@@ -195,8 +196,12 @@ export function AmendScreen({ v }: { v: ViewState }) {
   const prop = lv.lobby![proposer].proposal!;
   const got = lv.lobby![proposer].donateTo === v.viewer ? lv.lobby![proposer].amount : 0;
   const [x, setX] = useState<boolean | null>(null);
+  const [call, setCall] = useState<string | null>(null);
+  // H4 (D-194): one call in the finale, on a yes or no claimed about this amendment.
+  const usedCall = (v.play!.calls ?? []).some((c) => c.level === 5 && c.caller === v.viewer);
+  const callable = usedCall || !PLAY.CALL_ENABLED ? [] : v.players.filter((p) => p.id !== v.viewer && (lv.claims?.[p.id]?.[proposer] === 'YES' || lv.claims?.[p.id]?.[proposer] === 'NO')).map((p) => p.id);
   return (
-    <Stage v={v} footer={<BigButton disabled={x === null} onClick={() => act(x)}>{t('play.l5.amend.submit')}</BigButton>}>
+    <Stage v={v} footer={<BigButton disabled={x === null} onClick={() => act(call ? { vote: x, call } : x)}>{t('play.l5.amend.submit')}</BigButton>}>
       <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.l5.amend.label', { k: k + 1, n: lv.order.length, name: shortName(v, proposer) })}</p>
       <h1 className="h-show mt-1 text-3xl leading-tight">{rules(prop)}</h1>
       <p className="mt-1 text-sm">{t('play.l5.amend.now', { rules: rules(lv.current!), n: lv.need })}</p>
@@ -206,6 +211,7 @@ export function AmendScreen({ v }: { v: ViewState }) {
       })()}
       {got > 0 && <p className="mt-1 text-sm font-bold">{t('play.l5.amend.got', { n: got, name: shortName(v, proposer) })}</p>}
       <p className="mt-2 text-xs">{t('play.l5.amend.claims', { list: v.players.map((p) => `${shortName(v, p.id)} ${t(`play.l5.said.${lv.claims?.[p.id]?.[proposer] ?? 'SILENT'}`)}`).join(', ') })}</p>
+      <CallChips v={v} claimants={callable} value={call} onPick={setCall} />
       <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
         {[true, false].map((o) => (
           <button key={String(o)} type="button" aria-pressed={x === o} onClick={() => setX(o)} className={`min-h-[72px] rounded-2xl text-xl font-bold ${x === o ? 'bg-spot text-onspot' : 'bg-card'}`}>
@@ -266,6 +272,7 @@ export function AmendReveal({ v }: { v: ViewState }) {
         </p>
       ))}
       {bankLineText(v) && <p className="mt-2 text-sm font-semibold" data-bankline>{bankLineText(v)}<MoneyLedger v={v} /></p>}
+        <CallResults v={v} />
       <p className="mt-2 text-sm">{t('play.l5.peak.shift', { a: pct(lv.fair1?.[me] ?? 0), b: pct(lv.fair2?.[me] ?? 0), d: `${shift >= 0 ? '+' : ''}${Math.round(shift * 100)}` })}</p>
       <div className="mt-2">
         <Bubble who="Dash" host text={stamps.length ? t('play.l5.peak.hostBought') : t('play.l5.peak.hostClean')} />

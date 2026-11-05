@@ -10,7 +10,7 @@ import { ALL_CONSTITUTIONS, bandOf, constitutionWealth, olsSlope, supermajority,
 import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import type { LevelDefinition } from '../levels/types';
 import { PLAY } from './params';
-import { botCall, callChance, coinValue, settleCalls, validCall } from './calls';
+import { botCall, callChance, coinValue, lieBelief, settleCalls, validCall } from './calls';
 import { activeEvent, missionScale, missionValue, playEffortShares, playRoundValue, livingCost, setRoundLedger } from './rules';
 import { chooseClaim, credibilityValue, expectedRecord, honestyOf, postClaims, SILENT } from './claims';
 
@@ -395,7 +395,7 @@ export const playLevel5: LevelDefinition = {
       const want = claimed === 'YES';
       const gain = want ? -gap : gap;
       // H2 (D-194): breaking the promise can be called (the payout, in the bot's own points, adds to the loss).
-      const pc = callChance(s, pid, (_obs) => { const q = pYes(s, pid, k, l.current!).p; return want ? 1 - q : q; });
+      const pc = callChance(s, pid, (_obs) => { const q = pYes(s, pid, k, l.current!).p; return lieBelief(s, pid, want ? q : 1 - q); });
       const loss = credibilityValue(s) * (expectedRecord(s, pid, 'TRUE') - expectedRecord(s, pid, 'LIE')) + pc * PLAY.CALL_PAYOUT * coinValue(s, idx(s, pid));
       vote = gain * (1 - honestyOf(s, pid)) > loss + 1e-9 ? !want : want;
     }
@@ -404,7 +404,7 @@ export const playLevel5: LevelDefinition = {
       const c = l.claims?.[t]?.[l.order[k]];
       if (c !== 'YES' && c !== 'NO') return null;
       const q = pYes(s, t, k, l.current!).p;
-      return c === 'YES' ? 1 - q : q;
+      return lieBelief(s, t, c === 'YES' ? q : 1 - q);
     });
     return call ? { vote, call } : vote;
   },

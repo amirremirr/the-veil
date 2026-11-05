@@ -12,7 +12,7 @@ import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import type { LevelDefinition } from '../levels/types';
 import { POLICIES, type Group, type Job, type Policy, type Priors } from '../levels/level4';
 import { PLAY } from './params';
-import { botCall, callChance, callsOn, callsThisRound, settleCalls, validCall } from './calls';
+import { botCall, callChance, callsOn, callsThisRound, lieBelief, settleCalls, validCall } from './calls';
 import { activeEvent, addBetweenRounds, giftNet, missionScale, missionValue, playEffortShares, playRanks, playRoundValue, playScore, livingCost, setRoundLedger } from './rules';
 import { chooseClaim, claimsOf, honestyRange, postClaims, SILENT } from './claims';
 
@@ -346,7 +346,7 @@ function claimGain(s: GameState, pid: PlayerId, value: string): number {
   }
   if (value !== 'TRAINED' || trained || !callsOn(s)) return out;
   // H2 (D-194): HireBot may call the claim; a caught liar gets the simple job and pays the payout.
-  const pc = callChance(s, pid, (obs) => (obs === l.judge ? 1 - mean([true, false].map((pass) => judgeRead(posterior4(priorOf(l, pid), pass), true, k))) : null));
+  const pc = callChance(s, pid, (obs) => (obs === l.judge ? lieBelief(s, pid, mean([true, false].map((pass) => posterior4(priorOf(l, pid), pass)))) : null));
   return (1 - pc) * out + pc * (P.wageSimple - PLAY.CALL_PAYOUT);
 }
 
@@ -358,7 +358,7 @@ function botHire(s: GameState, pid: PlayerId): { hires: Record<PlayerId, Job>; g
   for (const w of workersOf(s)) hires[w] = c.reads![w] >= P.threshold - EPS ? 'COMPLEX' : 'SIMPLE';
   const i = idx(s, pid);
   // H2 (D-194): HireBot calls the training claim it most doubts (its read is its belief), if the bet pays.
-  const call = botCall(s, pid, claimants4(s), (t) => (c.reads?.[t] !== undefined ? 1 - c.reads[t] : null));
+  const call = botCall(s, pid, claimants4(s), (t) => { const m = c.testMeter?.[t] ?? c.reads?.[t]; return m !== undefined ? lieBelief(s, t, m) : null; });
   return { hires, gift: bestGift(s, i, expectedW(s, i, { job: hires }, P)), call };
 }
 

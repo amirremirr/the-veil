@@ -7,7 +7,7 @@ import { PLAY } from '../play/params';
 import { activeEvent, isPlay, livingCost, playNet, playRoundValue, roundsLeft, setRoundLedger } from '../play/rules';
 import { audienceBelief, beliefAfterClaim, checkClaims, chooseClaim, claimsOf, initFactBeliefs, observe, postClaims, revealFacts, SILENT } from '../play/claims';
 import { reliabilityOf } from '../core';
-import { botCall, callChance, callsOn, callsThisRound, settleCalls, validCall } from '../play/calls';
+import { botCall, callChance, callsOn, callsThisRound, lieBelief, settleCalls, validCall } from '../play/calls';
 import { ceOfLottery, logitChoice, logitProbs } from '../bots/utility';
 import { flavorIndex } from '../rng';
 import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
@@ -568,7 +568,7 @@ function botClaim(s: GameState, pid: PlayerId): { value: string; lieGain: number
   const withCalls = (value: string) => {
     const raw = g(value);
     if (value === SILENT || value === type || !callsOn(s)) return raw;
-    const pc = callChance(s, pid, (obs) => (value === 'LOW' ? voterBelief(s, obs, pid) : 1 - voterBelief(s, obs, pid)));
+    const pc = callChance(s, pid, (obs) => lieBelief(s, pid, value === 'LOW' ? 1 - voterBelief(s, obs, pid) : voterBelief(s, obs, pid)));
     return (1 - pc) * raw - pc * PLAY.CALL_PAYOUT;
   };
   return chooseClaim(s, pid, type, type === 'HIGH' ? 'LOW' : 'HIGH', withCalls);
@@ -894,7 +894,7 @@ export const level3: LevelDefinition = {
         const bar = botBarVote(s, botId, pStay);
         // H2 (D-194): call the risk claim it most doubts, if the bet pays with its own beliefs and mission.
         const said = claimsOf(s.messages, s.levelIndex, s.round);
-        const call = botCall(s, botId, claimants3(s), (t) => (said[t] === 'LOW' ? voterBelief(s, botId, t) : said[t] === 'HIGH' ? 1 - voterBelief(s, botId, t) : null));
+        const call = botCall(s, botId, claimants3(s), (t) => (said[t] === 'LOW' ? lieBelief(s, t, 1 - voterBelief(s, botId, t)) : said[t] === 'HIGH' ? lieBelief(s, t, voterBelief(s, botId, t)) : null));
         return { buy, gym, bar, gift: botGift(s, botId, { buy, gym }, lambda), call };
       }
       return { buy, gym };

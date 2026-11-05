@@ -13,7 +13,7 @@ import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import type { LevelDefinition } from '../levels/types';
 import { PLAY } from './params';
 import { activeEvent, giftNet, missionScale, missionValue, playRoundValue, livingCost, setRoundLedger } from './rules';
-import { botCall, callChance, callsThisRound, settleCalls, validCall } from './calls';
+import { botCall, callChance, callsThisRound, lieBelief, settleCalls, validCall } from './calls';
 import { chooseClaim, honestyOf, postClaims, SILENT } from './claims';
 
 type Gift = { to: PlayerId; amount: number };
@@ -165,7 +165,7 @@ function claimGain(s: GameState, pid: PlayerId, value: string, e: number): numbe
   // caught liar pays the payout and cannot win the prize, so the lie keeps its gain only if nobody calls.
   const P = p2Params(s);
   const y = gross(st(s).talents[pid], e, mean(P.luck), P.talentMult);
-  const pc = callChance(s, pid, (obs) => 1 - readEffort(s, obs, pid, y, value, rel, P, P.cameras ? e : null)[BANDS.indexOf(value as Band)]);
+  const pc = callChance(s, pid, (obs) => lieBelief(s, pid, readEffort(s, obs, pid, y, undefined, rel, P, P.cameras ? e : null)[BANDS.indexOf(value as Band)]));
   return (1 - pc) * raw - pc * PLAY.CALL_PAYOUT;
 }
 
@@ -387,9 +387,11 @@ export const playLevel2: LevelDefinition = {
     // H2 (D-194): call the claim it most doubts, if the bet pays with its own beliefs and mission.
     const cur = st(s).current;
     const call = botCall(s, botId, claimants2(s), (t) => {
-      const b = cur.beliefs?.[botId]?.[t];
       const cl = cur.claims?.[t];
-      return b && cl && cl !== SILENT ? 1 - b[BANDS.indexOf(cl as Band)] : null;
+      if (!cl || cl === SILENT || cur.y?.[t] === undefined) return null;
+      const P = p2Params(s);
+      const prior = readEffort(s, botId, t, cur.y[t], undefined, reliabilityOf(s, t), P, P.cameras ? cur.effort![t] : null);
+      return lieBelief(s, t, prior[BANDS.indexOf(cl as Band)]);
     });
     return call ? { vote, call } : vote;
   },

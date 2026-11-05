@@ -10,12 +10,13 @@ import { shortName } from '../game';
 import { useMotionOff } from '../components/common';
 import { BigButton, Stage } from './OnAir';
 import { missionName } from './logic';
+import { callLine } from './Call';
 import { PlaytestPanel } from './Playtest';
 import { onTap, playtestOn } from '../playtest';
 import { earned, isDaily, rivalLine, saveAchievements, shareText, type Achievement } from './retention';
 
 export interface Receipt {
-  kind: 'worked' | 'caught' | 'betrayal';
+  kind: 'worked' | 'caught' | 'betrayal' | 'call';
   level: LevelId;
   pid: string;
   text: string;
@@ -65,7 +66,9 @@ export function receipts(v: ViewState): Receipt[] {
     const a = lv5?.amendments?.find((x) => x.proposer === from && !x.withdrawn);
     if (a && !a.votes[lb.donateTo]) out.push({ kind: 'betrayal', level: 5, pid: lb.donateTo, text: t('play.receipts.betrayal', { name: shortName(v, lb.donateTo), donor: shortName(v, from), n: lb.amount }) });
   }
-  const order = { worked: 0, caught: 1, betrayal: 2 };
+  // H4 (D-194): every call, in the order it happened ("Ugo called Chet. Chet was lying. +20.").
+  for (const c of v.play?.calls ?? []) out.push({ kind: 'call', level: c.level as LevelId, pid: c.caller, text: `Ep${c.level}: ${callLine(v, c)}` });
+  const order = { worked: 0, caught: 1, call: 2, betrayal: 3 };
   return out.sort((a, b) => order[a.kind] - order[b.kind] || a.level - b.level);
 }
 

@@ -14,7 +14,7 @@ import { VALUES_CARDS } from '../types';
 import type { LevelDefinition } from '../levels/types';
 import { PLAY } from './params';
 import { activeEvent, giftNet, missionScale, missionValue, playEffortShares, playRoundValue, livingCost, setRoundLedger } from './rules';
-import { botCall, callChance, coinValue, settleCalls, validCall } from './calls';
+import { botCall, callChance, coinValue, lieBelief, settleCalls, validCall } from './calls';
 import { chooseClaim, credibilityValue, expectedRecord, honestyOf, postClaims, SILENT } from './claims';
 import { VALUES_PRIOR } from '../params';
 
@@ -80,7 +80,7 @@ function valueIfWins(s: GameState, i: number, p: PrincipleId, known: number | nu
 }
 
 /** Bots' model of another contestant's vote: the Study card model from its beliefs, moved toward its claim. */
-function predictVote(s: GameState, obs: PlayerId, actor: PlayerId): number[] {
+function predictVote(s: GameState, obs: PlayerId, actor: PlayerId, withClaim = true): number[] {
   const n = s.players.length;
   const belief = s.botBeliefs[obs]?.[actor] ?? VALUES_PRIOR;
   const dist = PRINCIPLES.map(() => 0);
@@ -89,7 +89,7 @@ function predictVote(s: GameState, obs: PlayerId, actor: PlayerId): number[] {
     logitProbs(ce, BOT.BELIEF_LAMBDA).forEach((x, k) => (dist[k] += belief[c] * x));
   }
   const claim = st(s).claims?.[actor];
-  if (claim && claim !== SILENT) {
+  if (withClaim && claim && claim !== SILENT) {
     const k = PRINCIPLES.indexOf(claim as PrincipleId);
     const r = PLAY.CLAIM_WEIGHT * reliabilityOf(s, actor);
     for (let j = 0; j < dist.length; j++) dist[j] = (1 - r) * dist[j] + (j === k ? r : 0);
@@ -305,13 +305,13 @@ export const playLevel1: LevelDefinition = {
       const best = u.indexOf(Math.max(...u));
       const gain = u[best] - u[PRINCIPLES.indexOf(claimed as PrincipleId)];
       // H2 (D-194): breaking the promise can be called; the expected payout, in the bot's own points, adds to the loss.
-      const pc = callChance(s, botId, (obs) => 1 - predictVote(s, obs, botId)[PRINCIPLES.indexOf(claimed as PrincipleId)]);
+      const pc = callChance(s, botId, (obs) => lieBelief(s, botId, predictVote(s, obs, botId, false)[PRINCIPLES.indexOf(claimed as PrincipleId)]));
       const loss = credibilityValue(s) * (expectedRecord(s, botId, 'TRUE') - expectedRecord(s, botId, 'LIE')) + pc * PLAY.CALL_PAYOUT * coinValue(s, idx(s, botId));
       vote = gain * (1 - honestyOf(s, botId)) > loss + 1e-9 ? PRINCIPLES[best] : (claimed as PrincipleId);
     }
     const call = botCall(s, botId, claimantsOf(s), (t) => {
       const c = st(s).claims?.[t];
-      return c && c !== SILENT ? 1 - predictVote(s, botId, t)[PRINCIPLES.indexOf(c as PrincipleId)] : null;
+      return c && c !== SILENT ? lieBelief(s, t, predictVote(s, botId, t, false)[PRINCIPLES.indexOf(c as PrincipleId)]) : null;
     });
     return { vote, gift: bestGift(s, botId, vote), call };
   },
