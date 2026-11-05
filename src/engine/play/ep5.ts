@@ -11,7 +11,7 @@ import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import type { LevelDefinition } from '../levels/types';
 import { PLAY } from './params';
 import { activeEvent, missionScale, missionValue, playEffortShares, playRoundValue } from './rules';
-import { expectedRecord, honestyOf, postClaims, SILENT } from './claims';
+import { chooseClaim, credibilityValue, expectedRecord, honestyOf, postClaims, SILENT } from './claims';
 
 export interface Lobby5 {
   donateTo: PlayerId | null;
@@ -112,10 +112,17 @@ function passProbability(s: GameState, pid: PlayerId, prop: Constitution, target
   const inc = incomesOf(s);
   const Wa = constitutionWealth(inc, prop);
   const Wc = constitutionWealth(inc, st(s).current!);
+  const claims = st(s).claims;
   const ps = ids(s).map((id, j) => {
     if (id === pid) return 1;
     let p = Wa[j] > Wc[j] + 1e-9 ? BOT.VOTE_PREDICT_CONFIDENCE : Wa[j] < Wc[j] - 1e-9 ? 1 - BOT.VOTE_PREDICT_CONFIDENCE : 0.5;
-    if (id === target) p = Math.min(1, p + (L5.RECIPROCITY * d) / P.maxDonation);
+    // R1 (D-158): a vote claim on this amendment moves the prediction toward it by the voter's record, (kept + 1) / (made + 2).
+    const c = claims?.[id]?.[pid];
+    if (c === 'YES' || c === 'NO') {
+      const r = reliabilityOf(s, id);
+      p = r * (c === 'YES' ? 1 : 0) + (1 - r) * p;
+    }
+    if (id === target) p = Math.min(1, p + (PLAY.L5.RECIPROCITY * d) / P.maxDonation);
     return p;
   });
   let dist = [1];
@@ -130,9 +137,17 @@ function passProbability(s: GameState, pid: PlayerId, prop: Constitution, target
   return dist.slice(P.need).reduce((a, b) => a + b, 0);
 }
 
-function botLobby(s: GameState, pid: PlayerId): Lobby5 {
-  const prop = botProposal(s, pid);
-  if (!prop) return { donateTo: null, amount: 0, proposal: null };
+/**
+ * R1 (D-158): a donor funds only delegates who claimed "I'll vote yes" on its amendment, choosing the one and the
+ * amount that raise its expected Play value most, by the pass chance (which counts each claim by its record).
+ * `claimsOverride` lets a voter ask what this donor would do if it claimed differently.
+ */
+function donorPlan(s: GameState, pid: PlayerId, logit: boolean, claimsOverride?: Record<PlayerId, Record<PlayerId, string>>): { to: PlayerId | null; d: number } {
+  const l = st(s);
+  const prop = l.lobby?.[pid]?.proposal;
+  if (!prop) return { to: null, d: 0 };
+  const saved = l.claims;
+  if (claimsOverride) l.claims = claimsOverride;
   const P = p5Params(s);
   const i = idx(s, pid);
   const inc = incomesOf(s);
@@ -140,7 +155,7 @@ function botLobby(s: GameState, pid: PlayerId): Lobby5 {
   const Wc = asRound(s, constitutionWealth(inc, st(s).current!));
   const amounts = PLAY.L5.DONATION_OPTIONS_BOT.filter((a) => a <= P.maxDonation);
   const combos: Array<{ to: PlayerId | null; d: number }> = [{ to: null, d: 0 }];
-  for (const to of ids(s)) if (to !== pid) for (const d of amounts) if (d > 0) combos.push({ to, d });
+  for (const to of ids(s)) if (to !== pid && l.claims?.[to]?.[pid] === 'YES') for (const d of amounts) if (d > 0) combos.push({ to, d });
   const u = combos.map(({ to, d }) => {
     const shift = (W: number[]) => {
       const out = W.slice();
@@ -153,8 +168,22 @@ function botLobby(s: GameState, pid: PlayerId): Lobby5 {
     const p = passProbability(s, pid, prop, to, d, P);
     return p * value(s, i, shift(Wa)) + (1 - p) * value(s, i, shift(Wc));
   });
-  const k = logitChoice(u, botParams(s, pid).lambda, botRng(s));
-  return { donateTo: combos[k].to, amount: combos[k].d, proposal: prop };
+  l.claims = saved;
+  const k = logit ? logitChoice(u, botParams(s, pid).lambda, botRng(s)) : argmax(u);
+  return combos[k];
+}
+
+/** What every voter intends on each amendment now (the claim it would make if it told the truth). */
+function intents(s: GameState): Record<PlayerId, Record<PlayerId, string>> {
+  const l = st(s);
+  return Object.fromEntries(ids(s).map((v) => [v, Object.fromEntries(l.order.map((p, k) => [p, p === v ? 'YES' : pYes(s, v, k, l.current!).p >= 0.5 ? 'YES' : 'NO']))]));
+}
+
+/** Coins a vote claim on `proposer`'s amendment is worth to `pid`: the donation it would draw (others assumed truthful). */
+function claimDonation(s: GameState, pid: PlayerId, proposer: PlayerId, value: string, base: Record<PlayerId, Record<PlayerId, string>>): number {
+  const c = { ...base, [pid]: { ...base[pid], [proposer]: value } };
+  const plan = donorPlan(s, proposer, false, c);
+  return plan.to === pid ? plan.d : 0;
 }
 
 /** A bot's chance of voting yes on amendment k: logit on its Play value, plus reciprocity to a donor (Study). */
@@ -166,7 +195,7 @@ function pYes(s: GameState, pid: PlayerId, k: number, statusQuo: Constitution): 
   const Sa = value(s, i, withDonations(s, asRound(s, constitutionWealth(inc, a.proposal!)), l.lobby));
   const Sc = value(s, i, withDonations(s, asRound(s, constitutionWealth(inc, statusQuo)), l.lobby));
   let p = logitProbs([Sa, Sc], botParams(s, pid).lambda)[0];
-  if (a.donateTo === pid) p = Math.min(1, p + (L5.RECIPROCITY * a.amount) / p5Params(s).maxDonation);
+  if (a.donateTo === pid) p = Math.min(1, p + (PLAY.L5.RECIPROCITY * a.amount) / p5Params(s).maxDonation);
   return { p, gap: Sa - Sc };
 }
 
@@ -234,8 +263,8 @@ export const playLevel5: LevelDefinition = {
       { kind: 'DECIDE', step: 'FAIR_1', round: 1 },
       { kind: 'REVEAL', step: 'INCOMES', round: 1 },
       { kind: 'DECIDE', step: 'FAIR_2', round: 1 },
-      { kind: 'DECIDE', step: 'LOBBY', round: 1 },
       { kind: 'DECIDE', step: 'CLAIM', round: 1 },
+      { kind: 'DECIDE', step: 'LOBBY', round: 1 },
     ];
     for (let k = 0; k < s.players.length; k++) out.push({ kind: 'DECIDE', step: `AMEND_${k}`, round: 1 });
     out.push({ kind: 'REVEAL', step: 'AMENDMENTS', round: 1 }, { kind: 'ROUND_SUMMARY', round: 1 });
@@ -261,6 +290,7 @@ export const playLevel5: LevelDefinition = {
     const k = amendIndex(step);
     const l = st(s);
     if (step === 'CLAIM') return l.order.length ? ids(s) : [];
+    if (step === 'LOBBY') return l.order.slice().sort((a, b) => idx(s, a) - idx(s, b));
     if (k >= 0) {
       if (l.order.length <= k) return [];
       return same(l.lobby![l.order[k]].proposal!, l.current!) ? [] : ids(s);
@@ -270,7 +300,16 @@ export const playLevel5: LevelDefinition = {
   validate(s, step, pid, d) {
     const okC = (c: unknown): c is Constitution => !!c && L5.TAX_OPTIONS.some((t) => Math.abs(t - (c as Constitution).t) < 1e-9) && L5.FLOOR_OPTIONS.includes((c as Constitution).F);
     if (step === 'VEIL') return okC(d) ? { t: (d as Constitution).t, F: (d as Constitution).F } : null;
-    if (step === 'FAIR_1' || step === 'FAIR_2') return L5.TAX_OPTIONS.some((t) => Math.abs(t - (d as number)) < 1e-9) ? d : null;
+    const okT = (x: unknown) => L5.TAX_OPTIONS.some((t) => Math.abs(t - (x as number)) < 1e-9);
+    if (step === 'FAIR_1') return okT(d) ? d : null;
+    if (step === 'FAIR_2') {
+      // R1: the second fair answer and the amendment proposal are one screen.
+      const c = (typeof d === 'number' ? { fair: d, proposal: null } : d) as { fair?: unknown; proposal?: unknown };
+      if (!c || !okT(c.fair)) return null;
+      if (c.proposal !== null && c.proposal !== undefined && !okC(c.proposal)) return null;
+      const pr = c.proposal as Constitution | null | undefined;
+      return { fair: c.fair, proposal: pr ? { t: pr.t, F: pr.F } : null };
+    }
     if (step === 'LOBBY') {
       const l = d as Lobby5;
       if (!l || typeof l !== 'object') return null;
@@ -278,8 +317,7 @@ export const playLevel5: LevelDefinition = {
       if (amount < 0 || amount > p5Params(s).maxDonation) return null;
       const to = amount > 0 ? l.donateTo : null;
       if (to && (to === pid || idx(s, to) < 0)) return null;
-      if (l.proposal !== null && !okC(l.proposal)) return null;
-      return { donateTo: to, amount: to ? amount : 0, proposal: l.proposal ? { t: l.proposal.t, F: l.proposal.F } : null };
+      return { donateTo: to, amount: to ? amount : 0 };
     }
     if (step === 'CLAIM') {
       const c = d as Record<string, unknown>;
@@ -295,11 +333,22 @@ export const playLevel5: LevelDefinition = {
       const u = veilValues(s, idx(s, pid));
       return ALL_CONSTITUTIONS[logitChoice(u, botParams(s, pid).lambda, botRng(s))];
     }
-    if (step === 'FAIR_1' || step === 'FAIR_2') return botFair(s, pid, step === 'FAIR_2');
-    if (step === 'LOBBY') return botLobby(s, pid);
+    if (step === 'FAIR_1') return botFair(s, pid, false);
+    if (step === 'FAIR_2') return { fair: botFair(s, pid, true), proposal: botProposal(s, pid) };
+    if (step === 'LOBBY') {
+      const plan = donorPlan(s, pid, true);
+      return { donateTo: plan.to, amount: plan.d };
+    }
     if (step === 'CLAIM') {
-      // A bot claims the vote it intends (on the rules in force now); talk earns no coins in this model, so it never lies here.
-      return Object.fromEntries(l.order.map((p, k) => [p, p === pid ? 'YES' : pYes(s, pid, k, l.current!).p >= 0.5 ? 'YES' : 'NO']));
+      // R1 (D-158): a "yes" can draw a donation, so a bot that intends "no" may claim "yes" (the v2 3.5 rule).
+      const base = intents(s);
+      return Object.fromEntries(
+        l.order.map((p) => {
+          if (p === pid) return [p, 'YES'];
+          const truth = base[pid][p];
+          return [p, chooseClaim(s, pid, truth, 'YES', (v) => (v === SILENT ? 0 : claimDonation(s, pid, p, v, base))).value];
+        }),
+      );
     }
     const k = amendIndex(step);
     const { p, gap } = pYes(s, pid, k, l.current!);
@@ -309,7 +358,7 @@ export const playLevel5: LevelDefinition = {
     if (claimed === 'YES' || claimed === 'NO') {
       const want = claimed === 'YES';
       const gain = want ? -gap : gap;
-      const loss = PLAY.CREDIBILITY_VALUE * (expectedRecord(s, pid, 'TRUE') - expectedRecord(s, pid, 'LIE'));
+      const loss = credibilityValue(s) * (expectedRecord(s, pid, 'TRUE') - expectedRecord(s, pid, 'LIE'));
       vote = gain * (1 - honestyOf(s, pid)) > loss + 1e-9 ? !want : want;
     }
     return vote;
@@ -332,24 +381,29 @@ export const playLevel5: LevelDefinition = {
       return;
     }
     if (step === 'FAIR_2') {
-      l.fair2 = decisions as Record<PlayerId, number>;
+      const ds = decisions as Record<PlayerId, { fair: number; proposal: Constitution | null }>;
+      l.fair2 = Object.fromEntries(pids.map((id) => [id, ds[id].fair]));
       for (const p of s.players) p.privateInfo.income = l.incomes![p.id];
+      l.lobby = Object.fromEntries(pids.map((id) => [id, { donateTo: null, amount: 0, proposal: ds[id].proposal && !same(ds[id].proposal!, l.current!) ? ds[id].proposal : null }]));
+      l.order = g.shuffle(pids.filter((id) => l.lobby![id].proposal !== null));
+      if (!l.order.length) finalize(s);
       return;
     }
     if (step === 'LOBBY') {
-      l.lobby = decisions as Record<PlayerId, Lobby5>;
-      l.order = g.shuffle(pids.filter((id) => l.lobby![id].proposal !== null));
+      for (const [id, dn] of Object.entries(decisions as Record<PlayerId, { donateTo: PlayerId | null; amount: number }>)) l.lobby![id] = { ...l.lobby![id], donateTo: dn.donateTo, amount: dn.amount };
       // A recipient knows what it was given (privately); everyone else learns at the ballots, unless Leaked Receipts.
-      for (const [from, lb] of Object.entries(l.lobby)) if (lb.donateTo) playerOf(s, lb.donateTo).privateInfo[`gift_${from}`] = lb.amount;
-      if (!l.order.length) finalize(s);
+      for (const [from, lb] of Object.entries(l.lobby!)) if (lb.donateTo) playerOf(s, lb.donateTo).privateInfo[`gift_${from}`] = lb.amount;
       return;
     }
     if (step === 'CLAIM') {
       l.claims = decisions as Record<PlayerId, Record<PlayerId, string>>;
       // One claim message per voter per amendment ("proposer:YES"); silence is logged too.
+      const base = intents(s);
       for (const proposer of l.order) {
         const said = Object.fromEntries(pids.map((id) => [id, l.claims![id][proposer] === SILENT ? SILENT : `${proposer}:${l.claims![id][proposer]}`]));
-        postClaims(s, 'AMEND', said, () => '', () => false, Object.fromEntries(pids.map((id) => [id, playerOf(s, id).isHuman ? null : 0])));
+        // S-a: a bot's lie gain is the donation a false "yes" would draw (only when it intends "no").
+        const gains = Object.fromEntries(pids.map((id) => [id, playerOf(s, id).isHuman || id === proposer || base[id][proposer] === 'YES' ? null : claimDonation(s, id, proposer, 'YES', base) - claimDonation(s, id, proposer, 'NO', base)]));
+        postClaims(s, 'AMEND', said, () => '', () => false, gains);
       }
       return;
     }
@@ -435,7 +489,7 @@ export const playLevel5: LevelDefinition = {
       leaked: P.leaked,
       maxDonation: P.maxDonation,
       need: P.need,
-      preview: s.phase.kind === 'DECIDE' && (s.phase.step === 'VEIL' || s.phase.step === 'LOBBY') && s.players.some((p) => p.id === viewer) ? p5Preview(s, viewer) : undefined,
+      preview: s.phase.kind === 'DECIDE' && (s.phase.step === 'VEIL' || s.phase.step === 'FAIR_2') && s.players.some((p) => p.id === viewer) ? p5Preview(s, viewer) : undefined,
       reliability: Object.fromEntries(ids(s).map((id) => [id, reliabilityOf(s, id)])),
     };
   },

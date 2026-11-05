@@ -57,3 +57,26 @@ None.
 - T9: final report `docs/AUTORUN_REPORT.md`; README Status table updated. Episode 3 confirming run under the final rules (500 games): every gate passes. Human validation (Gates 1 and 2) NOT DONE. Merging to `main` needs the room server redeployed first.
 
 ALL DONE
+
+## Round 2
+
+| Task | Status | Notes |
+|---|---|---|
+| R1 Ep5 donations follow promises | DONE | S-a 24%, lie success 41%, took-and-voted-no 24% of games, E5 passes (D-158) |
+| R2 Ep4 judges read claims | | |
+| R3 LIFE stakes | | |
+| R4 First fair answer | | |
+| R5 Ep2 lying | | |
+| R6 Ep1 claims as polls | | |
+| E1 Fresh eyes | | |
+| E2 Design audit | | |
+| E3 Logic audit | | |
+| E4 UX audit | | |
+| E5 Fixes | | |
+| F1 Playtest kit | | |
+| F2 Case study | | |
+| R7 Report | | |
+
+### Round 2 log
+
+- R1: Episode 5 reordered (proposal with the second fair answer, claims, then donations); donors fund yes-claimers; Episode 5 walkthrough 15 screens, all 760 px, claim screen 35 words; 200 unit tests, e2e passed (D-158).

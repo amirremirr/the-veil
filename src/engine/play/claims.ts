@@ -8,6 +8,11 @@ import type { ClaimRecord } from './types';
 
 export const SILENT = 'SILENT';
 
+/** v2 3.5: coins per unit of record, for this episode (D-158: per-episode overrides). */
+export function credibilityValue(s: Pick<GameState, 'levelIndex'>): number {
+  return PLAY.CREDIBILITY_VALUE_EP[s.levelIndex] ?? PLAY.CREDIBILITY_VALUE;
+}
+
 /** v2 3.5: draw every bot's honesty trait once per life, from the bot stream, in seat order. */
 export function drawHonesty(s: GameState, rng: Rng): Record<PlayerId, number> {
   const out: Record<PlayerId, number> = {};
@@ -223,7 +228,7 @@ export function chooseClaim(
   lieValue: string,
   gain: (value: string) => number,
 ): { value: string; lieGain: number } {
-  const cv = PLAY.CREDIBILITY_VALUE;
+  const cv = credibilityValue(s);
   const honest = [
     { value: truthValue, g: gain(truthValue), r: expectedRecord(s, pid, 'TRUE') },
     { value: SILENT, g: gain(SILENT), r: expectedRecord(s, pid, 'SILENT') },

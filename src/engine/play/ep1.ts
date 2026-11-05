@@ -13,7 +13,7 @@ import { VALUES_CARDS } from '../types';
 import type { LevelDefinition } from '../levels/types';
 import { PLAY } from './params';
 import { activeEvent, missionScale, missionValue, playEffortShares, playRoundValue } from './rules';
-import { chooseClaim, expectedRecord, honestyOf, postClaims, SILENT } from './claims';
+import { chooseClaim, credibilityValue, expectedRecord, honestyOf, postClaims, SILENT } from './claims';
 import { VALUES_PRIOR } from '../params';
 
 type Gift = { to: PlayerId; amount: number };
@@ -261,7 +261,7 @@ export const playLevel1: LevelDefinition = {
     if (claimed && claimed !== SILENT) {
       const best = u.indexOf(Math.max(...u));
       const gain = u[best] - u[PRINCIPLES.indexOf(claimed as PrincipleId)];
-      const loss = PLAY.CREDIBILITY_VALUE * (expectedRecord(s, botId, 'TRUE') - expectedRecord(s, botId, 'LIE'));
+      const loss = credibilityValue(s) * (expectedRecord(s, botId, 'TRUE') - expectedRecord(s, botId, 'LIE'));
       vote = gain * (1 - honestyOf(s, botId)) > loss + 1e-9 ? PRINCIPLES[best] : (claimed as PrincipleId);
     }
     return { vote, gift: bestGift(s, botId, vote) };

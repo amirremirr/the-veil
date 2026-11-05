@@ -37,7 +37,9 @@ const PLAY_SCRIPT: Partial<Record<number, Record<string, (g: GameState) => unkno
     PRIZE: (g) => g.players.find((p) => !p.isHuman)!.id,
   },
   5: {
+    FAIR_2: () => ({ fair: 0.2, proposal: { t: 0.1, F: 25 } }),
     CLAIM: () => ({}),
+    LOBBY: () => ({ donateTo: null, amount: 0 }),
   },
   4: {
     COMEBACK: () => 'COINS',
@@ -99,7 +101,8 @@ export function personaDecision(g: GameState, persona: string, step: string | un
   }
   if (g.levelIndex === 5 && g.play) {
     if (step === 'CLAIM') return persona === 'SKIMMER' ? {} : Object.fromEntries(((g.levelState as { order: string[] }).order ?? []).map((p) => [p, 'YES']));
-    if (step === 'LOBBY') return persona === 'SKIMMER' ? { donateTo: null, amount: 0, proposal: null } : { donateTo: null, amount: 0, proposal: { t: 0.3, F: 40 } };
+    if (step === 'FAIR_2') return { fair: 0.2, proposal: persona === 'SKIMMER' ? null : { t: 0.3, F: 40 } };
+    if (step === 'LOBBY') return { donateTo: null, amount: 0 };
   }
   if (g.levelIndex === 2 && g.play) {
     if (step === 'TAX') return persona === 'CAREFUL' ? 0.2 : 0;

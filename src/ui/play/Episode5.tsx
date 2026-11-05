@@ -89,13 +89,26 @@ export function FairScreen({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
   const [x, setX] = useState<number | null>(null);
   const after = v.phase.step === 'FAIR_2';
+  const cur = lv5(v).current;
+  const [tx, setT] = useState<number>(cur?.t ?? 0);
+  const [F, setF] = useState<number>(cur?.F ?? 0);
+  const prop = { t: tx, F };
+  const proposing = after && !!cur && !sameC(prop, cur);
+  const k = ALL_CONSTITUTIONS.findIndex((c) => Math.abs(c.t - tx) < 1e-9 && c.F === F);
+  const note = proposing ? previewText(lv5(v).preview?.constitutions[k]) : null;
   return (
-    <Stage v={v} footer={<BigButton disabled={x === null} onClick={() => act(x)}>{t('play.l5.fair.submit')}</BigButton>}>
+    <Stage v={v} footer={<BigButton disabled={x === null} onClick={() => act(after ? { fair: x, proposal: proposing ? prop : null } : x)}>{t('play.l5.fair.submit')}</BigButton>}>
       <h1 className="h-show text-3xl leading-tight">{t('play.l5.fair.title')}</h1>
       <p className="mt-1 text-sm">{t(after ? 'play.l5.fair.after' : v.mode === 'LIFE' ? 'play.l5.fair.beforeLife' : 'play.l5.fair.before')}</p>
-      <div className="mt-auto pt-3">
-        <Chips opts={L5.TAX_OPTIONS} value={x} onPick={setX} label={t('play.l5.fair.title')} fmt={pct} />
-      </div>
+      <Chips opts={L5.TAX_OPTIONS} value={x} onPick={setX} label={t('play.l5.fair.title')} fmt={pct} />
+      {after && cur && (
+        <section className="mt-auto pt-3" aria-label={t('play.l5.lobby.title')}>
+          <p className="text-sm font-bold">{proposing ? t('play.l5.lobby.propose', { rules: rules(prop) }) : t('play.l5.lobby.keepNow', { rules: rules(cur) })}</p>
+          {note && <p className="text-sm font-bold">{note}</p>}
+          <Chips opts={L5.TAX_OPTIONS} value={tx} onPick={setT} label={t('play.l5.tax')} fmt={pct} />
+          <Chips opts={L5.FLOOR_OPTIONS} value={F} onPick={setF} label={t('play.l5.floor')} fmt={coins} />
+        </section>
+      )}
     </Stage>
   );
 }
@@ -128,26 +141,18 @@ export function IncomesScreen({ v }: { v: ViewState }) {
 export function LobbyScreen({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
   const lv = lv5(v);
-  const cur = lv.current!;
-  const [tx, setT] = useState<number>(cur.t);
-  const [F, setF] = useState<number>(cur.F);
+  const mine = lv.lobby?.[v.viewer]?.proposal;
   const [to, setTo] = useState<string | null>(null);
   const amounts = PLAY.L5.DONATION_OPTIONS_BOT.filter((a) => a > 0 && a <= lv.maxDonation);
   if (lv.maxDonation > Math.max(...amounts)) amounts.push(lv.maxDonation);
   const [amount, setAmount] = useState<number>(amounts[0]);
-  const prop = { t: tx, F };
-  const proposing = !sameC(prop, cur);
-  const k = ALL_CONSTITUTIONS.findIndex((c) => Math.abs(c.t - tx) < 1e-9 && c.F === F);
-  const note = proposing ? previewText(lv.preview?.constitutions[k]) : null;
+  const said = (id: string) => t(`play.l5.said.${lv.claims?.[id]?.[v.viewer] ?? 'SILENT'}`);
   return (
-    <Stage v={v} footer={<BigButton onClick={() => act({ proposal: proposing ? prop : null, donateTo: to, amount: to ? amount : 0 })}>{t('play.stage.lock')}</BigButton>}>
-      <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.l5.lobby.now', { rules: rules(cur) })}</p>
-      <h1 className="h-show mt-1 text-2xl leading-tight">{proposing ? t('play.l5.lobby.propose', { rules: rules(prop) }) : t('play.l5.lobby.keep')}</h1>
-      {note && <p className="text-sm font-bold">{note}</p>}
-      <Chips opts={L5.TAX_OPTIONS} value={tx} onPick={setT} label={t('play.l5.tax')} fmt={pct} />
-      <Chips opts={L5.FLOOR_OPTIONS} value={F} onPick={setF} label={t('play.l5.floor')} fmt={coins} />
-      <p className="mt-3 text-sm font-bold">{t('play.l5.lobby.donate')}</p>
-      <Chips opts={['', ...v.players.filter((p) => p.id !== v.viewer).map((p) => p.id)]} value={to ?? ''} onPick={(x) => setTo(x || null)} label={t('play.l5.lobby.donate')} fmt={(x) => (x ? shortName(v, x) : t('play.l5.lobby.nobody'))} />
+    <Stage v={v} footer={<BigButton onClick={() => act({ donateTo: to, amount: to ? amount : 0 })}>{t('play.stage.lock')}</BigButton>}>
+      <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.l5.lobby.yours', { rules: mine ? rules(mine) : '' })}</p>
+      <h1 className="h-show mt-1 text-2xl leading-tight">{t('play.l5.lobby.donate')}</h1>
+      <p className="mt-1 text-sm">{t('play.l5.lobby.how')}</p>
+      <Chips opts={['', ...v.players.filter((p) => p.id !== v.viewer).map((p) => p.id)]} value={to ?? ''} onPick={(x) => setTo(x || null)} label={t('play.l5.lobby.donate')} fmt={(x) => (x ? `${shortName(v, x)}: ${said(x)}` : t('play.l5.lobby.nobody'))} />
       {to && <Chips opts={amounts} value={amount} onPick={setAmount} label={t('play.l5.lobby.amount')} fmt={coins} />}
     </Stage>
   );
@@ -157,17 +162,17 @@ export function LobbyScreen({ v }: { v: ViewState }) {
 export function ClaimScreen5({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
   const lv = lv5(v);
-  const [x, setX] = useState<Record<string, string>>(() => Object.fromEntries(lv.order.map((p) => [p, 'SILENT'])));
+  const [x, setX] = useState<Record<string, string>>(() => Object.fromEntries(lv.order.map((p) => [p, p === v.viewer ? 'YES' : 'SILENT'])));
   return (
     <Stage v={v} footer={<BigButton onClick={() => act(x)}>{t('play.claim.submit')}</BigButton>}>
       <h1 className="h-show text-3xl leading-tight">{t('play.l5.claim.title')}</h1>
       <ul className="mt-3 space-y-1.5">
-        {lv.order.map((p) => (
+        {lv.order.filter((p) => p !== v.viewer).map((p) => (
           <li key={p} className="flex items-center gap-2 rounded-xl bg-card px-2 py-1.5">
             <span>
               <Face v={v} p={v.players.find((q) => q.id === p)!} size={24} />
             </span>
-            <span className="flex-1 text-sm font-semibold">{t('play.l5.short', { t: pct(lv.lobby![p].proposal!.t), F: coins(lv.lobby![p].proposal!.F) })}</span>
+            <span className="flex-1 text-sm font-semibold">{t('play.l5.compact', { t: pct(lv.lobby![p].proposal!.t), F: coins(lv.lobby![p].proposal!.F) })}</span>
             {['YES', 'NO'].map((o) => (
               <button key={o} type="button" aria-label={`${t(`play.l5.${o}`)}: ${shortName(v, p)}`} aria-pressed={x[p] === o} onClick={() => setX({ ...x, [p]: x[p] === o ? 'SILENT' : o })} className={`min-h-[40px] rounded-lg px-2 text-xs font-bold ${x[p] === o ? 'bg-spot text-onspot' : 'bg-paper'}`}>
                 {t(`play.l5.${o}`)}

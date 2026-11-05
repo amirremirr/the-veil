@@ -287,6 +287,8 @@ function ep5(): EpisodeMetrics {
       { key: 'betrayed', label: '"Took your money. Voted no." per donation voted on', pct: true },
       { key: 'passed', label: 'Amendments passed per amendment voted', pct: true },
       { key: 'lies', label: 'Vote claims broken', pct: true },
+      { key: 'lie', label: 'Lie success (R1: claimed yes, got a donation from that proposer, voted no) per false yes', min: 0.3, max: 0.75, pct: true },
+      { key: 'took', label: '"Took your 40. Voted no." happens in a game', min: 0.2, max: 0.6, pct: true },
       { key: 'sc', label: 'S-c some donation changed a vote outcome (a passed amendment won by the recipient\'s yes)', min: 0.2, max: 0.5, pct: true },
       ...COMMON,
     ],
@@ -332,7 +334,18 @@ function ep5(): EpisodeMetrics {
             if ((c === 'YES') !== !!a.votes[id]) broken++;
           }
         }
+      let falseYes = 0;
+      let falseYesPaid = 0;
+      for (const a of voted)
+        for (const id of pids)
+          if (a.claims[id] === 'YES' && !a.votes[id]) {
+            falseYes++;
+            const lb = (l.lobby ?? {})[a.proposer];
+            if (lb && lb.donateTo === id && lb.amount > 0) falseYesPaid++;
+          }
       return {
+        lie: [falseYesPaid, falseYes],
+        took: b(betrayed > 0),
         e5x: [slope, 1],
         e5: [slope, 1],
         donate: [donors, pids.length],

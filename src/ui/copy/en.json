@@ -1827,10 +1827,14 @@
         "keep": "Keep the rules",
         "donate": "Secret donation to",
         "nobody": "Nobody",
-        "amount": "Amount"
+        "amount": "Amount",
+        "title": "Your amendment",
+        "keepNow": "Propose a change? Now: {rules}",
+        "yours": "Your amendment: {rules}",
+        "how": "Their claims on your amendment are shown. Money goes in secret."
       },
       "claim": {
-        "title": "Vote claims",
+        "title": "Vote claims (tax, floor)",
         "how": "Tap Yes or No to claim it. Leave both off to say nothing."
       },
       "amend": {
@@ -1855,7 +1859,8 @@
         "lie": "{name} broke a vote promise {n}.",
         "lieYou": "You broke a vote promise {n}."
       },
-      "short": "{t} tax, {F} floor"
+      "short": "{t} tax, {F} floor",
+      "compact": "{t}, {F}"
     },
     "life": {
       "next": "On to Episode {n}",

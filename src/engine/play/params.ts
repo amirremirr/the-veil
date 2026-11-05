@@ -75,6 +75,8 @@ export const PLAY = {
    * lies when gain x (1 - honesty) exceeds CREDIBILITY_VALUE x the record it loses when caught (D-112).
    */
   CREDIBILITY_VALUE: 6,
+  /** D-158: CREDIBILITY_VALUE per episode where it was tuned on its own (others use CREDIBILITY_VALUE). */
+  CREDIBILITY_VALUE_EP: { 5: 20 } as Partial<Record<number, number>>,
   /** v2 Section 3.5: how far one claim moves a listener's belief, times the speaker's record (as Study's CLAIM_BELIEF_WEIGHT). */
   CLAIM_WEIGHT: 0.5,
   /** Beliefs about a hidden fact are kept inside these bounds (as Study's BELIEF_FLOOR). */
@@ -158,7 +160,7 @@ export const PLAY = {
    * Episode 5, Grand Finale (v1 Section 5, v2 Section 4, D-154): donations up to DONATION_MAX (Study 20), bots
    * pick from DONATION_OPTIONS_BOT; in a single episode incomes are Study's deck times INCOME_SCALE.
    */
-  L5: { DONATION_MAX: 40, DONATION_OPTIONS_BOT: [0, 10, 20, 40], INCOME_SCALE: 2 },
+  L5: { DONATION_MAX: 40, DONATION_OPTIONS_BOT: [0, 10, 20, 40], INCOME_SCALE: 2, RECIPROCITY: 0.9 },
   /** v1 Section 6.2, Episode 5 deck (Quiet Finale cut by v2 Section 5). */
   L5_EVENTS: {
     LOBBYIST: { DONATION_MAX: 60 },
