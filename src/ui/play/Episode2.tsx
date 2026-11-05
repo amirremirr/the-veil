@@ -202,6 +202,8 @@ export function PrizeBeat({ v, next }: { v: ViewState; next: () => void }) {
   const r = lv.rounds[lv.rounds.length - 1];
   const w = r.winners ?? [];
   const last = v.round >= PLAY.L2.ROUNDS;
+  // Loop cycle 16: gifts given and received this round, shown apart from the net income.
+  const giftNet = Object.entries(r.gifts ?? {}).reduce((a, [from, g]) => a + (g.to === v.viewer ? g.amount : 0) - (from === v.viewer ? g.amount : 0), 0);
   const head = w.length === 1 ? (w[0] === v.viewer ? t('play.l2.won.you', { n: PLAY.HUSTLE_PRIZE }) : t('play.l2.won.one', { name: shortName(v, w[0]), n: PLAY.HUSTLE_PRIZE })) : t('play.l2.won.split', { names: w.map((x) => shortName(v, x)).join(t('play.barBeat.and')) });
   return (
     <Stage v={v} onTap={next} footer={<BigButton onClick={next}>{last ? t('play.l1.toReveal') : t('play.stage.nextRound', { r: v.round + 1 })}</BigButton>}>
@@ -209,7 +211,7 @@ export function PrizeBeat({ v, next }: { v: ViewState; next: () => void }) {
         <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.l2.won.label')}</p>
         <h1 className="h-show mt-1 text-4xl leading-tight text-spot">{head}</h1>
         <p className="mt-3 text-sm">{v.players.map((p) => `${shortName(v, p.id)}: ${r.votes?.[p.id] ? shortName(v, r.votes[p.id]!) : ''}`).join(', ')}</p>
-        <p className="mt-2 text-sm" data-net>{t('play.l2.won.net', { y: coins(r.y?.[v.viewer] ?? 0), t: pct(lv.t ?? 0), k: coins((roundMoney(v) ?? r.W?.[v.viewer] ?? 0) - (r.prize?.[v.viewer] ?? 0)) })}{r.prize?.[v.viewer] ? ` ${t('play.l2.won.netPrize', { n: coins(r.prize[v.viewer]) })}` : ''}</p>
+        <p className="mt-2 text-sm" data-net>{t('play.l2.won.net', { y: coins(r.y?.[v.viewer] ?? 0), t: pct(lv.t ?? 0), k: coins((roundMoney(v) ?? r.W?.[v.viewer] ?? 0) - (r.prize?.[v.viewer] ?? 0) - giftNet) })}{r.prize?.[v.viewer] ? ` ${t('play.l2.won.netPrize', { n: coins(r.prize[v.viewer]) })}` : ''}{giftNet ? ` ${t('play.l2.won.netGifts', { n: `${giftNet > 0 ? '+' : ''}${coins(giftNet)}` })}` : ''}</p>
         {bankLineText(v) && <p className="mt-2 text-sm font-semibold" data-bankline>{bankLineText(v)}</p>}
       </div>
     </Stage>

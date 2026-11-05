@@ -1812,7 +1812,8 @@
         "submit": "Vote"
       },
       "won": {
-        "net": "You made {y}. After the {t} tax, the equal share, the cost of your hours and any gifts: {k}.",
+        "net": "You made {y}. After the {t} tax, the equal share and the cost of your hours: {k}.",
+        "netGifts": "Gifts: {n}.",
         "netPrize": "Plus the prize: {n}.",
         "label": "The Hustle Prize",
         "you": "You won {n} coins.",
