@@ -13,7 +13,7 @@ export const PLAY = {
   LIVING_COST: 30,
   /** R3 (D-160): a life's own starting bank, living cost per round and Episode 3 loss (tuned for life stakes). */
   LIFE_STARTING_BANK: 10,
-  LIFE_LIVING_COST: 45,
+  LIFE_LIVING_COST: 40,
   LIFE_L3_LOSS: 220,
   /** Section 4.2: points lost per coin of debt at the end of a round, capped per round. */
   DEBT_POINTS_PER_COIN: 1,
@@ -180,7 +180,7 @@ export const PLAY = {
     PANIC: { ALL_BUT_ONE: 1 },
   },
   /** v1 Section 6.3, LIFE only: once per life, before Episode 4, the last-placed contestant takes COINS now or POINTS mission points. */
-  COMEBACK: { COINS: 60, POINTS: 20 },
+  COMEBACK: { COINS: 120, POINTS: 40 },
   /** v2 Section 3.4: the Receipts reel runs at most this long (it is skippable). */
   RECEIPTS_MAX_MS: 20000,
   /** D-180: score gaps on a life's ranking are rounded to this many points. */
