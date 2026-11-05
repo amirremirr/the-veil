@@ -124,6 +124,41 @@ function intendedVote(s: GameState, pid: PlayerId): PrincipleId {
   return PRINCIPLES[u.indexOf(Math.max(...u))];
 }
 
+/**
+ * R6: what a claim is worth to `pid`: its expected Play value from the round's winner, with its own intended vote,
+ * when every other contestant votes by its logit over strategic vote values given this one claim (others silent,
+ * since claims are simultaneous).
+ */
+function claimValue(s: GameState, pid: PlayerId, value: string, vote: PrincipleId): number {
+  const l = st(s);
+  const saved = l.claims;
+  l.claims = { ...(saved ?? {}), [pid]: value };
+  const i = idx(s, pid);
+  const known = knownIncome(s, pid);
+  const ifWins = PRINCIPLES.map((p) => valueIfWins(s, i, p, known, (W) => W));
+  const dists = ids(s)
+    .filter((id) => id !== pid)
+    .map((o) => logitProbs(voteValues(s, o, knownIncome(s, o), null), botParams(s, o).lambda));
+  l.claims = saved;
+  const mine = PRINCIPLES.map((p) => (p === vote ? 1 : 0));
+  const win = pluralityWinnerDist([mine, ...dists], PRINCIPLES.length);
+  return win.reduce((a, w, k) => a + w * ifWins[k], 0);
+}
+
+/** The honest claim (the intended vote if it can be claimed, else silence), the best lie, and the gain function. */
+function claimOptions(s: GameState, pid: PlayerId): { truth: string; lie: string; gain: (v: string) => number } {
+  const vote = intendedVote(s, pid);
+  const truth = CLAIMABLE.includes(vote) ? vote : SILENT;
+  const cache = new Map<string, number>();
+  const gain = (v: string) => {
+    if (!cache.has(v)) cache.set(v, claimValue(s, pid, v, vote));
+    return cache.get(v)!;
+  };
+  const lies = CLAIMABLE.filter((c) => c !== vote);
+  const lie = lies.reduce((a, b) => (gain(b) > gain(a) ? b : a), lies[0]);
+  return { truth, lie, gain };
+}
+
 /** Peek: pay to see your income when its value of information beats the cost (logit, like every bot choice). */
 function botPeek(s: GameState, pid: PlayerId): boolean {
   const P = p1Params(s);
@@ -253,10 +288,10 @@ export const playLevel1: LevelDefinition = {
     if (step === 'PEEK') return botPeek(s, botId);
     if (step === 'FAIR_1') return fairBefore(s, botId);
     if (step === 'CLAIM') {
-      const v = intendedVote(s, botId);
-      // Talk does not move a bot's own payoff in this model, so a lie never gains coins (lieGain 0): a bot claims
-      // its intended vote when it can be claimed, else stays silent.
-      return chooseClaim(s, botId, CLAIMABLE.includes(v) ? v : SILENT, CLAIMABLE.includes(v) ? v : 'P2', () => 0).value;
+      // R6 (D-163): claims are polls. A claim pays through the other contestants' strategic votes (they predict
+      // who can win from claims, discounted by record), so a bot may claim a rule it won't vote for (v2 3.5 rule).
+      const { truth, lie, gain } = claimOptions(s, botId);
+      return chooseClaim(s, botId, truth, lie, gain).value;
     }
     const u = voteValues(s, botId, knownIncome(s, botId), null);
     let vote = PRINCIPLES[logitChoice(u, botParams(s, botId).lambda, botRng(s))];
@@ -286,7 +321,15 @@ export const playLevel1: LevelDefinition = {
       const said = Object.fromEntries(ids(s).map((id) => [id, decisions[id] as string]));
       l.claims = said;
       // The truth of a vote claim is only known at the vote; the claim log records it then.
-      postClaims(s, 'VOTE', said, () => '', () => false, Object.fromEntries(ids(s).map((id) => [id, playerOf(s, id).isHuman ? null : 0])));
+      // S-a: a bot's lie gain is its best lie's value over its honest claim's, before the record cost.
+      const gains = Object.fromEntries(
+        ids(s).map((id) => {
+          if (playerOf(s, id).isHuman) return [id, null];
+          const o = claimOptions(s, id);
+          return [id, o.gain(o.lie) - o.gain(o.truth)];
+        }),
+      );
+      postClaims(s, 'VOTE', said, () => '', () => false, gains);
       return;
     }
     const P = p1Params(s);
