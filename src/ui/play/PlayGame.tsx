@@ -387,7 +387,7 @@ function MissionsBeat({ v, next }: { v: ViewState; next: () => void }) {
   const ranked = v.players.slice().sort((a, b) => (hidden ? (rk[a.id] ?? 9) - (rk[b.id] ?? 9) : (scores[b.id] ?? 0) - (scores[a.id] ?? 0)));
   const myGuess = pl.guesses[v.levelIndex]?.[v.viewer];
   const guessLine = myGuess
-    ? hostLine(myGuess.correct ? 'guessRight' : 'guessWrong', pick(v, 'guess', 6), { name: nameOf(v, myGuess.target) })
+    ? `${hostLine(myGuess.correct ? 'guessRight' : 'guessWrong', pick(v, 'guess', 6), { name: nameOf(v, myGuess.target) })} ${t('play.guess.youGuessed', { name: shortName(v, myGuess.target), card: missionName(myGuess.card) })}`
     : hostLine('guessNone', pick(v, 'guess', 6));
   return (
     <Stage v={v} bar={false} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>

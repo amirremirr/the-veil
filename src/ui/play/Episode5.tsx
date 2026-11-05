@@ -222,7 +222,8 @@ export function AmendReveal({ v }: { v: ViewState }) {
     const a = lv.amendments.find((x) => x.proposer === from && !x.withdrawn);
     if (!a) continue;
     const key = a.votes[lb.donateTo] ? 'bought' : 'betray';
-    stamps.push(t(`play.l5.peak.${key}`, { name: shortName(v, lb.donateTo), donor: shortName(v, from), n: lb.amount }));
+    const you = lb.donateTo === v.viewer;
+    stamps.push(t(`play.l5.peak.${key}${you ? 'You' : ''}`, { name: shortName(v, lb.donateTo), donor: shortName(v, from), n: lb.amount }));
   }
   const shift = lv.fair1 && lv.fair2 ? lv.fair2[me] - lv.fair1[me] : 0;
   return (

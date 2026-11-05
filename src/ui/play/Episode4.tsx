@@ -271,7 +271,7 @@ export function BeliefBeat({ v, next, onReally }: { v: ViewState; next: () => vo
         <p className="text-xs font-bold uppercase tracking-wider">{t('play.l4.board.title')}</p>
         {rows.map(([name, x, y]) => (
           <p key={name} className="mt-2 flex items-baseline gap-3">
-            <span className="h-show w-24 text-2xl">{name}</span>
+            <span className="h-show w-28 shrink-0 truncate text-xl">{name}</span>
             <span className="h-show text-3xl line-through opacity-60">{pct(x)}</span>
             <span className="h-show text-6xl leading-none">{pct(y)}</span>
           </p>

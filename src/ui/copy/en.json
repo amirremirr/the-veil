@@ -1229,7 +1229,8 @@
       "pick": "Who?",
       "mission": "Their mission",
       "submit": "Lock in my guess",
-      "skip": "No guess"
+      "skip": "No guess",
+      "youGuessed": "You guessed {name}: {card}."
     },
     "summary": {
       "title": "Episode summary",
@@ -1753,7 +1754,7 @@
       "cards": {
         "label": "Your card",
         "talent": "Talent {a}",
-        "how": "Each hour of effort earns you {per} coins, plus a luck die. Hours cost you more the more you work.",
+        "how": "Each hour of effort earns you 4 x your talent = {per} coins, plus a luck die. Hours cost you more the more you work.",
         "secret": "Your talent, hours and die are secret. Everyone sees your total income."
       },
       "tax": {
@@ -1876,7 +1877,9 @@
         "hostBought": "Money talks. Sometimes it just mumbles.",
         "hostClean": "No money changed hands. Our sponsors are devastated.",
         "kept": "(kept)",
-        "broke": "(broke promise)"
+        "broke": "(broke promise)",
+        "boughtYou": "{donor} gave you {n}. You voted yes.",
+        "betrayYou": "{donor} gave you {n}. You voted no."
       },
       "sum": {
         "lie": "{name} broke a vote promise {n}.",
@@ -1936,8 +1939,8 @@
       "best": "Best: Ep{ep} {name}, {n}",
       "worst": "Worst: Ep{ep} {name}, {n}",
       "bank": "Final bank: {n}",
-      "missionDone": "Mission {mission}: done",
-      "missionMissed": "Mission {mission}: missed",
+      "missionDone": "Mission over the life, {mission}: done",
+      "missionMissed": "Mission over the life, {mission}: missed",
       "honesty": "Lied {lies} of {made} times. Caught {caught}.",
       "noClaims": "Never made a claim.",
       "small": "Just for fun. Not a diagnosis.",
@@ -2132,7 +2135,8 @@
     },
     "bank": {
       "round": "Your bank {from} to {to}: {w} this round, then -{c} living costs.",
-      "living": "Living costs: -{c}."
+      "living": "Living costs: -{c}.",
+      "pay": "Pay: +{w}."
     }
   }
 }

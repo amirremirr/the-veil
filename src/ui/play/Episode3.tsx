@@ -80,7 +80,8 @@ export function Tile({ on, title, desc, note, onClick, disabled = false }: { on:
       <span>
         <span className="h-show block text-lg leading-tight">{title}</span>
         <span className="mt-1 block text-xs leading-snug">{desc}</span>
-        {note && (
+        {/* Loop cycle 3 (D-169): a choice's mission effect shows once it is selected, so players don't just pick the biggest number. */}
+        {note && (on || !onClick) && (
           <span className="mt-1 block text-xs font-bold" data-preview>
             {note}
           </span>
@@ -595,7 +596,7 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
             </span>
           </p>
           <p className="mt-1 text-sm text-soft">
-            {t('play.stage.bankLine', { from: coins(from), to: coins(h.banks[me]) })} {cost} {t('play.bank.living', { c: v.play!.livingCost })}
+            {t('play.stage.bankLine', { from: coins(from), to: coins(h.banks[me]) })} {t('play.bank.pay', { w: coins(v.play!.l3?.baseIncome ?? 0) })} {cost} {t('play.bank.living', { c: v.play!.livingCost })}
           </p>
           {stress > 0 && (
             <p className="mt-1 text-sm font-bold text-stamp" data-debt>
