@@ -80,7 +80,7 @@ export const PLAY = {
    */
   CREDIBILITY_VALUE: 6,
   /** D-158: CREDIBILITY_VALUE per episode where it was tuned on its own (others use CREDIBILITY_VALUE). */
-  CREDIBILITY_VALUE_EP: { 4: 25, 5: 20 } as Partial<Record<number, number>>,
+  CREDIBILITY_VALUE_EP: { 2: 17, 4: 25, 5: 20 } as Partial<Record<number, number>>,
   /** v2 Section 3.5: how far one claim moves a listener's belief, times the speaker's record (as Study's CLAIM_BELIEF_WEIGHT). */
   CLAIM_WEIGHT: 0.5,
   /** Beliefs about a hidden fact are kept inside these bounds (as Study's BELIEF_FLOOR). */
