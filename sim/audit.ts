@@ -14,6 +14,7 @@ const arg = (n: string, d: string) => {
 };
 const games = Number(arg('games', '150'));
 const out = arg('out', '');
+const only = arg('episodes', '1,2,3,4,5').split(',').map(Number);
 
 type Rule = (s: GameState, pid: string, stepId: string, adaptive: unknown) => unknown;
 const keep = (_s: GameState, _p: string, _st: string, a: unknown) => a;
@@ -107,7 +108,7 @@ function describe(st: string, x: unknown): string {
 }
 
 const report: Record<string, unknown> = {};
-for (const level of [1, 2, 3, 4, 5] as LevelId[]) {
+for (const level of only as LevelId[]) {
   const counts: Record<string, Record<string, number>> = {};
   const base: number[] = [];
   for (let g = 0; g < games; g++) base.push(playOne(level, `audit-${level}-${g}`, null, counts));

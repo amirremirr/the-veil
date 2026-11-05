@@ -13,7 +13,7 @@ import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import type { LevelDefinition } from '../levels/types';
 import { PLAY } from './params';
 import { activeEvent, giftNet, missionScale, missionValue, playRoundValue, livingCost, setRoundLedger } from './rules';
-import { chooseClaim, postClaims, SILENT } from './claims';
+import { chooseClaim, honestyOf, postClaims, SILENT } from './claims';
 
 type Gift = { to: PlayerId; amount: number };
 export type Band = 'LITTLE' | 'SOME' | 'LOT';
@@ -95,8 +95,15 @@ export function readEffort(s: GameState, obs: PlayerId, _target: PlayerId, y: nu
   let z = w.reduce((x, x2) => x + x2, 0);
   let out = z > 0 ? w.map((x) => x / z) : [1 / 3, 1 / 3, 1 / 3];
   if (claim && claim !== SILENT) {
-    const k = PLAY.CLAIM_WEIGHT * rel;
-    out = out.map((x, i) => (1 - k) * x + (BANDS[i] === claim ? k : 0));
+    if (PLAY.L2_PRIZE.BAYES) {
+      // G4 (D-190): Bayes' rule, as HireBot reads "I trained" (D-159): an honest claimer always says its band,
+      // a dishonest one may say any band, so a claim multiplies the odds of the claimed band by 1 / (1 - k).
+      const k = Math.min(0.99, PLAY.L2_PRIZE.CLAIM_WEIGHT * rel);
+      out = out.map((x, i) => x * (BANDS[i] === claim ? 1 : 1 - k));
+    } else {
+      const k = PLAY.CLAIM_WEIGHT * rel;
+      out = out.map((x, i) => (1 - k) * x + (BANDS[i] === claim ? k : 0));
+    }
   }
   z = out.reduce((x, x2) => x + x2, 0);
   return out.map((x) => x / z);
@@ -219,6 +226,13 @@ function botPrize(s: GameState, pid: PlayerId): PlayerId {
     return playRoundValue(s, s.players[i].values, W2, i, eff, null);
   });
   const top = Math.max(...u);
+  // G4 (D-190): the prize is "for who worked hardest". An honest bot follows that rule with probability equal
+  // to its honesty (its belief about effort, claims included); otherwise it votes for its mission, as before.
+  if (PLAY.L2_PRIZE.NORM && botRng(s).next() < honestyOf(s, pid)) {
+    const others = s.players.map((_p, j) => j).filter((j) => j !== i);
+    others.sort((a, b) => believed[b] - believed[a] || u[b] - u[a]);
+    return s.players[others[0]].id;
+  }
   const near = s.players.map((_p, j) => j).filter((j) => u[j] >= top - 0.5);
   near.sort((a, b) => believed[b] - believed[a]);
   return s.players[near[0]].id;

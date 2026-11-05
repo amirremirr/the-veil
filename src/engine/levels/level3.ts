@@ -462,7 +462,13 @@ function barGain(s: GameState, pool: PlayerId[], voter: PlayerId, target: Player
 /** A member's bar options (no one, then every other contestant) and their values in coins (D-133). */
 function barOptions(s: GameState, pool: PlayerId[], voter: PlayerId, belief: (j: PlayerId) => number, selfRisk: number, pStay: number): { options: Array<PlayerId | null>; u: number[] } {
   const others = ids(s).filter((id) => id !== voter);
-  return { options: [null, ...others], u: [0, ...others.map((j) => barGain(s, pool, voter, j, belief, selfRisk, pStay))] };
+  const options: Array<PlayerId | null> = [null, ...others];
+  const u = [0, ...others.map((j) => barGain(s, pool, voter, j, belief, selfRisk, pStay))];
+  if (!PLAY.GIFT_ONLY_IF_GAIN) return { options, u };
+  // G3 (D-189): a bar that lowers the voter's own value is never cast; the logit rule chooses among "no one"
+  // and the bars that help. Every caller (bot votes, the bar chance, the preview) uses the same options.
+  const keep = options.map((_, k) => k).filter((k) => k === 0 || u[k] > 0);
+  return { options: keep.map((k) => options[k]), u: keep.map((k) => u[k]) };
 }
 
 /** A bot member's vote: its own beliefs, its own risk, and its own chance of buying as the chance it stays in. */
@@ -504,7 +510,7 @@ function barChance(s: GameState, members: PlayerId[], target: PlayerId, beliefOf
       const P = ctxOf(s, false).p;
       const { options, u } = barOptions(s, members, m, (j) => (j === target ? beliefOf(m) : voterBelief(s, m, j)), expectedRisk(bm, P), publicBuyChance(s, m, bm));
       const lam = playerOf(s, m).isHuman ? BOT.BELIEF_LAMBDA : botParams(s, m).lambda;
-      q = logitProbs(u, lam)[options.indexOf(target)];
+      q = options.includes(target) ? logitProbs(u, lam)[options.indexOf(target)] : 0;
     }
     const next: number[] = new Array(dist.length + 1).fill(0);
     dist.forEach((p, k) => {
@@ -631,6 +637,9 @@ function botGift(s: GameState, botId: PlayerId, mine: Choice, lambda: number): G
   const vals = expectRound(s, i, mine, (W) => [ctx.score(me.values, W, i, eq), ...opts.map((g) => ctx.score(me.values, withGift(s, W, i, g), i, eq))]);
   const u = vals.slice(1).map((x) => x - vals[0]);
   const k = u.indexOf(Math.max(...u));
+  // G3 (D-189): a gift that lowers the giver's own expected score is never made. The logit rule alone gave
+  // a gift costing 2 points about 40% of the time, which is why "never give" beat adaptive play.
+  if (PLAY.GIFT_ONLY_IF_GAIN && u[k] <= 0) return null;
   return logitChoice([0, u[k]], lambda, botRng(s)) === 1 ? opts[k] : null;
 }
 
@@ -679,7 +688,7 @@ export function missionPreview(s: GameState, pid: PlayerId): L3Preview {
       for (const m of members) {
         if (m === pid || m === x) continue;
         const { options, u } = barOptions(s, members, m, pub, expectedRisk(pub(m), P), publicBuyChance(s, m, pub(m)));
-        const q = logitProbs(u, BOT.BELIEF_LAMBDA)[options.indexOf(x)];
+        const q = options.includes(x) ? logitProbs(u, BOT.BELIEF_LAMBDA)[options.indexOf(x)] : 0;
         const next: number[] = new Array(dist.length + 1).fill(0);
         dist.forEach((p, c) => {
           next[c] += p * (1 - q);

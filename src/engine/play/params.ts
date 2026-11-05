@@ -83,6 +83,8 @@ export const PLAY = {
   CREDIBILITY_VALUE_EP: { 1: 0.5, 2: 17, 4: 25, 5: 20 } as Partial<Record<number, number>>,
   /** v2 Section 3.5: how far one claim moves a listener's belief, times the speaker's record (as Study's CLAIM_BELIEF_WEIGHT). */
   CLAIM_WEIGHT: 0.5,
+  /** G4 (D-190): Episode 2's prize vote. BAYES: claims read by Bayes' rule; NORM: honest bots vote by believed effort. */
+  L2_PRIZE: { BAYES: false, NORM: false, CLAIM_WEIGHT: 0.5 },
   /** Beliefs about a hidden fact are kept inside these bounds (as Study's BELIEF_FLOOR). */
   BELIEF_FLOOR: 0.01,
   /**
@@ -92,6 +94,8 @@ export const PLAY = {
   BAR_GAIN_SCALE: 2,
   /** G2 (D-188): bots value a bar with their own mission (the barred target's lost cover counts), not only their own price saving. */
   BAR_MISSION: true,
+  /** G3 (D-189): an Episode 3 bot gives only when its best gift raises its own expected Play score. */
+  GIFT_ONLY_IF_GAIN: true,
   /**
    * D-142, Give: once per round, on the move screen, a contestant may give one of these amounts to one other
    * player. Gifts are public and land at the end of the round, after the wheel.
