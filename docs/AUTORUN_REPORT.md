@@ -16,7 +16,7 @@ Every number here comes from bot-only simulations, and every review is AI judgme
 | R6 Episode 1 claims as polls | DONE | Claims pay through strategic votes. S-a 21.8%, lie success 72.4%, E1 +52.6 points (D-163). |
 | E1 Fresh eyes | DONE | Two AI reviewers saw only screenshots (`docs/playtest/fresh-eyes.md`). |
 | E2 to E4 Audits | DONE | `docs/review/design-audit.md`, `logic-audit.md`, `ux-audit.md`. |
-| E5 Fixes | DONE | 15 of 20 ranked fixes made (`docs/review/fix-list.md`, D-164); Reviewer B re-run on the new screens. |
+| E5 Fixes | DONE | 15 of 20 ranked fixes made (`docs/review/fix-list.md`, D-164); a new Reviewer B on the new screens still found the coins and the score hard to follow (`docs/playtest/fresh-eyes.md`). |
 | F1 Playtest kit | DONE | `?playtest=1`, survey, results code, `?playtest=results`, `docs/playtest/HOW_TO.md` (D-166). |
 | F2 Case study | DONE | `docs/CASE_STUDY.md` (D-165). |
 
