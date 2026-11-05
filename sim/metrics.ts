@@ -360,6 +360,28 @@ function ep5(): EpisodeMetrics {
   };
 }
 
+/** R3: Episode 3's mechanism checks inside a life, from the level state (pooled ratios over lives). */
+function e3(s: GameState): Record<string, [number, number]> {
+  const l = s.levelState as { types: Record<string, string>; rounds: Array<{ regime: string; premium: number | null; listPrice?: number | null; nextPremium: number | null; applied?: Record<string, boolean>; choices: Record<string, { buy: boolean }>; bar?: { barred: string[] } }> };
+  const r2 = l.rounds[1];
+  const r3 = l.rounds[2];
+  const ids = s.players.map((p) => p.id);
+  const applied = (id: string) => (r2?.applied ? r2.applied[id] : r2?.choices[id]?.buy) ?? false;
+  const hi = r2 ? ids.filter((id) => l.types[id] === 'HIGH' && applied(id)).length : 0;
+  const lo = r2 ? ids.filter((id) => l.types[id] === 'LOW' && applied(id)).length : 0;
+  const open2 = r2 && r2.regime === 'VOL' && r2.premium !== null;
+  const open3 = r3 && r3.regime === 'VOL' && r3.premium !== null;
+  const p2 = r2?.listPrice ?? r2?.premium ?? null;
+  const p3 = r3?.listPrice ?? r3?.premium ?? null;
+  const bars = l.rounds.flatMap((r) => r.bar?.barred ?? []);
+  return {
+    e3a: [hi, lo],
+    e3b: open2 && open3 && p2 && p3 !== null ? [p3 / p2 - 1, 1] : [0, 0],
+    e3c: [bars.filter((id) => l.types[id] === 'HIGH').length, bars.length],
+    e3d: open2 && open3 && p2 && r3.nextPremium !== null ? [r3.nextPremium / p2 - 1, 1] : [0, 0],
+  };
+}
+
 /** A whole life (T6): each episode's E checks under a prefix, plus the per-life fun targets (v1 10.2). */
 function life(): EpisodeMetrics {
   const per: Record<string, [number, number]> = {};
@@ -374,6 +396,10 @@ function life(): EpisodeMetrics {
       ...pre(2, ['e2', 'e2b']),
       ...pre(4, ['e4a', 'e4b']),
       ...pre(5, ['e5']),
+      { key: 'L3.e3a', label: 'Ep3 E3a round-2 high-risk / low-risk applicants, pooled (at least 2)', min: 2 },
+      { key: 'L3.e3b', label: 'Ep3 E3b round-3 list price over round 2, open markets (at least +15%)', min: 0.15 },
+      { key: 'L3.e3c', label: 'Ep3 E3c bars that hit a high-risk contestant (at least 60%)', min: 0.6, pct: true },
+      { key: 'L3.e3d', label: 'Ep3 E3d price set by round 3 pool over round 2, open markets (above 0)', min: 0 },
       { key: 'fa', label: 'F-a lead changes per life (mean at least 2)', min: 2 },
       { key: 'fb', label: 'F-b last after Episode 2 finishes first or second', min: 0.2, pct: true },
       { key: 'fc', label: 'F-c first and second within 15% at the end', min: 0.4, pct: true },
@@ -384,7 +410,7 @@ function life(): EpisodeMetrics {
     watch(s) {
       if (s.phase.kind !== 'LEVEL_DEBRIEF' || seen.has(s.levelIndex)) return;
       seen.add(s.levelIndex);
-      const m = s.levelIndex === 3 ? common(s, 3, false) : episodeMetrics(s.levelIndex).finish(s);
+      const m = s.levelIndex === 3 ? { ...common(s, 3, false), ...e3(s) } : episodeMetrics(s.levelIndex).finish(s);
       for (const [k, v] of Object.entries(m)) per[`L${s.levelIndex}.${k}`] = v;
     },
     finish(s) {

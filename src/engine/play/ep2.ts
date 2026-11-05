@@ -12,7 +12,7 @@ import { logitChoice } from '../bots/utility';
 import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import type { LevelDefinition } from '../levels/types';
 import { PLAY } from './params';
-import { activeEvent, missionScale, missionValue, playRoundValue } from './rules';
+import { activeEvent, missionScale, missionValue, playRoundValue, livingCost } from './rules';
 import { chooseClaim, postClaims, SILENT } from './claims';
 
 type Gift = { to: PlayerId; amount: number };
@@ -235,7 +235,7 @@ export interface P2Preview {
 
 function missionPts(s: GameState, i: number, W: number[], eff: number[]): number {
   const card = s.players[i].values;
-  const banks = s.players.map((p, j) => s.play!.banks[p.id] + W[j] - PLAY.LIVING_COST);
+  const banks = s.players.map((p, j) => s.play!.banks[p.id] + W[j] - livingCost(s));
   return PLAY.MISSION_WEIGHT * missionScale(s, card) * missionValue(card, banks, i, eff);
 }
 

@@ -525,7 +525,7 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
   const hist = v.play!.bankHistory;
   const h = hist[hist.length - 1];
   // D-142: gifts land after the wheel; the change and the bank include them.
-  const change = r.W[me] + (r.giftNet?.[me] ?? 0) - PLAY.LIVING_COST;
+  const change = r.W[me] + (r.giftNet?.[me] ?? 0) - (v.play!.l3?.livingCost ?? PLAY.LIVING_COST);
   const gifts = Object.entries(r.gifts ?? {});
   const giftLine = gifts.length
     ? [

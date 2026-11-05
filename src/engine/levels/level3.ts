@@ -4,7 +4,7 @@ import { botParams, botRng, finishRound, gameRng, headline, ids, idx, playerOf, 
 import { equalShares, mean, ownNet, roundScore } from '../scoring';
 import { missionScale, missionValue } from '../play/rules';
 import { PLAY } from '../play/params';
-import { activeEvent, isPlay, playNet, playRoundValue, roundsLeft } from '../play/rules';
+import { activeEvent, isPlay, livingCost, playNet, playRoundValue, roundsLeft } from '../play/rules';
 import { audienceBelief, beliefAfterClaim, checkClaims, chooseClaim, initFactBeliefs, observe, postClaims, revealFacts, SILENT } from '../play/claims';
 import { reliabilityOf } from '../core';
 import { ceOfLottery, logitChoice, logitProbs } from '../bots/utility';
@@ -147,7 +147,9 @@ export const STUDY_CTX: L3Ctx = { p: STUDY_L3, score: roundScore, net: (_j, w) =
 
 /** Play's Episode 3 numbers, with this round's event when `withEvent` (D-94, D-98). */
 export function playL3Params(s: GameState, withEvent = true): L3Params {
-  const base: L3Params = { ...STUDY_L3, ...PLAY.L3, PRICE_LOSS: PLAY.L3.LOSS };
+  // R3 (D-160): a life may use its own Episode 3 loss.
+  const loss = s.mode === 'LIFE' ? PLAY.LIFE_L3_LOSS : PLAY.L3.LOSS;
+  const base: L3Params = { ...STUDY_L3, ...PLAY.L3, LOSS: loss, PRICE_LOSS: loss };
   const ev = withEvent ? activeEvent(s) : null;
   if (!ev) return base;
   return { ...base, ...(PLAY.L3_EVENTS as Record<string, Partial<L3Params>>)[ev.id] };
@@ -159,7 +161,7 @@ export function ctxOf(s: GameState, withEvent = true, multOf?: (i: number) => nu
   const p = playL3Params(s, withEvent);
   // D-122: with DEBT_HORIZON, debt also costs stress in the episode's later rounds, on a bank that drifts by
   // income minus living cost minus the pooled price each round.
-  const drift = PLAY.DEBT_HORIZON ? p.BASE_INCOME - PLAY.LIVING_COST - premiumFor(p.P_BAR, p) : null;
+  const drift = PLAY.DEBT_HORIZON ? p.BASE_INCOME - livingCost(s) - premiumFor(p.P_BAR, p) : null;
   return {
     p,
     // Each player values outcomes with its own worry card, unless `multOf` says otherwise (D-128).
@@ -633,7 +635,7 @@ export function missionPreview(s: GameState, pid: PlayerId): L3Preview {
   const card = me.values;
   const k = missionScale(s, card);
   const eff = equalShares(s.players.length);
-  const banks = (W: readonly number[]) => s.players.map((p, j) => pl.banks[p.id] + W[j] - PLAY.LIVING_COST);
+  const banks = (W: readonly number[]) => s.players.map((p, j) => pl.banks[p.id] + W[j] - livingCost(s));
   const mission = (W: readonly number[]) => k * missionValue(card, banks(W), i, eff);
   const premium = currentPremium(s);
   const launch = isLaunch(s);

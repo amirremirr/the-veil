@@ -5,7 +5,7 @@
 import type { GameState, PlayerId } from '../types';
 import { audienceBelief } from './claims';
 import { PLAY } from './params';
-import { missionScale, missionValue, playEffortShares, playRanks, playScore } from './rules';
+import { missionScale, missionValue, playEffortShares, playRanks, playScore, livingCost } from './rules';
 import type { PlayView } from './types';
 import { playL3Params } from '../levels/level3';
 
@@ -65,7 +65,7 @@ export function playView(s: GameState, viewer: PlayerId, revealAll: boolean): Pl
     record: structuredClone(s.reliability),
     guesses,
     finalScores: revealAll ? Object.fromEntries(s.players.map((p) => [p.id, playScore(s, p.id)])) : null,
-    startingBank: s.mode === 'EPISODE' ? PLAY.EPISODE_STARTING_BANK : PLAY.STARTING_BANK,
+    startingBank: s.mode === 'EPISODE' ? PLAY.EPISODE_STARTING_BANK : PLAY.LIFE_STARTING_BANK,
     ...(s.levelIndex === 3 && s.phase.kind !== 'VALUES_REVEAL' ? { l3: l3Numbers(s) } : {}),
   };
 }
@@ -77,9 +77,9 @@ export function playView(s: GameState, viewer: PlayerId, revealAll: boolean): Pl
  */
 export function missionGoal(s: GameState): number {
   const rounds = Math.max(1, ...s.phaseQueue.map((p) => p.round));
-  const start = s.mode === 'EPISODE' ? PLAY.EPISODE_STARTING_BANK : PLAY.STARTING_BANK;
+  const start = s.mode === 'EPISODE' ? PLAY.EPISODE_STARTING_BANK : PLAY.LIFE_STARTING_BANK;
   const income = s.levelIndex === 3 ? playL3Params(s, false).BASE_INCOME : 0;
-  return start + rounds * (income - PLAY.LIVING_COST) * PLAY.MISSION_GOAL_SHARE;
+  return start + rounds * (income - livingCost(s)) * PLAY.MISSION_GOAL_SHARE;
 }
 
 function l3Numbers(s: GameState): NonNullable<PlayView['l3']> {
@@ -98,6 +98,6 @@ function l3Numbers(s: GameState): NonNullable<PlayView['l3']> {
     priceLoss: p.PRICE_LOSS,
     pBar: p.P_BAR,
     baseIncome: p.BASE_INCOME,
-    livingCost: PLAY.LIVING_COST,
+    livingCost: livingCost(s),
   };
 }

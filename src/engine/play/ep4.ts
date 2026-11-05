@@ -12,7 +12,7 @@ import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import type { LevelDefinition } from '../levels/types';
 import { POLICIES, type Group, type Job, type Policy, type Priors } from '../levels/level4';
 import { PLAY } from './params';
-import { activeEvent, missionScale, missionValue, playEffortShares, playRanks, playRoundValue, playScore } from './rules';
+import { activeEvent, missionScale, missionValue, playEffortShares, playRanks, playRoundValue, playScore, livingCost } from './rules';
 import { chooseClaim, honestyRange, postClaims, SILENT } from './claims';
 
 export interface Gift4 {
@@ -284,7 +284,7 @@ export interface P4Preview {
 
 function missionPoints(s: GameState, i: number, W: number[], extraEffort = 0): number {
   const card = s.players[i].values;
-  const banks = s.players.map((p, j) => s.play!.banks[p.id] + W[j] - PLAY.LIVING_COST);
+  const banks = s.players.map((p, j) => s.play!.banks[p.id] + W[j] - livingCost(s));
   return PLAY.MISSION_WEIGHT * missionScale(s, card) * missionValue(card, banks, i, effortWith(s, s.players[i].id, extraEffort));
 }
 

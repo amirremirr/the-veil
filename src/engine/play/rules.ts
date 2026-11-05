@@ -9,6 +9,9 @@ import type { PlayEvent, PlayState } from './types';
 
 export const isPlay = (s: Pick<GameState, 'play'>): boolean => !!s.play;
 
+/** R3 (D-160): the living cost per round; a life has its own (LIFE_LIVING_COST). */
+export const livingCost = (s: Pick<GameState, 'mode'>): number => (s.mode === 'LIFE' ? PLAY.LIFE_LIVING_COST : PLAY.LIVING_COST);
+
 /** Event decks built so far (Episode 3; v2 Section 5 trims them). The other episodes' decks arrive with their episodes. */
 export const eventDeck = (level: LevelId): readonly string[] => (level === 3 ? PLAY.L3_DECK : (PLAY.DECKS[level] ?? []));
 
@@ -25,7 +28,7 @@ export function missionScale(s: Pick<GameState, 'mode' | 'levelIndex'>, card: Va
 }
 
 export function initPlay(s: GameState): PlayState {
-  const start = s.mode === 'EPISODE' ? PLAY.EPISODE_STARTING_BANK : PLAY.STARTING_BANK;
+  const start = s.mode === 'EPISODE' ? PLAY.EPISODE_STARTING_BANK : PLAY.LIFE_STARTING_BANK;
   const per = <X>(x: X) => Object.fromEntries(s.players.map((p) => [p.id, x])) as Record<PlayerId, X>;
   return { banks: per(start), debtStress: per(0), guessPoints: per(0), effort: per(0), event: null, events: [], bankHistory: [], episodeStart: {}, guesses: {}, honesty: {}, belief: {}, belief2: {}, joint: {}, claimLog: [], barReads: [] };
 }
@@ -80,7 +83,7 @@ export function playRoundValue(
   mult: number = stressMult(s, s.players[i].id),
 ): number {
   const pl = s.play!;
-  const banks = s.players.map((p, j) => pl.banks[p.id] + W[j] - PLAY.LIVING_COST);
+  const banks = s.players.map((p, j) => pl.banks[p.id] + W[j] - livingCost(s));
   const id = s.players[i].id;
   return scoreOnBanks(card, banks, i, effortShares, pl.debtStress[id] + mult * debtStressFor(banks[i]), missionScale(s, card)) - mult * futureStress(s, banks[i], drift);
 }
@@ -127,7 +130,7 @@ export function futureStress(s: GameState, bank: number, drift: number | null): 
 export function playNet(s: GameState, j: number, w: number, drift: number | null = null, mult = 1): number {
   const pl = s.play!;
   const bank = j >= 0 ? pl.banks[s.players[j].id] : bankList(s).reduce((a, b) => a + b, 0) / s.players.length;
-  const after = bank + w - PLAY.LIVING_COST;
+  const after = bank + w - livingCost(s);
   return w - mult * (debtStressFor(after) + futureStress(s, after, drift));
 }
 
@@ -142,7 +145,7 @@ export function playFinishRound(s: GameState, W: readonly number[]): void {
   const pl = s.play!;
   const rec = { level: s.levelIndex, round: s.round, W: {} as Record<PlayerId, number>, banks: {} as Record<PlayerId, number>, stress: {} as Record<PlayerId, number>, ranks: {} as Record<PlayerId, number> };
   s.players.forEach((p, i) => {
-    pl.banks[p.id] += W[i] - PLAY.LIVING_COST;
+    pl.banks[p.id] += W[i] - livingCost(s);
     const st = stressMult(s, p.id) * debtStressFor(pl.banks[p.id]);
     pl.debtStress[p.id] += st;
     rec.W[p.id] = W[i];

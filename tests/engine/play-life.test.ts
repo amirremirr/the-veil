@@ -4,6 +4,7 @@ import { createInitialState, step } from '../../src/engine/engine';
 import { autoDecision } from '../../src/engine/auto';
 import { waitingOn } from '../../src/engine/engine';
 import en from '../../src/ui/copy/en.json';
+import { PLAY } from '../../src/engine/play/params';
 
 function life(seed: string, human = false) {
   const s = createInitialState({ mode: 'LIFE', ruleset: 'PLAY', nPlayers: 4, difficulty: 'NORMAL', seed, ...(human ? {} : { allBots: true }) } as Parameters<typeof createInitialState>[0]);
@@ -25,10 +26,10 @@ function life(seed: string, human = false) {
 }
 
 describe('Play LIFE', () => {
-  it('plays the five episodes in order and carries banks over, starting at STARTING_BANK', () => {
+  it('plays the five episodes in order and carries banks over, starting at LIFE_STARTING_BANK', () => {
     const { s, starts } = life('life-1');
     expect(s.levelsPlayed).toEqual([1, 2, 3, 4, 5]);
-    expect(Object.values(starts[1])).toEqual([100, 100, 100, 100]);
+    expect(Object.values(starts[1])).toEqual([PLAY.LIFE_STARTING_BANK, PLAY.LIFE_STARTING_BANK, PLAY.LIFE_STARTING_BANK, PLAY.LIFE_STARTING_BANK]);
     for (const l of [2, 3, 4, 5]) {
       const last = s.play!.bankHistory.filter((h) => h.level === l - 1).slice(-1)[0];
       for (const [id, b] of Object.entries(starts[l])) expect(b).toBeCloseTo(last.banks[id] + (l === 4 && s.play!.comeback?.pid === id && s.play!.comeback.took === 'COINS' ? 0 : 0), 6);

@@ -12,7 +12,7 @@ import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import { VALUES_CARDS } from '../types';
 import type { LevelDefinition } from '../levels/types';
 import { PLAY } from './params';
-import { activeEvent, missionScale, missionValue, playEffortShares, playRoundValue } from './rules';
+import { activeEvent, missionScale, missionValue, playEffortShares, playRoundValue, livingCost } from './rules';
 import { chooseClaim, credibilityValue, expectedRecord, honestyOf, postClaims, SILENT } from './claims';
 import { VALUES_PRIOR } from '../params';
 
@@ -168,7 +168,7 @@ function missionPts(s: GameState, i: number, p: PrincipleId, known: number | nul
   let tot = 0;
   for (const d of draws) {
     const W = withGift(s, outcome1(p, d, P).W, i, g);
-    const banks = s.players.map((x, j) => s.play!.banks[x.id] + W[j] - PLAY.LIVING_COST);
+    const banks = s.players.map((x, j) => s.play!.banks[x.id] + W[j] - livingCost(s));
     tot += PLAY.MISSION_WEIGHT * missionScale(s, card) * missionValue(card, banks, i, playEffortShares(s));
   }
   return tot / draws.length;

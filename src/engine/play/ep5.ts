@@ -10,7 +10,7 @@ import { ALL_CONSTITUTIONS, bandOf, constitutionWealth, olsSlope, supermajority,
 import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import type { LevelDefinition } from '../levels/types';
 import { PLAY } from './params';
-import { activeEvent, missionScale, missionValue, playEffortShares, playRoundValue } from './rules';
+import { activeEvent, missionScale, missionValue, playEffortShares, playRoundValue, livingCost } from './rules';
 import { chooseClaim, credibilityValue, expectedRecord, honestyOf, postClaims, SILENT } from './claims';
 
 export interface Lobby5 {
@@ -93,7 +93,7 @@ function incomesOf(s: GameState): number[] {
 function asRound(s: GameState, W: number[]): number[] {
   if (s.mode !== 'LIFE') return W;
   const base = incomesOf(s);
-  return W.map((w, j) => w - base[j] + PLAY.LIVING_COST);
+  return W.map((w, j) => w - base[j] + livingCost(s));
 }
 
 /** A bot's proposal: its sigma mix of the mission-best and the money-best constitution, as Study. */
@@ -237,7 +237,7 @@ export function p5Preview(s: GameState, pid: PlayerId): P5Preview {
   const card = s.players[i].values;
   const l = st(s);
   const pts = (W: number[]) => {
-    const banks = s.players.map((p, j) => s.play!.banks[p.id] + W[j] - PLAY.LIVING_COST);
+    const banks = s.players.map((p, j) => s.play!.banks[p.id] + W[j] - livingCost(s));
     return PLAY.MISSION_WEIGHT * missionScale(s, card) * missionValue(card, banks, i, playEffortShares(s));
   };
   const draws = l.incomes ? [incomesOf(s)] : orderedDraws(p5Deck(), s.players.length);

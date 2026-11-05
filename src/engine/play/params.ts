@@ -11,6 +11,10 @@ export const PLAY = {
   EPISODE_STARTING_BANK: 10,
   /** Section 4.1: bank = bank + W - LIVING_COST after every round. */
   LIVING_COST: 30,
+  /** R3 (D-160): a life's own starting bank, living cost per round and Episode 3 loss (tuned for life stakes). */
+  LIFE_STARTING_BANK: 10,
+  LIFE_LIVING_COST: 45,
+  LIFE_L3_LOSS: 220,
   /** Section 4.2: points lost per coin of debt at the end of a round, capped per round. */
   DEBT_POINTS_PER_COIN: 1,
   DEBT_PENALTY_CAP: 40,
@@ -28,7 +32,7 @@ export const PLAY = {
    */
   MISSION_SCALE_EP: { 1: { EGOIST: 0.65, RAWLSIAN: 2.58, UTILITARIAN: 1.1, MERITOCRAT: 1.11 }, 2: { EGOIST: 0.76, RAWLSIAN: 1.7, UTILITARIAN: 1.01, MERITOCRAT: 1.22 }, 5: { EGOIST: 0.51, RAWLSIAN: 2.14, UTILITARIAN: 1.58, MERITOCRAT: 1.35 }, 4: { EGOIST: 0.78, RAWLSIAN: 1.75, UTILITARIAN: 0.88, MERITOCRAT: 1.31 } } as Partial<Record<number, Record<ValuesCard, number>>>,
   /** D-151: k per mission over a whole life (calibrated in T6; Episode 3's values until then). */
-  MISSION_SCALE_LIFE: { EGOIST: 0.92, RAWLSIAN: 1.29, UTILITARIAN: 1.11, MERITOCRAT: 1.16 } as Record<ValuesCard, number>,
+  MISSION_SCALE_LIFE: { EGOIST: 0.85, RAWLSIAN: 1.47, UTILITARIAN: 1.15, MERITOCRAT: 1.19 } as Record<ValuesCard, number>,
   /** The mission bar's full mark: start bank + this share of the episode's income minus living cost (D-102). */
   MISSION_GOAL_SHARE: 0.8,
   /** Section 7.4: points for a correct end-of-episode card guess. */

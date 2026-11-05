@@ -25,7 +25,7 @@ export function episodeChanges(v: ViewState): Record<string, Record<number, numb
   const hist = v.play!.bankHistory;
   for (const p of v.players) {
     out[p.id] = {};
-    let prev = PLAY.STARTING_BANK;
+    let prev = PLAY.LIFE_STARTING_BANK;
     for (const l of [1, 2, 3, 4, 5]) {
       const last = hist.filter((h) => h.level === l).slice(-1)[0];
       if (!last) continue;
