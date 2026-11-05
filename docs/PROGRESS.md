@@ -10,7 +10,7 @@ Run mode: all tasks T0 to T9 in one session (owner's instruction for this run), 
 | T3 Episode 1 | DONE | see log | E1 passes; bots never lie about votes (D-152) |
 | T4 Episode 2 | DONE | see log | E2 and added check pass; lie metrics off (D-153) |
 | T5 Episode 5 | DONE | see log | E5 passes (programmed); claim screen 45 words (D-154) |
-| T6 LIFE, Receipts, result card | | | |
+| T6 LIFE, Receipts, result card | DONE | see log | all E checks pass in a life; F-f 0.1% (D-155) |
 | T7 AI playtest life, polish | | | |
 | T8 Retention (conditional) | | | |
 | T9 Report | | | |
@@ -32,6 +32,10 @@ Run mode: all tasks T0 to T9 in one session (owner's instruction for this run), 
 - D-154: Episode 5 claim screen can reach 45 words with 4 amendments (limit 40). Alternative: one claim per amendment on its vote screen (adds no decisions, but claims then come one at a time).
 - D-154: Episode 5 donations replace the 0/5/10 gift on that screen.
 
+- D-155: in a life nobody goes into debt (F-f 0.1%): Episode 3's stakes were tuned for a 10-coin start. Needs a life-level tuning of LIVING_COST or the Episode 3 loss.
+- D-155: bot judges now read only the meter (spec). Claims then never pay, so Episode 4 has no bot lies.
+- D-155: the first fair answer is asked in Episode 5, not Episode 1 (v1).
+
 ## Stashes and wip branches
 
 None.
@@ -45,3 +49,4 @@ None.
 - T3: Episode 1 built (engine `src/engine/play/ep1.ts`, UI `src/ui/play/Episode1.tsx`, tests `tests/engine/play-ep1.test.ts`). Gate: typecheck, build, 191 unit tests, e2e 14 passed, walkthrough Ep1 4 seats Normal 19 screens / 6 decisions / 760 px, 2 seats Hard 18 screens. E1 +22.5 points ± 1.6 (D-152).
 - T4: Episode 2 built (`src/engine/play/ep2.ts`, `src/ui/play/Episode2.tsx`, `tests/engine/play-ep2.test.ts`). Gate: typecheck, build, 193 unit tests, e2e 14 passed, walkthroughs 4 seats Normal and 2 seats Hard, every screen 760 px. E2 slope -5.37 ± 0.08 (D-153). Session restarted once mid-task; work was intact.
 - T5: Episode 5 built (`src/engine/play/ep5.ts`, `src/ui/play/Episode5.tsx`, `tests/engine/play-ep5.test.ts`). Gate: typecheck, build, 195 unit tests, e2e 14 passed, walkthroughs 4 seats Normal (16 screens, 8 decisions) and 2 seats Hard, every screen 760 px. E5 -0.175 ± 0.003 (D-154).
+- T6: LIFE mode (engine, menu, comeback card, per-episode near-miss snapshot), the Receipts, result card v2 (`src/ui/play/LifeEnd.tsx`, `tests/engine/play-life.test.ts`). Gate: typecheck, build, 198 unit tests, e2e 14 passed, life walkthrough 111 screens all 760 px, 9.9 min at pace. Life sim 1,000 lives: every E check passes (D-155). Two worker restarts during T6; no work lost.
