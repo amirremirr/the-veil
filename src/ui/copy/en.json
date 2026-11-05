@@ -1234,7 +1234,13 @@
       "mission": "Their mission",
       "submit": "Lock in my guess",
       "skip": "No guess",
-      "youGuessed": "You guessed {name}: {card}."
+      "youGuessed": "You guessed {name}: {card}.",
+      "tell": {
+        "EGOIST": "Votes for whatever fills their own bank.",
+        "RAWLSIAN": "Votes for taxes and cover that lift the poorest.",
+        "UTILITARIAN": "Votes for whatever grows the whole table.",
+        "MERITOCRAT": "Votes to reward hours and training."
+      }
     },
     "summary": {
       "title": "Episode summary",
@@ -1414,6 +1420,7 @@
     },
     "claim": {
       "title": "Your claim",
+      "why": "What you say moves the audience poll, and the poll decides who gets barred from cover.",
       "you": {
         "LOW": "Your risk: low, {p}. {worry}.",
         "HIGH": "Your risk: high, {p}. {worry}."
@@ -1446,6 +1453,7 @@
     },
     "move": {
       "risk": "Your risk:",
+      "youRead": "The audience thinks you are high risk: {p}. What you claim and what you buy move it.",
       "barTitle": "Bar one?",
       "notMember": "Members can bar one.",
       "poll": "{p} risky",
@@ -1796,6 +1804,8 @@
         "submit": "Vote"
       },
       "won": {
+        "net": "You made {y}. After the {t} tax, the equal share, the cost of your hours and any gifts: {k}.",
+        "netPrize": "Plus the prize: {n}.",
         "label": "The Hustle Prize",
         "you": "You won {n} coins.",
         "one": "Prize to {name}: {n} coins.",

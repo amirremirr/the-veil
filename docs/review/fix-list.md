@@ -24,6 +24,8 @@ Merged from the fresh-eyes reviews (E1), the design audit (E2), the logic audit 
 | 18 | The mission guess gives no feedback on the right answer (A, B) | Not done: in a life, other missions stay hidden until the end (spec) | S | Left, Needs Amir |
 | 19 | Five layouts for the claim verb (E3) | Not done | M | Left |
 | 20 | Replaying a challenge code reveals every hidden card (E3) | Not done: harmless without a leaderboard | M | Left |
+| 21 | Ep2 bank line did not match the income (tax and hour cost hidden); barred from cover with no visible own read; mission guess with no clues (cycle 9) | Net-income line; claim and own-read lines; a tell per mission on the guess screen (D-175) | S | Done |
+| 22 | Episode 2 repetitive, too many tap-through screens (cycle 9) | Not done: merging beats changes pacing tuned in R7; round count is a rule | M | Left |
 
 ## Won't fix (with reasons, so loop cycles don't redo them)
 

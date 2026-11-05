@@ -371,6 +371,7 @@ function EpisodeGuess({ v }: { v: ViewState }) {
         {VALUES_CARDS.map((c) => (
           <button key={c} type="button" aria-pressed={card === c} onClick={() => setCard(c)} className={`min-h-[64px] rounded-2xl p-2 text-start ${card === c ? 'bg-spot text-onspot' : 'bg-card'}`}>
             <span className="h-show text-lg leading-tight">{missionName(c)}</span>
+            <span className="block text-xs">{t(`play.guess.tell.${c}`)}</span>
           </button>
         ))}
       </div>

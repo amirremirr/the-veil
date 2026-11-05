@@ -118,6 +118,7 @@ export function ClaimScreen({ v }: { v: ViewState }) {
       <div className="mt-3 rounded-2xl bg-card p-3">
         <p className="h-show text-2xl leading-tight">{t(`play.claim.you.${lv.myType}`, { p: pct(myOdds(v, false)), worry: t(`play.myCards.worry.${lv.myWorry ?? 'CALM'}`) })}</p>
       </div>
+      <p className="mt-2 text-sm">{t('play.claim.why')}</p>
       <div className="mt-auto space-y-2 pt-3" role="group" aria-label={t('play.claim.title')}>
         {opts.map((o) => (
           <button key={o} type="button" aria-pressed={x === o} onClick={() => setX(o)} className={`block w-full rounded-2xl p-3 text-start ${x === o ? 'bg-spot text-onspot' : 'bg-card'}`}>
@@ -215,6 +216,7 @@ export function MoveScreen({ v }: { v: ViewState }) {
       <p className="text-base font-semibold leading-snug">
         {t('play.move.risk')} <span className="h-show text-2xl text-spot" aria-live="polite">{pct(myOdds(v, gym))}</span>
       </p>
+      {showRead && poll[v.viewer] !== undefined && <p className="text-sm">{t('play.move.youRead', { p: pct(poll[v.viewer]) })}</p>}
       {showRead && (
         <section className="mt-2" aria-labelledby="bar-title">
           <h2 id="bar-title" className="text-sm font-bold">
