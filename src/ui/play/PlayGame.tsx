@@ -137,7 +137,7 @@ function EpisodeIntro({ v }: { v: ViewState }) {
       </p>
       <h1 className="h-show mt-1 text-hero leading-none text-spot">{t(`play.episodes.${v.levelIndex}.name`)}</h1>
       <p className="mt-3 text-body leading-snug" data-intro>
-        {t(v.mode === 'LIFE' && v.levelIndex === 5 ? 'play.episodes.5.introLife' : `play.episodes.${v.levelIndex}.intro`, { loss: n?.loss ?? 0 })}
+        {t(v.mode === 'LIFE' && v.levelIndex === 5 ? 'play.episodes.5.introLife' : `play.episodes.${v.levelIndex}.intro`, { loss: n?.loss ?? 0, m: PLAY.LIFE_MISSION_EP_MULT[5] ?? 1 })}
       </p>
       <div className="mt-auto pt-4">
         <Bubble who="Dash" host mood="excited" text={hostLine('welcome', (pick({ ...v, levelIndex: 1, round: 0 }, 'welcome', 6) + v.levelIndex) % 6)} />

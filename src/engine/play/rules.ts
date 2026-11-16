@@ -23,7 +23,7 @@ export const PLAYABLE_EPISODES: LevelId[] = [1, 2, 3, 4, 5];
  * MISSION_SCALE_EP when it has one, else MISSION_SCALE (Episode 3's).
  */
 export function missionScale(s: Pick<GameState, 'mode' | 'levelIndex'>, card: ValuesCard): number {
-  if (s.mode === 'LIFE') return PLAY.MISSION_SCALE_LIFE[card];
+  if (s.mode === 'LIFE') return PLAY.MISSION_SCALE_LIFE[card] * (PLAY.LIFE_MISSION_EP_MULT[s.levelIndex] ?? 1);
   return PLAY.MISSION_SCALE_EP[s.levelIndex]?.[card] ?? PLAY.MISSION_SCALE[card];
 }
 

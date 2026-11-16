@@ -8,8 +8,11 @@ Branch `ui-v3`. Spec: `docs/UI_V3_SPEC.md`. One row per phase. Rules hash must s
 | U2 sound, motion, feedback | DONE | 3bf67478ab66d810 (unchanged) | typecheck, build, 219 unit, 15 e2e, life walkthrough 375 and 360, Ep3 Hard: all pass | D-196. Synthesized sound with mute, haptics, coin flights, counting banks, wheel ticks, rolling price, hit/gain flashes, staged Receipts, capture script. JS 260.5 KB gzipped. |
 | U3 fewer taps, clearer words | DONE | 3bf67478ab66d810 (unchanged) | typecheck, build, 219 unit, 15 e2e, life walkthrough 375 and 360, Ep3 Hard, axe 0 violations (64 screens): all pass | D-197. Auto-advance, event banner, mission + intro, one summary, one opening card + coach marks, whole coins, HireBot headline, score bar, judge cards, desktop column. Taps in a life 110 to 71 (-35%), pace 9.7 to 8.0 min. JS 262.5 KB gzipped. |
 | U4 review loop | DONE (stopped at 3 cycles) | 3bf67478ab66d810 (unchanged) | after each cycle: 219 unit, 15 e2e (now with raw-key and stamp-width checks), life walkthrough 375 and 360, Ep3 Hard, axe 0 violations | D-198 to D-200, `docs/review/ui-v3-review.md`. Two fresh AI reviewers per cycle (proxy, not human evidence). The owner's seven points fixed; stopped after 3 cycles for budget, with high items still open (money arithmetic in small print, empty space on reveals). JS 263.4 KB gzipped. |
+| U5 runaway scores | DONE (F-e Rawlsian 35.6%, just over) | 9caee8e94a7084b5 (new) | 219 unit (golden included), build, 15 e2e, walkthroughs life, Ep2, Ep5; sims 1,000 lives | D-201. Talent pay 3 per hour in a life's Episode 2, finale missions weigh 4.5x. Final order = Ep2 order 21.1% to 18.9%; Ep4 leader loses the finale 4.3% to 21.6%. All E checks pass, F-f 51.1%. |
 
 ## Needs Amir
+
+- D-201: F-e fails narrowly (Rawlsian 35.6%) with the chosen U5 rules; the recalibrated alternative passes F-e but the finale lead change drops to 17.9%. Merge needs the room server redeployed.
 
 - D-200: the review loop stopped after 3 cycles (spec: two clean cycles or 6); the cycle 3 fixes were not re-reviewed.
 

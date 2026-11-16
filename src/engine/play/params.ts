@@ -32,6 +32,8 @@ export const PLAY = {
    */
   MISSION_SCALE_EP: { 1: { EGOIST: 0.65, RAWLSIAN: 2.58, UTILITARIAN: 1.1, MERITOCRAT: 1.11 }, 2: { EGOIST: 0.76, RAWLSIAN: 1.7, UTILITARIAN: 1.01, MERITOCRAT: 1.22 }, 5: { EGOIST: 0.51, RAWLSIAN: 2.14, UTILITARIAN: 1.58, MERITOCRAT: 1.35 }, 4: { EGOIST: 0.78, RAWLSIAN: 1.75, UTILITARIAN: 0.88, MERITOCRAT: 1.31 } } as Partial<Record<number, Record<ValuesCard, number>>>,
   /** D-151: k per mission over a whole life (calibrated in T6; Episode 3's values until then). */
+  /** UI V3 U5: in a life, the mission half is weighted by the episode just played (later episodes weigh more). */
+  LIFE_MISSION_EP_MULT: { 1: 1, 2: 1, 3: 1, 4: 1, 5: 4.5 } as Record<number, number>,
   MISSION_SCALE_LIFE: { EGOIST: 0.85, RAWLSIAN: 1.47, UTILITARIAN: 1.15, MERITOCRAT: 1.19 } as Record<ValuesCard, number>,
   /** The mission bar's full mark: start bank + this share of the episode's income minus living cost (D-102). */
   MISSION_GOAL_SHARE: 0.8,
@@ -162,7 +164,7 @@ export const PLAY = {
    * Episode 2, First Hustle (v2 Section 4, D-153): 3 rounds, v1's luck die; Study's talents, effort cost, leakage
    * and tax options. BANDS: the top hour of "a little" and of "some" (claims are on a 3-step scale).
    */
-  L2: { ROUNDS: 3, LUCK_VALUES: [-30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70], TAX_OPTIONS: [0, 0.2, 0.4, 0.6, 0.8], BANDS: [3, 6] },
+  L2: { ROUNDS: 3, LUCK_VALUES: [-30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70], TAX_OPTIONS: [0, 0.2, 0.4, 0.6, 0.8], BANDS: [3, 6], LIFE_TALENT_MULT: 3 as number | null },
   /** v2 Section 4: the Hustle Prize, to the plurality winner of the vote (never yourself); ties split. */
   HUSTLE_PRIZE: 30,
   /** v1 Section 6.2 and v2 Section 5, Episode 2 deck (Security Cameras shows true effort for the round). */
