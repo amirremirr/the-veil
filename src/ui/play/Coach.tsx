@@ -42,7 +42,7 @@ export function Coach({ id, after }: { id: 'claim' | 'move' | 'call'; after?: 'c
   if (!open) return null;
   const close = () => setOpen(false);
   return (
-    <div className="fixed inset-x-0 bottom-24 z-30 mx-auto w-full max-w-md px-4" role="note" data-coach={id} onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-x-0 top-1 z-30 mx-auto w-full max-w-md px-4" role="note" data-coach={id} onClick={(e) => e.stopPropagation()}>
       <div className="flex items-start gap-2 rounded-2xl border-2 border-spot bg-white p-2 text-onspot shadow-podium">
         <span aria-hidden className="shrink-0">
           <DashHost expr="wink" size={44} />

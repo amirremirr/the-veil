@@ -10,7 +10,8 @@ import { shortName } from '../game';
 import { useMotionOff } from '../components/common';
 import { BigButton, Stage } from './OnAir';
 import type { CastCue, CastStamp } from './Cast';
-import type { Expr } from './Characters';
+import { ShapePerson, type Expr } from './Characters';
+import { castKind } from './Cast';
 import { sfx } from './sound';
 import { missionName } from './logic';
 import { callLine } from './Call';
@@ -136,7 +137,7 @@ export function ReceiptsReel({ v, next }: { v: ViewState; next: () => void }) {
       };
   const recent = items.slice(-5);
   return (
-    <Stage v={v} bar={false} cast={cue} onTap={done ? undefined : () => setK(items.length)} footer={<BigButton beatNext={done} onClick={done ? next : () => setK(items.length)}>{done ? t('play.receipts.next') : t('play.receipts.skip')}</BigButton>}>
+    <Stage v={v} cast={cue} onTap={done ? undefined : () => setK(items.length)} footer={<BigButton beatNext={done} onClick={done ? next : () => setK(items.length)}>{done ? t('play.receipts.next') : t('play.receipts.skip')}</BigButton>}>
       <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.receipts.label')}</p>
       <h1 className="h-show text-title leading-tight text-spot">{t('play.receipts.title')}</h1>
       {cur ? (
@@ -274,7 +275,11 @@ export function ResultCard({ v }: { v: ViewState }) {
         </div>
       }
     >
-      <div ref={ref} className="rounded-3xl bg-spot p-5 text-onspot" data-result-card>
+      {/* Review cycle 2: a win is a gold card with the winner's grin; a bottom-half finish is a dark card with a slump. */}
+      <div className="-mt-2 mb-1 flex justify-center" aria-hidden>
+        <ShapePerson kind={castKind(me)} expr={rank === 1 ? 'pleased' : rank > v.players.length / 2 ? 'sad' : 'smug'} size={44} />
+      </div>
+      <div ref={ref} className={`rounded-3xl p-5 ${rank === 1 ? 'bg-spot text-onspot' : rank > v.players.length / 2 ? 'border-2 border-stamp bg-card text-ink' : 'bg-card text-ink'}`} data-result-card data-rank={rank}>
         <p className="text-small font-bold uppercase tracking-wider">{t('play.show')}</p>
         <h1 className="h-show mt-1 text-hero leading-tight">{title}</h1>
         <ul className="mt-3 space-y-1 text-small">

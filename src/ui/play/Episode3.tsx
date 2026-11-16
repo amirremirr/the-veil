@@ -392,7 +392,7 @@ export function BarBeat({ v, next }: { v: ViewState; next: () => void }) {
     expr: Object.fromEntries(b.barred.map((x) => [x, 'shocked' as const])),
   };
   return (
-    <Stage v={v} bar={false} cast={cue} onTap={next} footer={<AutoButton onClick={next}>{t('play.stage.tap')}</AutoButton>}>
+    <Stage v={v} cast={cue} onTap={next} footer={<AutoButton onClick={next}>{t('play.stage.tap')}</AutoButton>}>
       <div className="my-auto text-center" data-bar={b.barred.join(' ') || 'none'}>
         <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.barBeat.label')}</p>
         <p className={`h-show mt-2 text-title leading-tight ${b.barred.length ? 'text-stamp' : 'text-spot'}`}>{head}</p>
@@ -628,7 +628,6 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
   return (
     <Stage
       v={v}
-      bar={false}
       cast={cue}
       flash={done ? (mine.kind === 'HIT' ? 'hit' : change > 0 ? 'gain' : null) : null}
       onTap={advance}

@@ -322,7 +322,7 @@ export function HiresBeat({ v, next, last }: { v: ViewState; next: () => void; l
                   {t(complex ? 'play.l4.complex' : 'play.l4.simple')}
                   {r.quotaPicks?.includes(w) ? ` · ${t('play.l4.quota')}` : ''} · {t(r.pass?.[w] ? 'play.l4.pass' : 'play.l4.fail')}
                 </span>
-                {stamp && <span className={`rounded px-1 text-small font-bold ${stamp === 'GOOD' ? 'bg-good text-onspot' : 'bg-stamp text-onspot'}`}>{t(`play.l4.stamp.${stamp}`)}</span>}
+                {stamp && <span className={`rounded px-1 text-small font-bold ${stamp === 'GOOD' ? 'bg-good text-onspot' : 'bg-stamp text-onspot'}`}>{t(`play.cast.hire.${stamp}`)}</span>}
                 <span className="h-show w-10 text-end">{coins(W[w] ?? 0)}</span>
               </li>
             );

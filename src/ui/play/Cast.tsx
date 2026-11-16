@@ -382,16 +382,16 @@ export function CastStage({ v, cue = {}, fit = 0, call }: { v: ViewState; cue?: 
               >
                 {debt && (
                   <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 80 40" preserveAspectRatio="none" aria-hidden>
-                    <path d="M28 0 L34 12 L27 20 L36 32 L31 40" fill="none" stroke="rgb(255 62 127 / 0.7)" strokeWidth="1.5" />
+                    <path d="M6 0 L11 12 L5 22 L12 40" fill="none" stroke="rgb(255 62 127 / 0.7)" strokeWidth="1.5" />
                   </svg>
                 )}
-                <span className={`${fit >= 3 ? 'inline' : 'block'} truncate text-small font-bold leading-tight`}>{shortName(v, p.id)}</span>
+                <span className={`relative ${fit >= 3 ? 'inline' : 'block'} truncate text-small font-bold leading-tight`}>{shortName(v, p.id)}</span>
                 {!cue.noBanks && (
-                  <span className={`h-show ${fit >= 3 ? 'ms-1 inline text-small' : 'block text-body'} leading-tight ${debt ? 'text-stamp' : ''}`} data-bank={p.id}>
+                  <span className={`h-show relative ${fit >= 3 ? 'ms-1 inline text-small' : 'block text-body'} leading-tight ${debt ? 'text-stamp' : ''}`} data-bank={p.id}>
                     <Bank value={bank} mine={me} />
                   </span>
                 )}
-                {debt && !cue.noBanks && fit < 3 && <span className="block text-small font-bold leading-tight text-stamp">{t('play.cast.inDebt')}</span>}
+                {debt && !cue.noBanks && fit < 3 && <span className="relative block text-small font-bold leading-tight text-stamp">{t('play.cast.inDebt')}</span>}
               </div>
             </li>
           );
