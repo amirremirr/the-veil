@@ -90,9 +90,9 @@ test('plays Episode 3 from the title to the episode summary', async ({ page }) =
   await page.getByRole('button', { name: 'Accept the mission' }).click();
   await expect(page.getByRole('heading', { name: 'Bad Luck Season' })).toBeVisible();
   await fits(page);
-  // D-146: your chosen name, not "You", under your ringed face in the top bar.
-  await expect(page.locator('header').getByText('Ana', { exact: true })).toBeVisible();
-  await expect(page.locator('header').getByText('You', { exact: true })).toHaveCount(0);
+  // D-146: your chosen name, not "You", on your ringed podium (UI V3: the podiums replaced the top bar's row).
+  await expect(page.locator('[data-cast-stage]').getByText('Ana', { exact: true })).toBeVisible();
+  await expect(page.locator('[data-cast-stage]').getByText('You', { exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Roll the cameras' }).click();
   const seen = await playThrough(page, { gift: true });
   expect(seen.wheels).toBe(4);
@@ -123,9 +123,9 @@ test('two seats on Hard: the setup line, two contestants, no audience poll on an
   await page.getByLabel('Challenge code (optional)').fill('e2e-hard');
   await page.getByRole('button', { name: 'Go live' }).click();
   await page.getByRole('button', { name: 'Accept the mission' }).click();
-  await expect(page.locator('header li')).toHaveCount(2);
+  await expect(page.locator('[data-podium]')).toHaveCount(2);
   // A blank name shows "You".
-  await expect(page.locator('header').getByText('You', { exact: true })).toBeVisible();
+  await expect(page.locator('[data-cast-stage]').getByText('You', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Roll the cameras' }).click();
   const seen = await playThrough(page, { noPoll: true });
   expect(seen.wheels).toBe(4);

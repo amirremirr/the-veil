@@ -1,4 +1,5 @@
 import type { Config } from 'tailwindcss';
+import { SHADOW, TYPE } from './src/ui/play/tokens';
 
 const token = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
 
@@ -27,6 +28,9 @@ export default {
         mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
       },
       maxWidth: { page: '72rem' },
+      // UI V3 (U1): Play's five type sizes and its shadows, from src/ui/play/tokens.ts.
+      fontSize: Object.fromEntries(Object.entries(TYPE).map(([k, [px, lh]]) => [k, [`${px / 16}rem`, String(lh)]])),
+      boxShadow: { podium: SHADOW.podium, stamp: SHADOW.stamp, gain: SHADOW.glowGain, hit: SHADOW.glowHit },
     },
   },
   plugins: [],

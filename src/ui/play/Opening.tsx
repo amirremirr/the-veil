@@ -56,37 +56,37 @@ export function PlayOpening({ onDone }: { onDone: () => void }) {
     >
       <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pb-4 pt-3">
         <div className="flex justify-end">
-          <button type="button" className="min-h-[44px] px-2 text-sm font-semibold underline" onClick={done} data-opening-skip>
+          <button type="button" className="min-h-[44px] px-2 text-small font-semibold underline" onClick={done} data-opening-skip>
             {t('play.opening.skip')}
           </button>
         </div>
         <div className="my-auto">
-          <h1 id="opening-title" className="h-show text-5xl leading-none text-spot">
+          <h1 id="opening-title" className="h-show text-hero leading-none text-spot">
             {t(`play.opening.c${n}.headline`)}
           </h1>
           {n === 2 ? (
             <>
-              <p className="mt-4 text-lg">{t('play.opening.c2.intro')}</p>
+              <p className="mt-4 text-lead">{t('play.opening.c2.intro')}</p>
               <ul className="mt-2 space-y-2">
                 {(['claim', 'read', 'move', 'reveal'] as const).map((b) => (
-                  <li key={b} className="rounded-2xl bg-card px-3 py-2 text-base">
+                  <li key={b} className="rounded-2xl bg-card px-3 py-2 text-body">
                     {t(`play.opening.c2.${b}`)}
                   </li>
                 ))}
               </ul>
             </>
           ) : (
-            <p className="mt-4 text-lg leading-snug">{t(`play.opening.c${n}.body`)}</p>
+            <p className="mt-4 text-lead leading-snug">{t(`play.opening.c${n}.body`)}</p>
           )}
-          {n === 1 && <p className="mt-4 text-base italic text-soft">{t('play.tagline')}</p>}
-          {n === 3 && <p className="mt-4 text-sm text-soft">{t('play.opening.c3.small')}</p>}
+          {n === 1 && <p className="mt-4 text-body italic text-soft">{t('play.tagline')}</p>}
+          {n === 3 && <p className="mt-4 text-small text-soft">{t('play.opening.c3.small')}</p>}
         </div>
         <div className="mb-3 flex justify-center gap-2" aria-label={t('play.opening.dots', { n: k + 1, of: CARDS.length })} role="img">
           {CARDS.map((c, i) => (
             <span key={c} className={`h-2 w-2 rounded-full ${i === k ? 'bg-spot' : 'bg-line'}`} />
           ))}
         </div>
-        <button type="button" className="min-h-[52px] w-full rounded-full bg-stamp text-lg font-bold text-onspot" onClick={next} data-opening-next>
+        <button type="button" className="min-h-[52px] w-full rounded-full bg-stamp text-lead font-bold text-onspot" onClick={next} data-opening-next>
           {last ? t('play.opening.go') : t('play.opening.next')}
         </button>
       </div>

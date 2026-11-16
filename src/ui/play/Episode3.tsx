@@ -15,7 +15,11 @@ import { nameOf, shortName, useTalkFrom } from '../game';
 import { useMotionOff } from '../components/common';
 import { Sheet } from '../components/TableParts';
 import { fmt1 } from '../components/Money';
+import { DashHost } from './Characters';
 import { BigButton, Bubble, Face, Stage } from './OnAir';
+import { Chips, StagedReveal, peakMark, spotlightSteps } from './Peak';
+import type { CastCue } from './Cast';
+import { buzz, sfx } from './sound';
 import { confessional, hostLine, pick, roundOutcome, timesWord } from './logic';
 import { renderMessage } from '../game';
 
@@ -80,11 +84,11 @@ export function Tile({ on, title, desc, note, onClick, disabled = false }: { on:
         )}
       </span>
       <span>
-        <span className="h-show block text-lg leading-tight">{title}</span>
-        <span className="mt-1 block text-xs leading-snug">{desc}</span>
+        <span className="h-show block text-lead leading-tight">{title}</span>
+        <span className="mt-1 block text-small leading-snug">{desc}</span>
         {/* Loop cycle 3 (D-169): a choice's mission effect shows once it is selected, so players don't just pick the biggest number. */}
         {note && (on || !onClick) && (
-          <span className="mt-1 block text-xs font-bold" data-preview>
+          <span className="mt-1 block text-small font-bold" data-preview>
             {note}
           </span>
         )}
@@ -116,15 +120,15 @@ export function ClaimScreen({ v }: { v: ViewState }) {
   const opts = ['LOW', 'HIGH', 'SILENT'];
   return (
     <Stage v={v} chatFirst footer={<BigButton disabled={!x} onClick={() => act(x)}>{t('play.claim.submit')}</BigButton>}>
-      <h1 className="h-show text-4xl leading-tight">{t('play.claim.title')}</h1>
+      <h1 className="h-show text-hero leading-tight">{t('play.claim.title')}</h1>
       <div className="mt-3 rounded-2xl bg-card p-3">
-        <p className="h-show text-2xl leading-tight">{t(`play.claim.you.${lv.myType}`, { p: pct(myOdds(v, false)), worry: t(`play.myCards.worry.${lv.myWorry ?? 'CALM'}`) })}</p>
+        <p className="h-show text-title leading-tight">{t(`play.claim.you.${lv.myType}`, { p: pct(myOdds(v, false)), worry: t(`play.myCards.worry.${lv.myWorry ?? 'CALM'}`) })}</p>
       </div>
-      <p className="mt-2 text-sm">{t('play.claim.why')}</p>
+      <p className="mt-2 text-small">{t('play.claim.why')}</p>
       <div className="mt-auto space-y-2 pt-3" role="group" aria-label={t('play.claim.title')}>
         {opts.map((o) => (
           <button key={o} type="button" aria-pressed={x === o} onClick={() => setX(o)} className={`block w-full rounded-2xl p-3 text-start ${x === o ? 'bg-spot text-onspot' : 'bg-card'}`}>
-            <span className="h-show block text-xl leading-tight">{t(`play.claim.opts.${o}.title`)}</span>
+            <span className="h-show block text-lead leading-tight">{t(`play.claim.opts.${o}.title`)}</span>
           </button>
         ))}
       </div>
@@ -139,18 +143,18 @@ export function MyCardsBeat({ v, next }: { v: ViewState; next: () => void }) {
   return (
     <Stage v={v} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
       <div className="my-auto" data-mycards>
-        <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.myCards.label')}</p>
+        <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.myCards.label')}</p>
         <div className="mt-3 grid grid-cols-2 gap-3">
           <div className={`rounded-2xl p-3 ${lv.myType === 'HIGH' ? 'bg-stamp text-onspot' : 'bg-good text-onspot'}`}>
-            <p className="h-show text-2xl leading-tight">{t(`play.cards.${lv.myType}`)}</p>
-            <p className="mt-1 text-sm">{t('play.myCards.riskLine', { p: pct(myOdds(v, false)) })}</p>
+            <p className="h-show text-title leading-tight">{t(`play.cards.${lv.myType}`)}</p>
+            <p className="mt-1 text-small">{t('play.myCards.riskLine', { p: pct(myOdds(v, false)) })}</p>
           </div>
           <div className={`rounded-2xl p-3 ${worry === 'WORRIER' ? 'bg-spot text-onspot' : 'bg-card'}`}>
-            <p className="h-show text-2xl leading-tight">{t(`play.myCards.worry.${worry}`)}</p>
-            <p className="mt-1 text-sm">{t(`play.myCards.worryLine.${worry}`, { m: PLAY.WORRIER_STRESS_MULT, cap: (worry === 'WORRIER' ? PLAY.WORRIER_STRESS_MULT : 1) * PLAY.DEBT_PENALTY_CAP })}</p>
+            <p className="h-show text-title leading-tight">{t(`play.myCards.worry.${worry}`)}</p>
+            <p className="mt-1 text-small">{t(`play.myCards.worryLine.${worry}`, { m: PLAY.WORRIER_STRESS_MULT, cap: (worry === 'WORRIER' ? PLAY.WORRIER_STRESS_MULT : 1) * PLAY.DEBT_PENALTY_CAP })}</p>
           </div>
         </div>
-        <p className="mt-4 text-base">{t('play.myCards.unknown')}</p>
+        <p className="mt-4 text-body">{t('play.myCards.unknown')}</p>
       </div>
     </Stage>
   );
@@ -164,19 +168,19 @@ export function ClaimsBeat({ v, next }: { v: ViewState; next: () => void }) {
   return (
     <Stage v={v} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
       <div className="my-auto" data-claims>
-        <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.claim.inLabel', { r: v.round })}</p>
-        <h1 className="h-show mt-1 text-4xl leading-tight text-spot">{t('play.claim.inTitle')}</h1>
+        <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.claim.inLabel', { r: v.round })}</p>
+        <h1 className="h-show mt-1 text-hero leading-tight text-spot">{t('play.claim.inTitle')}</h1>
         <ul className="mt-4 space-y-2">
           {v.players.map((p) => (
             <li key={p.id} className="flex items-center gap-3 rounded-2xl bg-card px-3 py-2">
               <Face v={v} p={p} size={32} />
-              <span className="w-20 truncate text-sm font-bold">{shortName(v, p.id)}</span>
-              <span className={`h-show flex-1 text-lg leading-tight ${claims[p.id] ? '' : 'text-soft'}`}>{claimShort(claims[p.id])}</span>
-              {p.id !== v.viewer && poll[p.id] !== undefined && <span className="text-xs font-semibold">{t('play.move.poll', { p: pct(poll[p.id]) })}</span>}
+              <span className="w-20 truncate text-small font-bold">{shortName(v, p.id)}</span>
+              <span className={`h-show flex-1 text-lead leading-tight ${claims[p.id] ? '' : 'text-soft'}`}>{claimShort(claims[p.id])}</span>
+              {p.id !== v.viewer && poll[p.id] !== undefined && <span className="text-small font-semibold">{t('play.move.poll', { p: pct(poll[p.id]) })}</span>}
             </li>
           ))}
         </ul>
-        <p className="mt-3 text-sm text-soft">{t(v.levelIndex === 1 ? 'play.claim.inNotePoll' : 'play.claim.inNote')}</p>
+        <p className="mt-3 text-small text-soft">{t(v.levelIndex === 1 ? 'play.claim.inNotePoll' : 'play.claim.inNote')}</p>
       </div>
     </Stage>
   );
@@ -216,13 +220,13 @@ export function MoveScreen({ v }: { v: ViewState }) {
   const giftNote = gift ? previewText(pv?.gift[gift.to]?.[gift.amount]) : null;
   return (
     <Stage v={v} chatFirst footer={<BigButton onClick={() => act(decision)}>{t('play.stage.lock')}</BigButton>}>
-      <p className="text-base font-semibold leading-snug">
-        {t('play.move.risk')} <span className="h-show text-2xl text-spot" aria-live="polite">{pct(myOdds(v, gym))}</span>
+      <p className="text-body font-semibold leading-snug">
+        {t('play.move.risk')} <span className="h-show text-title text-spot" aria-live="polite">{pct(myOdds(v, gym))}</span>
       </p>
-      {showRead && poll[v.viewer] !== undefined && <p className="text-sm">{t('play.move.youRead', { p: pct(poll[v.viewer]) })}</p>}
+      {showRead && poll[v.viewer] !== undefined && <p className="text-small">{t('play.move.youRead', { p: pct(poll[v.viewer]) })}</p>}
       {showRead && (
         <section className="mt-2" aria-labelledby="bar-title">
-          <h2 id="bar-title" className="text-sm font-bold">
+          <h2 id="bar-title" className="text-small font-bold">
             {member ? t('play.move.barTitle') : members.length ? t('play.move.notMember') : t('play.move.pollTitle')}
           </h2>
           <ul className="mt-2 space-y-1.5" role={member ? 'group' : undefined} aria-label={member ? t('play.move.barTitle') : undefined}>
@@ -232,15 +236,15 @@ export function MoveScreen({ v }: { v: ViewState }) {
               const body = (
                 <>
                   <Face v={v} p={p} size={24} />
-                  <span className="w-16 truncate text-sm font-bold">{shortName(v, p.id)}</span>
-                  <span className="flex-1 truncate text-xs">{claimShort(claims[p.id])}</span>
+                  <span className="w-16 truncate text-small font-bold">{shortName(v, p.id)}</span>
+                  <span className="flex-1 truncate text-small">{claimShort(claims[p.id])}</span>
                   {note && (
-                    <span className="text-[11px] font-bold" data-preview="bar">
+                    <span className="text-small font-bold" data-preview="bar">
                       {note}
                     </span>
                   )}
                   {share !== undefined && (
-                    <span className="text-xs font-semibold" aria-label={t('play.move.pollLabel', { p: pct(share), name: nameOf(v, p.id) })}>
+                    <span className="text-small font-semibold" aria-label={t('play.move.pollLabel', { p: pct(share), name: nameOf(v, p.id) })}>
                       {t('play.move.poll', { p: pct(share) })}
                     </span>
                   )}
@@ -259,7 +263,7 @@ export function MoveScreen({ v }: { v: ViewState }) {
               );
             })}
           </ul>
-          {member && bar && <p className="mt-1 text-xs font-semibold">{t('play.move.barPick', { name: shortName(v, bar) })}</p>}
+          {member && bar && <p className="mt-1 text-small font-semibold">{t('play.move.barPick', { name: shortName(v, bar) })}</p>}
         </section>
       )}
       <CallChips v={v} claimants={claimantsNow(v)} value={call} onPick={setCall} />
@@ -297,6 +301,19 @@ export function MoveScreen({ v }: { v: ViewState }) {
   );
 }
 
+/** UI V3 (U1): Give as one slim bar, for move screens where it would sit alone in a big tile. */
+export function GiftBar({ v, gift, note, onOpen }: { v: ViewState; gift: Gift | null; note?: string | null; onOpen: () => void }) {
+  return (
+    <button type="button" aria-pressed={!!gift} onClick={onOpen} className={`flex min-h-[48px] w-full items-center gap-2 rounded-2xl px-3 text-start ${gift ? 'bg-spot text-onspot' : 'bg-card'}`} data-gift-bar>
+      <span aria-hidden className="h-show text-lead">+</span>
+      <span className="flex-1 text-small font-semibold leading-tight">
+        <span className="font-bold">{t('play.gift.title')}:</span> {gift ? t('play.gift.picked', { n: gift.amount, name: shortName(v, gift.to) }) : t('play.gift.desc', { max: Math.max(...PLAY.GIFT_AMOUNTS) })}
+      </span>
+      {note && gift && <span className="text-small font-bold">{note}</span>}
+    </button>
+  );
+}
+
 /** D-143: "Mission +6" for a preview of at least one point either way, else nothing. */
 export function previewText(x: number | null | undefined): string | null {
   if (x === null || x === undefined || !Number.isFinite(x) || Math.abs(x) < 1) return null;
@@ -308,21 +325,21 @@ export function GiftSheet({ v, gift, onPick, onClose, previews }: { v: ViewState
   const pv = previews ? { gift: previews } : lv3(v).preview;
   return (
     <Sheet title={t('play.gift.sheet')} closeLabel={t('play.gift.close')} onClose={onClose}>
-      <p className="text-sm">{t('play.gift.how')}</p>
+      <p className="text-small">{t('play.gift.how')}</p>
       <ul className="space-y-2" data-gift-sheet>
         {v.players
           .filter((p) => p.id !== v.viewer)
           .map((p) => (
             <li key={p.id} className="flex items-center gap-2 rounded-2xl bg-card px-3 py-2">
               <Face v={v} p={p} size={28} />
-              <span className="flex-1 truncate text-sm font-bold">{shortName(v, p.id)}</span>
+              <span className="flex-1 truncate text-small font-bold">{shortName(v, p.id)}</span>
               {PLAY.GIFT_AMOUNTS.map((a) => {
                 const on = gift?.to === p.id && gift.amount === a;
                 const note = previewText(pv?.gift[p.id]?.[a]);
                 return (
-                  <button key={a} type="button" aria-pressed={on} onClick={() => onPick({ to: p.id, amount: a })} className={`min-h-[44px] min-w-[64px] rounded-xl px-2 text-sm font-bold ${on ? 'bg-spot text-onspot' : 'bg-paper'}`} data-gift={`${p.id}:${a}`}>
+                  <button key={a} type="button" aria-pressed={on} onClick={() => onPick({ to: p.id, amount: a })} className={`min-h-[44px] min-w-[64px] rounded-xl px-2 text-small font-bold ${on ? 'bg-spot text-onspot' : 'bg-paper'}`} data-gift={`${p.id}:${a}`}>
                     {t('play.gift.amount', { n: a })}
-                    {note && <span className="block text-[10px] font-semibold">{note}</span>}
+                    {note && <span className="block text-small font-semibold">{note}</span>}
                   </button>
                 );
               })}
@@ -363,13 +380,13 @@ export function BarBeat({ v, next }: { v: ViewState; next: () => void }) {
   return (
     <Stage v={v} bar={false} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
       <div className="my-auto text-center" data-bar={b.barred.join(' ') || 'none'}>
-        <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.barBeat.label')}</p>
-        <p className={`h-show mt-2 text-5xl leading-tight ${b.barred.length ? 'text-stamp' : 'text-spot'}`}>{head}</p>
-        {sub && <p className="mt-3 text-base">{sub}{subIdle}</p>}
-        <p className="mt-4 text-sm text-soft">
+        <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.barBeat.label')}</p>
+        <p className={`h-show mt-2 text-hero leading-tight ${b.barred.length ? 'text-stamp' : 'text-spot'}`}>{head}</p>
+        {sub && <p className="mt-3 text-body">{sub}{subIdle}</p>}
+        <p className="mt-4 text-small text-soft">
           {b.members.map((m) => t('play.barBeat.vote', { name: shortName(v, m), target: b.votes[m] ? shortName(v, b.votes[m]!) : t('play.barBeat.noOne') })).join(' · ')}
         </p>
-        <p className="mt-1 text-xs text-soft">{t('play.barBeat.rule')}</p>
+        <p className="mt-1 text-small text-soft">{t('play.barBeat.rule')}</p>
       </div>
     </Stage>
   );
@@ -389,7 +406,6 @@ function checkedClaims(v: ViewState, id: string): Array<{ round: number; value: 
 export function CardsReveal({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
   const lv = lv3(v);
-  const off = useMotionOff();
   const types = lv.types ?? {};
   const worry = lv.worry ?? {};
   const poll = v.play!.poll ?? {};
@@ -414,45 +430,47 @@ export function CardsReveal({ v }: { v: ViewState }) {
   const line = top.lies
     ? t(top.p.id === v.viewer ? 'play.cards.peakLieYou' : 'play.cards.peakLie', { name: nameOf(v, top.p.id), n: timesWord(top.lies), truth: t(`play.cards.${types[top.p.id]}`).toLowerCase() })
     : hostLine('peakHonest', pick(v, 'peakHonest', 6));
-  return (
-    <Stage v={v} footer={<BigButton onClick={() => act()}>{t('play.stage.tap')}</BigButton>}>
-      <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.cards.label')}</p>
-      <h1 className="h-show mt-1 text-3xl leading-tight text-spot">{t('play.cards.title')}</h1>
-      <ul className="mt-2 space-y-1.5" data-cards>
-        {rows.map(({ p, cl }, k) => (
-          <motion.li
-            key={p.id}
-            className="rounded-2xl bg-card px-3 py-1.5"
-            initial={off ? false : { opacity: 0, rotateY: 90 }}
-            animate={{ opacity: 1, rotateY: 0 }}
-            transition={{ delay: off ? 0 : 0.6 * k, duration: off ? 0 : 0.35 }}
-          >
-            <div className="flex items-center gap-2">
-              <Face v={v} p={p} size={28} />
-              <span className="flex-1 truncate text-sm font-bold">{shortName(v, p.id)}</span>
-              {worry[p.id] && <span className={`rounded-md px-1.5 text-xs font-bold ${worry[p.id] === 'WORRIER' ? 'bg-spot text-onspot' : 'bg-paper text-ink'}`}>{t(`play.myCards.worry.${worry[p.id]}`)}</span>}
-              <span className={`h-show rounded-md px-2 text-base ${types[p.id] === 'HIGH' ? 'bg-stamp text-onspot' : 'bg-good text-onspot'}`}>{t(`play.cards.${types[p.id]}`)}</span>
-            </div>
-            {note(p.id) && <p className="mt-0.5 text-xs font-bold text-spot">{note(p.id)}</p>}
-            <p className="mt-1 flex flex-wrap gap-1 text-[10px]">
-              {cl.length ? (
-                cl.map((c) => (
-                  <span key={c.round} className={`rounded px-1 py-0.5 font-bold ${c.kept ? 'bg-paper text-ink' : 'bg-stamp text-onspot'}`}>
-                    {t('play.cards.stamp', { r: c.round, claim: t(`play.cards.word.${c.value}`), stamp: t(c.kept ? 'play.cards.TRUE' : 'play.cards.LIE') })}
-                  </span>
-                ))
-              ) : (
-                <span className="text-soft">{t('play.cards.noClaims')}</span>
-              )}
-            </p>
-          </motion.li>
+  const chips = (cl: Array<{ round: number; value: string; kept: boolean }>) =>
+    cl.length ? (
+      <Chips items={cl.map((c) => ({ text: t('play.cards.stamp', { r: c.round, claim: t(`play.cards.word.${c.value}`), stamp: t(c.kept ? 'play.cards.TRUE' : 'play.cards.LIE') }), lie: !c.kept }))} />
+    ) : (
+      <span className="text-small text-soft">{t('play.cards.noClaims')}</span>
+    );
+  const head = (p: ViewState['players'][number], big: boolean) => (
+    <div className="flex items-center gap-2">
+      <span className={`flex-1 truncate font-bold ${big ? 'h-show text-lead' : 'text-small'}`}>{shortName(v, p.id)}</span>
+      {worry[p.id] && <span className={`rounded-md px-1.5 text-small font-bold ${worry[p.id] === 'WORRIER' ? 'bg-spot text-onspot' : 'bg-paper text-ink'}`}>{t(`play.myCards.worry.${worry[p.id]}`)}</span>}
+      <span className={`h-show rounded-md px-2 text-body ${types[p.id] === 'HIGH' ? 'bg-stamp text-onspot' : 'bg-good text-onspot'}`}>{t(`play.cards.${types[p.id]}`)}</span>
+    </div>
+  );
+  const { steps, final } = spotlightSteps(
+    rows.map(({ p, cl, lies }) => ({
+      id: p.id,
+      ...peakMark(v, p.id, lies, cl.length),
+      body: (
+        <div className="rounded-2xl bg-card p-3">
+          {head(p, true)}
+          {note(p.id) && <p className="mt-1 text-small font-bold text-spot">{note(p.id)}</p>}
+          <div className="mt-2">{chips(cl)}</div>
+        </div>
+      ),
+    })),
+    <>
+      <ul className="space-y-1" data-cards-list>
+        {rows.map(({ p, cl }) => (
+          <li key={p.id} className="rounded-2xl bg-card px-3 py-1">
+            {head(p, false)}
+            {note(p.id) && <p className="text-small font-bold text-spot">{note(p.id)}</p>}
+            <div className="mt-0.5">{chips(cl)}</div>
+          </li>
         ))}
       </ul>
-      <div className="mt-auto pt-3">
-        <Bubble who="Dash" host text={line} />
+      <div className="mt-2">
+        <Bubble who="Dash" host text={line} mood={top.lies ? 'excited' : 'wink'} />
       </div>
-    </Stage>
+    </>,
   );
+  return <StagedReveal v={v} label={t('play.cards.label')} title={t('play.cards.title')} steps={steps} final={final} onDone={() => act()} />;
 }
 
 export function RegimeScreen({ v }: { v: ViewState }) {
@@ -460,15 +478,15 @@ export function RegimeScreen({ v }: { v: ViewState }) {
   const [x, setX] = useState<Regime | null>(null);
   return (
     <Stage v={v} chatFirst footer={<BigButton disabled={!x} onClick={() => act(x)}>{t('play.l3.regimeSubmit')}</BigButton>}>
-      <h1 className="h-show text-4xl">{t('play.l3.regimeTitle')}</h1>
-      <p className="mt-1 text-sm text-soft">{t('play.l3.regimeDecide')}</p>
+      <h1 className="h-show text-hero">{t('play.l3.regimeTitle')}</h1>
+      <p className="mt-1 text-small text-soft">{t('play.l3.regimeDecide')}</p>
       <div className="mt-3">
       </div>
       <div className="mt-auto space-y-2 pt-3" role="group" aria-label={t('play.l3.regimeTitle')}>
         {REGIMES.map((r) => (
           <button key={r} type="button" aria-pressed={x === r} onClick={() => setX(r)} className={`block w-full rounded-2xl p-3 text-start ${x === r ? 'bg-spot text-onspot' : 'bg-card'}`}>
-            <span className="h-show block text-lg leading-tight">{regimeName(r)}</span>
-            <span className="block text-xs">{t(`play.l3.regimes.${r}.desc`)}</span>
+            <span className="h-show block text-lead leading-tight">{regimeName(r)}</span>
+            <span className="block text-small">{t(`play.l3.regimes.${r}.desc`)}</span>
           </button>
         ))}
       </div>
@@ -482,10 +500,10 @@ export function VoteInBeat({ v, next }: { v: ViewState; next: () => void }) {
   return (
     <Stage v={v} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
       <div className="my-auto text-center" data-vote>
-        <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.stage.voteIn')}</p>
-        <p className="h-show mt-2 text-5xl leading-tight text-spot">{regimeName(lv.regime)}</p>
-        <p className="mt-4 text-sm text-soft">{v.players.map((p) => `${shortName(v, p.id)}: ${regimeName(lv.regimeVotes![p.id])}`).join(' · ')}</p>
-        {lv.regimeTie && <p className="mt-1 text-sm">{t('play.l1.votes.tie')}</p>}
+        <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.stage.voteIn')}</p>
+        <p className="h-show mt-2 text-hero leading-tight text-spot">{regimeName(lv.regime)}</p>
+        <p className="mt-4 text-small text-soft">{v.players.map((p) => `${shortName(v, p.id)}: ${regimeName(lv.regimeVotes![p.id])}`).join(' · ')}</p>
+        {lv.regimeTie && <p className="mt-1 text-small">{t('play.l1.votes.tie')}</p>}
       </div>
     </Stage>
   );
@@ -565,10 +583,41 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
     ? { who: shortName(v, subjectBot.id), text: confessional(subjectBot.botKey!, outcome.key, pick(v, `conf-${subjectBot.id}`, 4)), host: false, bot: subjectBot }
     : { who: 'Dash', text: hostLine(outcome.key, pick(v, `out-${outcome.key}`, 6), { name: outcome.subject ? nameOf(v, outcome.subject) : '' }, outcome.subject === me), host: true, bot: undefined };
   const advance = () => (done ? next() : setDone(true));
+  // UI V3 (U1, U2): ticks that slow down while the wheel turns, then a chime or a thud; the stage reacts.
+  useEffect(() => {
+    if (off || done) return;
+    const timers: number[] = [];
+    let at = 0;
+    for (let k = 0; at < spinMs - 150; k++) {
+      timers.push(window.setTimeout(() => sfx('tick'), at));
+      at += 60 + 14 * k * k * 0.12 + 6 * k;
+    }
+    return () => timers.forEach(clearTimeout);
+  }, [off, done, spinMs]);
+  useEffect(() => {
+    if (!done) return;
+    sfx(hit && mine.kind === 'HIT' ? 'hit' : 'safe');
+    if (mine.kind === 'HIT' && !off) buzz([60, 40, 60]);
+  }, [done]);
+  const prevBanks = hist.length > 1 ? hist[hist.length - 2].banks : undefined;
+  const cue: CastCue = done
+    ? {
+        stamps: Object.fromEntries(
+          v.players.map((p) => {
+            const o = outcomeOf(r, p.id, n.loss);
+            return [p.id, o.kind === 'HIT' ? { text: `${t('play.stage.HIT')} −${coins(o.lost)}`, tone: 'stamp' as const } : { text: t(`play.stage.${o.kind}`), tone: 'good' as const }];
+          }),
+        ),
+        expr: Object.fromEntries(v.players.map((p) => [p.id, outcomeOf(r, p.id, n.loss).kind === 'HIT' ? 'shocked' : 'pleased'])),
+        flash: Object.fromEntries(v.players.map((p) => [p.id, outcomeOf(r, p.id, n.loss).kind === 'HIT' ? 'hit' : 'gain'])),
+      }
+    : { banks: prevBanks, expr: Object.fromEntries(v.players.map((p) => [p.id, 'neutral'])) };
   return (
     <Stage
       v={v}
       bar={false}
+      cast={cue}
+      flash={done ? (mine.kind === 'HIT' ? 'hit' : change > 0 ? 'gain' : null) : null}
       onTap={advance}
       footer={
         <BigButton beatNext={!last} onClick={advance}>
@@ -576,9 +625,9 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
         </BigButton>
       }
     >
-      <p className="text-center text-xs font-bold uppercase tracking-wider text-soft">{t('play.stage.resultsOf', { r: v.round })}</p>
-      <h1 className="h-show mt-1 text-center text-3xl leading-tight">{t('play.l3.wheel')}</h1>
-      <div className="relative mx-auto mt-2 h-44 w-44">
+      <p className="text-center text-small font-bold uppercase tracking-wider text-soft">{t('play.stage.resultsOf', { r: v.round })}</p>
+      <h1 className="h-show mt-1 text-center text-title leading-tight">{t('play.l3.wheel')}</h1>
+      <div className="relative mx-auto mt-1 h-36 w-36">
         <svg viewBox="0 0 100 100" className="h-full w-full" aria-hidden>
           <motion.g style={{ originX: '50px', originY: '50px' }} initial={{ rotate: 0 }} animate={{ rotate: done ? final : off ? final : [0, final] }} transition={{ duration: done || off ? 0 : spinMs / 1000, ease: 'easeOut' }}>
             <circle cx="50" cy="50" r={WHEEL_R} className="fill-good/80" />
@@ -589,7 +638,7 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
         </svg>
         {done && (
           <span
-            className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-6 rounded-lg border-4 px-4 py-1 text-3xl font-black ${mine.kind === 'HIT' ? 'border-stamp bg-ink text-[rgb(18,14,36)]' : 'border-onspot bg-ink text-[rgb(18,14,36)]'}`}
+            className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-6 rounded-lg border-4 px-4 py-1 text-title font-black ${mine.kind === 'HIT' ? 'border-stamp bg-ink text-[rgb(18,14,36)]' : 'border-onspot bg-ink text-[rgb(18,14,36)]'}`}
             data-outcome={mine.kind}
           >
             {t(`play.stage.${mine.kind}`)}
@@ -599,40 +648,25 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
       {done ? (
         <div className="mt-3 text-center" aria-live="polite">
           <p className="flex items-baseline justify-center gap-3">
-            <span className={`h-show text-5xl ${change < 0 ? 'text-stamp' : 'text-spot'}`}>{signed(Math.round(h.banks[me]) - Math.round(from))}</span>
-            <span className="text-base font-semibold" data-chose>
+            <span className={`h-show text-hero ${change < 0 ? 'text-stamp' : 'text-spot'}`}>{signed(Math.round(h.banks[me]) - Math.round(from))}</span>
+            <span className="text-body font-semibold" data-chose>
               {t(`play.stage.chose.${chose}`)}
             </span>
           </p>
-          <p className="mt-1 text-sm text-soft">
+          <p className="mt-1 text-small text-soft">
             {t('play.stage.bankLine', { from: coins(from), to: coins(h.banks[me]) })} {t('play.bank.pay', { w: coins(v.play!.l3?.baseIncome ?? 0) })} {cost} {t('play.bank.living', { c: v.play!.livingCost })}
           <MoneyLedger v={v} /></p>
           <CallResults v={v} />
           {stress > 0 && (
-            <p className="mt-1 text-sm font-bold text-stamp" data-debt>
+            <p className="mt-1 text-small font-bold text-stamp" data-debt>
               {t('play.stage.debtCost', { n: Math.round(stress) })}
             </p>
           )}
           {giftLine && (
-            <p className="mt-1 text-xs" data-gifts>
+            <p className="mt-1 text-small" data-gifts>
               {giftLine}
             </p>
           )}
-          <ul className="mt-3 grid grid-cols-3 gap-2">
-            {v.players
-              .filter((p) => p.id !== me)
-              .map((p) => {
-                const o = outcomeOf(r, p.id, n.loss);
-                return (
-                  <li key={p.id} className={`rounded-xl px-1 py-1.5 text-center ${o.kind === 'HIT' ? 'bg-card ring-2 ring-stamp' : 'bg-card'}`}>
-                    <span className="block truncate text-xs font-bold">{shortName(v, p.id)}</span>
-                    <span className={`block text-xs ${o.kind === 'HIT' ? 'text-stamp' : 'text-good'}`}>
-                      {o.kind === 'HIT' ? t('play.stage.hit', { n: `−${coins(o.lost)}` }) : o.kind === 'COVERED' ? t('play.stage.covered') : t('play.stage.safe')}
-                    </span>
-                  </li>
-                );
-              })}
-          </ul>
           <div className="mt-3 text-start">
             <Bubble who={voice.who} text={voice.text} host={voice.host} bot={voice.bot} />
           </div>
@@ -675,30 +709,31 @@ export function PriceBeat({ v, next, onReally }: { v: ViewState; next: () => voi
       }
     >
       <div className="flex items-center justify-between">
-        <span className="rounded-full bg-onspot px-2 py-0.5 text-[11px] font-bold uppercase tracking-wider text-spot">{t('play.stage.breaking')}</span>
-        <span className="text-xs font-semibold">{t('play.l3.ticker')}</span>
+        <span className="rounded-full bg-onspot px-2 py-0.5 text-small font-bold uppercase tracking-wider text-spot">{t('play.stage.breaking')}</span>
+        <span className="text-small font-semibold">{t('play.l3.ticker')}</span>
       </div>
       <div className="my-auto">
-        <p className="text-xs font-bold uppercase tracking-wider">{t('play.stage.priceOf')}</p>
+        <p className="text-small font-bold uppercase tracking-wider">{t('play.stage.priceOf')}</p>
         <p className="mt-1 flex items-baseline gap-3" data-price>
-          {(to === null || fmt1(to) !== fmt1(from)) && <span className="h-show text-4xl line-through opacity-60">{fmt1(from)}</span>}
-          <span className={`h-show leading-none ${to === null ? 'text-5xl' : 'text-8xl'}`}>{to === null ? t('play.stage.closed') : fmt1(to)}</span>
+          {(to === null || fmt1(to) !== fmt1(from)) && <span className="h-show text-hero line-through opacity-60">{fmt1(from)}</span>}
+          <span className={`h-show leading-none ${to === null ? 'text-hero' : 'text-hero'}`}>{to === null ? t('play.stage.closed') : fmt1(to)}</span>
         </p>
         {to !== null && (
-          <span className="mt-2 inline-block rounded-md bg-onspot px-2 py-0.5 text-sm font-bold text-spot">
+          <span className="mt-2 inline-block rounded-md bg-onspot px-2 py-0.5 text-small font-bold text-spot">
             {kind === 'Same' || (kind === 'Launch' && Math.abs(to - from) < 1e-9) ? t('play.stage.same') : t(to > from ? 'play.stage.up' : 'play.stage.down', { p: pct(Math.abs(change)) })}
           </span>
         )}
-        <p className="h-show mt-4 text-2xl leading-tight">{t(`play.stage.head${kind}`)}</p>
-        <p className="mt-2 text-sm">{t(`play.stage.sub${kind}`)}</p>
+        <p className="h-show mt-4 text-title leading-tight">{t(`play.stage.head${kind}`)}</p>
+        <p className="mt-2 text-small">{t(`play.stage.sub${kind}`)}</p>
         <div className="mt-4">
-          <figure className="rounded-2xl bg-onspot px-3 py-2 text-sm text-spot" data-voice="host">
-            <span className="font-bold">Dash:</span> {hostLine(`price${kind}`, pick(v, `price-${kind}`, 6))}
+          <figure className="flex items-end gap-2" data-voice="host">
+            <span aria-hidden className="shrink-0"><DashHost expr="worried" size={56} /></span>
+            <p className="flex-1 rounded-2xl rounded-bl-sm bg-onspot px-3 py-2 text-small text-spot"><span className="font-bold">Dash:</span> {hostLine(`price${kind}`, pick(v, `price-${kind}`, 6))}</p>
           </figure>
         </div>
         <button
           type="button"
-          className="mt-3 text-sm font-semibold underline"
+          className="mt-3 text-small font-semibold underline"
           onClick={(e) => {
             e.stopPropagation();
             onReally();

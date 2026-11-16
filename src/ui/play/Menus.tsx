@@ -1,6 +1,7 @@
 // Play spec Section 8: "How do you want to play?", then Play's own show picker and casting call.
 // The Study menus (Full game, One level, Setup) are unchanged and reached through "With the economics".
 import { useState } from 'react';
+import { HUMAN_AVATARS, ShapePerson, myAvatar, setMyAvatar, type HumanAvatar } from './Characters';
 import type { Difficulty, LevelId } from '../../engine/types';
 import { PLAY } from '../../engine/play/params';
 import { PLAYABLE_EPISODES } from '../../engine/play/rules';
@@ -22,16 +23,16 @@ export function HowToPlay() {
   return (
     <Page narrow>
       <BackLink onClick={() => go('title')} />
-      <h1 className="h-display mb-4 text-3xl">{t('play.choose.title')}</h1>
+      <h1 className="h-display mb-4 text-title">{t('play.choose.title')}</h1>
       <div className="space-y-3">
         {options.map((o, i) => (
           <button key={o.id} type="button" className={`choice block p-4 ${i === 0 ? 'border-ink' : ''}`} onClick={() => go(o.to)} data-ruleset-choice={o.id}>
-            <span className="h-display block text-2xl">{o.title}</span>
-            <span className="mt-1 block text-sm text-soft">{o.desc}</span>
+            <span className="h-display block text-title">{o.title}</span>
+            <span className="mt-1 block text-small text-soft">{o.desc}</span>
           </button>
         ))}
       </div>
-      <p className="mt-4 text-xs text-soft">{t('play.disclaimer')}</p>
+      <p className="mt-4 text-small text-soft">{t('play.disclaimer')}</p>
     </Page>
   );
 }
@@ -40,7 +41,7 @@ export function HowToPlay() {
 function PlaytestToggle() {
   const [on, setOn] = useState(playtestOn());
   return (
-    <label className="mt-2 flex items-center gap-2 text-xs text-soft">
+    <label className="mt-2 flex items-center gap-2 text-small text-soft">
       <input type="checkbox" checked={on} onChange={(e) => { setPlaytest(e.target.checked); setOn(e.target.checked); }} data-playtest-toggle />
       {t('play.pt.toggle')}
     </label>
@@ -57,13 +58,13 @@ export function PlayModeSelect() {
   return (
     <Page narrow>
       <BackLink onClick={() => go('howPlay')} />
-      <p className="h-show text-lg">{t('play.show')}</p>
-      <h1 className="h-show mb-1 text-3xl">{t('play.modes.title')}</h1>
-      <p className="mb-4 text-sm italic">{t('play.tagline')}</p>
+      <p className="h-show text-lead">{t('play.show')}</p>
+      <h1 className="h-show mb-1 text-title">{t('play.modes.title')}</h1>
+      <p className="mb-4 text-small italic">{t('play.tagline')}</p>
       <div className="space-y-3">
         <button type="button" className="choice block p-4" data-life onClick={() => useStore.setState({ setupFor: { mode: 'LIFE' }, screen: 'playSetup' })}>
-          <span className="h-show block text-2xl">{t('play.modes.life')}</span>
-          <span className="mt-1 block text-sm text-soft">{t('play.modes.lifeDesc')}</span>
+          <span className="h-show block text-title">{t('play.modes.life')}</span>
+          <span className="mt-1 block text-small text-soft">{t('play.modes.lifeDesc')}</span>
         </button>
         <button
           type="button"
@@ -71,14 +72,14 @@ export function PlayModeSelect() {
           data-daily
           onClick={() => useStore.getState().start({ mode: 'LIFE', ruleset: 'PLAY', nPlayers: 4, difficulty: 'NORMAL', seed: dailySeed() })}
         >
-          <span className="h-show block text-2xl">{t('play.daily.title')}</span>
-          <span className="mt-1 block text-sm text-soft">{t('play.daily.desc', { day: istanbulDay() })}</span>
+          <span className="h-show block text-title">{t('play.daily.title')}</span>
+          <span className="mt-1 block text-small text-soft">{t('play.daily.desc', { day: istanbulDay() })}</span>
         </button>
         <section className="form-card p-3" aria-labelledby="one-ep">
-          <h2 id="one-ep" className="h-show text-xl">
+          <h2 id="one-ep" className="h-show text-lead">
             {t('play.modes.episode')}
           </h2>
-          <p className="mb-2 text-sm text-soft">{t('play.modes.episodeDesc', { bank: PLAY.EPISODE_STARTING_BANK })}</p>
+          <p className="mb-2 text-small text-soft">{t('play.modes.episodeDesc', { bank: PLAY.EPISODE_STARTING_BANK })}</p>
           <ul className="grid gap-2 sm:grid-cols-2">
             {([1, 2, 3, 4, 5] as LevelId[]).map((n) => {
               const ready = PLAYABLE_EPISODES.includes(n);
@@ -87,7 +88,7 @@ export function PlayModeSelect() {
                   <button type="button" className="choice block h-full" disabled={!ready} aria-disabled={!ready} onClick={() => ready && choose(n)}>
                     <span className="label block">{t('play.modes.ep', { n })}</span>
                     <span className="block font-semibold">{t(`play.episodes.${n}.name`)}</span>
-                    <span className="block text-xs text-soft">{ready ? t(`play.episodes.${n}.pitch`) : t('play.modes.soon')}</span>
+                    <span className="block text-small text-soft">{ready ? t(`play.episodes.${n}.pitch`) : t('play.modes.soon')}</span>
                   </button>
                 </li>
               );
@@ -95,9 +96,9 @@ export function PlayModeSelect() {
           </ul>
         </section>
       </div>
-      <p className="mt-4 text-xs text-soft">{t('play.disclaimer')}</p>
+      <p className="mt-4 text-small text-soft">{t('play.disclaimer')}</p>
       <PlaytestToggle />
-      <button type="button" className="mt-2 text-sm font-semibold underline" onClick={() => setOpening(true)}>
+      <button type="button" className="mt-2 text-small font-semibold underline" onClick={() => setOpening(true)}>
         {t('play.opening.menu')}
       </button>
       {opening && <PlayOpening onDone={() => setOpening(false)} />}
@@ -111,13 +112,14 @@ export function PlaySetup() {
   const [difficulty, setDifficulty] = useState<Difficulty>(settings.difficulty);
   const [name, setName] = useState('');
   const [seed, setSeed] = useState('');
+  const [avatar, setAvatar] = useState<HumanAvatar>(myAvatar());
   if (!setupFor) return null;
   return (
     <Page narrow>
       <BackLink onClick={() => go('playMode')} />
       <section className="form-card p-4">
         <p className="label">{setupFor.mode === 'LIFE' ? t('play.modes.life') : `${t('play.modes.ep', { n: setupFor.level ?? 3 })} · ${t(`play.episodes.${setupFor.level ?? 3}.name`)}`}</p>
-        <h1 className="h-show text-2xl">{t('play.setup.title')}</h1>
+        <h1 className="h-show text-title">{t('play.setup.title')}</h1>
         <form
           className="mt-3 space-y-4"
           onSubmit={(e) => {
@@ -130,9 +132,9 @@ export function PlaySetup() {
             <div className="grid grid-cols-3 gap-2" role="group" aria-label={t('play.setup.players')}>
               {([2, 3, 4] as const).map((k) => (
                 <button key={k} type="button" aria-pressed={n === k} className="choice flex-col justify-center" onClick={() => setN(k)} data-seats={k}>
-                  <span className="num text-lg">{k}</span>
+                  <span className="num text-lead">{k}</span>
                   {/* D-149 */}
-                  {k === 4 && <span className="text-xs font-semibold">{t('play.setup.best')}</span>}
+                  {k === 4 && <span className="text-small font-semibold">{t('play.setup.best')}</span>}
                 </button>
               ))}
             </div>
@@ -141,15 +143,36 @@ export function PlaySetup() {
             <legend className="label mb-1">{t('play.setup.difficulty')}</legend>
             <div className="grid grid-cols-3 gap-2" role="group" aria-label={t('play.setup.difficulty')}>
               {(['EASY', 'NORMAL', 'HARD'] as Difficulty[]).map((d) => (
-                <button key={d} type="button" aria-pressed={difficulty === d} className="choice justify-center text-sm" onClick={() => setDifficulty(d)} data-difficulty={d}>
+                <button key={d} type="button" aria-pressed={difficulty === d} className="choice justify-center text-small" onClick={() => setDifficulty(d)} data-difficulty={d}>
                   {t(`setup.${d}`)}
                 </button>
               ))}
             </div>
             {/* D-145: one line per level, shown for the level picked. */}
-            <p className="mt-1 text-sm text-soft" aria-live="polite" data-difficulty-line>
+            <p className="mt-1 text-small text-soft" aria-live="polite" data-difficulty-line>
               {t(`play.setup.levels.${difficulty}`)}
             </p>
+          </fieldset>
+          <fieldset>
+            <legend className="label mb-1">{t('play.setup.avatar')}</legend>
+            <div className="grid grid-cols-6 gap-1" role="group" aria-label={t('play.setup.avatar')}>
+              {HUMAN_AVATARS.map((a) => (
+                <button
+                  key={a}
+                  type="button"
+                  aria-pressed={avatar === a}
+                  aria-label={t(`play.setup.avatars.${a}`)}
+                  className={`grid min-h-[52px] place-items-center rounded-xl border-2 ${avatar === a ? 'border-spot bg-card' : 'border-transparent bg-card/60'}`}
+                  onClick={() => {
+                    setAvatar(a);
+                    setMyAvatar(a);
+                  }}
+                  data-avatar={a}
+                >
+                  <ShapePerson kind={a} expr={avatar === a ? 'pleased' : 'neutral'} size={44} />
+                </button>
+              ))}
+            </div>
           </fieldset>
           <label className="block">
             <span className="label">{t('play.setup.name')}</span>
@@ -158,7 +181,7 @@ export function PlaySetup() {
           <label className="block">
             <span className="label">{t('play.setup.seed')}</span>
             <input className="num mt-1 min-h-[44px] w-full rounded-md border-2 border-line bg-card px-3" value={seed} maxLength={64} onChange={(e) => setSeed(e.target.value)} aria-describedby="seed-hint" />
-            <span id="seed-hint" className="mt-1 block text-xs text-soft">
+            <span id="seed-hint" className="mt-1 block text-small text-soft">
               {t('play.setup.seedHint')}
             </span>
           </label>

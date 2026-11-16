@@ -15,7 +15,7 @@ import { Sheet as TableSheet } from '../components/TableParts';
 import { LockedInPanel, useOnline, useWaiting } from '../components/Online';
 import { screenDecisionPhase } from '../../shared/flow';
 import { BigButton, Bubble, Face, Stage } from './OnAir';
-import { BarBeat, CardsReveal, ClaimScreen, ClaimsBeat, MoveScreen, MyCardsBeat, PriceBeat, RegimeScreen, VoteInBeat, WheelBeat, claimsOpen, hasPriceBeat, regimeName, roundClaims, type L3View } from './Episode3';
+import { BarBeat, CardsReveal, ClaimScreen, MoveScreen, MyCardsBeat, PriceBeat, RegimeScreen, VoteInBeat, WheelBeat, claimsOpen, hasPriceBeat, regimeName, type L3View } from './Episode3';
 import { eventText, hostLine, missionName, pick, timesWord } from './logic';
 import { CardsReveal1, ClaimScreen1, IncomesBeat, PeekScreen, Unborn, VoteScreen1, VotesBeat, summary1 } from './Episode1';
 import { CardsReveal2, TaxIn, EffortScreen, IncomeScreen, MyCards2, PrizeBeat, PrizeScreen, TaxScreen, summary2 } from './Episode2';
@@ -67,24 +67,24 @@ function MissionReveal({ v }: { v: ViewState }) {
   }, [off]);
   return (
     <Stage v={v} bar={false} footer={<BigButton onClick={() => act()}>{t('play.values.accept')}</BigButton>}>
-      <p className="h-show mt-2 text-center text-lg text-spot">{t('play.show')}</p>
+      <p className="h-show mt-2 text-center text-lead text-spot">{t('play.show')}</p>
       <FlipCard
         className="mx-auto mt-4 h-72 w-full"
         flipped={flipped}
         back={
           <div className="flex h-full items-center justify-center rounded-3xl bg-card">
-            <span className="h-show text-3xl text-spot">{t('play.show')}</span>
+            <span className="h-show text-title text-spot">{t('play.show')}</span>
           </div>
         }
         front={
           <div className="flex h-full flex-col justify-center rounded-3xl bg-spot p-6 text-onspot">
-            <p className="text-xs font-bold uppercase tracking-wider">{t('play.values.title')}</p>
-            <p className="h-show mt-2 text-5xl leading-none">{missionName(me.values!)}</p>
-            <p className="mt-3 text-base">{t(`play.missions.${me.values}.line`)}</p>
+            <p className="text-small font-bold uppercase tracking-wider">{t('play.values.title')}</p>
+            <p className="h-show mt-2 text-hero leading-none">{missionName(me.values!)}</p>
+            <p className="mt-3 text-body">{t(`play.missions.${me.values}.line`)}</p>
           </div>
         }
       />
-      <p className="mt-5 text-center text-sm text-soft">{t('play.values.private')}</p>
+      <p className="mt-5 text-center text-small text-soft">{t('play.values.private')}</p>
     </Stage>
   );
 }
@@ -94,11 +94,11 @@ function EpisodeIntro({ v }: { v: ViewState }) {
   const n = v.play!.l3;
   return (
     <Stage v={v} footer={<BigButton onClick={() => act()}>{t('play.intro.go')}</BigButton>}>
-      <p className="text-xs font-bold uppercase tracking-wider text-soft">
+      <p className="text-small font-bold uppercase tracking-wider text-soft">
         {t('play.modes.ep', { n: v.levelIndex })} · {t(`play.episodes.${v.levelIndex}.sponsor`)}{v.difficulty !== 'NORMAL' ? ` · ${t(`play.setup.badge.${v.difficulty}`)}` : ''}
       </p>
-      <h1 className="h-show mt-1 text-5xl leading-none text-spot">{t(`play.episodes.${v.levelIndex}.name`)}</h1>
-      <p className="mt-5 text-lg leading-snug" data-intro>
+      <h1 className="h-show mt-1 text-hero leading-none text-spot">{t(`play.episodes.${v.levelIndex}.name`)}</h1>
+      <p className="mt-5 text-lead leading-snug" data-intro>
         {t(v.mode === 'LIFE' && v.levelIndex === 5 ? 'play.episodes.5.introLife' : `play.episodes.${v.levelIndex}.intro`, { loss: n?.loss ?? 0 })}
       </p>
       <div className="mt-auto pt-4">
@@ -114,10 +114,10 @@ function EventBeat({ v, next }: { v: ViewState; next: () => void }) {
   return (
     <Stage v={v} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
       <div className="my-auto" data-event={ev.id}>
-        <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.stage.eventLabel')}</p>
-        <p className="h-show mt-2 text-5xl leading-none text-spot">{txt.name}</p>
-        <p className="mt-3 text-base italic text-soft">{txt.text}</p>
-        <p className="mt-3 rounded-2xl bg-card p-3 text-base font-semibold">{txt.effect}</p>
+        <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.stage.eventLabel')}</p>
+        <p className="h-show mt-2 text-hero leading-none text-spot">{txt.name}</p>
+        <p className="mt-3 text-body italic text-soft">{txt.text}</p>
+        <p className="mt-3 rounded-2xl bg-card p-3 text-body font-semibold">{txt.effect}</p>
         <div className="mt-4">
           <Bubble who="Dash" host text={hostLine('eventIntro', pick(v, 'eventIntro', 6), { event: txt.name })} />
         </div>
@@ -139,21 +139,20 @@ function DecisionFlow({ v }: { v: ViewState }) {
   const lv = v.levelView as L3View;
   const ev = v.play!.event;
   const first = stepId === 'CLAIM' || (stepId === 'CHOICE' && !claimsOpen(v));
-  const beats: Array<'cards' | 'vote' | 'event' | 'claims'> = [];
+  // UI V3 (U1): the claims show as speech bubbles on the move screen, so "The claims are in" is gone.
+  const beats: Array<'cards' | 'vote' | 'event'> = [];
   if (first && v.round === 1) beats.push('cards');
   if (first) {
     if (v.round === PLAY.L3.VOLUNTARY_ROUNDS + 1 && lv.regimeVotes) beats.push('vote');
     if (ev && ev.id !== 'QUIET' && ev.round === v.round && ev.level === v.levelIndex) beats.push('event');
   }
-  if (stepId === 'CHOICE' && Object.keys(roundClaims(v)).length) beats.push('claims');
   const [k, setK] = useState(0);
   const next = () => setK((x) => x + 1);
   if (k < beats.length) {
     const b = beats[k];
     if (b === 'cards') return <MyCardsBeat v={v} next={next} />;
     if (b === 'vote') return <VoteInBeat v={v} next={next} />;
-    if (b === 'event') return <EventBeat v={v} next={next} />;
-    return <ClaimsBeat v={v} next={next} />;
+    return <EventBeat v={v} next={next} />;
   }
   if (online && done)
     return (
@@ -173,17 +172,15 @@ function DecisionFlow1({ v }: { v: ViewState }) {
   const stepId = v.phase.step;
   const ev = v.play!.event;
   const firstScreen = stepId === 'PEEK' || stepId === 'FAIR_1' || (stepId === 'CLAIM' && v.round < PLAY.L1.PEEK_FROM_ROUND && v.mode !== 'LIFE');
-  const beats: Array<'cards' | 'event' | 'claims'> = [];
+  const beats: Array<'cards' | 'event'> = [];
   if (firstScreen && v.round === 1) beats.push('cards');
   if (firstScreen && ev && ev.id !== 'QUIET' && ev.round === v.round && ev.level === v.levelIndex) beats.push('event');
-  if (stepId === 'VOTE' && Object.keys(roundClaims(v)).length) beats.push('claims');
   const [k, setK] = useState(0);
   const next = () => setK((x) => x + 1);
   if (k < beats.length) {
     const b = beats[k];
     if (b === 'cards') return <Unborn v={v} next={next} />;
-    if (b === 'event') return <EventBeat v={v} next={next} />;
-    return <ClaimsBeat v={v} next={next} />;
+    return <EventBeat v={v} next={next} />;
   }
   if (online && done)
     return (
@@ -259,10 +256,10 @@ function ComebackScreen({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
   return (
     <Stage v={v} footer={null}>
-      <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.comeback.label')}</p>
-      <h1 className="h-show mt-1 text-4xl leading-tight text-spot">{t('play.comeback.title')}</h1>
-      <p className="mt-2 text-base">{t('play.comeback.how', { c: PLAY.COMEBACK.COINS, p: PLAY.COMEBACK.POINTS })}</p>
-      <p className="mt-2 text-sm">{t('play.comeback.rate', { c: PLAY.COMEBACK.COINS, half: PLAY.COMEBACK.COINS * PLAY.BANK_WEIGHT })}</p>
+      <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.comeback.label')}</p>
+      <h1 className="h-show mt-1 text-hero leading-tight text-spot">{t('play.comeback.title')}</h1>
+      <p className="mt-2 text-body">{t('play.comeback.how', { c: PLAY.COMEBACK.COINS, p: PLAY.COMEBACK.POINTS })}</p>
+      <p className="mt-2 text-small">{t('play.comeback.rate', { c: PLAY.COMEBACK.COINS, half: PLAY.COMEBACK.COINS * PLAY.BANK_WEIGHT })}</p>
       <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
         <BigButton onClick={() => act('COINS')}>{t('play.comeback.coins', { c: PLAY.COMEBACK.COINS })}</BigButton>
         <BigButton onClick={() => act('POINTS')}>{t('play.comeback.points', { p: PLAY.COMEBACK.POINTS })}</BigButton>
@@ -357,21 +354,21 @@ function EpisodeGuess({ v }: { v: ViewState }) {
         </div>
       }
     >
-      <h1 className="h-show text-4xl">{t('play.guess.title')}</h1>
-      <p className="mt-1 text-sm text-soft">{t('play.guess.intro', { pts: PLAY.GUESS_POINTS })}</p>
+      <h1 className="h-show text-hero">{t('play.guess.title')}</h1>
+      <p className="mt-1 text-small text-soft">{t('play.guess.intro', { pts: PLAY.GUESS_POINTS })}</p>
       <div className="mt-4 grid grid-cols-3 gap-2" role="group" aria-label={t('play.guess.pick')}>
         {others.map((p) => (
           <button key={p.id} type="button" aria-pressed={target === p.id} onClick={() => setTarget(p.id)} className={`flex flex-col items-center gap-1 rounded-2xl p-2 ${target === p.id ? 'bg-spot text-onspot' : 'bg-card'}`}>
             <Face v={v} p={p} size={32} />
-            <span className="truncate text-sm font-bold">{shortName(v, p.id)}</span>
+            <span className="truncate text-small font-bold">{shortName(v, p.id)}</span>
           </button>
         ))}
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2" role="group" aria-label={t('play.guess.mission')}>
         {VALUES_CARDS.map((c) => (
           <button key={c} type="button" aria-pressed={card === c} onClick={() => setCard(c)} className={`min-h-[64px] rounded-2xl p-2 text-start ${card === c ? 'bg-spot text-onspot' : 'bg-card'}`}>
-            <span className="h-show text-lg leading-tight">{missionName(c)}</span>
-            <span className="block text-xs">{t(`play.guess.tell.${c}`)}</span>
+            <span className="h-show text-lead leading-tight">{missionName(c)}</span>
+            <span className="block text-small">{t(`play.guess.tell.${c}`)}</span>
           </button>
         ))}
       </div>
@@ -395,21 +392,21 @@ function MissionsBeat({ v, next }: { v: ViewState; next: () => void }) {
     <Stage v={v} bar={false} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
       <div className="my-auto" data-missions>
         <Bubble who="Dash" host text={guessLine} />
-        <p className="mt-5 text-xs font-bold uppercase tracking-wider text-soft">{t(hidden ? 'play.summary.ranksLabel' : 'play.summary.missionsLabel')}</p>
-        <h1 className="h-show mt-1 text-3xl leading-tight text-spot">{ranked[0].id === v.viewer ? t(hidden ? 'play.summary.leadYou' : 'play.summary.winnerYou') : t(hidden ? 'play.summary.lead' : 'play.summary.winner', { name: shortName(v, ranked[0].id) })}</h1>
+        <p className="mt-5 text-small font-bold uppercase tracking-wider text-soft">{t(hidden ? 'play.summary.ranksLabel' : 'play.summary.missionsLabel')}</p>
+        <h1 className="h-show mt-1 text-title leading-tight text-spot">{ranked[0].id === v.viewer ? t(hidden ? 'play.summary.leadYou' : 'play.summary.winnerYou') : t(hidden ? 'play.summary.lead' : 'play.summary.winner', { name: shortName(v, ranked[0].id) })}</h1>
         <ol className="mt-3 space-y-1.5" aria-label={t('play.stage.ranking')}>
           {ranked.map((p, i) => (
             <li key={p.id} className={`flex items-center gap-2 rounded-xl px-2 py-1.5 ${p.id === v.viewer ? 'bg-spot text-onspot' : 'bg-card'}`}>
-              <span className="h-show w-5 text-lg">{i + 1}</span>
-              <span className="w-20 truncate text-sm font-bold">{shortName(v, p.id)}</span>
-              <span className="flex-1 truncate text-sm">{p.values ? missionName(p.values) : ''}</span>
+              <span className="h-show w-5 text-lead">{i + 1}</span>
+              <span className="w-20 truncate text-small font-bold">{shortName(v, p.id)}</span>
+              <span className="flex-1 truncate text-small">{p.values ? missionName(p.values) : ''}</span>
               {!hidden && <span className="h-show w-10 text-end">{coins(scores[p.id] ?? 0)}</span>}
               {hidden && p.id === v.viewer && <span className="h-show w-10 text-end">{coins(pl.mission?.score ?? 0)}</span>}
             </li>
           ))}
         </ol>
         {hidden && pl.gaps && (
-          <p className="mt-2 text-sm" data-gaps>
+          <p className="mt-2 text-small" data-gaps>
             {[pl.gaps.above !== null ? t(pl.gaps.above ? 'play.summary.gapAbove' : 'play.summary.gapAboveClose', { n: pl.gaps.above }) : '', pl.gaps.below !== null ? t(pl.gaps.below ? 'play.summary.gapBelow' : 'play.summary.gapBelowClose', { n: pl.gaps.below }) : ''].filter(Boolean).join(' ')}
           </p>
         )}
@@ -493,8 +490,8 @@ function EpisodeSummary({ v }: { v: ViewState }) {
   if (k === 0) return <MissionsBeat v={v} next={() => setK(1)} />;
   const row = (label: string, text: string, cls = '') => (
     <div>
-      <dt className="text-xs font-bold uppercase tracking-wider text-soft">{label}</dt>
-      <dd className={`text-base font-semibold leading-snug ${cls}`}>{text}</dd>
+      <dt className="text-small font-bold uppercase tracking-wider text-soft">{label}</dt>
+      <dd className={`text-body font-semibold leading-snug ${cls}`}>{text}</dd>
     </div>
   );
   return (
@@ -518,7 +515,7 @@ function EpisodeSummary({ v }: { v: ViewState }) {
         )
       }
     >
-      <h1 className="h-show text-3xl leading-tight text-spot">{t('play.summary.title')}</h1>
+      <h1 className="h-show text-title leading-tight text-spot">{t('play.summary.title')}</h1>
       <dl className="mt-3 space-y-3" data-summary>
         {row(t('play.summary.lieLabel'), lieText)}
         {pl.pollMode !== 'NEVER' && v.levelIndex === 3 && row(t('play.summary.readLabel'), readText)}
@@ -527,10 +524,10 @@ function EpisodeSummary({ v }: { v: ViewState }) {
         {row(missionName(m.card), complete ? t('play.summary.missionDone') : t('play.summary.missionMissed'), complete ? 'text-good' : 'text-stamp')}
         {row(t('play.summary.nearMiss'), nm ? nearMissText(v, nm) : t('play.summary.nearMissNone'))}
       </dl>
-      <button type="button" className="mt-4 self-start text-sm font-semibold underline" onClick={() => setSheet('really')}>
+      <button type="button" className="mt-4 self-start text-small font-semibold underline" onClick={() => setSheet('really')}>
         {t('play.really.button')}
       </button>
-      {v.seed && <p className="mt-2 text-[11px] text-soft">{t('play.summary.seed', { seed: v.seed })}</p>}
+      {v.seed && <p className="mt-2 text-small text-soft">{t('play.summary.seed', { seed: v.seed })}</p>}
       {playtestOn() && <PlaytestPanel v={v} />}
       {sheet === 'really' && <ReallySheet v={v} onClose={() => setSheet(null)} />}
     </Stage>

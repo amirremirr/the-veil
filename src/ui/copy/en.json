@@ -909,6 +909,15 @@
       "badge": {
         "EASY": "Easy",
         "HARD": "Hard: no poll, no hints"
+      },
+      "avatar": "Your contestant",
+      "avatars": {
+        "hex": "Hexagon",
+        "round": "Ball",
+        "diamond": "Diamond",
+        "pill": "Pill",
+        "cloud": "Cloud",
+        "star": "Star"
       }
     },
     "episodes": {
@@ -1419,7 +1428,8 @@
       "launchDesc": "SafeHands signs everyone up for the launch season, at {p} coins. After that, it's your choice.",
       "headLaunch": "Everyone was in, so the new price is the whole table's average risk.",
       "subLaunch": "From now on, buying cover is your choice.",
-      "debtCost": "In debt: -{n} points"
+      "debtCost": "In debt: -{n} points",
+      "skip": "Skip"
     },
     "claims": {
       "RISK": {
@@ -1485,7 +1495,7 @@
       "refusedMany": "{names} applied for cover and were turned away.",
       "and": " and ",
       "rule": "Members are last round's cover holders. Most of the other members voting for you bars you.",
-        "notAppliedNamed": "{names} didn't apply, so no cover this round."
+      "notAppliedNamed": "{names} didn't apply, so no cover this round."
     },
     "cards": {
       "label": "The reveal",
@@ -1659,15 +1669,15 @@
       "res": {
         "label": "Round {r} hires",
         "youJudged": "You judged. You earn {n}.",
-          "judgeBase": "Base {b}: you gave nobody the complex job.",
-          "judgeWhy": "Base {b}, +{gp} for trained complex hires ({g} x {gu}), -{lp} for untrained ones ({l} x {lu}). Each row shows the worker's own pay.",
+        "judgeBase": "Base {b}: you gave nobody the complex job.",
+        "judgeWhy": "Base {b}, +{gp} for trained complex hires ({g} x {gu}), -{lp} for untrained ones ({l} x {lu}). Each row shows the worker's own pay.",
         "youComplex": "You got the complex job. You earn {n}.",
         "youSimple": "You got the simple job. You earn {n}.",
         "judgePay": "{name} earned {n} as HireBot.",
         "trainCost": "Training cost you {c} of that.",
         "pay": "Your job paid {p}.",
         "payTrain": "Your job paid {p}; training cost you {c}.",
-          "other": "Gifts and other: {n}.",
+        "other": "Gifts and other: {n}.",
         "care": "(Childcare duty: long hours cost you {n}, so the flexible job pays more.)"
       },
       "stamp": {
@@ -2233,6 +2243,47 @@
       "comeback": "That includes your Second Chance: +{c}.",
       "living": "Living costs: -{c}.",
       "pay": "Pay: +{w}."
+    },
+    "cast": {
+      "stage": "The stage",
+      "podiumA11y": "{name}, bank {bank}",
+      "podiumDebtA11y": "{name}, bank {bank}, in debt",
+      "inDebt": "In debt",
+      "tapToCall": "Call it?",
+      "calling": "Calling it",
+      "callA11y": "Claim by {name}: {claim} Call it for {n}",
+      "uncallA11y": "Claim by {name}: {claim} Calling it. Tap to cancel",
+      "confirm": "Call it on {name} for {n}?",
+      "confirmHow": "If it's a lie, you win {win}. If it's true, they get your {n}.",
+      "cancel": "Cancel",
+      "callIt": "Call it",
+      "callHint": "Think it is a lie? Tap the bubble to call it ({n}).",
+      "callingLine": "You're calling {name} for {n}. Tap the bubble to cancel.",
+      "claim": {
+        "vote": "I'm voting {rule}",
+        "effort": "I worked {b}",
+        "trained": "I trained",
+        "l5": {
+          "YES": "I'll vote yes",
+          "NO": "I'll vote no",
+          "SILENT": "..."
+        }
+      },
+      "broke": "Broke promise",
+      "kept": "Kept",
+      "l2avg": "About {e} hours a round. Hustle Prizes: {w}.",
+      "yes": "Yes",
+      "no": "No",
+      "l5card": "{name}: {rules}",
+      "tally": "Yes {y} of {n}",
+      "l5title": "The ballots",
+      "l2row": "{e} h a round, {w} prizes",
+      "lies": "Lies: {n}",
+      "l4row": "Trained {n} of {w} times"
+    },
+    "sound": {
+      "mute": "Mute sound",
+      "unmute": "Turn sound on"
     }
   }
 }

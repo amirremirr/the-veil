@@ -113,18 +113,18 @@ export function ReceiptsReel({ v, next }: { v: ViewState; next: () => void }) {
   const done = k >= items.length;
   return (
     <Stage v={v} bar={false} footer={<BigButton beatNext={done} onClick={next}>{done ? t('play.receipts.next') : t('play.receipts.skip')}</BigButton>}>
-      <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.receipts.label')}</p>
-      <h1 className="h-show text-4xl leading-tight text-spot">{t('play.receipts.title')}</h1>
+      <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.receipts.label')}</p>
+      <h1 className="h-show text-hero leading-tight text-spot">{t('play.receipts.title')}</h1>
       <ul className="mt-3 max-h-[440px] space-y-1 overflow-hidden" data-receipts aria-live="polite">
         {(shown.length > 12 ? shown.slice(-12) : shown).map((r, i) => (
-          <li key={`${r.level}-${i}-${r.text}`} className={`rounded-xl px-2 py-1 text-sm ${r.kind === 'worked' ? 'bg-good text-onspot' : r.kind === 'caught' ? 'bg-card' : 'bg-stamp text-onspot'}`}>
+          <li key={`${r.level}-${i}-${r.text}`} className={`rounded-xl px-2 py-1 text-small ${r.kind === 'worked' ? 'bg-good text-onspot' : r.kind === 'caught' ? 'bg-card' : 'bg-stamp text-onspot'}`}>
             {r.text}
           </li>
         ))}
-        {!items.length && <li className="text-base">{t('play.receipts.none')}</li>}
+        {!items.length && <li className="text-body">{t('play.receipts.none')}</li>}
       </ul>
       {done && (
-        <p className="mt-3 text-sm font-semibold" data-missions>
+        <p className="mt-3 text-small font-semibold" data-missions>
           {v.players.map((p) => `${shortName(v, p.id)}: ${p.values ? missionName(p.values) : ''}`).join(' · ')}
         </p>
       )}
@@ -244,32 +244,32 @@ export function ResultCard({ v }: { v: ViewState }) {
       }
     >
       <div ref={ref} className="rounded-3xl bg-spot p-5 text-onspot" data-result-card>
-        <p className="text-xs font-bold uppercase tracking-wider">{t('play.show')}</p>
-        <h1 className="h-show mt-1 text-4xl leading-tight">{title}</h1>
-        <ul className="mt-3 space-y-1 text-sm">
+        <p className="text-small font-bold uppercase tracking-wider">{t('play.show')}</p>
+        <h1 className="h-show mt-1 text-hero leading-tight">{title}</h1>
+        <ul className="mt-3 space-y-1 text-small">
           {lines.map((l) => (
             <li key={l}>{l}</li>
           ))}
         </ul>
-        <p className="mt-3 text-[11px]">{t('play.card.small')}</p>
+        <p className="mt-3 text-small">{t('play.card.small')}</p>
       </div>
       {mineNow.length > 0 && (
-        <p className="mt-2 text-xs font-semibold" data-achievements>
+        <p className="mt-2 text-small font-semibold" data-achievements>
           {t('play.ach.label', { n: all.length, max: 12 })} {mineNow.map((a) => t(`play.ach.${a}.name`)).join(', ')}
         </p>
       )}
       {playtestOn() && <PlaytestPanel v={v} />}
-      <p className="mt-2 text-sm font-semibold" data-rival>
+      <p className="mt-2 text-small font-semibold" data-rival>
         {rivalLine(v)} {t('play.rival.ask')}
       </p>
       <div className="mt-2 grid grid-cols-3 gap-2">
-        <button type="button" className="min-h-[48px] rounded-full bg-card text-sm font-bold" onClick={share} data-share>
+        <button type="button" className="min-h-[48px] rounded-full bg-card text-small font-bold" onClick={share} data-share>
           {t('play.card.share')}
         </button>
-        <button type="button" className="min-h-[48px] rounded-full bg-card text-sm font-bold" onClick={shareTextNow} data-share-text>
+        <button type="button" className="min-h-[48px] rounded-full bg-card text-small font-bold" onClick={shareTextNow} data-share-text>
           {copied ? t('play.daily.copied') : t(isDaily(v) ? 'play.daily.shareDaily' : 'play.daily.shareText')}
         </button>
-        <button type="button" className="min-h-[48px] rounded-full bg-card text-sm font-bold" onClick={() => replay(true)} data-rematch>
+        <button type="button" className="min-h-[48px] rounded-full bg-card text-small font-bold" onClick={() => replay(true)} data-rematch>
           {t('play.rival.rematch')}
         </button>
       </div>
