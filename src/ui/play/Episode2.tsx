@@ -13,7 +13,8 @@ import { coins, pct } from '../labels';
 import { fmt1 } from '../components/Money';
 import { nameOf, shortName } from '../game';
 import { Chips, StagedReveal, peakMark, spotlightSteps } from './Peak';
-import { BigButton, Bubble, Face, Stage } from './OnAir';
+import { Coach } from './Coach';
+import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
 import { GiftBar, GiftSheet, Tile, previewText } from './Episode3';
 import { timesWord, bankLineText, roundMoney } from './logic';
 
@@ -57,7 +58,7 @@ export function MyCards2({ v, next }: { v: ViewState; next: () => void }) {
 export function TaxIn({ v, next }: { v: ViewState; next: () => void }) {
   const lv = lv2(v);
   return (
-    <Stage v={v} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
+    <Stage v={v} onTap={next} footer={<AutoButton onClick={next}>{t('play.stage.tap')}</AutoButton>}>
       <div className="my-auto" data-vote>
         <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l2.taxIn.label')}</p>
         <p className="h-show mt-2 text-hero leading-none text-spot">{pct(lv.t ?? 0)}</p>
@@ -97,6 +98,7 @@ export function EffortScreen({ v }: { v: ViewState }) {
   const note = previewText(pv?.effort?.[e]);
   return (
     <Stage v={v} footer={<BigButton onClick={() => act({ effort: e, claim, gift })}>{t('play.stage.lock')}</BigButton>}>
+      <Coach id="move" />
       <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l2.effort.tax', { t: pct(lv.t ?? 0) })}</p>
       <label className="mt-1 block">
         <span className="h-show text-title leading-tight">{t('play.l2.effort.title', { e })}</span>
@@ -140,7 +142,7 @@ export function IncomeScreen({ v }: { v: ViewState }) {
   const c = lv.current!;
   const me = v.viewer;
   return (
-    <Stage v={v} footer={<BigButton onClick={() => act()}>{t('play.l2.inc.next')}</BigButton>}>
+    <Stage v={v} footer={<AutoButton animMs={1500} onClick={() => act()}>{t('play.l2.inc.next')}</AutoButton>}>
       <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l2.inc.label', { r: v.round })}</p>
       <h1 className="h-show mt-1 text-title leading-tight text-spot">{t('play.l2.inc.you', { y: coins(c.y?.[me] ?? 0), d: signedCoins(c.luck?.[me] ?? 0) })}</h1>
       <p className="mt-1 text-small">{t('play.l2.inc.how', { h: c.effort?.[me] ?? 0, per: fmt1(lv.talentMult * lv.myTalent), w: coins((c.effort?.[me] ?? 0) * lv.talentMult * lv.myTalent), d: signedCoins(c.luck?.[me] ?? 0) })}</p>
@@ -205,7 +207,7 @@ export function PrizeBeat({ v, next }: { v: ViewState; next: () => void }) {
   const giftNet = Object.entries(r.gifts ?? {}).reduce((a, [from, g]) => a + (g.to === v.viewer ? g.amount : 0) - (from === v.viewer ? g.amount : 0), 0);
   const head = w.length === 1 ? (w[0] === v.viewer ? t('play.l2.won.you', { n: PLAY.HUSTLE_PRIZE }) : t('play.l2.won.one', { name: shortName(v, w[0]), n: PLAY.HUSTLE_PRIZE })) : t('play.l2.won.split', { names: w.map((x) => shortName(v, x)).join(t('play.barBeat.and')) });
   return (
-    <Stage v={v} onTap={next} footer={<BigButton onClick={next}>{last ? t('play.l1.toReveal') : t('play.stage.nextRound', { r: v.round + 1 })}</BigButton>}>
+    <Stage v={v} onTap={next} footer={<AutoButton onClick={next}>{last ? t('play.l1.toReveal') : t('play.stage.nextRound', { r: v.round + 1 })}</AutoButton>}>
       <div className="my-auto" data-outcome>
         <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l2.won.label')}</p>
         <h1 className="h-show mt-1 text-hero leading-tight text-spot">{head}</h1>

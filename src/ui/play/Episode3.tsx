@@ -14,9 +14,9 @@ import { coins, pct, signed } from '../labels';
 import { nameOf, shortName, useTalkFrom } from '../game';
 import { useMotionOff } from '../components/common';
 import { Sheet } from '../components/TableParts';
-import { fmt1 } from '../components/Money';
 import { DashHost } from './Characters';
-import { BigButton, Bubble, Face, Stage } from './OnAir';
+import { Coach } from './Coach';
+import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
 import { Chips, StagedReveal, peakMark, spotlightSteps } from './Peak';
 import { RollNumber, type CastCue } from './Cast';
 import { buzz, sfx } from './sound';
@@ -120,6 +120,7 @@ export function ClaimScreen({ v }: { v: ViewState }) {
   const opts = ['LOW', 'HIGH', 'SILENT'];
   return (
     <Stage v={v} chatFirst footer={<BigButton disabled={!x} onClick={() => act(x)}>{t('play.claim.submit')}</BigButton>}>
+      <Coach id="claim" />
       <h1 className="h-show text-hero leading-tight">{t('play.claim.title')}</h1>
       <div className="mt-3 rounded-2xl bg-card p-3">
         <p className="h-show text-title leading-tight">{t(`play.claim.you.${lv.myType}`, { p: pct(myOdds(v, false)), worry: t(`play.myCards.worry.${lv.myWorry ?? 'CALM'}`) })}</p>
@@ -220,6 +221,7 @@ export function MoveScreen({ v }: { v: ViewState }) {
   const giftNote = gift ? previewText(pv?.gift[gift.to]?.[gift.amount]) : null;
   return (
     <Stage v={v} chatFirst footer={<BigButton onClick={() => act(decision)}>{t('play.stage.lock')}</BigButton>}>
+      <Coach id="move" />
       <p className="text-body font-semibold leading-snug">
         {t('play.move.risk')} <span className="h-show text-title text-spot" aria-live="polite">{pct(myOdds(v, gym))}</span>
       </p>
@@ -269,9 +271,9 @@ export function MoveScreen({ v }: { v: ViewState }) {
       <CallChips v={v} claimants={claimantsNow(v)} value={call} onPick={setCall} />
       <div className="mt-auto grid grid-cols-3 gap-2 pt-3">
         {launch ? (
-          <Tile on disabled title={t('play.stage.launchTitle')} desc={t('play.stage.launchDesc', { p: fmt1(lv.premium!) })} />
+          <Tile on disabled title={t('play.stage.launchTitle')} desc={t('play.stage.launchDesc', { p: coins(lv.premium!) })} />
         ) : canBuy ? (
-          <Tile on={buy} title={t('play.stage.buyTitle')} desc={t('play.stage.buyDesc', { p: fmt1(lv.premium!) })} note={previewText(pv?.cover)} onClick={() => setBuy(!buy)} />
+          <Tile on={buy} title={t('play.stage.buyTitle')} desc={t('play.stage.buyDesc', { p: coins(lv.premium!) })} note={previewText(pv?.cover)} onClick={() => setBuy(!buy)} />
         ) : mandatory ? (
           <Tile on={false} disabled title={t('play.stage.mandateTitle')} desc={t('play.stage.mandateDesc', { T: coins(T), c: cover })} />
         ) : (
@@ -378,7 +380,7 @@ export function BarBeat({ v, next }: { v: ViewState; next: () => void }) {
   const idle = b.refused.length ? b.barred.filter((x) => !b.refused.includes(x)) : [];
   const subIdle = idle.length ? ` ${t('play.barBeat.notAppliedNamed', { names: names(idle) })}` : '';
   return (
-    <Stage v={v} bar={false} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
+    <Stage v={v} bar={false} onTap={next} footer={<AutoButton onClick={next}>{t('play.stage.tap')}</AutoButton>}>
       <div className="my-auto text-center" data-bar={b.barred.join(' ') || 'none'}>
         <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.barBeat.label')}</p>
         <p className={`h-show mt-2 text-hero leading-tight ${b.barred.length ? 'text-stamp' : 'text-spot'}`}>{head}</p>
@@ -498,7 +500,7 @@ export function RegimeScreen({ v }: { v: ViewState }) {
 export function VoteInBeat({ v, next }: { v: ViewState; next: () => void }) {
   const lv = lv3(v);
   return (
-    <Stage v={v} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
+    <Stage v={v} onTap={next} footer={<AutoButton onClick={next}>{t('play.stage.tap')}</AutoButton>}>
       <div className="my-auto text-center" data-vote>
         <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.stage.voteIn')}</p>
         <p className="h-show mt-2 text-hero leading-tight text-spot">{regimeName(lv.regime)}</p>
@@ -566,10 +568,10 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
   const from = h.banks[me] - change;
   const ch = r.choices[me];
   let cost: string;
-  if (r.regime !== 'VOL') cost = t('play.stage.costMandate', { T: fmt1(r.T ?? 0) });
+  if (r.regime !== 'VOL') cost = t('play.stage.costMandate', { T: coins(r.T ?? 0) });
   else if (mine.kind === 'HIT') cost = t('play.stage.costLoss', { loss: coins(mine.lost) });
-  else if (ch.buy && r.premium !== null && ch.gym) cost = t('play.stage.costCoverGym', { p: fmt1(r.premium + n.gymCost) });
-  else if (ch.buy && r.premium !== null) cost = t('play.stage.costCover', { p: fmt1(r.premium) });
+  else if (ch.buy && r.premium !== null && ch.gym) cost = t('play.stage.costCoverGym', { p: coins(r.premium + n.gymCost) });
+  else if (ch.buy && r.premium !== null) cost = t('play.stage.costCover', { p: coins(r.premium) });
   else if (ch.gym) cost = t('play.stage.costGym', { c: n.gymCost });
   else cost = t('play.stage.costNone');
   // What you chose this round, next to the money it made (playtest note).
@@ -707,9 +709,9 @@ export function PriceBeat({ v, next, onReally }: { v: ViewState; next: () => voi
       tone="breaking"
       onTap={next}
       footer={
-        <BigButton dark onClick={next}>
+        <AutoButton dark animMs={900} onClick={next}>
           {voteNext ? t('play.stage.toVote') : t('play.stage.nextRound', { r: v.round + 1 })}
-        </BigButton>
+        </AutoButton>
       }
     >
       <div className="flex items-center justify-between">

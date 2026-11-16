@@ -18,6 +18,8 @@ const ctx = await browser.newContext({ viewport: { width: 375, height: 760 } });
 const page = await ctx.newPage();
 await page.goto(server.resolvedUrls.local[0]);
 await page.waitForFunction(() => '__autoplay' in window);
+// UI V3: scan the coach marks too (they are off under automation unless asked for).
+await page.evaluate(() => localStorage.setItem('veil.play.coach', '1'));
 await page.evaluate((s) => {
   const st = window.__veil.getState();
   st.updateSettings({ reducedMotion: true });

@@ -14,7 +14,7 @@ import { coins, pct } from '../labels';
 import { nameOf, shortName } from '../game';
 import type { CastCue } from './Cast';
 import { StagedReveal } from './Peak';
-import { BigButton, Bubble, Face, Stage } from './OnAir';
+import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
 import { previewText } from './Episode3';
 import { timesWord, bankLineText } from './logic';
 
@@ -125,7 +125,7 @@ export function IncomesScreen({ v }: { v: ViewState }) {
   const inc = lv.incomes ?? {};
   const order = v.players.slice().sort((a, b) => (inc[a.id] ?? 0) - (inc[b.id] ?? 0));
   return (
-    <Stage v={v} footer={<BigButton onClick={() => act()}>{t('play.l5.inc.next')}</BigButton>}>
+    <Stage v={v} footer={<AutoButton animMs={1500} onClick={() => act()}>{t('play.l5.inc.next')}</AutoButton>}>
       <p className="text-small font-bold uppercase tracking-wider text-soft">{t(v.mode === 'LIFE' ? 'play.l5.inc.labelLife' : 'play.l5.inc.label')}</p>
       <h1 className="h-show mt-1 text-title leading-tight text-spot">{lv.adopted ? rules(lv.adopted) : ''}</h1>
       <ul className="mt-3 space-y-1.5" data-outcome>

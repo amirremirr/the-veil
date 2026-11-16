@@ -148,6 +148,8 @@ function measure() {
     step: g.phase.step ?? '',
     beat,
     beatNext: !!document.querySelector('[data-beat-next]'),
+    // UI V3 (U3): a beat that moves on by itself (its hold in ms); it costs no tap.
+    auto: Number(document.querySelector('[data-auto]')?.getAttribute('data-auto') || 0),
     tall: document.documentElement.scrollHeight > window.innerHeight,
     words,
     buttons,
@@ -173,7 +175,7 @@ for (let i = 0; i < 1000; i++) {
     await page.screenshot({ path: `${outDir}/${String(seen.size).padStart(3, '0')}-${key}.png`, fullPage: true });
   }
   lines.push(
-    `${group.padEnd(4)} R${m.round} ${`${m.kind}:${m.step}${m.beat ? ` (${m.beat})` : ''}`.padEnd(32)} words=${String(m.words).padStart(4)} buttons=${String(m.buttons).padStart(2)} height=${String(m.height).padStart(5)}${m.hscroll ? ' HSCROLL' : ''}${ruleset === 'PLAY' && m.tall ? ' TALLER THAN VIEWPORT' : ''}`,
+    `${group.padEnd(4)} R${m.round} ${`${m.kind}:${m.step}${m.beat ? ` (${m.beat})` : ''}${m.auto ? ' auto' : ''}`.padEnd(32)} words=${String(m.words).padStart(4)} buttons=${String(m.buttons).padStart(2)} height=${String(m.height).padStart(5)}${m.hscroll ? ' HSCROLL' : ''}${ruleset === 'PLAY' && m.tall ? ' TALLER THAN VIEWPORT' : ''}`,
   );
   for (const o of m.overlaps) lines.push(`     OVERLAP: ${o}`);
   // Play beats inside one engine screen: tap to the next beat (presentation only, no engine step).
@@ -195,27 +197,29 @@ for (let i = 0; i < 1000; i++) {
 
 // RUNPLAN B.8 realistic pace: 3 s per claim screen, 8 s per other decision screen, 4 s per beat or result
 // screen (the reveal limit), 20 s for the Receipts.
-const paceOf = (r) => (r.kind === 'RUN_DEBRIEF' ? 20 : r.decisions ? (r.step === 'CLAIM' ? 3 : 8) : 4);
+// UI V3 (U3): a beat that moves on by itself takes its own hold (plus its animation), not 4 s.
+const paceOf = (r) => (r.kind === 'RUN_DEBRIEF' ? 20 : r.decisions ? (r.step === 'CLAIM' ? 3 : 8) : r.auto ? Math.max(r.auto, 2200) / 1000 : 4);
 const groups = [...new Set(rows.map((r) => r.group))];
 const table = [];
 table.push(`Walkthrough: seed ${seed}, ${width}x${height}, ${ruleset === 'PLAY' ? (playMode === 'LIFE' ? 'PLAY LIFE' : `PLAY EPISODE ${episode}`) : 'FULL_RUN'}, ${ruleset === 'PLAY' ? players : 4} players, ${ruleset === 'PLAY' ? difficulty : 'NORMAL'}${humanName ? `, name ${humanName}` : ''}`);
 table.push('');
-table.push('Group  Screens  Decisions  Words  Tallest(px)  Overlaps  HScroll');
-let tot = { s: 0, d: 0, w: 0, o: 0, h: 0 };
+table.push('Group  Screens  Taps  Decisions  Words  Tallest(px)  Overlaps  HScroll');
+let tot = { s: 0, d: 0, w: 0, o: 0, h: 0, tp: 0 };
 for (const gname of groups) {
   const rs = rows.filter((r) => r.group === gname);
   const s = rs.length;
+  const tp = rs.filter((r) => !r.auto).length;
   const d = rs.reduce((a, r) => a + r.decisions, 0);
   const w = rs.reduce((a, r) => a + r.words, 0);
   const tall = Math.max(...rs.map((r) => r.height));
   const o = rs.reduce((a, r) => a + r.overlaps.length, 0);
   const h = rs.filter((r) => r.hscroll).length;
-  tot = { s: tot.s + s, d: tot.d + d, w: tot.w + w, o: tot.o + o, h: tot.h + h };
-  table.push(`${gname.padEnd(6)} ${String(s).padStart(7)}  ${String(d).padStart(9)}  ${String(w).padStart(5)}  ${String(tall).padStart(11)}  ${String(o).padStart(8)}  ${String(h).padStart(7)}`);
+  tot = { s: tot.s + s, d: tot.d + d, w: tot.w + w, o: tot.o + o, h: tot.h + h, tp: tot.tp + tp };
+  table.push(`${gname.padEnd(6)} ${String(s).padStart(7)}  ${String(tp).padStart(4)}  ${String(d).padStart(9)}  ${String(w).padStart(5)}  ${String(tall).padStart(11)}  ${String(o).padStart(8)}  ${String(h).padStart(7)}`);
 }
 for (const gname of groups) table.push(`Pace ${gname}: ${(rows.filter((r) => r.group === gname).reduce((a, r) => a + paceOf(r), 0) / 60).toFixed(1)} min`);
 table.push(`Pace total: ${(rows.reduce((a, r) => a + paceOf(r), 0) / 60).toFixed(1)} min`);
-table.push(`${'Total'.padEnd(6)} ${String(tot.s).padStart(7)}  ${String(tot.d).padStart(9)}  ${String(tot.w).padStart(5)}  ${''.padStart(11)}  ${String(tot.o).padStart(8)}  ${String(tot.h).padStart(7)}`);
+table.push(`${'Total'.padEnd(6)} ${String(tot.s).padStart(7)}  ${String(tot.tp).padStart(4)}  ${String(tot.d).padStart(9)}  ${String(tot.w).padStart(5)}  ${''.padStart(11)}  ${String(tot.o).padStart(8)}  ${String(tot.h).padStart(7)}`);
 // Play screens must fit the viewport: one big element per screen, nothing to scroll (D-108).
 const tall = ruleset === 'PLAY' ? rows.filter((r) => r.tall).length : 0;
 if (ruleset === 'PLAY') table.push('', tall ? `FAIL: ${tall} Play screen(s) taller than ${width}x${height}.` : `PASS: every Play screen fits ${width}x${height}.`);

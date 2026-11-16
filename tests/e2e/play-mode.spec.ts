@@ -29,6 +29,8 @@ async function playThrough(page: Page, o: { gift?: boolean; noPoll?: boolean } =
     if (await page.getByText('Episode summary').count()) break;
     if (await page.locator('[data-beat-next]').count()) {
       if (await page.locator('[data-outcome]').count()) seen.wheels++;
+      // UI V3 (U3): the price board moves on by itself, so its button is a beat button now.
+      if (await page.locator('[data-price]').count()) seen.prices++;
       if (await page.locator('[data-mycards]').count()) {
         seen.mycards++;
         await expect(page.getByText('Nobody knows how many players are high risk or Worriers. Not even the host.')).toBeVisible();
@@ -85,15 +87,14 @@ test('plays Episode 3 from the title to the episode summary', async ({ page }) =
   await page.getByLabel('Challenge code (optional)').fill('e2e-play');
   await page.getByLabel('Your stage name').fill('Ana');
   await page.getByRole('button', { name: 'Go live' }).click();
+  // UI V3 (U3): the mission and the episode's intro share one screen.
   await expect(page.getByText('Your secret mission')).toBeVisible();
-  await fits(page);
-  await page.getByRole('button', { name: 'Accept the mission' }).click();
   await expect(page.getByRole('heading', { name: 'Bad Luck Season' })).toBeVisible();
   await fits(page);
+  await page.getByRole('button', { name: 'Roll the cameras' }).click();
   // D-146: your chosen name, not "You", on your ringed podium (UI V3: the podiums replaced the top bar's row).
   await expect(page.locator('[data-cast-stage]').getByText('Ana', { exact: true })).toBeVisible();
   await expect(page.locator('[data-cast-stage]').getByText('You', { exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Roll the cameras' }).click();
   const seen = await playThrough(page, { gift: true });
   expect(seen.wheels).toBe(4);
   expect(seen.prices).toBeGreaterThanOrEqual(1);
@@ -122,46 +123,42 @@ test('two seats on Hard: the setup line, two contestants, no audience poll on an
   await page.locator('[data-seats="2"]').click();
   await page.getByLabel('Challenge code (optional)').fill('e2e-hard');
   await page.getByRole('button', { name: 'Go live' }).click();
-  await page.getByRole('button', { name: 'Accept the mission' }).click();
+  await page.getByRole('button', { name: 'Roll the cameras' }).click();
   await expect(page.locator('[data-podium]')).toHaveCount(2);
   // A blank name shows "You".
   await expect(page.locator('[data-cast-stage]').getByText('You', { exact: true })).toBeVisible();
-  await page.getByRole('button', { name: 'Roll the cameras' }).click();
   const seen = await playThrough(page, { noPoll: true });
   expect(seen.wheels).toBe(4);
   await expect(page.getByText('Episode summary')).toBeVisible();
 });
 
-test('the opening cards: shown on the first visit, Skip goes to Pick your show, the menus reopen them (D-139)', async ({ page }) => {
+test('the opening card: shown on the first visit, Skip goes to Pick your show, the menus reopen it (D-139, UI V3 U3)', async ({ page }) => {
   await page.getByRole('button', { name: 'Start a new life' }).click();
   await page.getByRole('button', { name: /Quick and fun/ }).click();
   await expect(page.getByRole('heading', { name: 'A game show about fair play' })).toBeVisible();
-  // The cards are a fixed overlay: the card itself must fit, with no scrolling either way.
+  // The card is a fixed overlay: it must fit, with no scrolling either way.
   const card = await page.locator('[data-opening]').evaluate((el) => ({ sh: el.scrollHeight, sw: el.scrollWidth, cw: el.clientWidth, ih: window.innerHeight }));
   expect(card.sw).toBeLessThanOrEqual(card.cw);
   expect(card.sh).toBeLessThanOrEqual(card.ih);
-  await page.getByRole('button', { name: 'Next' }).click();
-  await expect(page.getByRole('heading', { name: 'Everyone has secrets' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Next' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Skip' }).click();
   await expect(page.getByRole('heading', { name: 'Pick your show' })).toBeVisible();
-  // Seen once: going back and in again shows no cards.
+  // Seen once: going back and in again shows no card.
   await page.reload();
   await page.waitForFunction(() => '__veil' in window);
   await page.evaluate(() => (window as unknown as { __veil: { getState(): { go(s: string): void } } }).__veil.getState().go('playMode'));
   await expect(page.getByRole('heading', { name: 'Pick your show' })).toBeVisible();
   await expect(page.locator('[data-opening]')).toHaveCount(0);
-  // "What is this game?" reopens them, here and from the in-game menu.
+  // "What is this game?" reopens it, here and from the in-game menu.
   await page.getByRole('button', { name: 'What is this game?' }).click();
   await expect(page.getByRole('heading', { name: 'A game show about fair play' })).toBeVisible();
   await page.getByRole('button', { name: 'Skip' }).click();
   await page.getByRole('button', { name: /Bad Luck Season/ }).click();
   await page.getByRole('button', { name: 'Go live' }).click();
-  await page.getByRole('button', { name: 'Accept the mission' }).click();
+  await page.getByRole('button', { name: 'Roll the cameras' }).click();
   await page.getByRole('button', { name: 'Menu' }).click();
   await page.getByRole('button', { name: 'What is this game?' }).click();
   await expect(page.getByRole('heading', { name: 'A game show about fair play' })).toBeVisible();
-  await page.getByRole('button', { name: 'Next' }).click();
-  await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: "Let's play" }).click();
   await expect(page.locator('[data-opening]')).toHaveCount(0);
 });

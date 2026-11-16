@@ -42,6 +42,7 @@ export function MoneyLedger({ v }: { v: ViewState }) {
                 </ul>
               </>
             )}
+            <p className="mt-2 text-small text-soft">{t('play.ledger.rounded')}</p>
             <button type="button" className="mt-3 min-h-[44px] w-full rounded-full bg-card font-bold" onClick={(e) => { e.stopPropagation(); setOpen(false); }}>
               {t('play.ledger.hide')}
             </button>

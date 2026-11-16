@@ -16,7 +16,8 @@ import { coins, pct } from '../labels';
 import { nameOf, shortName } from '../game';
 import type { CastCue } from './Cast';
 import { Chips, StagedReveal, peakMark, spotlightSteps } from './Peak';
-import { BigButton, Bubble, Face, Stage } from './OnAir';
+import { Coach } from './Coach';
+import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
 import { GiftBar, GiftSheet, Tile, previewText } from './Episode3';
 import { hostLine, pick, timesWord, bankLineText, ledgerRows } from './logic';
 
@@ -39,7 +40,7 @@ export const ruleName = (p: string) => t(`play.l1.rule.${p}.name`);
 export function Unborn({ v, next }: { v: ViewState; next: () => void }) {
   const lv = lv1(v);
   return (
-    <Stage v={v} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
+    <Stage v={v} onTap={next} footer={<AutoButton animMs={2500} onClick={next}>{t('play.stage.tap')}</AutoButton>}>
       <div className="my-auto" data-mycards>
         <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l1.unborn.label')}</p>
         <p className="h-show mt-2 text-hero leading-tight text-spot">{t('play.l1.unborn.title')}</p>
@@ -72,7 +73,8 @@ export function PeekScreen({ v }: { v: ViewState }) {
 
 function knowLine(v: ViewState): string {
   const lv = lv1(v);
-  return lv.myIncome !== undefined ? t('play.l1.youKnow', { y: coins(lv.myIncome) }) : t('play.l1.youDont');
+  // UI V3 (U3): the deck stays on the decision screens, since the beat that showed it now moves on by itself.
+  return lv.myIncome !== undefined ? t('play.l1.youKnow', { y: coins(lv.myIncome) }) : t('play.cast.youDontDeck', { a: coins(lv.deck[0]), b: coins(lv.deck[1]), c: coins(lv.deck[2]), d: coins(lv.deck[3]) });
 }
 
 export function ClaimScreen1({ v }: { v: ViewState }) {
@@ -80,6 +82,7 @@ export function ClaimScreen1({ v }: { v: ViewState }) {
   const [x, setX] = useState<string | null>(null);
   return (
     <Stage v={v} footer={<BigButton disabled={!x} onClick={() => act(x)}>{t('play.claim.submit')}</BigButton>}>
+      <Coach id="claim" />
       <h1 className="h-show text-hero leading-tight">{t('play.claim.title')}</h1>
       <div className="mt-3 rounded-2xl bg-card p-3">
         <p className="h-show text-title leading-tight">{knowLine(v)}</p>
@@ -106,6 +109,7 @@ export function VoteScreen1({ v }: { v: ViewState }) {
   const pv = lv.preview;
   return (
     <Stage v={v} footer={<BigButton disabled={!vote} onClick={() => act({ vote, gift, call })}>{t('play.l1.vote.submit')}</BigButton>}>
+      <Coach id="move" />
       <p className="text-body font-semibold leading-snug">{knowLine(v)}</p>
       {lv.peeked.length > 0 && <p className="text-small">{t('play.l1.peekers', { names: lv.peeked.map((id) => shortName(v, id)).join(', ') })}</p>}
       <div className="mt-2 grid grid-cols-2 gap-2" role="group" aria-label={t('play.l1.vote.title')}>
@@ -148,7 +152,7 @@ export function VotesBeat({ v, next }: { v: ViewState; next: () => void }) {
     } else if (c && c !== 'SILENT') cue.stamps![p.id] = { text: t('play.cast.kept'), tone: 'good' };
   }
   return (
-    <Stage v={v} cast={cue} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
+    <Stage v={v} cast={cue} onTap={next} footer={<AutoButton animMs={1400} onClick={next}>{t('play.stage.tap')}</AutoButton>}>
       <div className="my-auto" data-vote>
         <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l1.votes.label', { r: v.round })}</p>
         <h1 className="h-show mt-1 text-hero leading-tight text-spot">{ruleName(r.winner)}</h1>

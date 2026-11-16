@@ -2,7 +2,7 @@
 // The top bar holds only ON AIR, the round, your bank and four small avatars with banks. The mission bar,
 // the chat log and leaving the show live in the menu.
 import { onTap as ptTap } from '../playtest';
-import { useCallback, useEffect, useLayoutEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useState, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import type { ViewState } from '../../engine/types';
 import { TALK } from '../../engine/params';
@@ -13,6 +13,7 @@ import { useMotionOff } from '../components/common';
 import { CallContext, CastStage, CueContext, castKind, mergeCues, screenFlash, type CallReg, type CastCue } from './Cast';
 import { DashHost, ShapePerson, type DashExpr } from './Characters';
 import { isMuted, onMuted, setMuted, sfx } from './sound';
+import { DURATION } from './tokens';
 import { ChatFeed, MessageComposer, Sheet } from '../components/TableParts';
 import { useOnline } from '../components/Online';
 import { missionName } from './logic';
@@ -126,6 +127,9 @@ export function TopBar({ v, onMenu }: { v: ViewState; onMenu: () => void }) {
   );
 }
 
+/** UI V3 (U3): a banner a flow puts at the top of its decision screen (the round's event). */
+export const BannerContext = createContext<ReactNode>(null);
+
 /**
  * One screen of the show. `onTap` makes the whole screen advance on a tap (beats); buttons inside stop the
  * tap from bubbling. Content stacks from the top and the action sits at the bottom. UI V3 (U1): the cast
@@ -156,6 +160,7 @@ export function Stage({
   flash?: 'hit' | 'gain' | null;
 }) {
   const [menu, setMenu] = useState(false);
+  const banner = useContext(BannerContext);
   const [fit, setFit] = useState(0);
   const [call, setCall] = useState<CallReg | null>(null);
   const [extras, setExtras] = useState<Record<string, CastCue>>({});
@@ -173,8 +178,8 @@ export function Stage({
   const theFlash = flash === undefined ? autoFlash : flash;
   const showCast = cast !== false && (cast !== undefined || bar);
   useLayoutEffect(() => {
-    if (!showCast || fit >= 2) return;
-    if (document.documentElement.scrollHeight > window.innerHeight + 1) setFit(fit + 1);
+    if (!showCast || fit >= 3) return;
+    if (document.documentElement.scrollHeight > window.innerHeight) setFit(fit + 1);
   });
   return (
     <CallContext.Provider value={setCall}>
@@ -193,14 +198,22 @@ export function Stage({
         {bar && <TopBar v={v} onMenu={() => { ptTap('menu'); setMenu(true); }} />}
         <main className="relative mx-auto flex w-full max-w-md flex-1 flex-col px-4 pt-2">
           {showCast && <CastStage v={v} cue={mergeCues(cast || {}, ...Object.values(extras))} fit={fit} call={call} />}
-          <div className="flex flex-1 flex-col pt-2">{children}</div>
+          <div className="flex flex-1 flex-col pt-2">
+            {banner}
+            {children}
+          </div>
           {footer && (
             <div className="pt-3" onClick={stop}>
               {footer}
             </div>
           )}
         </main>
-        {menu && <PlayMenu v={v} chatFirst={chatFirst} onClose={() => setMenu(false)} />}
+        {/* The menu's taps stay in the menu: on a tap-to-advance beat they must not move the show on. */}
+        {menu && (
+          <div onClick={stop}>
+            <PlayMenu v={v} chatFirst={chatFirst} onClose={() => setMenu(false)} />
+          </div>
+        )}
       </div>
     </CueContext.Provider>
     </CallContext.Provider>
@@ -260,5 +273,54 @@ export function BigButton({ children, onClick, disabled = false, dark = false, b
     >
       {children}
     </button>
+  );
+}
+
+/** Auto-advance is off under browser automation (tests tap through), unless a capture asks for it. */
+export function autoAdvanceOn(): boolean {
+  try {
+    if (localStorage.getItem('veil.play.auto') === '1') return true;
+    if (localStorage.getItem('veil.play.auto') === '0') return false;
+  } catch {
+    // Storage blocked: fall through.
+  }
+  return !(typeof navigator !== 'undefined' && navigator.webdriver);
+}
+
+/**
+ * UI V3 (U3): the button of a beat that only informs. The beat moves on by itself after its animation and a
+ * 1.2 second hold (a bar fills to show it), waits while a sheet is open, and a tap skips the wait.
+ */
+export function AutoButton({ onClick, children, animMs = 0, dark = false }: { onClick: () => void; children: ReactNode; animMs?: number; dark?: boolean }) {
+  const on = autoAdvanceOn();
+  const off = useMotionOff();
+  const ms = (off ? 0 : animMs) + DURATION.hold;
+  useEffect(() => {
+    if (!on) return;
+    let id = 0;
+    const fire = () => {
+      // A sheet ("See the money", "What was really going on?") holds the beat until it closes.
+      if (document.querySelector('[role="dialog"]')) id = window.setTimeout(fire, 400);
+      else onClick();
+    };
+    id = window.setTimeout(fire, ms);
+    return () => clearTimeout(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [on, ms]);
+  return (
+    <div className="relative" data-auto={ms}>
+      <BigButton beatNext dark={dark} onClick={onClick}>
+        {children}
+      </BigButton>
+      {on && (
+        <motion.span
+          aria-hidden
+          className={`pointer-events-none absolute bottom-1 left-6 right-6 h-1 origin-left rounded-full ${dark ? 'bg-spot/60' : 'bg-onspot/40'}`}
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: 1 }}
+          transition={{ duration: ms / 1000, ease: 'linear' }}
+        />
+      )}
+    </div>
   );
 }

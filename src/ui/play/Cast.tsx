@@ -11,6 +11,7 @@ import { shortName } from '../game';
 import { useMotionOff } from '../components/common';
 import { myAvatar, ShapePerson, type CastKind, type Expr } from './Characters';
 import { DURATION } from './tokens';
+import { Coach } from './Coach';
 import { buzz, sfx } from './sound';
 
 export type StampTone = 'stamp' | 'good' | 'ink';
@@ -235,9 +236,9 @@ function CastStampMark({ s, delay }: { s: CastStamp; delay: number }) {
   );
 }
 
-const sizes = [72, 58, 46];
+const sizes = [72, 58, 46, 36];
 
-/** The podium row. `fit` shrinks the characters when a screen is full (0 = 72 px, 1 = 58, 2 = 46). */
+/** The podium row. `fit` shrinks the characters when a screen is full (0 = 72 px, 1 = 58, 2 = 46, 3 = 36 and one-line podiums). */
 export function CastStage({ v, cue = {}, fit = 0, call }: { v: ViewState; cue?: CastCue; fit?: number; call?: CallReg | null }) {
   const off = useMotionOff();
   const pl = v.play!;
@@ -329,14 +330,14 @@ export function CastStage({ v, cue = {}, fit = 0, call }: { v: ViewState; cue?: 
           return (
             <li
               key={p.id}
-              className={`relative flex flex-col items-center transition-opacity ${dim ? 'opacity-40' : ''}`}
+              className="relative flex flex-col items-center"
               aria-label={t(debt ? 'play.cast.podiumDebtA11y' : 'play.cast.podiumA11y', { name: shortName(v, p.id), bank: coins(bank) })}
               data-podium={p.id}
               data-expr={expr}
             >
               <motion.span
                 aria-hidden
-                className="relative block"
+                className={`relative block transition-opacity ${dim ? 'opacity-40' : ''}`}
                 style={flash ? { filter: `drop-shadow(0 0 8px ${flash === 'hit' ? 'rgb(255 62 127 / 0.9)' : 'rgb(255 210 63 / 0.9)'})` } : undefined}
                 animate={off || !flash ? {} : flash === 'hit' ? { x: [0, -6, 6, -4, 4, 0] } : { y: [0, -10, 0] }}
                 transition={{ duration: 0.5 }}
@@ -354,18 +355,19 @@ export function CastStage({ v, cue = {}, fit = 0, call }: { v: ViewState; cue?: 
                     <path d="M28 0 L34 12 L27 20 L36 32 L31 40" fill="none" stroke="rgb(255 62 127 / 0.7)" strokeWidth="1.5" />
                   </svg>
                 )}
-                <span className="block truncate text-small font-bold leading-tight">{shortName(v, p.id)}</span>
+                <span className={`${fit >= 3 ? 'inline' : 'block'} truncate text-small font-bold leading-tight`}>{shortName(v, p.id)}</span>
                 {!cue.noBanks && (
-                  <span className={`h-show block text-body leading-tight ${debt ? 'text-stamp' : ''}`} data-bank={p.id}>
+                  <span className={`h-show ${fit >= 3 ? 'ms-1 inline text-small' : 'block text-body'} leading-tight ${debt ? 'text-stamp' : ''}`} data-bank={p.id}>
                     <Bank value={bank} mine={me} />
                   </span>
                 )}
-                {debt && !cue.noBanks && <span className="block text-small font-bold leading-tight text-stamp">{t('play.cast.inDebt')}</span>}
+                {debt && !cue.noBanks && fit < 3 && <span className="block text-small font-bold leading-tight text-stamp">{t('play.cast.inDebt')}</span>}
               </div>
             </li>
           );
         })}
       </ul>
+      {call && call.claimants.length > 0 && <Coach id="call" after="move" />}
       {fly && <CoinFly key={fly.k} viewer={v.viewer} delta={fly.d} />}
       {confirm && call && (
         <div className="absolute inset-x-0 top-0 z-20 rounded-2xl border-2 border-stamp bg-paper p-3 shadow-podium" role="dialog" aria-modal="false" aria-labelledby="call-confirm" onClick={(e) => e.stopPropagation()} data-call-confirm>

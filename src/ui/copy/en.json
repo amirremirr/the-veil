@@ -1578,6 +1578,10 @@
         "headline": "How you win",
         "body": "You get coins and a secret mission. Your score: bank plus how well your mission went. Debt hurts. Guess others' missions for bonus points.",
         "small": "The numbers are exaggerated. The mechanisms are real."
+      },
+      "one": {
+        "loop": "Each round: say something (lies allowed), read the others, make your move. At the end every secret flips.",
+        "win": "Score: half your bank, half your secret mission. Debt hurts."
       }
     },
     "gift": {
@@ -1645,7 +1649,15 @@
         "passed": "passed",
         "failed": "failed",
         "says": "claims training",
-        "quiet": "silent"
+        "quiet": "silent",
+        "of": "Worker {k} of {n}",
+        "payShort": "Complex job: +{g} for you if they trained, -{l} if not.",
+        "passedTest": "Passed the test",
+        "failedTest": "Failed the test",
+        "meterShort": "HireBot meter: {p}",
+        "line": "Hire from {p}",
+        "jobFor": "Job for {name}",
+        "picks": "Your picks"
       },
       "pass": "Pass",
       "fail": "Fail",
@@ -1678,7 +1690,11 @@
         "pay": "Your job paid {p}.",
         "payTrain": "Your job paid {p}; training cost you {c}.",
         "other": "Gifts and other: {n}.",
-        "care": "(Childcare duty: long hours cost you {n}, so the flexible job pays more.)"
+        "care": "(Childcare duty: long hours cost you {n}, so the flexible job pays more.)",
+        "youEarned": "You earned {n} as HireBot",
+        "rowBase": "Base pay",
+        "rowGood": "Good hires ({n})",
+        "rowBad": "Bad hires ({n})"
       },
       "stamp": {
         "GOOD": "TRAINED HIRE",
@@ -2236,7 +2252,8 @@
         "mission": "Mission points",
         "debt": "Debt points",
         "guess": "Guesses and bonuses"
-      }
+      },
+      "rounded": "Shown in whole coins, rounded so the lines add up. The game keeps the exact amounts."
     },
     "bank": {
       "round": "Your bank {from} to {to}: {w} this round, then -{c} living costs.",
@@ -2286,11 +2303,27 @@
         "call": "Called",
         "tally": "{n} lies",
         "more": "And {n} more."
-      }
+      },
+      "youDontDeck": "Income: unknown. One of {a}, {b}, {c} or {d}."
     },
     "sound": {
       "mute": "Mute sound",
       "unmute": "Turn sound on"
+    },
+    "score": {
+      "a11y": "Score {s}: bank {b}, mission {m}, guess {g}, debt {d} off.",
+      "bank": "Bank half {n}",
+      "mission": "Mission {n}",
+      "guess": "Guess {n}",
+      "debt": "Debt -{n}",
+      "words": "See the money",
+      "wordsTitle": "Your score, in words"
+    },
+    "coach": {
+      "ok": "Got it",
+      "claim": "Tell the table something about yourself. Lying is allowed: the truth comes out at the end.",
+      "move": "Your move. Pick your tiles, then lock in. The others see what you do, not what you know.",
+      "call": "Think a bubble is a lie? Tap it to call it. Right wins you {win}; wrong gives them your {n}."
     }
   }
 }

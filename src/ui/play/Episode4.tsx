@@ -1,6 +1,6 @@
 // Play Episode 4, "The Hiring Round" (v2 Section 4, D-151): train, claim, and once per episode you are HireBot.
 // One beat per screen, as Episode 3. Every number and string comes from the engine view and play.l4.*.
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { ViewState } from '../../engine/types';
 import type { P4Preview, P4Round } from '../../engine/play/ep4';
 import type { Group, Job, Policy, Priors } from '../../engine/levels/level4';
@@ -16,7 +16,8 @@ import { nameOf, shortName } from '../game';
 import type { CastCue } from './Cast';
 import { Chips, StagedReveal, peakMark, spotlightSteps } from './Peak';
 import { DashHost } from './Characters';
-import { BigButton, Bubble, Face, Stage } from './OnAir';
+import { Coach } from './Coach';
+import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
 import { GiftBar, GiftSheet, Tile, previewText, roundClaims } from './Episode3';
 import { hostLine, pick, timesWord, bankLineText } from './logic';
 
@@ -96,7 +97,7 @@ export function MyCards4({ v, next }: { v: ViewState; next: () => void }) {
 export function PolicyIn({ v, next }: { v: ViewState; next: () => void }) {
   const lv = lv4(v);
   return (
-    <Stage v={v} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
+    <Stage v={v} onTap={next} footer={<AutoButton onClick={next}>{t('play.stage.tap')}</AutoButton>}>
       <div className="my-auto" data-vote>
         <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l4.policyIn')}</p>
         <p className="h-show mt-2 text-hero leading-tight text-spot">{policyName(lv.policy)}</p>
@@ -123,6 +124,7 @@ export function TrainScreen({ v }: { v: ViewState }) {
   const prior = lv.policy === 'B' && lv.priors.POOL !== null ? lv.priors.POOL : lv.priors[g];
   return (
     <Stage v={v} footer={<BigButton onClick={() => act({ train, gift })}>{t('play.stage.lock')}</BigButton>}>
+      <Coach id="move" />
       <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l4.judgeIs', { name: shortName(v, lv.judge) })}</p>
       <h1 className="h-show mt-1 text-hero leading-tight">{t('play.l4.train.title')}</h1>
       <p className="mt-2 text-body">{t(lv.policy === 'B' ? 'play.l4.train.beliefBlind' : 'play.l4.train.belief', { group: groupName(g), p: pct(prior) })}</p>
@@ -144,6 +146,7 @@ export function ClaimScreen4({ v }: { v: ViewState }) {
   const trained = lv.current?.train?.[v.viewer];
   return (
     <Stage v={v} footer={<BigButton disabled={!x} onClick={() => act(x)}>{t('play.claim.submit')}</BigButton>}>
+      <Coach id="claim" />
       <h1 className="h-show text-hero leading-tight">{t('play.claim.title')}</h1>
       <div className="mt-3 rounded-2xl bg-card p-3">
         <p className="h-show text-title leading-tight">{t(trained ? 'play.l4.claim.youT' : 'play.l4.claim.youU')}</p>
@@ -169,43 +172,73 @@ export function JudgeScreen({ v }: { v: ViewState }) {
   const [hires, setHires] = useState<Record<string, Job>>(() => Object.fromEntries(workers.map((w) => [w, 'SIMPLE' as Job])));
   const [gift, setGift] = useState<Gift | null>(null);
   const [call, setCall] = useState<string | null>(null);
+  // UI V3 (U3): one worker card at a time; Complex or Simple moves to the next card; swipe works too.
+  const [k, setK] = useState(0);
+  const startX = useRef<number | null>(null);
   const claims = roundClaims(v);
+  const w = workers[Math.min(k, workers.length - 1)];
+  const p = v.players.find((x) => x.id === w)!;
+  const choose = (job: Job) => {
+    setHires({ ...hires, [w]: job });
+    if (k < workers.length - 1) setK(k + 1);
+  };
+  const note = hires[w] === 'COMPLEX' ? previewText(lv.preview?.hire?.[w]) : null;
+  const meter = lv.meterShown && c.meter ? c.meter[w] : null;
   return (
-    <Stage v={v} footer={<BigButton onClick={() => act({ hires, gift, call })}>{t('play.l4.judge.submit')}</BigButton>}>
-      <h1 className="h-show text-title leading-tight">{t('play.l4.judge.title')}</h1>
-      <p className="mt-1 text-small">{t('play.l4.judge.pay', { g: PLAY.L4.JUDGE_GAIN, l: PLAY.L4.JUDGE_LOSS })}</p>
-      <ul className="mt-2 space-y-1.5" aria-label={t('play.l4.judge.title')}>
-        {workers.map((w) => {
-          const p = v.players.find((x) => x.id === w)!;
-          const on = hires[w] === 'COMPLEX';
-          const note = on ? previewText(lv.preview?.hire?.[w]) : null;
-          return (
-            <li key={w}>
-              <button type="button" aria-pressed={on} onClick={() => setHires({ ...hires, [w]: on ? 'SIMPLE' : 'COMPLEX' })} className={`flex min-h-[52px] w-full items-center gap-2 rounded-xl px-2 text-start ${on ? 'bg-spot text-onspot' : 'bg-card'}`} data-hire={w}>
-                <Face v={v} p={p} size={24} />
-                <span className="w-16 truncate text-small font-bold">{shortName(v, w)}</span>
-                <span className="flex-1 text-small leading-tight">
-                  {lv.policy === 'B' ? t('play.l4.judge.hidden') : groupName(lv.groups[w])}, {t(c.pass?.[w] ? 'play.l4.judge.passed' : 'play.l4.judge.failed')}, {t(claims[w] === 'TRAINED' ? 'play.l4.judge.says' : 'play.l4.judge.quiet')}
-                  {lv.meterShown && c.meter && (
-                    <span className="mt-0.5 flex items-center gap-1" aria-label={t('play.l4.meter', { p: pct(c.meter[w]) })}>
-                      <span className="relative h-1.5 w-16 rounded bg-paper" aria-hidden>
-                        <span className="absolute inset-y-0 left-0 rounded bg-good" style={{ width: `${Math.round(c.meter[w] * 100)}%` }} />
-                        <span className="absolute inset-y-[-2px] w-0.5 bg-ink" style={{ left: `${Math.round(lv.threshold * 100)}%` }} />
-                      </span>
-                      <span className="font-bold">{pct(c.meter[w])}</span>
-                    </span>
-                  )}
-                </span>
-                <span className="text-right text-small font-bold">
-                  {t(on ? 'play.l4.complex' : 'play.l4.simple')}
-                  {note && <span className="block text-small">{note}</span>}
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-      {lv.meterShown && <p className="mt-1 text-small">{t('play.l4.judge.meterNote', { p: pct(lv.threshold) })}</p>}
+    <Stage v={v} cast={{ focus: w }} footer={<BigButton onClick={() => act({ hires, gift, call })}>{t('play.l4.judge.submit')}</BigButton>}>
+      <div className="flex items-baseline justify-between gap-2">
+        <h1 className="h-show text-title leading-tight">{t('play.l4.judge.title')}</h1>
+        <span className="text-small font-bold text-soft">{t('play.l4.judge.of', { k: Math.min(k, workers.length - 1) + 1, n: workers.length })}</span>
+      </div>
+      <p className="text-small">{t('play.l4.judge.payShort', { g: PLAY.L4.JUDGE_GAIN, l: PLAY.L4.JUDGE_LOSS })}</p>
+      <div
+        className="mt-2 rounded-2xl bg-card p-3"
+        data-judge-card={w}
+        onPointerDown={(e) => (startX.current = e.clientX)}
+        onPointerUp={(e) => {
+          if (startX.current === null) return;
+          const dx = e.clientX - startX.current;
+          startX.current = null;
+          if (dx > 60) choose('COMPLEX');
+          else if (dx < -60) choose('SIMPLE');
+        }}
+      >
+        <div className="flex items-center gap-2">
+          <Face v={v} p={p} size={40} />
+          <span className="h-show flex-1 truncate text-lead">{shortName(v, w)}</span>
+          <span className="text-small font-bold">{lv.policy === 'B' ? t('play.l4.judge.hidden') : groupName(lv.groups[w])}</span>
+        </div>
+        <p className="mt-1 text-small">
+          {t(c.pass?.[w] ? 'play.l4.judge.passedTest' : 'play.l4.judge.failedTest')} · {t(claims[w] === 'TRAINED' ? 'play.l4.judge.says' : 'play.l4.judge.quiet')}
+        </p>
+        {meter !== null && (
+          <div className="mt-2" aria-label={t('play.l4.meter', { p: pct(meter) })} role="img">
+            <div className="relative h-4 rounded-full bg-paper">
+              <div className={`absolute inset-y-0 left-0 rounded-full ${meter >= lv.threshold ? 'bg-good' : 'bg-stamp'}`} style={{ width: `${Math.round(meter * 100)}%` }} />
+              <div className="absolute -inset-y-1 w-1 rounded bg-spot" style={{ left: `calc(${Math.round(lv.threshold * 100)}% - 2px)` }} />
+            </div>
+            <p className="mt-1 flex justify-between text-small">
+              <span className="font-bold">{t('play.l4.judge.meterShort', { p: pct(meter) })}</span>
+              <span>{t('play.l4.judge.line', { p: pct(lv.threshold) })}</span>
+            </p>
+          </div>
+        )}
+        <div className="mt-2 grid grid-cols-2 gap-2" role="group" aria-label={t('play.l4.judge.jobFor', { name: shortName(v, w) })}>
+          {(['COMPLEX', 'SIMPLE'] as Job[]).map((job) => (
+            <button key={job} type="button" aria-pressed={hires[w] === job} onClick={() => choose(job)} className={`min-h-[48px] rounded-xl text-body font-bold ${hires[w] === job ? 'bg-spot text-onspot' : 'bg-paper'}`} data-hire={`${w}:${job}`}>
+              {t(job === 'COMPLEX' ? 'play.l4.complex' : 'play.l4.simple')}
+            </button>
+          ))}
+        </div>
+        {note && <p className="mt-1 text-small font-bold" data-preview>{note}</p>}
+      </div>
+      <div className="mt-2 flex gap-1.5" aria-label={t('play.l4.judge.picks')}>
+        {workers.map((x, i) => (
+          <button key={x} type="button" onClick={() => setK(i)} aria-current={i === k} className={`min-h-[44px] flex-1 rounded-xl px-1 text-small font-bold ${i === k ? 'border-2 border-spot' : ''} ${hires[x] === 'COMPLEX' ? 'bg-spot text-onspot' : 'bg-card'}`}>
+            {shortName(v, x)}: {t(hires[x] === 'COMPLEX' ? 'play.l4.complex' : 'play.l4.simple')}
+          </button>
+        ))}
+      </div>
       <CallChips v={v} claimants={claimantsNow(v, (x) => x === 'TRAINED')} value={call} onPick={setCall} />
       <div className="mt-auto pt-2">
         <GiftTile bar v={v} gift={gift} setGift={setGift} />
@@ -251,12 +284,31 @@ export function HiresBeat({ v, next, last }: { v: ViewState; next: () => void; l
     cue.expr![w] = good ? 'pleased' : 'caught';
   }
   if (r.judge) cue.expr![r.judge] = nBad ? 'shocked' : nGood ? 'smug' : 'neutral';
-  const youLine = r.judge === me ? `${t('play.l4.res.youJudged', { n: coins(r.judgePay ?? 0) })} ${(nGood || nBad ? t('play.l4.res.judgeWhy', { b: coins((r.judgePay ?? 0) - nGood * PLAY.L4.JUDGE_GAIN + nBad * PLAY.L4.JUDGE_LOSS), g: nGood, gu: PLAY.L4.JUDGE_GAIN, gp: nGood * PLAY.L4.JUDGE_GAIN, l: nBad, lu: PLAY.L4.JUDGE_LOSS, lp: nBad * PLAY.L4.JUDGE_LOSS }) : t('play.l4.res.judgeBase', { b: coins(r.judgePay ?? 0) }))}` : t(r.job?.[me] === 'COMPLEX' ? 'play.l4.res.youComplex' : 'play.l4.res.youSimple', { n: coins(W[me] ?? 0) });
+  // UI V3 (U3): no formula in the headline. "You earned 0 as HireBot", then base, good hires, bad hires.
+  const youLine = r.judge === me ? t('play.l4.res.youEarned', { n: coins(r.judgePay ?? 0) }) : t(r.job?.[me] === 'COMPLEX' ? 'play.l4.res.youComplex' : 'play.l4.res.youSimple', { n: coins(W[me] ?? 0) });
+  const judgeRows: Array<[string, number]> | null =
+    r.judge === me
+      ? [
+          [t('play.l4.res.rowBase'), (r.judgePay ?? 0) - nGood * PLAY.L4.JUDGE_GAIN + nBad * PLAY.L4.JUDGE_LOSS],
+          [t('play.l4.res.rowGood', { n: nGood }), nGood * PLAY.L4.JUDGE_GAIN],
+          [t('play.l4.res.rowBad', { n: nBad }), -nBad * PLAY.L4.JUDGE_LOSS],
+        ]
+      : null;
   return (
     <Stage v={v} cast={cue} onTap={next} footer={<BigButton beatNext={!last} onClick={next}>{last ? t('play.stage.nextRound', { r: v.round + 1 }) : t('play.stage.tap')}</BigButton>}>
       <div className="my-auto" data-outcome>
         <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l4.res.label', { r: v.round })}</p>
         <h1 className="h-show mt-1 text-title leading-tight text-spot">{youLine}</h1>
+        {judgeRows && (
+          <dl className="mt-2 grid grid-cols-[1fr_auto] gap-x-3 rounded-2xl bg-card px-3 py-2 text-small" data-judge-pay>
+            {judgeRows.map(([k, n]) => (
+              <div key={k} className="contents">
+                <dt>{k}</dt>
+                <dd className="h-show text-end">{n > 0 ? `+${coins(n)}` : n < 0 ? `−${coins(-n)}` : '0'}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
         <ul className="mt-3 space-y-1.5">
           {workers.map((w) => {
             const p = v.players.find((x) => x.id === w)!;
@@ -295,7 +347,7 @@ export function BeliefBeat({ v, next, onReally }: { v: ViewState; next: () => vo
   const lastRound = v.round >= PLAY.L4.ROUNDS;
   const rows: Array<[string, number, number]> = lv.policy === 'B' && a.POOL !== null && b.POOL !== null ? [[t('play.l4.everyone'), a.POOL, b.POOL]] : (['CIRCLE', 'SQUARE'] as Group[]).map((g) => [groupName(g), a[g], b[g]]);
   return (
-    <Stage v={v} bar={false} tone="breaking" onTap={next} footer={<BigButton dark onClick={next}>{voteNext ? t('play.stage.toVote') : lastRound ? t('play.l1.toReveal') : t('play.stage.nextRound', { r: v.round + 1 })}</BigButton>}>
+    <Stage v={v} bar={false} tone="breaking" onTap={next} footer={<AutoButton dark onClick={next}>{voteNext ? t('play.stage.toVote') : lastRound ? t('play.l1.toReveal') : t('play.stage.nextRound', { r: v.round + 1 })}</AutoButton>}>
       <div className="my-auto" data-price>
         <p className="text-small font-bold uppercase tracking-wider">{t('play.l4.board.title')}</p>
         {rows.map(([name, x, y]) => (
