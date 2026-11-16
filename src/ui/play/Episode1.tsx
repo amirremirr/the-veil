@@ -15,7 +15,7 @@ import { CallChips, CallResults, claimantsNow } from './Call';
 import { coins, pct } from '../labels';
 import { nameOf, shortName } from '../game';
 import type { CastCue } from './Cast';
-import { Chips, StagedReveal, peakMark, spotlightSteps } from './Peak';
+import { Chips, Details, StagedReveal, peakMark, spotlightSteps } from './Peak';
 import { Coach } from './Coach';
 import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
 import { GiftBar, GiftSheet, Tile, previewText } from './Episode3';
@@ -190,7 +190,8 @@ export function IncomesBeat({ v, next, last }: { v: ViewState; next: () => void;
     <Stage v={v} onTap={next} footer={<BigButton beatNext={!last} onClick={next}>{last ? t('play.l1.toReveal') : t('play.stage.nextRound', { r: v.round + 1 })}</BigButton>}>
       <div className="my-auto" data-outcome>
         <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l1.inc.label')}</p>
-        <h1 className="h-show mt-1 text-title leading-tight text-spot">{t('play.l1.inc.you', { y: coins(r.incomes[me]), w: myPost })}</h1>
+        <h1 className="h-show mt-1 text-title leading-tight text-spot">{t('play.cast.l1keep', { w: myPost })}</h1>
+        <p className="text-small">{t('play.cast.l1before', { y: coins(r.incomes[me]) })}</p>
         <ul className="mt-3 space-y-1.5">
           {order.map((p) => (
             <li key={p.id} className="flex items-center gap-2 rounded-xl bg-card px-2 py-1.5">
@@ -242,7 +243,8 @@ export function CardsReveal1({ v }: { v: ViewState }) {
       ),
     })),
     <>
-      <ul className="space-y-1" data-cards-list>
+      <Details>
+        <ul className="space-y-1" data-cards-list>
         {v.players.map((p) => (
           <li key={p.id} className="flex items-start gap-2 rounded-xl bg-card px-2 py-1">
             <span className="w-16 shrink-0 truncate text-small font-bold">{shortName(v, p.id)}</span>
@@ -250,6 +252,7 @@ export function CardsReveal1({ v }: { v: ViewState }) {
           </li>
         ))}
       </ul>
+      </Details>
       <div className="mt-2 space-y-1">
         {peekLines.length ? peekLines.map((x) => <p key={x} className="h-show text-lead leading-tight">{x}</p>) : <p className="h-show text-lead leading-tight">{t('play.l1.peak.noPeek')}</p>}
       </div>

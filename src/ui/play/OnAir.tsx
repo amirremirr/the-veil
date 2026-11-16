@@ -236,7 +236,7 @@ export function Bubble({ who, text, host = false, bot, mood }: { who: string; te
     return (
       <figure className="flex items-end gap-2" data-voice="host">
         <span aria-hidden className="shrink-0">
-          <DashHost expr={mood ?? 'neutral'} size={56} />
+          <DashHost expr={mood ?? 'neutral'} size={64} />
         </span>
         <p className="relative flex-1 rounded-2xl rounded-bl-sm bg-spot px-3 py-2 text-small leading-snug text-onspot">
           <span className="font-bold">{who}:</span> {text}

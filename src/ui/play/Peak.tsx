@@ -113,3 +113,13 @@ export function spotlightSteps(rows: Array<{ id: string; stamp?: { text: string;
     final: { cue: cueUpTo(rows.length - 1), body: finalBody },
   };
 }
+
+/** User review fix 3: the round-by-round table sits behind a "Details" tap; the stamps and one line stay. */
+export function Details({ children }: { children: ReactNode }) {
+  return (
+    <details className="mt-2 rounded-2xl bg-card px-3" data-details>
+      <summary className="flex min-h-[44px] cursor-pointer items-center text-small font-bold underline">{t('play.cast.details')}</summary>
+      <div className="pb-2">{children}</div>
+    </details>
+  );
+}

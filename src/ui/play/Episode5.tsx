@@ -13,7 +13,7 @@ import { CallChips, CallResults } from './Call';
 import { coins, pct } from '../labels';
 import { nameOf, shortName } from '../game';
 import type { CastCue } from './Cast';
-import { StagedReveal } from './Peak';
+import { Details, StagedReveal } from './Peak';
 import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
 import { previewText } from './Episode3';
 import { timesWord, bankLineText } from './logic';
@@ -203,7 +203,11 @@ export function AmendScreen({ v }: { v: ViewState }) {
   const usedCall = (v.play!.calls ?? []).some((c) => c.level === 5 && c.caller === v.viewer);
   const callable = usedCall || !PLAY.CALL_ENABLED ? [] : v.players.filter((p) => p.id !== v.viewer && (lv.claims?.[p.id]?.[proposer] === 'YES' || lv.claims?.[p.id]?.[proposer] === 'NO')).map((p) => p.id);
   return (
-    <Stage v={v} footer={<BigButton disabled={x === null} onClick={() => act(call ? { vote: x, call } : x)}>{t('play.l5.amend.submit')}</BigButton>}>
+    <Stage
+      v={v}
+      cast={{ bubbles: Object.fromEntries(v.players.filter((p) => lv.claims?.[p.id]?.[proposer] === 'YES' || lv.claims?.[p.id]?.[proposer] === 'NO').map((p) => [p.id, t(`play.cast.claim.l5.${lv.claims![p.id][proposer]}`)])) }}
+      footer={<BigButton disabled={x === null} onClick={() => act(call ? { vote: x, call } : x)}>{t('play.l5.amend.submit')}</BigButton>}
+    >
       <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l5.amend.label', { k: k + 1, n: lv.order.length, name: shortName(v, proposer) })}</p>
       <h1 className="h-show mt-1 text-title leading-tight">{rules(prop)}</h1>
       <p className="mt-1 text-small">{t('play.l5.amend.now', { rules: rules(lv.current!), n: lv.need })}</p>
@@ -278,7 +282,9 @@ export function AmendReveal({ v }: { v: ViewState }) {
   const finalBody = (
     <>
       <p className="h-show text-lead leading-tight">{lv.current ? t('play.l5.peak.final', { rules: rules(lv.current) }) : ''}</p>
-      <ul className="mt-1 space-y-1" data-cards-list>
+      {stamps[0] && <p className="h-show mt-1 text-lead leading-tight">{stamps[0]}</p>}
+      <Details>
+        <ul className="mt-1 space-y-1" data-cards-list>
         {live.map((a) => (
           <li key={a.proposer} className="rounded-xl bg-card px-2 py-1 text-small leading-tight">
             <span className="font-bold">{t('play.l5.peak.am', { name: shortName(v, a.proposer), rules: rules(a.proposal), res: t(a.passed ? 'play.l5.peak.passed' : 'play.l5.peak.failed'), y: a.yes })}</span>
@@ -292,20 +298,21 @@ export function AmendReveal({ v }: { v: ViewState }) {
             {t('play.l5.peak.dropped', { name: shortName(v, a.proposer) })}
           </p>
         ))}
-      {stamps.map((x) => (
-        <p key={x} className="h-show mt-1 text-lead leading-tight">
+      {stamps.slice(1).map((x) => (
+        <p key={x} className="mt-1 text-small font-semibold">
           {x}
         </p>
       ))}
       {bankLineText(v) && <p className="mt-1 text-small font-semibold" data-bankline>{bankLineText(v)}<MoneyLedger v={v} /></p>}
       <CallResults v={v} />
       <p className="mt-1 text-small">{t('play.l5.peak.shift', { a: pct(lv.fair1?.[me] ?? 0), b: pct(lv.fair2?.[me] ?? 0), d: `${shift >= 0 ? '+' : ''}${Math.round(shift * 100)}` })}</p>
+      </Details>
       <div className="mt-2">
         <Bubble who="Dash" host mood={stamps.length ? 'excited' : 'wink'} text={stamps.length ? t('play.l5.peak.hostBought') : t('play.l5.peak.hostClean')} />
       </div>
     </>
   );
-  return <StagedReveal v={v} label={t('play.l5.peak.label')} title={t('play.cast.l5title')} steps={stepsAm} final={{ cue: finalCue, body: finalBody }} onDone={() => act()} />;
+  return <StagedReveal v={v} label={t('play.l5.peak.label')} title={t('play.cast.l5title2')} steps={stepsAm} final={{ cue: finalCue, body: finalBody }} onDone={() => act()} />;
 }
 
 export function summary5(v: ViewState): { lie: string } {

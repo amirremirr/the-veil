@@ -2294,7 +2294,7 @@
       "l5card": "{name}: {rules}",
       "tally": "Yes {y} of {n}",
       "l5title": "The ballots",
-      "l2row": "{e} h a round, {w} prizes",
+      "l2row": "{e} h a round, prizes: {w}",
       "lies": "Lies: {n}",
       "l4row": "Trained {n} of {w} times",
       "r": {
@@ -2304,7 +2304,21 @@
         "tally": "{n} lies",
         "more": "And {n} more."
       },
-      "youDontDeck": "Income: unknown. One of {a}, {b}, {c} or {d}."
+      "youDontDeck": "Income: unknown. One of {a}, {b}, {c} or {d}.",
+      "hire": {
+        "GOOD": "GOOD HIRE",
+        "BAD": "BAD HIRE"
+      },
+      "votes": "Votes:",
+      "prizeVotes": "Who voted for whom:",
+      "votedFor": "{a} for {b}",
+      "l5title2": "Who voted what",
+      "l1keep": "You keep {w}",
+      "l1before": "Your income was {y} before the rule.",
+      "details": "Details",
+      "barred": "BARRED",
+      "votedBar": "Bars {name}",
+      "launchShort": "Everyone is in: {p} coins."
     },
     "sound": {
       "mute": "Mute sound",

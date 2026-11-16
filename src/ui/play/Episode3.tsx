@@ -17,7 +17,7 @@ import { Sheet } from '../components/TableParts';
 import { DashHost } from './Characters';
 import { Coach } from './Coach';
 import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
-import { Chips, StagedReveal, peakMark, spotlightSteps } from './Peak';
+import { Chips, Details, StagedReveal, peakMark, spotlightSteps } from './Peak';
 import { RollNumber, type CastCue } from './Cast';
 import { buzz, sfx } from './sound';
 import { confessional, hostLine, pick, roundOutcome, timesWord } from './logic';
@@ -222,6 +222,11 @@ export function MoveScreen({ v }: { v: ViewState }) {
   return (
     <Stage v={v} chatFirst footer={<BigButton onClick={() => act(decision)}>{t('play.stage.lock')}</BigButton>}>
       <Coach id="move" />
+      {launch && (
+        <p className="mb-2 rounded-2xl border-2 border-spot bg-card px-3 py-2 text-small font-semibold leading-snug" data-launch-banner>
+          {t('play.stage.launchDesc', { p: coins(lv.premium!) })}
+        </p>
+      )}
       <p className="text-body font-semibold leading-snug">
         {t('play.move.risk')} <span className="h-show text-title text-spot" aria-live="polite">{pct(myOdds(v, gym))}</span>
       </p>
@@ -271,7 +276,7 @@ export function MoveScreen({ v }: { v: ViewState }) {
       <CallChips v={v} claimants={claimantsNow(v)} value={call} onPick={setCall} />
       <div className="mt-auto grid grid-cols-3 gap-2 pt-3">
         {launch ? (
-          <Tile on disabled title={t('play.stage.launchTitle')} desc={t('play.stage.launchDesc', { p: coins(lv.premium!) })} />
+          <Tile on disabled title={t('play.stage.launchTitle')} desc={t('play.cast.launchShort', { p: coins(lv.premium!) })} />
         ) : canBuy ? (
           <Tile on={buy} title={t('play.stage.buyTitle')} desc={t('play.stage.buyDesc', { p: coins(lv.premium!) })} note={previewText(pv?.cover)} onClick={() => setBuy(!buy)} />
         ) : mandatory ? (
@@ -379,16 +384,20 @@ export function BarBeat({ v, next }: { v: ViewState; next: () => void }) {
   // AI playtest (T1): a barred contestant who did not apply this round is named too, so two bars never read as one.
   const idle = b.refused.length ? b.barred.filter((x) => !b.refused.includes(x)) : [];
   const subIdle = idle.length ? ` ${t('play.barBeat.notAppliedNamed', { names: names(idle) })}` : '';
+  // User review fix 4: the Bar on the stage. BARRED lands on the barred (dimmed), each member wears a vote mark.
+  const cue: CastCue = {
+    stamps: Object.fromEntries(b.barred.map((x) => [x, { text: t('play.cast.barred'), tone: 'stamp' as const }])),
+    dim: b.barred,
+    marks: Object.fromEntries(b.members.filter((m) => b.votes[m]).map((m) => [m, t('play.cast.votedBar', { name: shortName(v, b.votes[m]!) })])),
+    expr: Object.fromEntries(b.barred.map((x) => [x, 'shocked' as const])),
+  };
   return (
-    <Stage v={v} bar={false} onTap={next} footer={<AutoButton onClick={next}>{t('play.stage.tap')}</AutoButton>}>
+    <Stage v={v} bar={false} cast={cue} onTap={next} footer={<AutoButton onClick={next}>{t('play.stage.tap')}</AutoButton>}>
       <div className="my-auto text-center" data-bar={b.barred.join(' ') || 'none'}>
         <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.barBeat.label')}</p>
-        <p className={`h-show mt-2 text-hero leading-tight ${b.barred.length ? 'text-stamp' : 'text-spot'}`}>{head}</p>
-        {sub && <p className="mt-3 text-body">{sub}{subIdle}</p>}
-        <p className="mt-4 text-small text-soft">
-          {b.members.map((m) => t('play.barBeat.vote', { name: shortName(v, m), target: b.votes[m] ? shortName(v, b.votes[m]!) : t('play.barBeat.noOne') })).join(' · ')}
-        </p>
-        <p className="mt-1 text-small text-soft">{t('play.barBeat.rule')}</p>
+        <p className={`h-show mt-2 text-title leading-tight ${b.barred.length ? 'text-stamp' : 'text-spot'}`}>{head}</p>
+        {sub && <p className="mt-2 text-body">{sub}{subIdle}</p>}
+        <p className="mt-3 text-small text-soft">{t('play.barBeat.rule')}</p>
       </div>
     </Stage>
   );
@@ -458,7 +467,8 @@ export function CardsReveal({ v }: { v: ViewState }) {
       ),
     })),
     <>
-      <ul className="space-y-1" data-cards-list>
+      <Details>
+        <ul className="space-y-1" data-cards-list>
         {rows.map(({ p, cl }) => (
           <li key={p.id} className="rounded-2xl bg-card px-3 py-1">
             {head(p, false)}
@@ -467,6 +477,7 @@ export function CardsReveal({ v }: { v: ViewState }) {
           </li>
         ))}
       </ul>
+      </Details>
       <div className="mt-2">
         <Bubble who="Dash" host text={line} mood={top.lies ? 'excited' : 'wink'} />
       </div>
@@ -504,7 +515,7 @@ export function VoteInBeat({ v, next }: { v: ViewState; next: () => void }) {
       <div className="my-auto text-center" data-vote>
         <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.stage.voteIn')}</p>
         <p className="h-show mt-2 text-hero leading-tight text-spot">{regimeName(lv.regime)}</p>
-        <p className="mt-4 text-small text-soft">{v.players.map((p) => `${shortName(v, p.id)}: ${regimeName(lv.regimeVotes![p.id])}`).join(' · ')}</p>
+        <p className="mt-4 text-small text-soft"><span className="font-bold">{t('play.cast.votes')}</span> {v.players.map((p) => `${shortName(v, p.id)} ${regimeName(lv.regimeVotes![p.id])}`).join(' · ')}</p>
         {lv.regimeTie && <p className="mt-1 text-small">{t('play.l1.votes.tie')}</p>}
       </div>
     </Stage>
@@ -733,7 +744,7 @@ export function PriceBeat({ v, next, onReally }: { v: ViewState; next: () => voi
         <p className="mt-2 text-small">{t(`play.stage.sub${kind}`)}</p>
         <div className="mt-4">
           <figure className="flex items-end gap-2" data-voice="host">
-            <span aria-hidden className="shrink-0"><DashHost expr="worried" size={56} /></span>
+            <span aria-hidden className="shrink-0"><DashHost expr="worried" size={64} /></span>
             <p className="flex-1 rounded-2xl rounded-bl-sm bg-onspot px-3 py-2 text-small text-spot"><span className="font-bold">Dash:</span> {hostLine(`price${kind}`, pick(v, `price-${kind}`, 6))}</p>
           </figure>
         </div>

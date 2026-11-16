@@ -12,7 +12,7 @@ import { CallChips, CallResults, claimantsNow } from './Call';
 import { coins, pct } from '../labels';
 import { fmt1 } from '../components/Money';
 import { nameOf, shortName } from '../game';
-import { Chips, StagedReveal, peakMark, spotlightSteps } from './Peak';
+import { Chips, Details, StagedReveal, peakMark, spotlightSteps } from './Peak';
 import { Coach } from './Coach';
 import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
 import { GiftBar, GiftSheet, Tile, previewText } from './Episode3';
@@ -63,7 +63,7 @@ export function TaxIn({ v, next }: { v: ViewState; next: () => void }) {
         <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l2.taxIn.label')}</p>
         <p className="h-show mt-2 text-hero leading-none text-spot">{pct(lv.t ?? 0)}</p>
         <p className="mt-2 text-body">{t('play.l2.taxIn.how')}</p>
-        <p className="mt-3 text-small">{v.players.map((p) => `${shortName(v, p.id)}: ${pct(lv.tVotes?.[p.id] ?? 0)}`).join(', ')}</p>
+        <p className="mt-3 text-small"><span className="font-bold">{t('play.cast.votes')}</span> {v.players.map((p) => `${shortName(v, p.id)} ${pct(lv.tVotes?.[p.id] ?? 0)}`).join(', ')}</p>
       </div>
     </Stage>
   );
@@ -211,7 +211,7 @@ export function PrizeBeat({ v, next }: { v: ViewState; next: () => void }) {
       <div className="my-auto" data-outcome>
         <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l2.won.label')}</p>
         <h1 className="h-show mt-1 text-hero leading-tight text-spot">{head}</h1>
-        <p className="mt-3 text-small">{v.players.map((p) => `${shortName(v, p.id)}: ${r.votes?.[p.id] ? shortName(v, r.votes[p.id]!) : ''}`).join(', ')}</p>
+        <p className="mt-3 text-small"><span className="font-bold">{t('play.cast.prizeVotes')}</span> {v.players.map((p) => t('play.cast.votedFor', { a: shortName(v, p.id), b: r.votes?.[p.id] ? shortName(v, r.votes[p.id]!) : t('play.barBeat.noOne') })).join(', ')}</p>
         <p className="mt-2 text-small" data-net>{t('play.l2.won.net', { y: coins(r.y?.[v.viewer] ?? 0), t: pct(lv.t ?? 0), k: coins((roundMoney(v) ?? r.W?.[v.viewer] ?? 0) - (r.prize?.[v.viewer] ?? 0) - giftNet) })}{r.prize?.[v.viewer] ? ` ${t('play.l2.won.netPrize', { n: coins(r.prize[v.viewer]) })}` : ''}{giftNet ? ` ${t('play.l2.won.netGifts', { n: `${giftNet > 0 ? '+' : ''}${coins(giftNet)}` })}` : ''}</p>
         {bankLineText(v) && <p className="mt-2 text-small font-semibold" data-bankline>{bankLineText(v)}<MoneyLedger v={v} /></p>}
         <CallResults v={v} />
@@ -260,7 +260,8 @@ export function CardsReveal2({ v }: { v: ViewState }) {
       ),
     })),
     <>
-      <ul className="space-y-1" data-cards-list>
+      <Details>
+        <ul className="space-y-1" data-cards-list>
         {v.players.map((p) => (
           <li key={p.id} className="rounded-xl bg-card px-2">
             {/* Each row opens to its rounds, so the per-round stamps are there without the animation too. */}
@@ -275,6 +276,7 @@ export function CardsReveal2({ v }: { v: ViewState }) {
           </li>
         ))}
       </ul>
+      </Details>
       <p className="h-show mt-2 text-lead leading-tight">{peak}</p>
       {unlucky && <p className="mt-1 text-small font-semibold">{t('play.l2.peak.unlucky', { name: shortName(v, unlucky.id) })}</p>}
       <div className="mt-2">

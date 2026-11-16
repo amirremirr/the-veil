@@ -1,6 +1,23 @@
 // Play LIFE and Daily Life (RUNPLAN T6, T8): a whole life through the UI, every screen fits, ending on the
 // result card with the rival line; Daily Life starts the shared seed of the Istanbul day.
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+
+/** User review fix 1 and 2: no raw copy key ("play.x.y") on screen, and no stamp wider than its podium. */
+async function cleanScreen(page: Page) {
+  const text = await page.locator('body').innerText();
+  expect(text, text.slice(0, 200)).not.toMatch(/\bplay\.[a-zA-Z]+/);
+  const over = await page.evaluate(() =>
+    [...document.querySelectorAll('[data-cast-stamp]')]
+      .map((el) => {
+        const pod = el.closest('[data-podium]') as HTMLElement | null;
+        const r = el.getBoundingClientRect();
+        return pod && r.width > pod.getBoundingClientRect().width + 1 ? `${el.textContent} ${Math.round(r.width)}>${Math.round(pod.getBoundingClientRect().width)}` : '';
+      })
+      .filter(Boolean),
+  );
+  expect(over).toEqual([]);
+}
+
 
 type Veil = { __veil: { getState(): { updateSettings(p: object): void; go(s: string): void; game: { mode: string; seed: string; phase: { kind: string } } | null } }; __autoplay(stop: (g: unknown) => boolean): string };
 
@@ -26,6 +43,7 @@ test('Daily Life starts a life on the day seed and reaches the result card', asy
     const d = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, sh: document.documentElement.scrollHeight, ih: window.innerHeight }));
     expect(d.sw).toBeLessThanOrEqual(d.cw);
     expect(d.sh).toBeLessThanOrEqual(d.ih);
+    await cleanScreen(page);
     if (await page.locator('[data-result-card]').count()) break;
     // G1: the first "See the money" link opens a ledger whose lines are listed, then closes.
     if (!ledgerSeen && (await page.locator('[data-ledger]').count())) {

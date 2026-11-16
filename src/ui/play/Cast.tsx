@@ -27,6 +27,10 @@ export type CastCue = {
   flash?: Record<string, 'gain' | 'hit'>;
   /** Hide the bank on the podiums (a reveal that counts its own money). */
   noBanks?: boolean;
+  /** A small badge on a character (a vote mark). */
+  marks?: Record<string, string>;
+  /** Characters to dim (barred, out). */
+  dim?: string[];
   /** Banks to show instead of the current ones (before a reveal lands, so they can count to the new ones). */
   banks?: Record<string, number>;
 };
@@ -48,6 +52,8 @@ export function mergeCues(...cs: Array<CastCue | undefined | null>): CastCue {
     if (c.focus !== undefined) out.focus = c.focus;
     if (c.noBanks) out.noBanks = true;
     if (c.banks) out.banks = c.banks;
+    if (c.marks) out.marks = { ...(out.marks ?? {}), ...c.marks };
+    if (c.dim) out.dim = [...(out.dim ?? []), ...c.dim];
   }
   return out;
 }
@@ -76,7 +82,7 @@ export function claimWords(v: ViewState, value: string): string {
   if (v.levelIndex === 1) return t('play.cast.claim.vote', { rule: t(`play.l1.rule.${value}.name`) });
   if (v.levelIndex === 2) return t('play.cast.claim.effort', { b: t(`play.l2.band.${value}`).toLowerCase() });
   if (v.levelIndex === 4) return t('play.cast.claim.trained');
-  if (v.levelIndex === 5) return t(`play.cast.claim.l5.${value}`);
+  if (v.levelIndex === 5) return t(`play.cast.claim.l5.${value.includes(':') ? value.split(':')[1] : value}`);
   return t(`play.claims.RISK.${value}`);
 }
 
@@ -86,7 +92,8 @@ export function claimBubbles(v: ViewState): Record<string, string> {
   for (const m of v.messages as Message[]) {
     if (m.level !== v.levelIndex || m.round !== v.round || m.msg.type !== 'CLAIM') continue;
     const value = (m.msg as { value: string }).value;
-    if (value === 'SILENT') continue;
+    // Episode 5 claims are per amendment; its vote screen passes its own bubbles.
+    if (value === 'SILENT' || v.levelIndex === 5) continue;
     out[m.from] = claimWords(v, value);
   }
   return out;
@@ -212,9 +219,20 @@ function CoinFly({ viewer, delta }: { viewer: string; delta: number }) {
   );
 }
 
-/** A rubber stamp that lands on a character with a thump. */
+/** A rubber stamp that lands on a character with a thump. It never gets wider than its podium (it shrinks). */
 function CastStampMark({ s, delay }: { s: CastStamp; delay: number }) {
   const off = useMotionOff();
+  const ref = useRef<HTMLSpanElement>(null);
+  const [fit, setFit] = useState(1);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const box = el?.closest('[data-podium]') as HTMLElement | null;
+    if (!el || !box) return;
+    // The stamp is turned 8 degrees, so its width on screen includes a little of its height.
+    const w = el.offsetWidth * Math.cos(0.14) + el.offsetHeight * Math.sin(0.14);
+    const room = box.clientWidth - 2;
+    setFit(w > room ? room / w : 1);
+  }, [s.text]);
   useEffect(() => {
     const id = setTimeout(() => {
       sfx('stamp');
@@ -225,13 +243,19 @@ function CastStampMark({ s, delay }: { s: CastStamp; delay: number }) {
   const color = s.tone === 'good' ? 'border-good text-good' : s.tone === 'ink' ? 'border-ink text-ink' : 'border-stamp text-stamp';
   return (
     <motion.span
-      className={`pointer-events-none absolute bottom-[4%] left-1/2 z-10 whitespace-nowrap rounded-md border-[3px] bg-paper/90 px-1.5 py-0.5 font-mono text-small font-bold uppercase leading-none tracking-wider shadow-stamp ${color}`}
+      className="pointer-events-none absolute left-1/2 top-[30%] z-10"
       initial={off ? { x: '-50%', rotate: -8 } : { x: '-50%', scale: 2.4, opacity: 0, rotate: -16 }}
       animate={{ x: '-50%', scale: 1, opacity: 1, rotate: -8 }}
       transition={off ? { duration: 0 } : { type: 'spring', stiffness: 560, damping: 20, delay }}
-      data-cast-stamp={s.text}
     >
-      {s.text}
+      <span
+        ref={ref}
+        className={`h-show block whitespace-nowrap rounded-md border-[3px] bg-paper/90 px-1 py-0.5 text-small uppercase leading-none shadow-stamp ${color}`}
+        style={fit < 1 ? { transform: `scale(${fit})` } : undefined}
+        data-cast-stamp={s.text}
+      >
+        {s.text}
+      </span>
     </motion.span>
   );
 }
@@ -325,7 +349,8 @@ export function CastStage({ v, cue = {}, fit = 0, call }: { v: ViewState; cue?: 
           const me = p.id === v.viewer;
           const expr = cue.expr?.[p.id] ?? autoExpr(bank, deltas[p.id] ?? 0);
           const stamp = cue.stamps?.[p.id];
-          const dim = cue.focus && cue.focus !== p.id;
+          const dim = (cue.focus && cue.focus !== p.id) || cue.dim?.includes(p.id);
+          const mark = cue.marks?.[p.id];
           const flash = cue.flash?.[p.id];
           return (
             <li
@@ -343,8 +368,13 @@ export function CastStage({ v, cue = {}, fit = 0, call }: { v: ViewState; cue?: 
                 transition={{ duration: 0.5 }}
               >
                 <ShapePerson kind={castKind(p)} expr={expr} size={size} />
-                <AnimatePresence>{stamp && <CastStampMark key={stamp.text} s={stamp} delay={0} />}</AnimatePresence>
               </motion.span>
+              {mark && (
+                <span className="absolute right-0 top-0 z-10 max-w-full truncate rounded-full bg-spot px-1.5 text-small font-bold leading-snug text-onspot" data-mark={p.id}>
+                  {mark}
+                </span>
+              )}
+              <AnimatePresence>{stamp && <CastStampMark key={stamp.text} s={stamp} delay={0} />}</AnimatePresence>
               <div
                 aria-hidden
                 className={`relative -mt-1 w-full overflow-hidden rounded-xl border-2 px-1 py-0.5 text-center shadow-podium ${me ? 'border-spot' : 'border-line'} ${debt ? 'bg-paper' : 'bg-card'}`}

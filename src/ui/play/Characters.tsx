@@ -230,7 +230,7 @@ export function ShapePerson({ kind, expr = 'neutral', size = 72, label }: { kind
 }
 
 /** Dash Fortuna: a microphone for a head, a bow tie, four expressions. */
-export function DashHost({ expr = 'neutral', size = 56 }: { expr?: DashExpr; size?: number }) {
+export function DashHost({ expr = 'neutral', size = 64 }: { expr?: DashExpr; size?: number }) {
   const D = C.dash;
   const face: Expr = expr === 'excited' ? 'pleased' : expr === 'worried' ? 'caught' : 'neutral';
   return (
@@ -244,6 +244,9 @@ export function DashHost({ expr = 'neutral', size = 56 }: { expr?: DashExpr; siz
           <path key={y} d={`M${50 - Math.sqrt(Math.max(0, 27 * 27 - (y - 32) ** 2))} ${y} H${50 + Math.sqrt(Math.max(0, 27 * 27 - (y - 32) ** 2))}`} />
         ))}
       </g>
+      <circle cx="31" cy="40" r="4.5" fill={D.cheek} opacity="0.8" />
+      <circle cx="69" cy="40" r="4.5" fill={D.cheek} opacity="0.8" />
+      <path d="M36 5 Q50 -4 64 5" fill="none" stroke={D.band} strokeWidth="4" strokeLinecap="round" />
       {expr === 'excited' && <path d="M84 8 l3 7 7 3 -7 3 -3 7 -3 -7 -7 -3 7 -3Z" fill={D.band} stroke={C.ink} strokeWidth="1.2" />}
       <Face expr={face} cx={50} cy={32} s={1.05} wink={expr === 'wink'} />
     </svg>

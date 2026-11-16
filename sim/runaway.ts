@@ -60,7 +60,7 @@ function playOne(seed: string): Life {
     ratio.push(bot > 0 ? top / bot : null);
     gap.push(top - bot);
   }
-  const sc = Object.fromEntries(ids.map((id) => [id, pl.finalScores?.[id] ?? playScore(s, id)]));
+  const sc = Object.fromEntries(ids.map((id) => [id, playScore(s, id)]));
   const finalRanks = Object.fromEntries(ids.map((id) => [id, 1 + ids.filter((x) => sc[x] > sc[id] + 1e-9).length]));
   const r2 = lastOf(2).ranks;
   const r3 = lastOf(3).ranks;

@@ -14,7 +14,7 @@ import { CallChips, CallResults, claimantsNow } from './Call';
 import { coins, pct } from '../labels';
 import { nameOf, shortName } from '../game';
 import type { CastCue } from './Cast';
-import { Chips, StagedReveal, peakMark, spotlightSteps } from './Peak';
+import { Chips, Details, StagedReveal, peakMark, spotlightSteps } from './Peak';
 import { DashHost } from './Characters';
 import { Coach } from './Coach';
 import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
@@ -102,7 +102,7 @@ export function PolicyIn({ v, next }: { v: ViewState; next: () => void }) {
         <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l4.policyIn')}</p>
         <p className="h-show mt-2 text-hero leading-tight text-spot">{policyName(lv.policy)}</p>
         <p className="mt-2 text-body">{t(`levels.4.policies.${lv.policy}.desc`)}</p>
-        <p className="mt-3 text-small">{v.players.map((p) => `${shortName(v, p.id)}: ${lv.policyVotes?.[p.id] ? policyName(lv.policyVotes[p.id]) : ''}`).join(' · ')}</p>
+        <p className="mt-3 text-small"><span className="font-bold">{t('play.cast.votes')}</span> {v.players.map((p) => `${shortName(v, p.id)} ${lv.policyVotes?.[p.id] ? policyName(lv.policyVotes[p.id]) : ''}`).join(' · ')}</p>
         {(() => {
           const n: Record<string, number> = {};
           for (const x of Object.values(lv.policyVotes ?? {})) n[x] = (n[x] ?? 0) + 1;
@@ -280,7 +280,7 @@ export function HiresBeat({ v, next, last }: { v: ViewState; next: () => void; l
   for (const w of workers) {
     if (r.job?.[w] !== 'COMPLEX') continue;
     const good = !!r.good?.includes(w);
-    cue.stamps![w] = { text: t(`play.l4.stamp.${good ? 'GOOD' : 'BAD'}`), tone: good ? 'good' : 'stamp' };
+    cue.stamps![w] = { text: t(`play.cast.hire.${good ? 'GOOD' : 'BAD'}`), tone: good ? 'good' : 'stamp' };
     cue.expr![w] = good ? 'pleased' : 'caught';
   }
   if (r.judge) cue.expr![r.judge] = nBad ? 'shocked' : nGood ? 'smug' : 'neutral';
@@ -329,7 +329,7 @@ export function HiresBeat({ v, next, last }: { v: ViewState; next: () => void; l
           })}
         </ul>
         {r.judge !== me && r.jobPay?.[me] !== undefined && <p className="mt-2 text-small">{t(r.train?.[me] ? 'play.l4.res.payTrain' : 'play.l4.res.pay', { p: coins(r.jobPay[me]), c: coins(Math.max(0, (r.costs?.[me] ?? 0) - (v.play!.event?.id === 'GRANT' && v.play!.event.round === v.round ? PLAY.L4_EVENTS.GRANT.COST_CUT : 0))) })}{lv.care[me] && r.job?.[me] === 'COMPLEX' ? ` ${t('play.l4.res.care', { n: lv.policy === 'D' ? L4.CHAOS_COST_SUBSIDIZED : L4.CHAOS_COST })}` : ''}{(() => { const cost = r.train?.[me] ? Math.max(0, (r.costs?.[me] ?? 0) - (v.play!.event?.id === 'GRANT' && v.play!.event.round === v.round ? PLAY.L4_EVENTS.GRANT.COST_CUT : 0)) : 0; const other = Math.round((W[me] ?? 0) - r.jobPay![me] + cost); return other ? ` ${t('play.l4.res.other', { n: `${other > 0 ? '+' : ''}${other}` })}` : ''; })()}</p>}
-        <p className="mt-2 text-small">{t('play.l4.res.judgePay', { name: shortName(v, r.judge!), n: coins(r.judgePay ?? 0) })}</p>
+        {r.judge !== me && <p className="mt-2 text-small">{t('play.l4.res.judgePay', { name: shortName(v, r.judge!), n: coins(r.judgePay ?? 0) })}</p>}
         {bankLineText(v) && <p className="mt-2 text-small font-semibold" data-bankline>{bankLineText(v)}<MoneyLedger v={v} /></p>}
         <CallResults v={v} />
       </div>
@@ -361,7 +361,7 @@ export function BeliefBeat({ v, next, onReally }: { v: ViewState; next: () => vo
         <p className="mt-2 text-small">{t('play.l4.board.sub', { p: pct(lv.threshold) })}</p>
         <div className="mt-4">
           <figure className="flex items-end gap-2" data-voice="host">
-            <span aria-hidden className="shrink-0"><DashHost expr="worried" size={56} /></span>
+            <span aria-hidden className="shrink-0"><DashHost expr="worried" size={64} /></span>
             <p className="flex-1 rounded-2xl rounded-bl-sm bg-onspot px-3 py-2 text-small text-spot"><span className="font-bold">Dash:</span> {hostLine('l4board', pick(v, 'l4board', 6))}</p>
           </figure>
         </div>
@@ -425,7 +425,9 @@ export function CardsReveal4({ v }: { v: ViewState }) {
       ),
     })),
     <>
-      <ul className="space-y-1" data-cards-list>
+      <p className="h-show mt-1 text-lead leading-tight">{t('play.l4.peak.line')}</p>
+      <Details>
+        <ul className="space-y-1" data-cards-list>
         {rows.map(({ p, stamps, lies }) => (
           <li key={p.id} className="rounded-xl bg-card px-2">
             <details>
@@ -439,9 +441,10 @@ export function CardsReveal4({ v }: { v: ViewState }) {
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-small font-semibold">{t(gap >= 0 ? 'play.l4.peak.gap' : 'play.l4.peak.gapNeg', { n: coins(Math.abs(gap)) })}</p>
-      <p className="h-show mt-1 text-lead leading-tight">{t('play.l4.peak.line')}</p>
+        <p className="mt-2 text-small font-semibold">{t(gap >= 0 ? 'play.l4.peak.gap' : 'play.l4.peak.gapNeg', { n: coins(Math.abs(gap)) })}</p>
+      
       {record && <p className="mt-1 text-small font-semibold">{record}</p>}
+      </Details>
       <div className="mt-2">
         <Bubble who="Dash" host mood={top && top.lies ? 'excited' : 'wink'} text={top && top.lies ? t(top.p.id === me ? 'play.cards.peakLieYouPlain' : 'play.l4.peak.lie', { name: nameOf(v, top.p.id), n: timesWord(top.lies) }) : hostLine('peakHonest', pick(v, 'peakHonest', 6))} />
       </div>

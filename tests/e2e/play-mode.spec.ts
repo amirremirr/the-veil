@@ -2,7 +2,24 @@
 // episode summary, tapping through every beat. No screen may scroll, sideways or down.
 import { expect, test, type Page } from '@playwright/test';
 
+/** User review fix 1 and 2: no raw copy key ("play.x.y") on screen, and no stamp wider than its podium. */
+export async function cleanScreen(page: Page) {
+  const text = await page.locator('body').innerText();
+  expect(text, text.slice(0, 200)).not.toMatch(/\bplay\.[a-zA-Z]+/);
+  const over = await page.evaluate(() =>
+    [...document.querySelectorAll('[data-cast-stamp]')]
+      .map((el) => {
+        const pod = el.closest('[data-podium]') as HTMLElement | null;
+        const r = el.getBoundingClientRect();
+        return pod && r.width > pod.getBoundingClientRect().width + 1 ? `${el.textContent} ${Math.round(r.width)}>${Math.round(pod.getBoundingClientRect().width)}` : '';
+      })
+      .filter(Boolean),
+  );
+  expect(over).toEqual([]);
+}
+
 async function fits(page: Page) {
+  await cleanScreen(page);
   const d = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, sh: document.documentElement.scrollHeight, ih: window.innerHeight }));
   expect(d.sw).toBeLessThanOrEqual(d.cw);
   // Only phones get the one-screen rule; desktop windows are taller anyway.

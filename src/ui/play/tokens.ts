@@ -49,6 +49,6 @@ export const CAST_COLORS = {
   ugo: { body: '#2dd4bf', glasses: '#120e24' },
   dot: { body: '#a5b4fc', dots: '#4338ca' },
   human: ['#38bdf8', '#fb7185', '#4ade80', '#e879f9', '#e2e8f0', '#fdba74'],
-  dash: { grille: '#d7dbe6', mesh: '#8b93a8', handle: '#3b3557', band: '#ffd23f', tie: '#ff3e7f' },
+  dash: { grille: '#ffd23f', mesh: '#e08a00', handle: '#8b5cf6', band: '#ff3e7f', tie: '#2dd4bf', cheek: '#ff8fb1' },
   sweat: '#7dd3fc',
 } as const;
