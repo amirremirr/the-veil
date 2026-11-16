@@ -18,7 +18,7 @@ import { fmt1 } from '../components/Money';
 import { DashHost } from './Characters';
 import { BigButton, Bubble, Face, Stage } from './OnAir';
 import { Chips, StagedReveal, peakMark, spotlightSteps } from './Peak';
-import type { CastCue } from './Cast';
+import { RollNumber, type CastCue } from './Cast';
 import { buzz, sfx } from './sound';
 import { confessional, hostLine, pick, roundOutcome, timesWord } from './logic';
 import { renderMessage } from '../game';
@@ -696,6 +696,10 @@ export function PriceBeat({ v, next, onReally }: { v: ViewState; next: () => voi
   const kind = to === null ? 'Gone' : r.launch ? 'Launch' : to > from + 1e-9 ? 'Up' : to < from - 1e-9 ? 'Down' : 'Same';
   const change = to === null ? 0 : (to - from) / from;
   const voteNext = v.round === PLAY.L3.VOLUNTARY_ROUNDS;
+  // UI V3 (U2): a sting when the price jumps or the insurer leaves.
+  useEffect(() => {
+    if (to === null || to > from * 1.1) sfx('sting');
+  }, []);
   return (
     <Stage
       v={v}
@@ -715,8 +719,8 @@ export function PriceBeat({ v, next, onReally }: { v: ViewState; next: () => voi
       <div className="my-auto">
         <p className="text-small font-bold uppercase tracking-wider">{t('play.stage.priceOf')}</p>
         <p className="mt-1 flex items-baseline gap-3" data-price>
-          {(to === null || fmt1(to) !== fmt1(from)) && <span className="h-show text-hero line-through opacity-60">{fmt1(from)}</span>}
-          <span className={`h-show leading-none ${to === null ? 'text-hero' : 'text-hero'}`}>{to === null ? t('play.stage.closed') : fmt1(to)}</span>
+          {(to === null || Math.round(to) !== Math.round(from)) && <span className="h-show text-hero line-through opacity-60">{Math.round(from)}</span>}
+          <span className="h-show text-hero leading-none">{to === null ? t('play.stage.closed') : <RollNumber from={from} to={to} />}</span>
         </p>
         {to !== null && (
           <span className="mt-2 inline-block rounded-md bg-onspot px-2 py-0.5 text-small font-bold text-spot">

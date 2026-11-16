@@ -2279,7 +2279,14 @@
       "l5title": "The ballots",
       "l2row": "{e} h a round, {w} prizes",
       "lies": "Lies: {n}",
-      "l4row": "Trained {n} of {w} times"
+      "l4row": "Trained {n} of {w} times",
+      "r": {
+        "worked": "Got away",
+        "betrayal": "Took it",
+        "call": "Called",
+        "tally": "{n} lies",
+        "more": "And {n} more."
+      }
     },
     "sound": {
       "mute": "Mute sound",

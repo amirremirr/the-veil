@@ -1,7 +1,7 @@
 // UI V3 (U1, U2): the stage. Every contestant stands at a podium with their name and bank; claims are
 // speech bubbles above them; stamps land on them; their faces react to what just happened. Presentation
 // only: everything shown comes from the view the engine gives this player.
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { Message, ViewState } from '../../engine/types';
 import { PLAY } from '../../engine/play/params';
@@ -108,6 +108,16 @@ function bankDeltas(v: ViewState): Record<string, number> {
   return out;
 }
 
+const flashed = new Set<string>();
+/** A whole-stage flash for your own big win or loss, once per engine screen (U2: a hit and a gain look different). */
+export function screenFlash(v: ViewState): 'hit' | 'gain' | null {
+  const key = `${v.levelIndex}-${v.phaseIdx}`;
+  const d = bankDeltas(v)[v.viewer] ?? 0;
+  if (flashed.has(key) || Math.abs(d) < 20) return null;
+  flashed.add(key);
+  return d < 0 ? 'hit' : 'gain';
+}
+
 /** The face a contestant shows now, unless the screen says otherwise. */
 export function autoExpr(bank: number, delta: number): Expr {
   if (delta <= -20) return 'shocked';
@@ -117,34 +127,88 @@ export function autoExpr(bank: number, delta: number): Expr {
   return 'neutral';
 }
 
-/** A bank that counts to its new value. */
-function Bank({ id, value }: { id: string; value: number }) {
+/** A bank that counts to its new value: yellow while it rises, pink while it falls (U2). Yours also sounds. */
+function Bank({ value, mine }: { value: number; mine: boolean }) {
   const off = useMotionOff();
   const [shown, setShown] = useState(value);
+  const [dir, setDir] = useState<0 | 1 | -1>(0);
   const from = useRef(value);
   useEffect(() => {
     const start = from.current;
-    if (off || start === value) {
+    if (off || Math.round(start) === Math.round(value)) {
       setShown(value);
       from.current = value;
       return;
     }
+    const d = value > start ? 1 : -1;
+    setDir(d);
+    if (mine) sfx(d > 0 ? 'gain' : 'loss');
     let raf = 0;
     const t0 = performance.now();
     const tick = (now: number) => {
       const p = Math.min(1, (now - t0) / DURATION.count);
-      const x = start + (value - start) * (1 - Math.pow(1 - p, 3));
-      setShown(x);
+      setShown(start + (value - start) * (1 - Math.pow(1 - p, 3)));
       if (p < 1) raf = requestAnimationFrame(tick);
-      else from.current = value;
+      else {
+        from.current = value;
+        setTimeout(() => setDir(0), 500);
+      }
     };
     raf = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(raf);
       from.current = value;
     };
-  }, [value, off, id]);
-  return <>{coins(shown)}</>;
+  }, [value, off, mine]);
+  return <span className={dir > 0 ? 'text-spot' : dir < 0 ? 'text-stamp' : undefined}>{coins(shown)}</span>;
+}
+
+/** A number that rolls from one value to another (prices, U2). Whole numbers; static under reduced motion. */
+export function RollNumber({ from, to, ms = 900 }: { from: number; to: number; ms?: number }) {
+  const off = useMotionOff();
+  const [x, setX] = useState(off ? to : from);
+  useEffect(() => {
+    if (off) return setX(to);
+    let raf = 0;
+    const t0 = performance.now();
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - t0) / ms);
+      setX(from + (to - from) * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [from, to, off, ms]);
+  return <span className="tabular-nums">{Math.round(x)}</span>;
+}
+
+/** Coins fly between your podium and your bank in the top bar when your bank changes (U2). */
+function CoinFly({ viewer, delta }: { viewer: string; delta: number }) {
+  const [path, setPath] = useState<null | { x0: number; y0: number; x1: number; y1: number }>(null);
+  useLayoutEffect(() => {
+    const pod = document.querySelector(`[data-podium="${viewer}"]`)?.getBoundingClientRect();
+    const top = document.querySelector('[data-bank-top]')?.getBoundingClientRect();
+    if (!pod) return;
+    const a = { x: pod.left + pod.width / 2, y: pod.top + pod.height / 2 };
+    const b = top ? { x: top.left + top.width / 2, y: top.top + top.height / 2 } : { x: a.x, y: Math.max(0, a.y - 90) };
+    setPath(delta > 0 ? { x0: b.x, y0: b.y, x1: a.x, y1: a.y } : { x0: a.x, y0: a.y, x1: b.x, y1: b.y });
+  }, [viewer, delta]);
+  if (!path) return null;
+  const n = Math.min(6, Math.max(2, Math.round(Math.abs(delta) / 15)));
+  return (
+    <div aria-hidden className="pointer-events-none fixed inset-0 z-40" data-coins={delta > 0 ? 'in' : 'out'}>
+      {Array.from({ length: n }, (_, i) => (
+        <motion.span
+          key={i}
+          className={`absolute h-4 w-4 rounded-full border-2 border-onspot ${delta > 0 ? 'bg-spot' : 'bg-stamp'}`}
+          style={{ left: -8, top: -8 }}
+          initial={{ x: path.x0, y: path.y0, opacity: 0, scale: 0.6 }}
+          animate={{ x: [path.x0, (path.x0 + path.x1) / 2 + (i - n / 2) * 10, path.x1], y: [path.y0, Math.min(path.y0, path.y1) - 40, path.y1], opacity: [0, 1, 1, 0], scale: [0.6, 1, 0.8] }}
+          transition={{ duration: DURATION.coinFly / 1000, delay: i * 0.07, ease: 'easeInOut' }}
+        />
+      ))}
+    </div>
+  );
 }
 
 /** A rubber stamp that lands on a character with a thump. */
@@ -179,6 +243,17 @@ export function CastStage({ v, cue = {}, fit = 0, call }: { v: ViewState; cue?: 
   const pl = v.play!;
   const deltas = bankDeltas(v);
   const [confirm, setConfirm] = useState<string | null>(null);
+  const myBank = Math.round(cue.banks?.[v.viewer] ?? pl.banks[v.viewer] ?? 0);
+  const lastMine = useRef(myBank);
+  const [fly, setFly] = useState<{ k: number; d: number } | null>(null);
+  useEffect(() => {
+    const d = myBank - lastMine.current;
+    lastMine.current = myBank;
+    if (!d || off || cue.noBanks) return;
+    setFly((f) => ({ k: (f?.k ?? 0) + 1, d }));
+    const id = setTimeout(() => setFly(null), DURATION.coinFly + 600);
+    return () => clearTimeout(id);
+  }, [myBank, off]);
   const isDecide = v.phase.kind === 'DECIDE' || v.phase.kind === 'TALK';
   const bubbles = cue.bubbles ?? (isDecide && v.phase.step !== 'CLAIM' ? claimBubbles(v) : {});
   const ids = Object.keys(bubbles);
@@ -282,7 +357,7 @@ export function CastStage({ v, cue = {}, fit = 0, call }: { v: ViewState; cue?: 
                 <span className="block truncate text-small font-bold leading-tight">{shortName(v, p.id)}</span>
                 {!cue.noBanks && (
                   <span className={`h-show block text-body leading-tight ${debt ? 'text-stamp' : ''}`} data-bank={p.id}>
-                    <Bank id={p.id} value={bank} />
+                    <Bank value={bank} mine={me} />
                   </span>
                 )}
                 {debt && !cue.noBanks && <span className="block text-small font-bold leading-tight text-stamp">{t('play.cast.inDebt')}</span>}
@@ -291,6 +366,7 @@ export function CastStage({ v, cue = {}, fit = 0, call }: { v: ViewState; cue?: 
           );
         })}
       </ul>
+      {fly && <CoinFly key={fly.k} viewer={v.viewer} delta={fly.d} />}
       {confirm && call && (
         <div className="absolute inset-x-0 top-0 z-20 rounded-2xl border-2 border-stamp bg-paper p-3 shadow-podium" role="dialog" aria-modal="false" aria-labelledby="call-confirm" onClick={(e) => e.stopPropagation()} data-call-confirm>
           <p id="call-confirm" className="h-show text-lead leading-tight">

@@ -10,7 +10,7 @@ import { useStore } from '../store';
 import { t } from '../i18n';
 import { coins } from '../labels';
 import { useMotionOff } from '../components/common';
-import { CallContext, CastStage, CueContext, castKind, mergeCues, type CallReg, type CastCue } from './Cast';
+import { CallContext, CastStage, CueContext, castKind, mergeCues, screenFlash, type CallReg, type CastCue } from './Cast';
 import { DashHost, ShapePerson, type DashExpr } from './Characters';
 import { isMuted, onMuted, setMuted, sfx } from './sound';
 import { ChatFeed, MessageComposer, Sheet } from '../components/TableParts';
@@ -115,7 +115,7 @@ export function TopBar({ v, onMenu }: { v: ViewState; onMenu: () => void }) {
         <span className="text-small text-soft">{t('play.bar.round', { r: Math.max(1, v.round), n: rounds(v) })}</span>
         <span className="ms-auto text-end leading-none">
           <span className="block text-small uppercase tracking-wider text-soft">{t('play.bar.bank')}</span>
-          <span className={`h-show text-title ${mine < 0 ? 'text-stamp' : ''}`}>{coins(mine)}</span>
+          <span className={`h-show text-title ${mine < 0 ? 'text-stamp' : ''}`} data-bank-top>{coins(mine)}</span>
         </span>
         <MuteButton />
         <button type="button" className="grid h-11 w-11 place-items-center rounded-full bg-card text-lead" aria-label={t('play.bar.menu')} onClick={onMenu}>
@@ -168,6 +168,9 @@ export function Stage({
     });
   }, []);
   const off = useMotionOff();
+  // A big change to your bank on this screen flashes the stage once, unless the screen sets its own flash.
+  const [autoFlash] = useState(() => (flash === undefined && v.play ? screenFlash(v) : null));
+  const theFlash = flash === undefined ? autoFlash : flash;
   const showCast = cast !== false && (cast !== undefined || bar);
   useLayoutEffect(() => {
     if (!showCast || fit >= 2) return;
@@ -177,14 +180,14 @@ export function Stage({
     <CallContext.Provider value={setCall}>
     <CueContext.Provider value={setCue}>
       <div className={`relative flex min-h-[100dvh] flex-col ${tone === 'breaking' ? 'bg-spot text-onspot' : ''} ${onTap ? 'cursor-pointer' : ''}`} onClick={onTap ? () => { sfx('tap'); onTap(); } : undefined} data-stage data-beat={onTap ? 'tap' : undefined}>
-        {flash && !off && (
+        {theFlash && !off && (
           <motion.div
             aria-hidden
-            className={`pointer-events-none fixed inset-0 z-0 ${flash === 'hit' ? 'bg-stamp' : 'bg-spot'}`}
+            className={`pointer-events-none fixed inset-0 z-0 ${theFlash === 'hit' ? 'bg-stamp' : 'bg-spot'}`}
             initial={{ opacity: 0.45 }}
             animate={{ opacity: 0 }}
             transition={{ duration: 0.9, ease: 'easeOut' }}
-            data-flash={flash}
+            data-flash={theFlash}
           />
         )}
         {bar && <TopBar v={v} onMenu={() => { ptTap('menu'); setMenu(true); }} />}

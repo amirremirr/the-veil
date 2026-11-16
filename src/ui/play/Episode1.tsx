@@ -1,6 +1,8 @@
 // Play Episode 1, "Born" (v2 Section 4, D-152): claim your vote, vote before you know your income, and in
 // round 2 the Peek. One beat per screen, as Episode 3. Every string comes from play.l1.*.
 import { useState } from 'react';
+import { useMotionOff } from '../components/common';
+import { motion } from 'framer-motion';
 import type { ViewState } from '../../engine/types';
 import type { PrincipleId } from '../../engine/tax';
 import { PRINCIPLES } from '../../engine/tax';
@@ -135,6 +137,7 @@ export function VoteScreen1({ v }: { v: ViewState }) {
 export function VotesBeat({ v, next }: { v: ViewState; next: () => void }) {
   const lv = lv1(v);
   const r = lv.rounds[lv.rounds.length - 1];
+  const off = useMotionOff();
   // UI V3 (U1): a broken promise lands as a stamp on the promise breaker.
   const cue: CastCue = { stamps: {}, expr: {} };
   for (const p of v.players) {
@@ -151,17 +154,17 @@ export function VotesBeat({ v, next }: { v: ViewState; next: () => void }) {
         <h1 className="h-show mt-1 text-hero leading-tight text-spot">{ruleName(r.winner)}</h1>
         <p className="mt-1 text-small">{t('play.l1.votes.tax', { t: pct(r.t) })}{r.tie ? ` ${t('play.l1.votes.tie')}` : ''}</p>
         <ul className="mt-3 space-y-1.5">
-          {v.players.map((p) => {
+          {v.players.map((p, k) => {
             const c = r.claims[p.id];
             const broke = c && c !== 'SILENT' && c !== r.votes[p.id];
             return (
-              <li key={p.id} className="flex items-center gap-2 rounded-xl bg-card px-2 py-1.5">
+              <motion.li key={p.id} className="flex items-center gap-2 rounded-xl bg-card px-2 py-1.5" initial={off ? false : { rotateX: 90, opacity: 0 }} animate={{ rotateX: 0, opacity: 1 }} transition={{ delay: off ? 0 : 0.35 * k, duration: off ? 0 : 0.3 }}>
                 <Face v={v} p={p} size={24} />
                 <span className="w-16 truncate text-small font-bold">{shortName(v, p.id)}</span>
                 <span className="flex-1 text-small">{ruleName(r.votes[p.id])}</span>
                 {r.peeked.includes(p.id) && <span className="text-small font-bold">{t('play.l1.peekedTag')}</span>}
                 {broke && <span className="rounded bg-stamp px-1 text-small font-bold text-onspot">{t('play.l1.votes.broke', { rule: ruleName(c) })}</span>}
-              </li>
+              </motion.li>
             );
           })}
         </ul>

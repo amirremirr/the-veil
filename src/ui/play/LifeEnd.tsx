@@ -9,6 +9,9 @@ import { coins } from '../labels';
 import { shortName } from '../game';
 import { useMotionOff } from '../components/common';
 import { BigButton, Stage } from './OnAir';
+import type { CastCue, CastStamp } from './Cast';
+import type { Expr } from './Characters';
+import { sfx } from './sound';
 import { missionName } from './logic';
 import { callLine } from './Call';
 import { PlaytestPanel } from './Playtest';
@@ -98,7 +101,20 @@ export function lifeTitle(v: ViewState): string {
   return t(`play.titles.${hk}.${sk === 'steady' ? 'principled' : sk}.${rk}`);
 }
 
-/** The Receipts (v2 3.4): at most 20 seconds, skippable; a static list under reduced motion. */
+/** How a receipt lands on its contestant: a stamp and a face (UI V3 U2). */
+function receiptMark(r: Receipt): { stamp: CastStamp; expr: Expr } {
+  if (r.kind === 'worked') return { stamp: { text: t('play.cast.r.worked'), tone: 'good' }, expr: 'smug' };
+  if (r.kind === 'caught') return { stamp: { text: t('play.call.stampCaught'), tone: 'stamp' }, expr: 'caught' };
+  if (r.kind === 'betrayal') return { stamp: { text: t('play.cast.r.betrayal'), tone: 'stamp' }, expr: 'smug' };
+  const right = /\+\d/.test(r.text);
+  return { stamp: { text: t('play.cast.r.call'), tone: right ? 'good' : 'ink' }, expr: right ? 'pleased' : 'sad' };
+}
+
+/**
+ * The Receipts (v2 3.4), staged (UI V3 U2): one moment at a time, the spotlight on the contestant, a stamp
+ * on them, the line in a card. At most 20 seconds, skippable; the end (shown at once under reduced motion)
+ * keeps each contestant's tally on their podium and the latest lines.
+ */
 export function ReceiptsReel({ v, next }: { v: ViewState; next: () => void }) {
   const off = useMotionOff();
   const items = useMemo(() => receipts(v), [v]);
@@ -109,22 +125,37 @@ export function ReceiptsReel({ v, next }: { v: ViewState; next: () => void }) {
     const id = setTimeout(() => setK((x) => x + 1), step);
     return () => clearTimeout(id);
   }, [k, off, items.length, step]);
-  const shown = items.slice(0, k);
   const done = k >= items.length;
+  const cur = done ? null : items[k];
+  const tally = (id: string) => items.filter((r) => r.pid === id && (r.kind === 'worked' || r.kind === 'caught' || r.kind === 'betrayal')).length;
+  const cue: CastCue = cur
+    ? { focus: cur.pid, stamps: { [cur.pid]: receiptMark(cur).stamp }, expr: { [cur.pid]: receiptMark(cur).expr } }
+    : {
+        stamps: Object.fromEntries(v.players.filter((p) => tally(p.id)).map((p) => [p.id, { text: t('play.cast.r.tally', { n: tally(p.id) }), tone: 'stamp' as const }])),
+        expr: Object.fromEntries(v.players.map((p) => [p.id, tally(p.id) ? 'smug' : 'pleased'])),
+      };
+  const recent = items.slice(-5);
   return (
-    <Stage v={v} bar={false} footer={<BigButton beatNext={done} onClick={next}>{done ? t('play.receipts.next') : t('play.receipts.skip')}</BigButton>}>
+    <Stage v={v} bar={false} cast={cue} onTap={done ? undefined : () => setK(items.length)} footer={<BigButton beatNext={done} onClick={done ? next : () => setK(items.length)}>{done ? t('play.receipts.next') : t('play.receipts.skip')}</BigButton>}>
       <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.receipts.label')}</p>
-      <h1 className="h-show text-hero leading-tight text-spot">{t('play.receipts.title')}</h1>
-      <ul className="mt-3 max-h-[440px] space-y-1 overflow-hidden" data-receipts aria-live="polite">
-        {(shown.length > 12 ? shown.slice(-12) : shown).map((r, i) => (
-          <li key={`${r.level}-${i}-${r.text}`} className={`rounded-xl px-2 py-1 text-small ${r.kind === 'worked' ? 'bg-good text-onspot' : r.kind === 'caught' ? 'bg-card' : 'bg-stamp text-onspot'}`}>
-            {r.text}
-          </li>
-        ))}
-        {!items.length && <li className="text-body">{t('play.receipts.none')}</li>}
-      </ul>
+      <h1 className="h-show text-title leading-tight text-spot">{t('play.receipts.title')}</h1>
+      {cur ? (
+        <p key={k} className={`mt-3 rounded-2xl p-3 text-lead font-bold leading-snug ${cur.kind === 'worked' ? 'bg-good text-onspot' : cur.kind === 'caught' ? 'bg-card' : 'bg-stamp text-onspot'}`} data-receipt={cur.kind} aria-live="polite">
+          {cur.text}
+        </p>
+      ) : (
+        <ul className="mt-2 space-y-1" data-receipts>
+          {recent.map((r, i) => (
+            <li key={`${r.level}-${i}-${r.text}`} className={`rounded-xl px-2 py-1 text-small ${r.kind === 'worked' ? 'bg-good text-onspot' : r.kind === 'caught' ? 'bg-card' : 'bg-stamp text-onspot'}`}>
+              {r.text}
+            </li>
+          ))}
+          {items.length > recent.length && <li className="text-small text-soft">{t('play.cast.r.more', { n: items.length - recent.length })}</li>}
+          {!items.length && <li className="text-body">{t('play.receipts.none')}</li>}
+        </ul>
+      )}
       {done && (
-        <p className="mt-3 text-small font-semibold" data-missions>
+        <p className="mt-2 text-small font-semibold" data-missions>
           {v.players.map((p) => `${shortName(v, p.id)}: ${p.values ? missionName(p.values) : ''}`).join(' · ')}
         </p>
       )}
@@ -279,5 +310,9 @@ export function ResultCard({ v }: { v: ViewState }) {
 
 export function LifeEnd({ v }: { v: ViewState }) {
   const [k, setK] = useState(0);
+  // UI V3 (U2): the life-end fanfare plays as the result card comes up.
+  useEffect(() => {
+    if (k === 1) sfx('finale');
+  }, [k]);
   return k === 0 ? <ReceiptsReel v={v} next={() => setK(1)} /> : <ResultCard v={v} />;
 }

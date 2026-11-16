@@ -15,6 +15,7 @@ import { Sheet as TableSheet } from '../components/TableParts';
 import { LockedInPanel, useOnline, useWaiting } from '../components/Online';
 import { screenDecisionPhase } from '../../shared/flow';
 import { BigButton, Bubble, Face, Stage } from './OnAir';
+import { sfx } from './sound';
 import { BarBeat, CardsReveal, ClaimScreen, MoveScreen, MyCardsBeat, PriceBeat, RegimeScreen, VoteInBeat, WheelBeat, claimsOpen, hasPriceBeat, regimeName, type L3View } from './Episode3';
 import { eventText, hostLine, missionName, pick, timesWord } from './logic';
 import { CardsReveal1, ClaimScreen1, IncomesBeat, PeekScreen, Unborn, VoteScreen1, VotesBeat, summary1 } from './Episode1';
@@ -91,6 +92,8 @@ function MissionReveal({ v }: { v: ViewState }) {
 
 function EpisodeIntro({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
+  // UI V3 (U2): the episode fanfare.
+  useEffect(() => sfx('fanfare'), [v.levelIndex]);
   const n = v.play!.l3;
   return (
     <Stage v={v} footer={<BigButton onClick={() => act()}>{t('play.intro.go')}</BigButton>}>
