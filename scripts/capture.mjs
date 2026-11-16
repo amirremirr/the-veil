@@ -26,7 +26,11 @@ const url = server.resolvedUrls.local[0];
 const browser = await chromium.launch(process.env.PW_EXECUTABLE ? { executablePath: process.env.PW_EXECUTABLE } : {});
 const page = await browser.newPage({ viewport: { width: 375, height: 760 }, deviceScaleFactor: 1 });
 await page.goto(url);
-await page.evaluate(() => localStorage.clear());
+await page.evaluate(() => {
+  localStorage.clear();
+  // A first-time player sees the coach marks.
+  localStorage.setItem('veil.play.coach', '1');
+});
 await page.reload();
 await page.waitForFunction(() => '__autoplay' in window);
 let n = 0;
