@@ -243,7 +243,7 @@ function CastStampMark({ s, delay }: { s: CastStamp; delay: number }) {
   const color = s.tone === 'good' ? 'border-good text-good' : s.tone === 'ink' ? 'border-ink text-ink' : 'border-stamp text-stamp';
   return (
     <motion.span
-      className="pointer-events-none absolute left-1/2 top-[30%] z-10"
+      className="pointer-events-none absolute left-1/2 top-[52%] z-10"
       initial={off ? { x: '-50%', rotate: -8 } : { x: '-50%', scale: 2.4, opacity: 0, rotate: -16 }}
       animate={{ x: '-50%', scale: 1, opacity: 1, rotate: -8 }}
       transition={off ? { duration: 0 } : { type: 'spring', stiffness: 560, damping: 20, delay }}

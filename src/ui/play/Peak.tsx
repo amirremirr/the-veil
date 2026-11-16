@@ -91,11 +91,11 @@ export function Chips({ items }: { items: Array<{ text: string; lie?: boolean }>
 }
 
 /** A contestant's stamp and face at the peak: LIE (smug if it worked, caught if called), TRUE, or nothing. */
-export function peakMark(v: ViewState, id: string, lies: number, claims: number): { stamp?: { text: string; tone: 'stamp' | 'good' }; expr: Expr } {
+export function peakMark(v: ViewState, id: string, lies: number, claims: number): { stamp?: { text: string; tone: 'stamp' | 'good' | 'ink' }; expr: Expr } {
   const caught = (v.play?.calls ?? []).some((c) => c.level === v.levelIndex && c.target === id && c.lie);
   if (lies > 0) return { stamp: { text: t('play.cards.LIE'), tone: 'stamp' }, expr: caught ? 'caught' : 'smug' };
   if (claims > 0) return { stamp: { text: t('play.cards.TRUE'), tone: 'good' }, expr: 'pleased' };
-  return { expr: 'neutral' };
+  return { stamp: { text: t('play.cast.silent'), tone: 'ink' }, expr: 'neutral' };
 }
 
 /** Steps for a peak that spotlights one contestant at a time; stamps stay once they land. */

@@ -467,6 +467,7 @@ export function CardsReveal({ v }: { v: ViewState }) {
       ),
     })),
     <>
+      <p className="h-show text-lead leading-tight" data-peak-headline>{line}</p>
       <Details>
         <ul className="space-y-1" data-cards-list>
         {rows.map(({ p, cl }) => (
@@ -479,7 +480,7 @@ export function CardsReveal({ v }: { v: ViewState }) {
       </ul>
       </Details>
       <div className="mt-2">
-        <Bubble who="Dash" host text={line} mood={top.lies ? 'excited' : 'wink'} />
+        <Bubble who="Dash" host text={hostLine(top.lies ? 'caught' : 'peakHonest', pick(v, 'peakFinal', 6))} mood={top.lies ? 'excited' : 'wink'} />
       </div>
     </>,
   );
@@ -684,9 +685,7 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
           </div>
         </div>
       ) : (
-        <p className="mt-6 text-center text-soft" aria-hidden>
-          …
-        </p>
+        <p className="mt-6 text-center text-small text-soft">{t('play.cast.spinning')}</p>
       )}
     </Stage>
   );

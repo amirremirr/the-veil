@@ -132,7 +132,7 @@ export function ReceiptsReel({ v, next }: { v: ViewState; next: () => void }) {
   const cue: CastCue = cur
     ? { focus: cur.pid, stamps: { [cur.pid]: receiptMark(cur).stamp }, expr: { [cur.pid]: receiptMark(cur).expr } }
     : {
-        stamps: Object.fromEntries(v.players.filter((p) => tally(p.id)).map((p) => [p.id, { text: t('play.cast.r.tally', { n: tally(p.id) }), tone: 'stamp' as const }])),
+        stamps: Object.fromEntries(v.players.filter((p) => tally(p.id)).map((p) => [p.id, { text: t(tally(p.id) === 1 ? 'play.cast.r.tallyOne' : 'play.cast.r.tally', { n: tally(p.id) }), tone: 'stamp' as const }])),
         expr: Object.fromEntries(v.players.map((p) => [p.id, tally(p.id) ? 'smug' : 'pleased'])),
       };
   const recent = items.slice(-5);

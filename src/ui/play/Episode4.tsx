@@ -425,7 +425,8 @@ export function CardsReveal4({ v }: { v: ViewState }) {
       ),
     })),
     <>
-      <p className="h-show mt-1 text-lead leading-tight">{t('play.l4.peak.line')}</p>
+      <p className="h-show text-lead leading-tight" data-peak-headline>{top && top.lies ? t(top.p.id === me ? 'play.cards.peakLieYouPlain' : 'play.l4.peak.lie', { name: nameOf(v, top.p.id), n: timesWord(top.lies) }) : t('play.l4.peak.line')}</p>
+      {top && top.lies > 0 && <p className="mt-1 text-small font-semibold">{t('play.l4.peak.line')}</p>}
       <Details>
         <ul className="space-y-1" data-cards-list>
         {rows.map(({ p, stamps, lies }) => (
@@ -446,7 +447,7 @@ export function CardsReveal4({ v }: { v: ViewState }) {
       {record && <p className="mt-1 text-small font-semibold">{record}</p>}
       </Details>
       <div className="mt-2">
-        <Bubble who="Dash" host mood={top && top.lies ? 'excited' : 'wink'} text={top && top.lies ? t(top.p.id === me ? 'play.cards.peakLieYouPlain' : 'play.l4.peak.lie', { name: nameOf(v, top.p.id), n: timesWord(top.lies) }) : hostLine('peakHonest', pick(v, 'peakHonest', 6))} />
+        <Bubble who="Dash" host mood={top && top.lies ? 'excited' : 'wink'} text={hostLine('l4board', pick(v, 'l4peak', 6))} />
       </div>
     </>,
   );

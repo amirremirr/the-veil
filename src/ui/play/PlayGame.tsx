@@ -465,7 +465,8 @@ function RankBlock({ v }: { v: ViewState }) {
  */
 export function ScoreBar({ m, onWords }: { m: NonNullable<ViewState['play']>['mission']; onWords: () => void }) {
   if (!m) return null;
-  const bank = Math.max(0, Math.round(m.bankPart));
+  const bankSigned = Math.round(m.bankPart);
+  const bank = Math.max(0, bankSigned);
   const mission = Math.max(0, Math.round(m.score) - Math.round(m.bankPart) + Math.round(m.stress) - Math.round(m.guessPoints));
   const guess = Math.max(0, Math.round(m.guessPoints));
   const debt = Math.max(0, Math.round(m.stress));
@@ -480,14 +481,14 @@ export function ScoreBar({ m, onWords }: { m: NonNullable<ViewState['play']>['mi
           {t('play.score.words')}
         </button>
       </div>
-      <div className="relative flex h-5 overflow-hidden rounded-full bg-paper" role="img" aria-label={t('play.score.a11y', { s: coins(m.score), b: bank, m: mission, g: guess, d: debt })}>
+      <div className="relative flex h-5 overflow-hidden rounded-full bg-paper" role="img" aria-label={t('play.score.a11y', { s: coins(m.score), b: bankSigned, m: mission, g: guess, d: debt })}>
         <div className="h-full bg-spot" style={{ width: w(bank) }} />
         <div className="h-full bg-good" style={{ width: w(mission) }} />
         {guess > 0 && <div className="h-full bg-teal/60" style={{ width: w(guess) }} />}
         {debt > 0 && <div className="absolute inset-y-0 right-0 border-l-2 border-paper bg-stamp" style={{ width: w(Math.min(debt, total)) }} />}
       </div>
       <p className="mt-1 flex flex-wrap gap-x-3 text-small">
-        <span><span aria-hidden className="mr-1 inline-block h-2.5 w-2.5 rounded-full bg-spot" />{t('play.score.bank', { n: bank })}</span>
+        <span><span aria-hidden className="mr-1 inline-block h-2.5 w-2.5 rounded-full bg-spot" />{t('play.score.bank', { n: bankSigned })}</span>
         <span><span aria-hidden className="mr-1 inline-block h-2.5 w-2.5 rounded-full bg-good" />{t('play.score.mission', { n: mission })}</span>
         {guess > 0 && <span>{t('play.score.guess', { n: guess })}</span>}
         {debt > 0 && <span className="font-bold text-stamp">{t('play.score.debt', { n: debt })}</span>}

@@ -2302,7 +2302,8 @@
         "betrayal": "Took it",
         "call": "Called",
         "tally": "{n} lies",
-        "more": "And {n} more."
+        "more": "And {n} more.",
+        "tallyOne": "1 lie"
       },
       "youDontDeck": "Income: unknown. One of {a}, {b}, {c} or {d}.",
       "hire": {
@@ -2318,7 +2319,9 @@
       "details": "Details",
       "barred": "BARRED",
       "votedBar": "Bars {name}",
-      "launchShort": "Everyone is in: {p} coins."
+      "launchShort": "Everyone is in: {p} coins.",
+      "spinning": "The wheel is turning...",
+      "silent": "Silent"
     },
     "sound": {
       "mute": "Mute sound",
