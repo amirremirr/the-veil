@@ -38,7 +38,7 @@ export const PLAY = {
    */
   LIFE_BANK_FROM: 'EP1_END' as 'START' | 'EP1_END',
   /** UI V3 U5: in a life, the mission half is weighted by the episode just played (later episodes weigh more). */
-  LIFE_MISSION_EP_MULT: { 1: 1, 2: 1, 3: 1, 4: 1, 5: 4.5 } as Record<number, number>,
+  LIFE_MISSION_EP_MULT: { 1: 1, 2: 1, 3: 1, 4: 1, 5: 2 } as Record<number, number>,
   MISSION_SCALE_LIFE: { EGOIST: 0.85, RAWLSIAN: 1.47, UTILITARIAN: 1.15, MERITOCRAT: 1.19 } as Record<ValuesCard, number>,
   /** The mission bar's full mark: start bank + this share of the episode's income minus living cost (D-102). */
   MISSION_GOAL_SHARE: 0.8,
