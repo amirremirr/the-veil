@@ -16,6 +16,19 @@ async function cleanScreen(page: Page) {
       .filter(Boolean),
   );
   expect(over).toEqual([]);
+  // Fix 2: a stamp never covers its podium's name.
+  const onName = await page.evaluate(() =>
+    [...document.querySelectorAll('[data-cast-stamp]')]
+      .map((el) => {
+        const name = el.closest('[data-podium]')?.querySelector('[data-podium-name]');
+        if (!name) return '';
+        const a = el.getBoundingClientRect();
+        const b = name.getBoundingClientRect();
+        return a.bottom > b.top + 1 && a.top < b.bottom && a.right > b.left && a.left < b.right ? `${el.textContent} over ${name.textContent}` : '';
+      })
+      .filter(Boolean),
+  );
+  expect(onName).toEqual([]);
 }
 
 

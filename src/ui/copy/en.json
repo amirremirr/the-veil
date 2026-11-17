@@ -2321,7 +2321,9 @@
       "votedBar": "Bars {name}",
       "launchShort": "Everyone is in: {p} coins.",
       "spinning": "The wheel is turning...",
-      "silent": "Silent"
+      "silent": "Silent",
+      "voted": "Voted",
+      "birthNotScored": "Birth income is not scored: from Episode 2 on, your bank half counts what you make from here."
     },
     "sound": {
       "mute": "Mute sound",

@@ -243,9 +243,9 @@ function CastStampMark({ s, delay }: { s: CastStamp; delay: number }) {
   const color = s.tone === 'good' ? 'border-good text-good' : s.tone === 'ink' ? 'border-ink text-ink' : 'border-stamp text-stamp';
   return (
     <motion.span
-      className="pointer-events-none absolute left-1/2 top-[52%] z-10"
-      initial={off ? { x: '-50%', rotate: -8 } : { x: '-50%', scale: 2.4, opacity: 0, rotate: -16 }}
-      animate={{ x: '-50%', scale: 1, opacity: 1, rotate: -8 }}
+      className="pointer-events-none absolute left-1/2 top-[55%] z-10"
+      initial={off ? { x: '-50%', y: '-50%', rotate: -8 } : { x: '-50%', y: '-50%', scale: 2.4, opacity: 0, rotate: -16 }}
+      animate={{ x: '-50%', y: '-50%', scale: 1, opacity: 1, rotate: -8 }}
       transition={off ? { duration: 0 } : { type: 'spring', stiffness: 560, damping: 20, delay }}
     >
       <span
@@ -368,13 +368,14 @@ export function CastStage({ v, cue = {}, fit = 0, call }: { v: ViewState; cue?: 
                 transition={{ duration: 0.5 }}
               >
                 <ShapePerson kind={castKind(p)} expr={expr} size={size} />
+                {/* Fix 2: the stamp sits on the character's body, above the podium, never over the name. */}
+                <AnimatePresence>{stamp && <CastStampMark key={stamp.text} s={stamp} delay={0} />}</AnimatePresence>
               </motion.span>
               {mark && (
-                <span className="absolute right-0 top-0 z-10 max-w-full truncate rounded-full bg-spot px-1.5 text-small font-bold leading-snug text-onspot" data-mark={p.id}>
+                <span className="absolute right-0 top-0 z-10 rounded-full border-2 border-onspot bg-spot px-1.5 text-small font-bold leading-snug text-onspot" data-mark={p.id}>
                   {mark}
                 </span>
               )}
-              <AnimatePresence>{stamp && <CastStampMark key={stamp.text} s={stamp} delay={0} />}</AnimatePresence>
               <div
                 aria-hidden
                 className={`relative -mt-1 w-full overflow-hidden rounded-xl border-2 px-1 py-0.5 text-center shadow-podium ${me ? 'border-spot' : 'border-line'} ${debt ? 'bg-paper' : 'bg-card'}`}
@@ -385,7 +386,7 @@ export function CastStage({ v, cue = {}, fit = 0, call }: { v: ViewState; cue?: 
                     <path d="M6 0 L11 12 L5 22 L12 40" fill="none" stroke="rgb(255 62 127 / 0.7)" strokeWidth="1.5" />
                   </svg>
                 )}
-                <span className={`relative ${fit >= 3 ? 'inline' : 'block'} truncate text-small font-bold leading-tight`}>{shortName(v, p.id)}</span>
+                <span data-podium-name className={`relative ${fit >= 3 ? 'inline' : 'block'} truncate text-small font-bold leading-tight`}>{shortName(v, p.id)}</span>
                 {!cue.noBanks && (
                   <span className={`h-show relative ${fit >= 3 ? 'ms-1 inline text-small' : 'block text-body'} leading-tight ${debt ? 'text-stamp' : ''}`} data-bank={p.id}>
                     <Bank value={bank} mine={me} />

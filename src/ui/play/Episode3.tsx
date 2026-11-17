@@ -388,7 +388,8 @@ export function BarBeat({ v, next }: { v: ViewState; next: () => void }) {
   const cue: CastCue = {
     stamps: Object.fromEntries(b.barred.map((x) => [x, { text: t('play.cast.barred'), tone: 'stamp' as const }])),
     dim: b.barred,
-    marks: Object.fromEntries(b.members.filter((m) => b.votes[m]).map((m) => [m, t('play.cast.votedBar', { name: shortName(v, b.votes[m]!) })])),
+    // Fix 3: a small "voted" mark on each member who voted to bar (who they barred is the BARRED stamp).
+    marks: Object.fromEntries(b.members.filter((m) => b.votes[m]).map((m) => [m, t('play.cast.voted')])),
     expr: Object.fromEntries(b.barred.map((x) => [x, 'shocked' as const])),
   };
   return (

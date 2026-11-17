@@ -287,6 +287,11 @@ export function autoAdvanceOn(): boolean {
   return !(typeof navigator !== 'undefined' && navigator.webdriver);
 }
 
+/** Fix 4: the auto-advance hold for a screen with this many words. */
+export function holdFor(words: number): number {
+  return Math.min(5000, DURATION.hold + 200 * Math.max(0, words - 12));
+}
+
 /**
  * UI V3 (U3): the button of a beat that only informs. The beat moves on by itself after its animation and a
  * 1.2 second hold (a bar fills to show it), waits while a sheet is open, and a tap skips the wait.
@@ -294,7 +299,13 @@ export function autoAdvanceOn(): boolean {
 export function AutoButton({ onClick, children, animMs = 0, dark = false }: { onClick: () => void; children: ReactNode; animMs?: number; dark?: boolean }) {
   const on = autoAdvanceOn();
   const off = useMotionOff();
-  const ms = (off ? 0 : animMs) + DURATION.hold;
+  // Fix 4: 1.2 s, plus 0.2 s for every word over 12 on the screen, at most 5 s (then the animation on top).
+  const [words, setWords] = useState(0);
+  useLayoutEffect(() => {
+    const root = document.getElementById('root');
+    setWords(((root?.innerText ?? '').trim().split(/\s+/).filter(Boolean)).length);
+  }, []);
+  const ms = (off ? 0 : animMs) + holdFor(words);
   useEffect(() => {
     if (!on) return;
     let id = 0;
