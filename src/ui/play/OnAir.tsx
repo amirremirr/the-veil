@@ -18,6 +18,7 @@ import { ChatFeed, MessageComposer, Sheet } from '../components/TableParts';
 import { useOnline } from '../components/Online';
 import { PlayOpening } from './Opening';
 import { HowItWorks } from './HowItWorks';
+import { ReallyInMenu } from './Really';
 
 const rounds = (v: ViewState) => Math.max(1, ...v.queue.map((p) => p.round));
 const stop = (e: { stopPropagation(): void }) => e.stopPropagation();
@@ -52,6 +53,7 @@ export function PlayMenu({ v, onClose }: { v: ViewState; onClose: () => void; ch
   return (
     <Sheet title={t('play.stage.menuTitle')} closeLabel={t('play.stage.menuClose')} onClose={onClose}>
       {chat}
+      <ReallyInMenu v={v} />
       {/* UI V4 (V2): the episode's rules card, again, inside the menu. */}
       {v.levelIndex >= 1 && v.levelIndex <= 5 && (
         <details className="rounded-2xl bg-card px-3" data-howto-menu>

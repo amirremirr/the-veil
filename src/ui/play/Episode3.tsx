@@ -12,12 +12,11 @@ import { CallChips, CallResults, claimantsNow } from './Call';
 import { coins, pct, signed } from '../labels';
 import { nameOf, shortName, useTalkFrom } from '../game';
 import { useMotionOff } from '../components/common';
-import { ReallyButton } from './Really';
 import { ChoicesDid } from './Choices';
 import { Coach } from './Coach';
-import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
+import { BigButton, Bubble, Face, Stage } from './OnAir';
 import { Chips, Details, StagedReveal, peakMark, spotlightSteps } from './Peak';
-import { RollNumber, type CastCue } from './Cast';
+import { type CastCue } from './Cast';
 import { buzz, sfx } from './sound';
 import { confessional, hostLine, pick, roundOutcome, timesWord, verbOn } from './logic';
 import { renderMessage } from '../game';
@@ -44,7 +43,6 @@ export type L3View = {
 const REGIMES: Regime[] = ['VOL', 'M50', 'M100'];
 export const regimeName = (r: Regime) => t(`play.l3.regimes.${r}.name`);
 const lv3 = (v: ViewState) => v.levelView as L3View;
-const lastRound = (v: ViewState) => Math.max(1, ...v.queue.map((p) => p.round));
 
 /** Your own odds this round (you know your type and the event). */
 export function myOdds(v: ViewState, gym: boolean): number {
@@ -71,7 +69,7 @@ export function Tile({ on, title, desc, note, onClick, disabled = false }: { on:
       aria-pressed={onClick ? on : undefined}
       disabled={disabled}
       onClick={onClick}
-      className={`flex min-h-[112px] flex-col justify-between rounded-2xl p-2.5 text-start transition-colors disabled:cursor-default ${on ? 'bg-spot text-onspot' : 'bg-card text-ink'}`}
+      className={`flex min-h-[96px] flex-col justify-between rounded-2xl p-2.5 text-start transition-colors disabled:cursor-default ${on ? 'bg-spot text-onspot' : 'bg-card text-ink'}`}
     >
       <span aria-hidden className={`grid h-6 w-6 place-items-center rounded-full border-2 ${onClick ? '' : 'invisible'} ${on ? 'border-onspot bg-onspot' : 'border-soft'}`}>
         {on && (
@@ -117,15 +115,13 @@ export function ClaimScreen({ v }: { v: ViewState }) {
   const opts = ['LOW', 'HIGH', 'SILENT'];
   return (
     <Stage v={v} chatFirst footer={<BigButton disabled={!x} onClick={() => act(x)}>{t('play.claim.submit')}</BigButton>}>
-      <h1 className="h-show text-hero leading-tight">{t('play.claim.title')}</h1>
+      <h1 className="h-show text-title leading-tight">{t('play.claim.title')}</h1>
       <Coach id="claim" />
-      <div className="mt-3 rounded-2xl bg-card p-3">
-        <p className="h-show text-title leading-tight">{t(`play.claim.you.${lv.myType}`, { p: pct(myOdds(v, false)), worry: t(`play.myCards.worry.${lv.myWorry ?? 'CALM'}`) })}</p>
-      </div>
-      <p className="mt-2 text-small">{t('play.claim.why')}</p>
+      <p className="mt-1 text-body font-semibold">{t(`play.claim.you.${lv.myType}`, { p: pct(myOdds(v, false)), worry: t(`play.myCards.worry.${lv.myWorry ?? 'CALM'}`) })}</p>
+      <p className="text-small">{t('play.claim.why')}</p>
       <div className="mt-auto space-y-2 pt-3" role="group" aria-label={t('play.claim.title')}>
         {opts.map((o) => (
-          <button key={o} type="button" aria-pressed={x === o} onClick={() => setX(o)} className={`block w-full rounded-2xl p-3 text-start ${x === o ? 'bg-spot text-onspot' : 'bg-card'}`}>
+          <button key={o} type="button" aria-pressed={x === o} onClick={() => setX(o)} className={`block min-h-[48px] w-full rounded-2xl px-3 py-2 text-start ${x === o ? 'bg-spot text-onspot' : 'bg-card'}`}>
             <span className="h-show block text-lead leading-tight">{t(`play.claim.opts.${o}.title`)}</span>
           </button>
         ))}
@@ -227,7 +223,7 @@ export function MoveScreen({ v }: { v: ViewState }) {
           {others.map((p) => {
             return (
               <li key={p.id}>
-                <button type="button" aria-pressed={bar === p.id} onClick={() => setBar(bar === p.id ? null : p.id)} className={`flex min-h-[48px] w-full items-center gap-2 rounded-xl px-2 text-start ${bar === p.id ? 'bg-stamp text-onspot' : 'bg-card'}`}>
+                <button type="button" aria-pressed={bar === p.id} onClick={() => setBar(bar === p.id ? null : p.id)} className={`flex min-h-[44px] w-full items-center gap-2 rounded-xl px-2 text-start ${bar === p.id ? 'bg-stamp text-onspot' : 'bg-card'}`}>
                   <Face v={v} p={p} size={24} />
                   <span className="w-20 truncate text-small font-bold">{shortName(v, p.id)}</span>
                   <span className="flex-1 truncate text-small">{claimShort(claims[p.id])}</span>
@@ -350,50 +346,6 @@ export function GiftPicker({ v, gift, onPick }: { v: ViewState; gift: Gift | nul
   );
 }
 
-/** The Bar's result, its own beat before the wheel. */
-export function BarBeat({ v, next }: { v: ViewState; next: () => void }) {
-  const lv = lv3(v);
-  const r = lv.rounds[lv.rounds.length - 1];
-  const b = r.bar!;
-  // D-133: more than one applicant can be barred in a round.
-  const names = (xs: string[]) => xs.map((x) => shortName(v, x)).join(t('play.barBeat.and'));
-  const one = b.barred.length === 1 ? b.barred[0] : null;
-  const head = !b.barred.length
-    ? t('play.barBeat.none')
-    : one
-      ? t(one === v.viewer ? 'play.barBeat.barredYou' : 'play.barBeat.barred', { name: nameOf(v, one) })
-      : t('play.barBeat.barredMany', { names: names(b.barred) });
-  const r1 = b.refused.length === 1 ? b.refused[0] : null;
-  const sub = !b.barred.length
-    ? ''
-    : !b.refused.length
-      ? t('play.barBeat.notApplied')
-      : r1
-        ? t(r1 === v.viewer ? 'play.barBeat.refusedYou' : 'play.barBeat.refused', { name: shortName(v, r1) })
-        : t('play.barBeat.refusedMany', { names: names(b.refused) });
-  // AI playtest (T1): a barred contestant who did not apply this round is named too, so two bars never read as one.
-  const idle = b.refused.length ? b.barred.filter((x) => !b.refused.includes(x)) : [];
-  const subIdle = idle.length ? ` ${t('play.barBeat.notAppliedNamed', { names: names(idle) })}` : '';
-  // User review fix 4: the Bar on the stage. BARRED lands on the barred (dimmed), each member wears a vote mark.
-  const cue: CastCue = {
-    stamps: Object.fromEntries(b.barred.map((x) => [x, { text: t('play.cast.barred'), tone: 'stamp' as const }])),
-    dim: b.barred,
-    // Fix 3: a small "voted" mark on each member who voted to bar (who they barred is the BARRED stamp).
-    marks: Object.fromEntries(b.members.filter((m) => b.votes[m]).map((m) => [m, t('play.cast.voted')])),
-    expr: Object.fromEntries(b.barred.map((x) => [x, 'shocked' as const])),
-  };
-  return (
-    <Stage v={v} cast={cue} onTap={next} footer={<AutoButton onClick={next}>{t('play.stage.tap')}</AutoButton>}>
-      <div className="my-auto text-center" data-bar={b.barred.join(' ') || 'none'}>
-        <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.barBeat.label')}</p>
-        <p className={`h-show mt-2 text-title leading-tight ${b.barred.length ? 'text-stamp' : 'text-spot'}`}>{head}</p>
-        {sub && <p className="mt-2 text-body">{sub}{subIdle}</p>}
-        <p className="mt-3 text-small text-soft">{t('play.barBeat.rule')}</p>
-      </div>
-    </Stage>
-  );
-}
-
 /** One contestant's checked claims of this episode, in order. */
 function checkedClaims(v: ViewState, id: string): Array<{ round: number; value: string; kept: boolean }> {
   return (v.messages as Message[])
@@ -494,21 +446,6 @@ export function RegimeScreen({ v }: { v: ViewState }) {
             <span className="block text-small">{t(`play.l3.regimes.${r}.desc`)}</span>
           </button>
         ))}
-      </div>
-    </Stage>
-  );
-}
-
-/** "The vote is in", the beat before round 3. */
-export function VoteInBeat({ v, next }: { v: ViewState; next: () => void }) {
-  const lv = lv3(v);
-  return (
-    <Stage v={v} onTap={next} footer={<AutoButton onClick={next}>{t('play.stage.tap')}</AutoButton>}>
-      <div className="my-auto text-center" data-vote>
-        <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.stage.voteIn')}</p>
-        <p className="h-show mt-2 text-hero leading-tight text-spot">{regimeName(lv.regime)}</p>
-        <p className="mt-4 text-small text-soft"><span className="font-bold">{t('play.cast.votes')}</span> {v.players.map((p) => `${shortName(v, p.id)} ${regimeName(lv.regimeVotes![p.id])}`).join(' · ')}</p>
-        {lv.regimeTie && <p className="mt-1 text-small">{t('play.l1.votes.tie')}</p>}
       </div>
     </Stage>
   );
@@ -615,7 +552,7 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
     >
       <p className="text-center text-small font-bold uppercase tracking-wider text-soft">{t('play.stage.resultsOf', { r: v.round })}</p>
       <h1 className="h-show mt-1 text-center text-title leading-tight">{t('play.l3.wheel')}</h1>
-      <div className="relative mx-auto mt-1 h-28 w-28">
+      <div className={`relative mx-auto mt-1 ${last ? 'h-20 w-20' : 'h-28 w-28'}`}>
         <svg viewBox="0 0 100 100" className="h-full w-full" aria-hidden>
           <motion.g style={{ originX: '50px', originY: '50px' }} initial={{ rotate: 0 }} animate={{ rotate: done ? final : off ? final : [0, final] }} transition={{ duration: done || off ? 0 : spinMs / 1000, ease: 'easeOut' }}>
             <circle cx="50" cy="50" r={WHEEL_R} className="fill-good/80" />
@@ -642,9 +579,18 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
             </span>
           </p>
           {/* UI V4 (V3): what each of your choices did, then luck, then everyone else; it adds up to the change. */}
-          <div className="text-start">
-            <ChoicesDid v={v} />
-          </div>
+          {/* V5 N3: the Bar's result is a line here, not a screen of its own. */}
+          {r.bar && (
+            <p className="mt-1 text-small font-semibold" data-bar={r.bar.barred.join(' ') || 'none'}>
+              {r.bar.barred.length ? t(r.bar.barred.includes(me) ? 'play.carry.barredYou' : 'play.carry.barred', { names: r.bar.barred.map((x) => shortName(v, x)).join(t('play.barBeat.and')) }) : t('play.barBeat.none')}
+            </p>
+          )}
+          {/* UI V4 (V3): what your choices did; V5 N3: before the last round it shows on the next round's first screen. */}
+          {last && (
+            <div className="text-start">
+              <ChoicesDid v={v} />
+            </div>
+          )}
           <CallResults v={v} quiet />
           {giftLine && <span className="sr-only" data-gifts>{giftLine}</span>}
           {!voice.host && (
@@ -669,62 +615,6 @@ export function giftLines(v: ViewState, gifts: Record<string, Gift> | undefined)
       from === me ? t('play.gift.youGave', { to: shortName(v, g.to), n: g.amount }) : t(g.to === me ? 'play.gift.gaveYou' : 'play.gift.gave', { from: shortName(v, from), to: shortName(v, g.to), n: g.amount }),
     )
     .join(' ');
-}
-
-/** Whether this round's results get the "breaking news" price beat (Play spec redesign, beat c). */
-export function hasPriceBeat(v: ViewState): boolean {
-  const lv = lv3(v);
-  const r = lv.rounds[lv.rounds.length - 1];
-  return !!r && r.regime === 'VOL' && r.premium !== null && v.round < lastRound(v);
-}
-
-/** Beat (c): SafeHands' price change as its own full screen, with one line on why and one voice. */
-export function PriceBeat({ v, next }: { v: ViewState; next: () => void }) {
-  const lv = lv3(v);
-  const r = lv.rounds[lv.rounds.length - 1];
-  const from = r.listPrice ?? r.premium!;
-  const to = r.nextPremium;
-  const kind = to === null ? 'Gone' : r.launch ? 'Launch' : to > from + 1e-9 ? 'Up' : to < from - 1e-9 ? 'Down' : 'Same';
-  const change = to === null ? 0 : (to - from) / from;
-  const voteNext = v.round === PLAY.L3.VOLUNTARY_ROUNDS;
-  // UI V3 (U2): a sting when the price jumps or the insurer leaves.
-  useEffect(() => {
-    if (to === null || to > from * 1.1) sfx('sting');
-  }, []);
-  return (
-    <Stage
-      v={v}
-      bar={false}
-      tone="breaking"
-      onTap={next}
-      footer={
-        <AutoButton dark animMs={900} onClick={next}>
-          {voteNext ? t('play.stage.toVote') : t('play.stage.nextRound', { r: v.round + 1 })}
-        </AutoButton>
-      }
-    >
-      <div className="flex items-center justify-between">
-        <span className="rounded-full bg-onspot px-2 py-0.5 text-small font-bold uppercase tracking-wider text-spot">{t('play.stage.breaking')}</span>
-        <span className="text-small font-semibold">{t('play.l3.ticker')}</span>
-      </div>
-      <div className="my-auto">
-        <p className="text-small font-bold uppercase tracking-wider">{t('play.stage.priceOf')}</p>
-        <p className="mt-1 flex items-baseline gap-3" data-price>
-          {(to === null || Math.round(to) !== Math.round(from)) && <span className="h-show text-hero line-through opacity-60">{Math.round(from)}</span>}
-          <span className="h-show text-hero leading-none">{to === null ? t('play.stage.closed') : <RollNumber from={from} to={to} />}</span>
-        </p>
-        {to !== null && (
-          <span className="mt-2 inline-block rounded-md bg-onspot px-2 py-0.5 text-small font-bold text-spot">
-            {kind === 'Same' || (kind === 'Launch' && Math.abs(to - from) < 1e-9) ? t('play.stage.same') : t(to > from ? 'play.stage.up' : 'play.stage.down', { p: pct(Math.abs(change)) })}
-          </span>
-        )}
-        <p className="h-show mt-4 text-title leading-tight">{t(`play.stage.head${kind}`)}</p>
-        <p className="mt-2 text-small">{t(`play.stage.sub${kind}`)}</p>
-        <Bubble who="Dash" host mood="worried" text={hostLine(`price${kind}`, pick(v, `price-${kind}`, 6))} />
-        <ReallyButton v={v} className="mt-3" />
-      </div>
-    </Stage>
-  );
 }
 
 /** E5 fix: a list of reveal stamps where every LIE stands out. */

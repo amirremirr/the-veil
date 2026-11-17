@@ -10,7 +10,7 @@ import { shortName } from '../game';
 import { ledgerRows } from './logic';
 import { MoneyLedger } from './Ledger';
 import { bandOf } from '../../engine/play/ep2';
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { sfxMoney } from './sound';
 import type { L1View } from './Episode1';
 import type { L2View } from './Episode2';
@@ -73,6 +73,9 @@ function myClaim(v: ViewState): string | null {
 export function choiceRows(v: ViewState): { rows: ChoiceRow[]; from: number; to: number } | null {
   const lr = ledgerRows(v);
   if (!lr) return null;
+  // V5 N3: the block can show on the next round's first screen, so read the round its record is about.
+  const hist = v.play!.bankHistory;
+  const vr = { ...v, round: hist[hist.length - 1].round } as ViewState;
   const m: Record<string, number> = {};
   for (const r of lr.money) m[r.key] = (m[r.key] ?? 0) + r.n;
   const take = (k: string) => {
@@ -97,8 +100,8 @@ export function choiceRows(v: ViewState): { rows: ChoiceRow[]; from: number; to:
     const r = lv.rounds[lv.rounds.length - 1];
     const luck = Math.round(r.luck?.[me] ?? 0);
     rows.push({ kind: 'choice', text: t('play.did.worked', { e: r.effort?.[me] ?? 0 }), n: take('income') + take('hours') - luck });
-    const c = myClaim(v);
-    if (c) rows.push(claimRow(v, t('play.cast.claim.effort', { b: t(`play.l2.band.${c}`).toLowerCase() }), c !== bandOf(r.effort?.[me] ?? 0)));
+    const c = myClaim(vr);
+    if (c) rows.push(claimRow(vr, t('play.cast.claim.effort', { b: t(`play.l2.band.${c}`).toLowerCase() }), c !== bandOf(r.effort?.[me] ?? 0)));
     rows.push({ kind: 'luck', text: t(luck >= 0 ? 'play.did.dieUp' : 'play.did.dieDown'), n: luck });
     const prize = take('prize');
     if (prize) rows.push({ kind: 'others', text: t('play.did.prize'), n: prize });
@@ -118,11 +121,11 @@ export function choiceRows(v: ViewState): { rows: ChoiceRow[]; from: number; to:
     else if (cover) rows.push({ kind: 'others', text: t('play.did.plan'), n: cover });
     const gym = take('gym');
     if (ch.gym) rows.push({ kind: 'choice', text: t('play.did.gym', { p: pct(r.pEff[me]) }), n: gym });
-    const c = myClaim(v);
+    const c = myClaim(vr);
     if (c) {
       const lie = (c === 'LOW') !== (lv.myType === 'LOW');
       const barred = !!r.bar?.barred.includes(me);
-      rows.push(claimRow(v, t(`play.claims.RISK.${c}`), lie, barred ? ` ${t('play.did.barred')}` : r.applied?.[me] || bought ? ` ${t('play.did.inPool')}` : ''));
+      rows.push(claimRow(vr, t(`play.claims.RISK.${c}`), lie, barred ? ` ${t('play.did.barred')}` : r.applied?.[me] || bought ? ` ${t('play.did.inPool')}` : ''));
     }
     if (ch.bar) rows.push({ kind: 'choice', text: t(r.bar?.barred.includes(ch.bar) ? 'play.did.barWorked' : 'play.did.barFailed', { name: shortName(v, ch.bar) }), n: 0 });
     const lossN = take('loss');
@@ -139,8 +142,8 @@ export function choiceRows(v: ViewState): { rows: ChoiceRow[]; from: number; to:
       rows.push({ kind: 'choice', text: t('play.did.judged', { g: good, b: bad }), n: take('judge') });
     } else {
       rows.push({ kind: 'choice', text: t(r.train?.[me] ? 'play.did.trained' : 'play.did.noTrain', { r: t(r.pass?.[me] ? 'play.did.passed' : 'play.did.failed') }), n: take('training') });
-      const c = myClaim(v);
-      if (c) rows.push(claimRow(v, t('play.cast.claim.trained'), !r.train?.[me]));
+      const c = myClaim(vr);
+      if (c) rows.push(claimRow(vr, t('play.cast.claim.trained'), !r.train?.[me]));
       rows.push({ kind: 'others', text: t(r.job?.[me] === 'COMPLEX' ? 'play.did.jobComplex' : 'play.did.jobSimple', { name: shortName(v, r.judge!) }), n: take('pay') });
     }
     const cb = take('comeback');
@@ -158,7 +161,7 @@ export function choiceRows(v: ViewState): { rows: ChoiceRow[]; from: number; to:
     if (v.mode === 'LIFE') rows.push({ kind: 'usual', text: t('play.did.finaleUsual'), n: inc });
     else rows.push({ kind: 'luck', text: t('play.did.dealt', { y: coins(inc) }), n: inc });
   }
-  rows.push(...callRows(v, take('call')));
+  rows.push(...callRows(vr, take('call')));
   const usual = take('pay') + take('living') + take('income') + take('incomeFinale');
   const rest = Object.values(m).reduce((a, x) => a + x, 0);
   // One row for luck, one for everyone else: the biggest item names the row, the rest add to it.
@@ -186,12 +189,17 @@ const label: Record<ChoiceRow['kind'], string> = { choice: '', luck: 'play.did.l
 /** The block itself: the rows, then the bank change they add up to, with "See the money" beside it. */
 const sounded = new Set<string>();
 
-export function ChoicesDid({ v }: { v: ViewState }) {
+/**
+ * V5 N3: `carry` shows the block at the top of the next round's first screen ("Last round: ..."), so the
+ * round's result needs no screen of its own; `extra` adds lines about what else happened (a price, a prize).
+ */
+export function ChoicesDid({ v, carry = false, extra }: { v: ViewState; carry?: boolean; extra?: ReactNode }) {
   const x = choiceRows(v);
   const total = x ? x.to - x.from : 0;
   // UI V4 (V4): one money sound per round result: a rising jingle for a gain, a "wah-wah" for a loss, longer
   // the bigger it is, and a tick for no change.
-  const key = `${v.seed ?? ''}|${v.levelIndex}|${v.round}|${v.phaseIdx}`;
+  const hist = v.play?.bankHistory ?? [];
+  const key = `${v.seed ?? ''}|${v.levelIndex}|${hist[hist.length - 1]?.round ?? 0}|${hist.length}`;
   useEffect(() => {
     if (!x || sounded.has(key)) return;
     sounded.add(key);
@@ -200,14 +208,15 @@ export function ChoicesDid({ v }: { v: ViewState }) {
   }, [key]);
   if (!x) return null;
   return (
-    <section className="mt-2 rounded-2xl bg-card px-3 py-2" aria-labelledby="did-title" data-choices-did>
+    <section className={`rounded-2xl bg-card px-3 ${carry ? 'mb-2 py-1' : 'mt-2 py-2'}`} aria-labelledby="did-title" data-choices-did data-carry={carry || undefined}>
       <h2 id="did-title" className="text-small font-bold uppercase tracking-wider text-soft">
-        {t('play.did.title')}
+        {t(carry ? 'play.did.lastTitle' : 'play.did.title')}
       </h2>
+      {extra}
       <ul className="mt-1 space-y-0.5 text-small">
         {x.rows.map((r, i) => (
           <li key={i} className="flex items-start gap-2" data-did={r.kind}>
-            <span className="flex-1 leading-snug">
+            <span className={`flex-1 leading-snug ${carry ? 'line-clamp-1' : ''}`} title={carry ? r.text : undefined}>
               {label[r.kind] && <span className="font-bold">{t(label[r.kind])} </span>}
               {r.text}
             </span>

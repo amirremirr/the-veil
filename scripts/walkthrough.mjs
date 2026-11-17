@@ -107,7 +107,10 @@ function measure() {
   // UI V4: the words a player reads on the screen itself, not counting the top bar, the cast (names, banks,
   // bubbles) or the bottom button. Decision screens must stay at 45 or fewer.
   const content = document.querySelector('[data-content]') || document.querySelector('main [data-cast-stage]')?.parentElement?.querySelector(':scope > div.flex-1') || document.querySelector('main');
-  const cwords = content ? (content.innerText || '').trim().split(/\s+/).filter(Boolean).length : 0;
+  const wc = (el) => ((el && el.innerText) || '').trim().split(/\s+/).filter(Boolean).length;
+  // V5 N3: last round's result carried to the top of a decision screen ([data-carry]) is counted apart.
+  const carry = content ? [...content.querySelectorAll('[data-carry]')].reduce((a, el) => a + wc(el), 0) : 0;
+  const cwords = content ? wc(content) - carry : 0;
   const ctext = content ? (content.innerText || '').trim().replace(/\s+/g, ' ') : '';
   const buttons = [...document.querySelectorAll('button')].filter(isVisible).length;
   // Overlap: content is hidden if a bottom bar or floating button still covers it when the page is
@@ -160,6 +163,7 @@ function measure() {
     tall: document.documentElement.scrollHeight > window.innerHeight,
     words,
     cwords,
+    carry,
     ctext,
     buttons,
     height: document.documentElement.scrollHeight,
@@ -178,13 +182,15 @@ for (let i = 0; i < 1000; i++) {
   if (m.kind === 'END') break;
   const group = ruleset === 'PLAY' ? `Ep${m.level}` : ['VALUES_REVEAL', 'GUESS', 'RUN_DEBRIEF'].includes(m.kind) ? 'Run' : `L${m.level}`;
   const key = `${group}-${m.kind}-${m.step || 'x'}${m.beat ? `-${m.beat}` : ''}`;
+  // A screen that does not fit is always captured (V5), even when its kind was seen before.
+  if (ruleset === 'PLAY' && m.tall) await page.screenshot({ path: `${outDir}/tall-${key}-r${m.round}.png`, fullPage: true });
   if (!seen.has(key)) {
     seen.add(key);
     await page.waitForTimeout(400);
     await page.screenshot({ path: `${outDir}/${String(seen.size).padStart(3, '0')}-${key}.png`, fullPage: true });
   }
   lines.push(
-    `${group.padEnd(4)} R${m.round} ${`${m.kind}:${m.step}${m.beat ? ` (${m.beat})` : ''}${m.auto ? ' auto' : ''}`.padEnd(32)} words=${String(m.words).padStart(4)} content=${String(m.cwords).padStart(3)} buttons=${String(m.buttons).padStart(2)} height=${String(m.height).padStart(5)}${m.hscroll ? ' HSCROLL' : ''}${ruleset === 'PLAY' && m.tall ? ' TALLER THAN VIEWPORT' : ''}`,
+    `${group.padEnd(4)} R${m.round} ${`${m.kind}:${m.step}${m.beat ? ` (${m.beat})` : ''}${m.auto ? ' auto' : ''}`.padEnd(32)} words=${String(m.words).padStart(4)} content=${String(m.cwords).padStart(3)}${m.carry ? ` +carry ${m.carry}` : ''} buttons=${String(m.buttons).padStart(2)} height=${String(m.height).padStart(5)}${m.hscroll ? ' HSCROLL' : ''}${ruleset === 'PLAY' && m.tall ? ' TALLER THAN VIEWPORT' : ''}`,
   );
   for (const o of m.overlaps) lines.push(`     OVERLAP: ${o}`);
   // --text: the screen's own words (UI V4), to check the copy limits.

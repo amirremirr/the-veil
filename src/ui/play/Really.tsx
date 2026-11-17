@@ -47,3 +47,16 @@ export function ReallyButton({ v, className = '' }: { v: ViewState; className?: 
     </button>
   );
 }
+
+/** V5 N3: "What was really going on?" inside the menu, once the episode is over (it left the summary). */
+export function ReallyInMenu({ v }: { v: ViewState }) {
+  if (!['LEVEL_DEBRIEF', 'RUN_DEBRIEF', 'END'].includes(v.phase.kind)) return null;
+  return (
+    <details className="rounded-2xl bg-card px-3" data-really-menu>
+      <summary className="flex min-h-[44px] cursor-pointer items-center font-semibold">{t('play.really.button')}</summary>
+      <div className="pb-3">
+        <ReallyBody v={v} />
+      </div>
+    </details>
+  );
+}

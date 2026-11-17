@@ -6,6 +6,8 @@ import { expect, test, type Page } from '@playwright/test';
 export async function cleanScreen(page: Page) {
   const text = await page.locator('body').innerText();
   expect(text, text.slice(0, 200)).not.toMatch(/\bplay\.[a-zA-Z]+/);
+  // V5: no unfilled {placeholder} on screen either.
+  expect(text, text.slice(0, 200)).not.toMatch(/\{[a-zA-Z]+\}/);
   const over = await page.evaluate(() =>
     [...document.querySelectorAll('[data-cast-stamp]')]
       .map((el) => {
@@ -56,7 +58,9 @@ async function playThrough(page: Page, o: { gift?: boolean; noPoll?: boolean } =
     // D-145: on Hard no screen shows the audience poll.
     if (o.noPoll) expect(await page.getByText(/\d+% risky/).count()).toBe(0);
     if (await page.locator('[data-gifts]').count()) seen.giftLines++;
-    if (await page.getByText('Episode summary').count()) break;
+    if (await page.locator('[data-summary]').count()) break;
+    // V5 N3: the new price shows at the top of the next round's first screen.
+    if (await page.locator('[data-carry-extra]').count()) seen.prices++;
     if (await page.locator('[data-beat-next]').count()) {
       if (await page.locator('[data-outcome]').count()) seen.wheels++;
       // UI V3 (U3): the price board moves on by itself, so its button is a beat button now.
@@ -138,10 +142,13 @@ test('plays Episode 3 from the title to the episode summary', async ({ page }) =
   expect(seen.giftLines).toBeGreaterThanOrEqual(1);
   await expect(page.getByText('Biggest lie')).toBeVisible();
   await expect(page.getByText('Near miss')).toBeVisible();
-  await expect(page.getByText('Episode summary')).toBeVisible();
-  await page.getByRole('button', { name: 'What was really going on?' }).click();
-  await expect(page.getByText("That's adverse selection.", { exact: false })).toBeVisible();
+  // V5 N3: the summary is at most 50 words; "What was really going on?" is in the menu.
+  const words = await page.locator('[data-content]').evaluate((el) => (el as HTMLElement).innerText.trim().split(/\s+/).length);
+  expect(words).toBeLessThanOrEqual(50);
   expect(await page.locator('[role="dialog"]').count()).toBe(0);
+  await page.getByRole('button', { name: 'Menu', exact: true }).click();
+  await page.getByText('What was really going on?').click();
+  await expect(page.getByText("That's adverse selection.", { exact: false })).toBeVisible();
 });
 
 test('two seats on Hard: the setup line, two contestants, no audience poll on any screen (D-141, D-145)', async ({ page }) => {
@@ -163,7 +170,7 @@ test('two seats on Hard: the setup line, two contestants, no audience poll on an
   await expect(page.locator('[data-cast-stage]').getByText('You', { exact: true })).toBeVisible();
   const seen = await playThrough(page, { noPoll: true });
   expect(seen.wheels).toBe(4);
-  await expect(page.getByText('Episode summary')).toBeVisible();
+  await expect(page.locator('[data-summary]')).toBeVisible();
 });
 
 test('the opening card: shown on the first visit, Skip goes to Pick your show, the menus reopen it (D-139, UI V3 U3)', async ({ page }) => {

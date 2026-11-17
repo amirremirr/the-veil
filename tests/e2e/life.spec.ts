@@ -6,6 +6,8 @@ import { expect, test, type Page } from '@playwright/test';
 async function cleanScreen(page: Page) {
   const text = await page.locator('body').innerText();
   expect(text, text.slice(0, 200)).not.toMatch(/\bplay\.[a-zA-Z]+/);
+  // V5: no unfilled {placeholder} on screen either.
+  expect(text, text.slice(0, 200)).not.toMatch(/\{[a-zA-Z]+\}/);
   const over = await page.evaluate(() =>
     [...document.querySelectorAll('[data-cast-stamp]')]
       .map((el) => {
@@ -78,6 +80,10 @@ test('Daily Life starts a life on the day seed and reaches the result card', asy
     if (st.level < 2) expect(await page.getByRole('button', { name: 'Say it' }).count()).toBe(0);
     if (st.level < 3) expect(await page.locator('[data-call-bubble]').count()).toBe(0);
     if (st.level < 4) expect(await page.locator('[data-gift-bar]').count()).toBe(0);
+    // V5 N3: the episode summary is at most 50 words, Episode 4's pay screen at most 45.
+    const contentWords = () => page.locator('[data-content]').evaluate((el) => (el as HTMLElement).innerText.trim().split(/\s+/).filter(Boolean).length);
+    if (await page.locator('[data-summary]').count()) expect(await contentWords()).toBeLessThanOrEqual(50);
+    if (st.level === 4 && st.kind === 'REVEAL' && (await page.locator('[data-outcome]').count())) expect(await contentWords()).toBeLessThanOrEqual(45);
     // UI V4 (V3): "What your choices did" adds up to the bank change it shows, to the coin.
     if (await page.locator('[data-choices-did]').count()) {
       const sums = await page.locator('[data-choices-did]').evaluate((el) => {

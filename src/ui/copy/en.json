@@ -1240,9 +1240,11 @@
       "lead": "Leading the life: {name}",
       "leadYou": "You lead the life!",
       "scoreLabel": "Your score",
-      "helpedLabel": "This episode",
-      "helped": "Helped most: {what} {n}.",
-      "hurt": "Hurt most: {what} {n}."
+      "helpedLabel": "Best and worst",
+      "helped": "{what} {n}.",
+      "hurt": "{what} {n}.",
+      "done": "Episode {n} done",
+      "place": "Place: {r} of {n}."
     },
     "really": {
       "button": "What was really going on?",
@@ -1314,7 +1316,7 @@
       "noCoverTitle": "No cover",
       "noCoverDesc": "SafeHands left town.",
       "mandateTitle": "Mandatory plan",
-      "mandateDesc": "Everyone pays about {T}; it covers {c}% of a hit.",
+      "mandateDesc": "Plan: all pay about {T}.",
       "lock": "Lock in",
       "reply": "Reply",
       "tap": "Tap to continue",
@@ -1430,7 +1432,7 @@
       "coverAsk": "Buy cover this round?",
       "gymAsk": "Hit the gym this round?",
       "barAsk": "Keep someone out of the pool?",
-      "barHow": "Faces show the audience's read. Most of the other members bars someone.",
+      "barHow": "Faces show the audience's read. Most of the others decides.",
       "barNobody": "Nobody",
       "barNext": "Next",
       "gymRow": "Gym (optional): pay {c}, risk drops to {p}",
@@ -1475,7 +1477,7 @@
       "tooCalm": "High risk. Too calm to buy."
     },
     "nm": {
-      "line": "{change} in round {r} would have left you {n} coins richer.",
+      "line": "{change} in round {r}: {n} coins richer.",
       "buy": "Buying cover",
       "out": "Staying out of the pool",
       "gym": "Hitting the gym",
@@ -1747,7 +1749,8 @@
         "you": "You got {y}. After the rule: {w}.",
         "row": "{y}, after the rule {w}",
         "inherit": "{name} inherited 60 coins.",
-        "peekCost": "Your peek: -{c} (in the bank line below)."
+        "peekCost": "Your peek: -{c} (in the bank line below).",
+        "won": "{rule} won ({t} tax). Incomes, poorest first"
       },
       "toReveal": "To the reveal",
       "peak": {
@@ -2369,7 +2372,7 @@
       "said": "You said \"{words}\"{how}.",
       "aLie": " (a lie)",
       "true": " (true)",
-      "notCalled": "Nobody called it.",
+      "notCalled": "Not called.",
       "caught": "You were caught.",
       "calledButTrue": "Someone called it and paid you.",
       "barred": "The pool barred you.",
@@ -2396,19 +2399,20 @@
       "wheelMiss": "the wheel missed you.",
       "plan": "the cover plan the table voted for.",
       "judged": "Your hires as HireBot: {g} good, {b} bad.",
-      "trained": "You trained, and {r}.",
-      "noTrain": "You didn't train, and {r}.",
-      "passed": "passed the test",
-      "failed": "failed the test",
-      "jobComplex": "HireBot ({name}) gave you the complex job.",
-      "jobSimple": "HireBot ({name}) gave you the simple job.",
+      "trained": "You trained and {r}.",
+      "noTrain": "You didn't train and {r}.",
+      "passed": "passed",
+      "failed": "failed",
+      "jobComplex": "Complex job from {name}.",
+      "jobSimple": "Simple job from {name}.",
       "comeback": "You took the Second Chance coins.",
       "donated": "You paid {name} {n} for votes.",
       "donatedTo": "someone paid you for your vote.",
       "rules": "the rules the table voted for.",
       "finaleUsual": "The finale covers your living costs.",
       "thisRound": "this round",
-      "wheelHitCovered": "the wheel hit you, but cover paid."
+      "wheelHitCovered": "the wheel hit you, but cover paid.",
+      "lastTitle": "Last round"
     },
     "styles": {
       "title": "Three style directions",
@@ -2471,6 +2475,19 @@
         "veil": "In the finale you wrote a {t} tax with a floor of {F}.",
         "lobby": "In the finale you paid someone for their vote."
       }
+    },
+    "carry": {
+      "priceUp": "Cover now costs {b} (was {a}): last pool was riskier.",
+      "priceDown": "Cover now costs {b} (was {a}): last pool was safer.",
+      "priceSame": "Cover still costs {b}.",
+      "priceGone": "Nobody bought cover. SafeHands left town.",
+      "vote": "The table voted: {rule}.",
+      "prize": "Hustle Prize: {names}.",
+      "policy": "The table chose a new HireBot rule: {rule}.",
+      "income": "You made {y} this round (your luck die: {d}).",
+      "barred": "The pool barred {names}.",
+      "barredYou": "The pool barred you.",
+      "rules": "The table wrote the rules: tax {t}, floor {F}. Your bank has moved to match."
     }
   }
 }

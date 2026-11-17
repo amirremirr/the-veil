@@ -15,9 +15,8 @@ import { coins, pct } from '../labels';
 import { nameOf, shortName } from '../game';
 import type { CastCue } from './Cast';
 import { Chips, Details, StagedReveal, peakMark, spotlightSteps } from './Peak';
-import { ReallyButton } from './Really';
 import { Coach } from './Coach';
-import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
+import { BigButton, Bubble, Face, Stage } from './OnAir';
 import { GiftBar, Tile, roundClaims } from './Episode3';
 import { hostLine, pick, timesWord } from './logic';
 
@@ -63,27 +62,6 @@ export function MyCards4({ v, next }: { v: ViewState; next: () => void }) {
         {v.play!.comeback && v.play!.comeback.pid !== v.viewer && (
           <p className="mt-2 text-small">{t(v.play!.comeback.took === 'COINS' ? 'play.comeback.otherCoins' : 'play.comeback.otherPoints', { name: shortName(v, v.play!.comeback.pid), c: PLAY.COMEBACK.COINS, p: PLAY.COMEBACK.POINTS })}</p>
         )}
-      </div>
-    </Stage>
-  );
-}
-
-/** The policy vote's result, as a beat before round 3's first screen. */
-export function PolicyIn({ v, next }: { v: ViewState; next: () => void }) {
-  const lv = lv4(v);
-  return (
-    <Stage v={v} onTap={next} footer={<AutoButton onClick={next}>{t('play.stage.tap')}</AutoButton>}>
-      <div className="my-auto" data-vote>
-        <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l4.policyIn')}</p>
-        <p className="h-show mt-2 text-hero leading-tight text-spot">{policyName(lv.policy)}</p>
-        <p className="mt-2 text-body">{t(`levels.4.policies.${lv.policy}.desc`)}</p>
-        <p className="mt-3 text-small"><span className="font-bold">{t('play.cast.votes')}</span> {v.players.map((p) => `${shortName(v, p.id)} ${lv.policyVotes?.[p.id] ? policyName(lv.policyVotes[p.id]) : ''}`).join(' · ')}</p>
-        {(() => {
-          const n: Record<string, number> = {};
-          for (const x of Object.values(lv.policyVotes ?? {})) n[x] = (n[x] ?? 0) + 1;
-          const top = Math.max(0, ...Object.values(n));
-          return Object.values(n).filter((c) => c === top).length > 1 ? <p className="mt-1 text-small">{t('play.l1.votes.tie')}</p> : null;
-        })()}
       </div>
     </Stage>
   );
@@ -265,10 +243,11 @@ export function HiresBeat({ v, next, last }: { v: ViewState; next: () => void; l
         ]
       : null;
   return (
-    <Stage v={v} cast={cue} onTap={next} footer={<BigButton beatNext={!last} onClick={next}>{last ? t('play.stage.nextRound', { r: v.round + 1 }) : t('play.stage.tap')}</BigButton>}>
+    <Stage v={v} cast={cue} onTap={next} footer={<BigButton beatNext={!last} onClick={next}>{last ? t('play.stage.tap') : t('play.stage.nextRound', { r: v.round + 1 })}</BigButton>}>
       <div className="my-auto" data-outcome>
         <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l4.res.label', { r: v.round })}</p>
-        <h1 className="h-show mt-1 text-title leading-tight text-spot">{youLine}</h1>
+        {/* V5 N3: in the last round the rows below say it (the screen stays under 45 words). */}
+        {!last && <h1 className="h-show mt-1 text-title leading-tight text-spot">{youLine}</h1>}
         {judgeRows && (
           <dl className="mt-2 grid grid-cols-[1fr_auto] gap-x-3 rounded-2xl bg-card px-3 py-2 text-small" data-judge-pay>
             {judgeRows.map(([k, n]) => (
@@ -279,57 +258,11 @@ export function HiresBeat({ v, next, last }: { v: ViewState; next: () => void; l
             ))}
           </dl>
         )}
-        <ul className="mt-3 space-y-1.5">
-          {workers.map((w) => {
-            const p = v.players.find((x) => x.id === w)!;
-            const complex = r.job?.[w] === 'COMPLEX';
-            const stamp = complex ? (r.good?.includes(w) ? 'GOOD' : 'BAD') : null;
-            return (
-              <li key={w} className="flex items-center gap-2 rounded-xl bg-card px-2 py-1.5">
-                <Face v={v} p={p} size={24} />
-                <span className="w-16 truncate text-small font-bold">{shortName(v, w)}</span>
-                <span className="flex-1 text-small">
-                  {t(complex ? 'play.l4.complex' : 'play.l4.simple')}
-                  {r.quotaPicks?.includes(w) ? ` · ${t('play.l4.quota')}` : ''} · {t(r.pass?.[w] ? 'play.l4.pass' : 'play.l4.fail')}
-                </span>
-                {stamp && <span className={`rounded px-1 text-small font-bold ${stamp === 'GOOD' ? 'bg-good text-onspot' : 'bg-stamp text-onspot'}`}>{t(`play.cast.hire.${stamp}`)}</span>}
-                <span className="h-show w-10 text-end">{coins(W[w] ?? 0)}</span>
-              </li>
-            );
-          })}
-        </ul>
         {/* UI V4 (V3): what your choices did; it adds up to the bank change. */}
-        <ChoicesDid v={v} />
+        {/* V5 N3: at most 45 words: the workers' hires are the stamps on the stage; before the last round, what
+            your choices did shows on the next round's first screen. */}
+        {last && <ChoicesDid v={v} />}
         <CallResults v={v} quiet />
-      </div>
-    </Stage>
-  );
-}
-
-/** HireBot's beliefs after the round, as Episode 3's price board. */
-export function BeliefBeat({ v, next }: { v: ViewState; next: () => void }) {
-  const lv = lv4(v);
-  const r = lv.rounds[lv.rounds.length - 1];
-  const a = r.priorsBefore!;
-  const b = r.priorsAfter!;
-  const voteNext = v.round === PLAY.L4.BASELINE_ROUNDS;
-  const lastRound = v.round >= PLAY.L4.ROUNDS;
-  const rows: Array<[string, number, number]> = lv.policy === 'B' && a.POOL !== null && b.POOL !== null ? [[t('play.l4.everyone'), a.POOL, b.POOL]] : (['CIRCLE', 'SQUARE'] as Group[]).map((g) => [groupName(g), a[g], b[g]]);
-  return (
-    <Stage v={v} bar={false} tone="breaking" onTap={next} footer={<AutoButton dark onClick={next}>{voteNext ? t('play.stage.toVote') : lastRound ? t('play.l1.toReveal') : t('play.stage.nextRound', { r: v.round + 1 })}</AutoButton>}>
-      <div className="my-auto" data-price>
-        <p className="text-small font-bold uppercase tracking-wider">{t('play.l4.board.title')}</p>
-        {rows.map(([name, x, y]) => (
-          <p key={name} className="mt-2 flex items-baseline gap-3">
-            <span className="h-show w-28 shrink-0 truncate text-lead">{name}</span>
-            <span className="h-show text-title line-through opacity-60">{pct(x)}</span>
-            <span className="h-show text-hero leading-none">{pct(y)}</span>
-          </p>
-        ))}
-        <p className="h-show mt-4 text-title leading-tight">{t('play.l4.board.head')}</p>
-        <p className="mt-2 text-small">{t('play.l4.board.sub', { p: pct(lv.threshold) })}</p>
-        <Bubble who="Dash" host mood="worried" text={hostLine('l4board', pick(v, 'l4board', 6))} />
-        <ReallyButton v={v} className="mt-3" />
       </div>
     </Stage>
   );
