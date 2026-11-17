@@ -803,3 +803,12 @@ The author's third review: lie success was 98% and bar recall 23%, so lying domi
   | F-d big moment (at least 90%) | 89.2% | 89.6% | 82.7% |
 
   A meets every target set for this fix; B breaks E1 (a smaller deck leaves peekers little reason to vote by income) and F-f. The score gap was already under 40% before (the median end gap is about 330 coins, not the 426 of one capture). A hand recalibration of the life mission scales (Utilitarian 1.0, Meritocrat 1.4) made F-e much worse (Meritocrat 59.9%, Utilitarian 5.2%): with the finale weighing missions 4.5 times (D-201), the shares swing on small scale changes, so the scales were left as they were. F-e stays a reported miss; Needs Amir: lower the finale's mission weight or accept F-e. The Episode 1 summary in a life says: "Birth income is not scored: from Episode 2 on, your bank half counts what you make from here." Merging needs the room server redeployed first.
+- **D-204 [UI-V3, review] Finale mission weight: kept at 4.5 (no rule change).** Tried lowering `PLAY.LIFE_MISSION_EP_MULT[5]` (mission scales untouched), 300 bot lives each (seeds `rsweep`), with the D-203 rules:
+
+  | Finale weight | F-e mission win shares (15% to 35% each) | Leader after Ep4 loses the finale (at least 20%) | Order = after Ep2 | Born poorest wins | Gap share | F-f |
+  |---|---|---|---|---|---|---|
+  | 4.5 (current, 1,000 lives) | E 21.9, R 31.3, U 37.7, M 12.0 (fails) | 30.2% ± 1.5 | 15.6% | 18.9% | 37.0% | 51.2% |
+  | 3 | E 24.7, R 29.7, U 33.6, M 12.2 (fails) | 22.7% ± 2.4 | 11.0% | 18.7% | 36.3% | 57.0% |
+  | 2 | E 25.1, R 25.5, U 31.2, M 17.9 (passes) | 14.0% ± 2.0 (fails) | 10.7% | 19.3% | 36.4% | 57.0% |
+
+  No weight passes both, so 4.5 stays, as instructed; no 1,000-life confirmation was run since nothing changed. The two targets pull against each other: the finale lead change needs a heavy finale mission weight, and the heavy weight starves the Meritocrat mission (its effort shares are mostly settled before the finale). Needs Amir: a weight near 2.5 might pass both narrowly (not tested), or raise the Meritocrat life scale on its own. Axe rerun: 0 violations on 64 screens, focus rings on every element tabbed.

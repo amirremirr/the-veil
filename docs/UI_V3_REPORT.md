@@ -95,6 +95,16 @@ Bots only, 1,000 lives. The changes: in a life, Episode 2 pays 3 per hour of tal
 
 - **Stamps** sit on the character's body, never over the podium name (an e2e check enforces it). **The Bar** marks voters with a small "Voted". **Auto-advance** holds 1.2 s plus 0.2 s per word over 12, at most 5 s; a life now paces at 9.3 min (taps 71 + 1 opening card, same seed).
 
+- **Finale mission weight** (D-204): tried 3 and 2 on 300 lives each, mission scales untouched. No weight passed both F-e and the finale target, so it stays at 4.5 (no rule change).
+
+| Finale weight | F-e (15% to 35% each) | Ep4 leader loses the finale (at least 20%) |
+|---|---|---|
+| 4.5 (kept; 1,000 lives) | E 21.9, R 31.3, U 37.7, M 12.0 (fails) | 30.2% |
+| 3 | E 24.7, R 29.7, U 33.6, M 12.2 (fails) | 22.7% |
+| 2 | E 25.1, R 25.5, U 31.2, M 17.9 (passes) | 14.0% (fails) |
+
+- **Axe after the fixes:** 0 violations on 64 screens; focus rings on every element tabbed.
+
 ## Choices made, with alternatives
 
 - **Cast size (D-195).** The cast shrinks on dense screens instead of staying at 72 px. Alternative: move content off those screens.
