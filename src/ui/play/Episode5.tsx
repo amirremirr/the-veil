@@ -97,7 +97,9 @@ export function FairScreen({ v }: { v: ViewState }) {
   const [tx, setT] = useState<number>(cur?.t ?? 0);
   const [F, setF] = useState<number>(cur?.F ?? 0);
   const prop = { t: tx, F };
-  const proposing = after && !!cur && !sameC(prop, cur);
+  // UI V4 (V2): proposing a change is a second choice, so it is a small optional row, closed by default.
+  const [open, setOpen] = useState(false);
+  const proposing = after && open && !!cur && !sameC(prop, cur);
   const k = ALL_CONSTITUTIONS.findIndex((c) => Math.abs(c.t - tx) < 1e-9 && c.F === F);
   const note = proposing ? previewText(lv5(v).preview?.constitutions[k]) : null;
   return (
@@ -106,7 +108,13 @@ export function FairScreen({ v }: { v: ViewState }) {
       <p className="mt-1 text-small">{t(after ? 'play.l5.fair.after' : v.levelIndex === 1 ? 'play.l5.fair.born' : v.mode === 'LIFE' ? 'play.l5.fair.beforeLife' : 'play.l5.fair.before')}</p>
       {after && <p className="mt-2 text-small font-bold">{t('play.l5.fair.label')}</p>}
       <Chips opts={L5.TAX_OPTIONS} value={x} onPick={setX} label={t('play.l5.fair.title')} fmt={pct} />
-      {after && cur && (
+      {after && cur && !open && (
+        <button type="button" aria-expanded={false} onClick={() => setOpen(true)} className="mt-auto flex min-h-[44px] w-full items-center gap-2 rounded-2xl bg-card px-3 text-start text-small font-semibold" data-propose-row>
+          <span aria-hidden className="h-show text-lead">+</span>
+          {t('play.l5.fair.proposeRow')}
+        </button>
+      )}
+      {after && cur && open && (
         <section className="mt-auto pt-3" aria-label={t('play.l5.lobby.title')}>
           <p className="text-small font-bold">{proposing ? t('play.l5.lobby.propose', { rules: rules(prop) }) : t('play.l5.lobby.keepNow', { rules: rules(cur) })}</p>
           {note && <p className="text-small font-bold">{note}</p>}
@@ -209,14 +217,15 @@ export function AmendScreen({ v }: { v: ViewState }) {
       footer={<BigButton disabled={x === null} onClick={() => act(call ? { vote: x, call } : x)}>{t('play.l5.amend.submit')}</BigButton>}
     >
       <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l5.amend.label', { k: k + 1, n: lv.order.length, name: shortName(v, proposer) })}</p>
-      <h1 className="h-show mt-1 text-title leading-tight">{rules(prop)}</h1>
-      <p className="mt-1 text-small">{t('play.l5.amend.now', { rules: rules(lv.current!), n: lv.need })}</p>
-      {(() => {
-        const prev = lv.amendments.filter((a) => a.passed).slice(-1)[0];
-        return prev ? <p className="mt-1 text-small font-semibold">{t('play.l5.amend.passedBefore', { name: shortName(v, prev.proposer) })}</p> : null;
-      })()}
+      <h1 className="h-show mt-1 text-title leading-tight">{t('play.l5.amend.ask', { rules: rules(prop) })}</h1>
+      <p className="mt-1 text-small">
+        {t('play.l5.amend.now', { rules: rules(lv.current!), n: lv.need })}
+        {(() => {
+          const prev = lv.amendments.filter((a) => a.passed).slice(-1)[0];
+          return prev ? ` ${prev.proposer === v.viewer ? t('play.l5.amend.passedBeforeYou') : t('play.l5.amend.passedBefore', { name: shortName(v, prev.proposer) })}` : '';
+        })()}
+      </p>
       {got > 0 && <p className="mt-1 text-small font-bold">{t('play.l5.amend.got', { n: got, name: shortName(v, proposer) })}</p>}
-      <p className="mt-2 text-small">{t('play.l5.amend.claims', { list: v.players.map((p) => `${shortName(v, p.id)} ${t(`play.l5.said.${lv.claims?.[p.id]?.[proposer] ?? 'SILENT'}`)}`).join(', ') })}</p>
       <CallChips v={v} claimants={callable} value={call} onPick={setCall} />
       <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
         {[true, false].map((o) => (

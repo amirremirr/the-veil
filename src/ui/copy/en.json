@@ -1175,8 +1175,8 @@
       "mandatory": "Cover is mandatory now. Everyone pays {T} coins, roughly. It covers {c}% of a loss.",
       "noInsurer": "SafeHands has left the building. No cover this round.",
       "submit": "Lock it in",
-      "regimeTitle": "The big vote",
-      "regimeDecide": "Round 4 runs under the rule with the most votes.",
+      "regimeTitle": "Which rule for round 4?",
+      "regimeDecide": "The rule with the most votes wins.",
       "regimes": {
         "VOL": {
           "name": "Keep the market",
@@ -1237,8 +1237,8 @@
     },
     "confessional": "Confessional",
     "guess": {
-      "title": "Guess a mission",
-      "intro": "Pick one contestant and guess their mission. Right is worth {pts} points.",
+      "title": "Whose mission can you guess?",
+      "intro": "Right is worth {pts} points.",
       "pick": "Who?",
       "mission": "Their mission",
       "submit": "Lock in my guess",
@@ -1345,7 +1345,7 @@
     },
     "intro": {
       "go": "Roll the cameras",
-      "rules": "How it works"
+      "rules": "How this episode works"
     },
     "settings": {
       "ruleset": "Default way to play",
@@ -1368,7 +1368,7 @@
       "noCoverTitle": "No cover",
       "noCoverDesc": "SafeHands left town.",
       "mandateTitle": "Mandatory plan",
-      "mandateDesc": "Everyone pays about {T}. It covers {c}% of a loss.",
+      "mandateDesc": "Everyone pays about {T}; it covers {c}% of a hit.",
       "lock": "Lock in",
       "reply": "Reply",
       "tap": "Tap to continue",
@@ -1429,7 +1429,11 @@
       "headLaunch": "Everyone was in, so the new price is the whole table's average risk.",
       "subLaunch": "From now on, buying cover is your choice.",
       "debtCost": "In debt: -{n} points",
-      "skip": "Skip"
+      "skip": "Skip",
+      "noBuyTitle": "No cover",
+      "noBuyDesc": "Keep your {p} coins.",
+      "noGymTitle": "No gym",
+      "noGymDesc": "Keep your coins."
     },
     "claims": {
       "RISK": {
@@ -1438,8 +1442,8 @@
       }
     },
     "claim": {
-      "title": "Your claim",
-      "why": "What you say moves what everyone believes about you, and cover members vote on who to bar.",
+      "title": "What do you tell the table?",
+      "why": "Pool members vote on who to bar.",
       "you": {
         "LOW": "Your risk: low, {p}. {worry}.",
         "HIGH": "Your risk: high, {p}. {worry}."
@@ -1479,7 +1483,17 @@
       "pollLabel": "Audience on {name}: {p} think high risk",
       "barPick": "You vote to bar {name}.",
       "preview": "Mission {n}",
-      "pollTitle": "What the audience thinks"
+      "pollTitle": "What the audience thinks",
+      "coverAsk": "Buy cover this round?",
+      "gymAsk": "Hit the gym this round?",
+      "barAsk": "Keep someone out of the pool?",
+      "barHow": "Faces show the audience's read. Most of the other members bars someone.",
+      "barNobody": "Nobody",
+      "barNext": "Next",
+      "gymRow": "Gym (optional): {c} coins, halves your risk",
+      "gymOn": "Gym: yes, {c} coins. Your risk drops to {p}.",
+      "riskLine": "Your risk this round: {p}.",
+      "readLegend": "Faces show the audience's read."
     },
     "barBeat": {
       "label": "The Bar",
@@ -1586,7 +1600,7 @@
     },
     "gift": {
       "title": "Give",
-      "desc": "Optional: up to {max} coins to someone",
+      "desc": "optional, up to {max} coins",
       "picked": "{n} to {name}",
       "sheet": "Give coins",
       "how": "Gifts are public and land after the wheel.",
@@ -1597,7 +1611,8 @@
       "none": "No gift",
       "gave": "{from} gave {to} {n}.",
       "gaveYou": "{from} gave you {n}.",
-      "youGave": "You gave {to} {n}."
+      "youGave": "You gave {to} {n}.",
+      "row": "Give coins (optional)"
     },
     "about": {
       "deal": "Quick and fun, Episode 3: every risk card and worry card is dealt 50/50, and nobody is told the mix. One hidden rule: at a table of 3 or 4, the risk cards are dealt again until at least one player is high risk and one is low risk. With everyone the same, there is nobody to screen out, so the episode has nothing to show. A table of 2 is never dealt again.",
@@ -1623,15 +1638,15 @@
       "policyIn": "The policy is in",
       "judgeIs": "HireBot this round: {name}",
       "train": {
-        "title": "Train?",
+        "title": "Train this round?",
         "belief": "HireBot believes {p} of {group}s trained.",
         "beliefBlind": "Blind hiring: HireBot believes {p} of everyone trained.",
         "how": "Trained workers pass the test 80% of the time; others 30%.",
         "tile": "Train",
-        "cost": "Costs you {c} coins this round.",
-        "costCut": "Costs you {c} this round (was {was}).",
+        "cost": "Pay {c}. Pass the test {p}.",
+        "costCut": "Pay {c} (was {was}). Pass the test {p}.",
         "skip": "Don't train",
-        "skipDesc": "Keep the coins."
+        "skipDesc": "Keep the coins. Pass the test {p}."
       },
       "claim": {
         "youT": "Your secret: you trained.",
@@ -1653,13 +1668,15 @@
         "says": "claims training",
         "quiet": "silent",
         "of": "Worker {k} of {n}",
-        "payShort": "Complex job: +{g} for you if they trained, -{l} if not.",
-        "passedTest": "Passed the test",
-        "failedTest": "Failed the test",
-        "meterShort": "HireBot meter: {p}",
-        "line": "Hire from {p}",
+        "payShort": "Complex: +{g} if they trained, -{l} if not.",
+        "passedTest": "Passed",
+        "failedTest": "Failed",
+        "meterShort": "Meter {p}",
+        "line": "line {p}",
         "jobFor": "Job for {name}",
-        "picks": "Your picks"
+        "picks": "Your picks",
+        "ask": "HireBot: which job for {name}?",
+        "label": "HireBot · worker {k} of {n}"
       },
       "pass": "Pass",
       "fail": "Fail",
@@ -1670,8 +1687,8 @@
       "simple": "Simple",
       "quota": "Quota hire",
       "policy": {
-        "title": "Change HireBot?",
-        "how": "Rounds 3 and 4 run under the policy with the most votes.",
+        "title": "Which rule for HireBot?",
+        "how": "Rounds 3 and 4 use the rule with the most votes.",
         "submit": "Cast my vote",
         "short": {
           "A": "Judge by group, as now.",
@@ -1738,7 +1755,7 @@
         },
         "P2": {
           "name": "Safety Net",
-          "desc": "Everyone gets at least 40."
+          "desc": "A floor of 40 for all."
         },
         "P3": {
           "name": "Middle Way",
@@ -1758,9 +1775,9 @@
         "list": "Rules: Free Market (no tax), Safety Net (everyone gets at least 40), Middle Way (gap at most 100), Help the Poorest."
       },
       "peek": {
-        "title": "Peek?",
-        "how": "New incomes are dealt this round. Pay {c} coins to see yours before you vote.",
-        "public": "Everyone will see that you peeked. Not what you saw.",
+        "title": "Peek at your income?",
+        "how": "New incomes this round. See yours first for {c} coins.",
+        "public": "Everyone sees that you peeked, not what you saw.",
         "yes": "Peek",
         "yesDesc": "Costs {c} coins.",
         "no": "Stay blind",
@@ -1772,7 +1789,7 @@
       "peekers": "Peeked: {names}.",
       "claimOpt": "I'm voting {rule}",
       "vote": {
-        "title": "Vote",
+        "title": "Which rule do you vote for?",
         "submit": "Vote"
       },
       "votes": {
@@ -1820,18 +1837,22 @@
         "secret": "Your talent, hours and die are secret. Everyone sees your total income."
       },
       "tax": {
-        "title": "Tax for the episode",
-        "how": "The middle vote wins (with four votes, the lower middle one). Tax is shared equally; some leaks.",
+        "title": "What tax do you vote for?",
+        "how": "The middle vote wins. Tax is shared equally; some leaks.",
         "none": "No tax",
         "shared": "Shared out",
         "submit": "Vote"
       },
       "effort": {
         "tax": "Tax {t}",
-        "title": "Work {e} hours",
+        "title": "{e} hours",
         "aria": "Hours of effort",
-        "money": "Your money with average luck: {w}.",
-        "claim": "Tell the table you worked:"
+        "money": "With average luck you make {w}.",
+        "claim": "Tell the table you worked:",
+        "ask": "How hard do you work?",
+        "next": "Next",
+        "claimHow": "Everyone sees your income, never your hours.",
+        "youWorked": "You worked {e} hours."
       },
       "inc": {
         "label": "Round {r} incomes",
@@ -1842,9 +1863,10 @@
         "how": "20 base + {h}h x {per} = {w} more, then your die {d}."
       },
       "prize": {
-        "title": "Hustle Prize: {n} coins",
-        "how": "Vote for who worked hardest. Not yourself.",
-        "submit": "Vote"
+        "title": "Who worked hardest?",
+        "how": "They win the {n}-coin Hustle Prize. Not you.",
+        "submit": "Vote",
+        "earned": "made {y}"
       },
       "won": {
         "net": "You made {y}. After the {t} tax, the equal share and the cost of your hours: {k}.",
@@ -1893,10 +1915,10 @@
         "life": "This time your incomes are your banks. Everyone can see them."
       },
       "veil": {
-        "title": "Rules behind the veil",
+        "title": "Which rules do you write?",
         "how": "You don't know your income yet.",
         "submit": "Submit",
-        "howLife": "You know your bank. So does everyone. Write fair rules anyway?"
+        "howLife": "Everyone can see every bank."
       },
       "fair": {
         "title": "What tax is fair?",
@@ -1905,7 +1927,8 @@
         "submit": "Answer",
         "beforeLife": "Unpaid. Just your opinion, before the rules land.",
         "born": "Unpaid. Before you're born. You'll be asked again at the finale.",
-        "label": "Fair tax (unpaid, your opinion):"
+        "label": "Fair tax (unpaid, your opinion):",
+        "proposeRow": "Propose a change (optional)"
       },
       "inc": {
         "label": "The incomes, poorest first",
@@ -1917,27 +1940,29 @@
         "now": "Now: {rules}",
         "propose": "Propose: {rules}",
         "keep": "Keep the rules",
-        "donate": "Secret donation to",
-        "donatePublic": "Donation to (public this time)",
+        "donate": "Pay someone to back your change?",
+        "donatePublic": "Pay someone to back your change?",
         "nobody": "Nobody",
         "amount": "Amount",
         "title": "Your amendment",
         "keepNow": "Propose a change? Now: {rules}",
         "yours": "Your amendment: {rules}",
-        "how": "Their claims on your amendment are shown. Money goes in secret.",
-        "howLeaked": "Their claims on your amendment are shown. Leaked Receipts: every donation is public this time."
+        "how": "Their claims are shown. Money goes in secret.",
+        "howLeaked": "Their claims are shown. Leaked Receipts: payments are public this time."
       },
       "claim": {
         "title": "How will you vote on each change?",
         "how": "Tap Yes or No to claim it. Leave both off to say nothing."
       },
       "amend": {
-        "label": "Amendment {k} of {n}, from {name}",
+        "label": "Change {k} of {n}, from {name}",
         "now": "Now: {rules}. Needs {n} yes votes.",
-        "passedBefore": "{name}'s amendment just passed, so these are the rules now.",
+        "passedBefore": "{name}'s change just passed.",
         "got": "{name} secretly gave you {n} coins.",
         "submit": "Vote",
-        "claims": "What they claimed: {list}"
+        "claims": "What they claimed: {list}",
+        "ask": "Vote yes on {rules}?",
+        "passedBeforeYou": "Your change just passed."
       },
       "peak": {
         "label": "The ballots",
@@ -1977,7 +2002,8 @@
       "points": "Take {p} points",
       "rate": "Your score counts half your bank, so {c} coins are worth {half} points, plus whatever they do for your mission.",
       "otherCoins": "{name} was last on score and took the Second Chance: +{c} coins.",
-      "otherPoints": "{name} was last on score and took the Second Chance: +{p} points."
+      "otherPoints": "{name} was last on score and took the Second Chance: +{p} points.",
+      "ask": "Coins or mission points?"
     },
     "receipts": {
       "label": "The Receipts",
@@ -2277,7 +2303,7 @@
       "cancel": "Cancel",
       "callIt": "Call it",
       "callItN": "Call it, {n}",
-      "callHint": "Think it is a lie? Tap the bubble to call it ({n}).",
+      "callHint": "Tap a bubble to call a lie ({n}).",
       "callingLine": "You're calling {name} for {n}. Tap the bubble to cancel.",
       "claim": {
         "vote": "I'm voting {rule}",
@@ -2308,7 +2334,7 @@
         "more": "And {n} more.",
         "tallyOne": "1 lie"
       },
-      "youDontDeck": "Income: unknown. One of {a}, {b}, {c} or {d}.",
+      "youDontDeck": "Your income: {a}, {b}, {c} or {d}.",
       "hire": {
         "GOOD": "GOOD HIRE",
         "BAD": "BAD HIRE"
@@ -2322,7 +2348,7 @@
       "details": "Details",
       "barred": "BARRED",
       "votedBar": "Bars {name}",
-      "launchShort": "Everyone is in: {p} coins.",
+      "launchShort": "SafeHands signed everyone up: {p} coins.",
       "spinning": "The wheel is turning...",
       "silent": "Silent",
       "voted": "Voted",
@@ -2343,9 +2369,49 @@
     },
     "coach": {
       "ok": "Got it",
-      "claim": "Tell the table something about yourself. Lying is allowed: the truth comes out at the end.",
-      "move": "Your move. Pick your tiles, then lock in. The others see what you do, not what you know.",
-      "call": "Think a bubble is a lie? Tap it to call it. Right wins you {win}; wrong gives them your {n}."
+      "claim": "Lying is allowed. The truth comes out at the end.",
+      "move": "Others see your moves, not your cards.",
+      "call": "Tap a bubble to call a lie: right +{win}, wrong -{n}."
+    },
+    "howto": {
+      "complex": "Complex",
+      "simple": "Simple",
+      "L1": [
+        "Vote on a rule for sharing money before you know your income.",
+        "Incomes are dealt after the vote. Living costs {c} a round.",
+        "In round 2 you can pay to peek first. Everyone sees who peeked."
+      ],
+      "L2": [
+        "Pick your hours. Income is talent times hours, plus luck.",
+        "Everyone sees your income, never your hours.",
+        "Each round the table gives a {n}-coin prize to the hardest worker."
+      ],
+      "L3": [
+        "Each round the wheel can hit you for {loss} coins.",
+        "Cover pays for a hit. Its price follows who buys it.",
+        "Pool members can bar people they think are risky."
+      ],
+      "L4": [
+        "Train or not, in secret. Then everyone takes a test.",
+        "Each round one of you is HireBot and hands out the jobs.",
+        "HireBot's meter only knows the test and last year's beliefs."
+      ],
+      "L5": [
+        "Write the rules for sharing before you know your income.",
+        "Then anyone can propose a change and secretly pay for votes.",
+        "The middle vote wins."
+      ],
+      "L5life": [
+        "Everyone can see every bank. Write the rules for sharing them.",
+        "Then anyone can propose a change and secretly pay for votes.",
+        "The finale counts most: missions weigh {m} times more."
+      ],
+      "new": {
+        "claim": "New: say things about yourself. Lies allowed.",
+        "call": "New: call out a lie by tapping its bubble.",
+        "give": "New: give coins to someone."
+      },
+      "menu": "How this episode works"
     }
   }
 }

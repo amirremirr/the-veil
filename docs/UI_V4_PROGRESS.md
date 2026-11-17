@@ -7,8 +7,11 @@ Gate per phase: rules hash check, typecheck, build, unit tests (golden included)
 | Phase | Status | Rules hash | Gate | Notes |
 |---|---|---|---|---|
 | V1 no pop-ups | DONE | b1b485fa65cf3b29 (unchanged) | typecheck, build, 219 unit, 17 e2e (2 new no-overlay checks), life walkthrough 375 and 360, Ep3 Hard, axe 0 violations (64 screens): all pass | D-205. 9 kinds of overlay removed (3 coach marks, call confirm, Give sheet, money ledger, really sheet, score words sheet, opening card); 0 left besides the menu. Hints are lines in the screen, calls confirm inside the bubble, Give opens in place, panels replace the content area, Dash speaks from one slot under the cast. JS 264.0 KB gzipped. |
+| V2 simpler game | DONE | b1b485fa65cf3b29 (unchanged) | typecheck, build, 219 unit, 17 e2e (life checks verb unlocks and every episode's card), life walkthrough 375, 360 and with hints, Ep3 Hard, single episodes 1 to 5 with hints, axe 0 violations (66 screens): all pass | D-206. Verbs unlock in a life (Ep1 vote and peek, claims Ep2, Call it Ep3, Give Ep4); one question per decision screen (Ep3 bar vote and Ep2 claim on their own screens, gym and Give as optional rows, event card its own beat); decision screens max 65 to 44 words, mean 44.1 to 29.0, over 45: 22 to 0; "How this episode works" card with a picture, also in the menu. Taps 71 to 69, pace 9.6 min. JS 266.3 KB gzipped. |
 
 ## Needs Amir
 
 - D-205: Dash's slot shows up to two short text lines (his lines run to 15 words), not one; a longer line is cut with an ellipsis.
+- D-206: hiding claims, Call it and Give in a life's early episodes changes what the human can do there (bots unchanged, so the E checks don't apply and were not re-run).
+- D-206: the episode card adds a fourth short "New:" line in a life to name the verb that unlocks.
 - D-205: the opt-in playtest survey (`?playtest=1`) stays a full-screen form; it is a research tool, not part of play.

@@ -12,11 +12,12 @@ import { nameOf, shortName, useView } from '../game';
 import { FlipCard, useMotionOff } from '../components/common';
 import { LockedInPanel, useOnline, useWaiting } from '../components/Online';
 import { screenDecisionPhase } from '../../shared/flow';
-import { BannerContext, BigButton, Bubble, Face, Stage, useStagePanel } from './OnAir';
+import { AutoButton, BigButton, Bubble, Face, Stage, useStagePanel } from './OnAir';
 import { ReallyButton } from './Really';
+import { HowItWorks } from './HowItWorks';
 import { sfx } from './sound';
 import { BarBeat, CardsReveal, ClaimScreen, MoveScreen, MyCardsBeat, PriceBeat, RegimeScreen, VoteInBeat, WheelBeat, claimsOpen, hasPriceBeat, regimeName, type L3View } from './Episode3';
-import { eventText, hostLine, missionName, pick, timesWord } from './logic';
+import { eventText, hostLine, missionName, pick, timesWord, verbOn } from './logic';
 import { CardsReveal1, ClaimScreen1, IncomesBeat, PeekScreen, Unborn, VoteScreen1, VotesBeat, summary1 } from './Episode1';
 import { CardsReveal2, TaxIn, EffortScreen, IncomeScreen, MyCards2, PrizeBeat, PrizeScreen, TaxScreen, summary2 } from './Episode2';
 import { AmendReveal, AmendScreen, ClaimScreen5, FairScreen, Finale, IncomesScreen, LobbyScreen, VeilScreen, summary5 } from './Episode5';
@@ -76,16 +77,7 @@ function MissionReveal({ v }: { v: ViewState }) {
       <p className="mt-2 text-center text-small text-soft">{t('play.values.private')}</p>
       {merge && (
         <div className="mt-3" data-intro-merged>
-          <p className="text-small font-bold uppercase tracking-wider text-soft">
-            {t('play.modes.ep', { n: level })} · {t(`play.episodes.${level}.sponsor`)}{v.difficulty !== 'NORMAL' ? ` · ${t(`play.setup.badge.${v.difficulty}`)}` : ''}
-          </p>
-          <h1 className="h-show text-title leading-none text-spot">{t(`play.episodes.${level}.name`)}</h1>
-          <p className="mt-2 text-small leading-snug" data-intro>
-            {t(v.mode === 'LIFE' && level === 5 ? 'play.episodes.5.introLife' : `play.episodes.${level}.intro`, { loss: v.play!.l3?.loss ?? 0 })}
-          </p>
-          <div className="mt-2">
-            <Bubble who="Dash" host mood="excited" text={hostLine('welcome', (pick({ ...v, levelIndex: 1, round: 0 }, 'welcome', 6) + level) % 6)} />
-          </div>
+          <HowItWorks v={v} compact />
         </div>
       )}
     </Stage>
@@ -94,7 +86,6 @@ function MissionReveal({ v }: { v: ViewState }) {
 
 function EpisodeIntro({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
-  const n = v.play!.l3;
   const merged = introMerged.has(introKey(v, v.levelIndex));
   // UI V3 (U2): the episode fanfare; (U3) an intro already shown with the mission moves straight on.
   useEffect(() => {
@@ -108,37 +99,27 @@ function EpisodeIntro({ v }: { v: ViewState }) {
   if (merged) return null;
   return (
     <Stage v={v} footer={<BigButton onClick={() => act()}>{t('play.intro.go')}</BigButton>}>
-      <p className="text-small font-bold uppercase tracking-wider text-soft">
-        {t('play.modes.ep', { n: v.levelIndex })} · {t(`play.episodes.${v.levelIndex}.sponsor`)}{v.difficulty !== 'NORMAL' ? ` · ${t(`play.setup.badge.${v.difficulty}`)}` : ''}
-      </p>
-      <h1 className="h-show mt-1 text-hero leading-none text-spot">{t(`play.episodes.${v.levelIndex}.name`)}</h1>
-      <p className="mt-3 text-body leading-snug" data-intro>
-        {t(v.mode === 'LIFE' && v.levelIndex === 5 ? 'play.episodes.5.introLife' : `play.episodes.${v.levelIndex}.intro`, { loss: n?.loss ?? 0, m: PLAY.LIFE_MISSION_EP_MULT[5] ?? 1 })}
-      </p>
-      <div className="mt-auto pt-4">
-        <Bubble who="Dash" host mood="excited" text={hostLine('welcome', (pick({ ...v, levelIndex: 1, round: 0 }, 'welcome', 6) + v.levelIndex) % 6)} />
-      </div>
+      {/* UI V4 (V2): "How this episode works", the episode's one rules card. */}
+      <HowItWorks v={v} />
+      <Bubble who="Dash" host mood="excited" text={hostLine('welcome', (pick({ ...v, levelIndex: 1, round: 0 }, 'welcome', 6) + v.levelIndex) % 6)} />
     </Stage>
   );
 }
 
-/** UI V3 (U3): the event card as a banner on the round's first screen; it opens to the joke and Dash's line. */
-function EventBanner({ v }: { v: ViewState }) {
+/** UI V4 (V2): the round's event card as its own beat before the round's first decision. */
+function EventBeat({ v, next }: { v: ViewState; next: () => void }) {
   const ev = v.play!.event!;
   const txt = eventText(v.levelIndex, ev.id, v.mode === 'LIFE');
   return (
-    <details className="mb-2 rounded-2xl border-2 border-spot bg-card px-3 py-1.5" data-event={ev.id} data-event-banner>
-      <summary className="flex min-h-[44px] cursor-pointer list-none items-center gap-2">
-        <span className="rounded-full bg-spot px-2 text-small font-bold uppercase text-onspot">{t('play.stage.eventLabel')}</span>
-        <span className="flex-1 text-small font-semibold leading-snug">
-          <span className="h-show text-body text-spot">{txt.name}.</span> {txt.effect}
-        </span>
-      </summary>
-      <p className="mt-1 text-small italic text-soft">{txt.text}</p>
-      <div className="mt-1 pb-1">
-        <Bubble who="Dash" host inline mood="excited" text={hostLine('eventIntro', pick(v, 'eventIntro', 6), { event: txt.name })} />
+    <Stage v={v} onTap={next} footer={<AutoButton onClick={next}>{t('play.stage.tap')}</AutoButton>}>
+      <div className="my-auto" data-event={ev.id}>
+        <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.stage.eventLabel')}</p>
+        <h1 className="h-show mt-1 text-hero leading-tight text-spot">{txt.name}</h1>
+        <p className="mt-3 text-body font-semibold">{txt.effect}</p>
+        <p className="mt-2 text-small italic text-soft">{txt.text}</p>
+        <Bubble who="Dash" host mood="excited" text={hostLine('eventIntro', pick(v, 'eventIntro', 6), { event: txt.name })} />
       </div>
-    </details>
+    </Stage>
   );
 }
 
@@ -164,13 +145,15 @@ function DecisionFlow({ v }: { v: ViewState }) {
     if (ev && ev.id !== 'QUIET' && ev.round === v.round && ev.level === v.levelIndex) evBanner = true;
   }
   const [k, setK] = useState(0);
-  const wrap = (x: JSX.Element) => (evBanner ? <BannerContext.Provider value={<EventBanner v={v} />}>{x}</BannerContext.Provider> : x);
+  const wrap = (x: JSX.Element) => x;
   const next = () => setK((x) => x + 1);
   if (k < beats.length) {
     const b = beats[k];
     if (b === 'cards') return <MyCardsBeat v={v} next={next} />;
     return <VoteInBeat v={v} next={next} />;
   }
+  // UI V4 (V2): the event card is its own beat, so the decision screen keeps its words for the question.
+  if (evBanner && k === beats.length) return <EventBeat v={v} next={next} />;
   if (online && done)
     return (
       <Stage v={v}>
@@ -180,6 +163,20 @@ function DecisionFlow({ v }: { v: ViewState }) {
   if (stepId === 'REGIME') return wrap(<RegimeScreen v={dv} />);
   if (stepId === 'CLAIM') return wrap(<ClaimScreen v={dv} />);
   return wrap(<MoveScreen v={dv} />);
+}
+
+/** UI V4 (V2): a screen whose decision is hidden in a life acts at once (the human's default) and shows nothing. */
+function AutoAct({ v, value }: { v: ViewState; value: unknown }) {
+  const act = useStore((s) => s.act);
+  useEffect(() => {
+    // Once per engine screen: React's strict mode runs effects twice in development, and the second run
+    // finds the game already moved on.
+    const g = useStore.getState().game;
+    if (!g || g.phaseIdx !== v.phaseIdx || g.levelIndex !== v.levelIndex) return;
+    act(value);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return null;
 }
 
 /** Episode 1's beats and decision screens (D-152). */
@@ -194,11 +191,13 @@ function DecisionFlow1({ v }: { v: ViewState }) {
   if (firstScreen && v.round === 1) beats.push('cards');
   if (firstScreen && ev && ev.id !== 'QUIET' && ev.round === v.round && ev.level === v.levelIndex) evBanner = true;
   const [k, setK] = useState(0);
-  const wrap = (x: JSX.Element) => (evBanner ? <BannerContext.Provider value={<EventBanner v={v} />}>{x}</BannerContext.Provider> : x);
+  const wrap = (x: JSX.Element) => x;
   const next = () => setK((x) => x + 1);
   if (k < beats.length) {
     return <Unborn v={v} next={next} />;
   }
+  // UI V4 (V2): the event card is its own beat, so the decision screen keeps its words for the question.
+  if (evBanner && k === beats.length) return <EventBeat v={v} next={next} />;
   if (online && done)
     return (
       <Stage v={v}>
@@ -207,7 +206,8 @@ function DecisionFlow1({ v }: { v: ViewState }) {
     );
   if (stepId === 'PEEK') return wrap(<PeekScreen v={v} />);
   if (stepId === 'FAIR_1') return wrap(<FairScreen v={v} />);
-  if (stepId === 'CLAIM') return wrap(<ClaimScreen1 v={v} />);
+  // UI V4 (V2): in a life, claims unlock in Episode 2, so Episode 1's claim says nothing for you.
+  if (stepId === 'CLAIM') return verbOn(v, 'claim') || online ? wrap(<ClaimScreen1 v={v} />) : <AutoAct v={v} value="SILENT" />;
   return wrap(<VoteScreen1 v={v} />);
 }
 
@@ -231,9 +231,11 @@ function DecisionFlow2({ v }: { v: ViewState }) {
   if (stepId === 'EFFORT' && v.round === 1) beats.push('tax');
   if (firstScreen && ev && ev.id !== 'QUIET' && ev.round === v.round && ev.level === v.levelIndex) evBanner = true;
   const [k, setK] = useState(0);
-  const wrap = (x: JSX.Element) => (evBanner ? <BannerContext.Provider value={<EventBanner v={v} />}>{x}</BannerContext.Provider> : x);
+  const wrap = (x: JSX.Element) => x;
   const next = () => setK((x) => x + 1);
   if (k < beats.length) return beats[k] === 'cards' ? <MyCards2 v={v} next={next} /> : <TaxIn v={v} next={next} />;
+  // UI V4 (V2): the event card is its own beat, so the decision screen keeps its words for the question.
+  if (evBanner && k === beats.length) return <EventBeat v={v} next={next} />;
   if (online && done)
     return (
       <Stage v={v}>
@@ -256,9 +258,11 @@ function DecisionFlow5({ v }: { v: ViewState }) {
   if (stepId === 'VEIL') beats.push('cards');
   if (stepId === 'VEIL' && ev && ev.id !== 'QUIET' && ev.level === v.levelIndex) evBanner = true;
   const [k, setK] = useState(0);
-  const wrap = (x: JSX.Element) => (evBanner ? <BannerContext.Provider value={<EventBanner v={v} />}>{x}</BannerContext.Provider> : x);
+  const wrap = (x: JSX.Element) => x;
   const next = () => setK((x) => x + 1);
   if (k < beats.length) return <Finale v={v} next={next} />;
+  // UI V4 (V2): the event card is its own beat, so the decision screen keeps its words for the question.
+  if (evBanner && k === beats.length) return <EventBeat v={v} next={next} />;
   if (online && done)
     return (
       <Stage v={v}>
@@ -277,8 +281,8 @@ function ComebackScreen({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
   return (
     <Stage v={v} footer={null}>
-      <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.comeback.label')}</p>
-      <h1 className="h-show mt-1 text-hero leading-tight text-spot">{t('play.comeback.title')}</h1>
+      <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.comeback.label')} · {t('play.comeback.title')}</p>
+      <h1 className="h-show mt-1 text-hero leading-tight text-spot">{t('play.comeback.ask')}</h1>
       <p className="mt-2 text-body">{t('play.comeback.how', { c: PLAY.COMEBACK.COINS, p: PLAY.COMEBACK.POINTS })}</p>
       <p className="mt-2 text-small">{t('play.comeback.rate', { c: PLAY.COMEBACK.COINS, half: PLAY.COMEBACK.COINS * PLAY.BANK_WEIGHT })}</p>
       <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
@@ -303,13 +307,15 @@ function DecisionFlow4({ v }: { v: ViewState }) {
   if (isFirstScreen && v.round === PLAY.L4.BASELINE_ROUNDS + 1 && lv.policyVotes) beats.push('vote');
   if (isFirstScreen && ev && ev.id !== 'QUIET' && ev.round === v.round && ev.level === v.levelIndex) evBanner = true;
   const [k, setK] = useState(0);
-  const wrap = (x: JSX.Element) => (evBanner ? <BannerContext.Provider value={<EventBanner v={v} />}>{x}</BannerContext.Provider> : x);
+  const wrap = (x: JSX.Element) => x;
   const next = () => setK((x) => x + 1);
   if (k < beats.length) {
     const b = beats[k];
     if (b === 'cards') return <MyCards4 v={v} next={next} />;
     return <PolicyIn v={v} next={next} />;
   }
+  // UI V4 (V2): the event card is its own beat, so the decision screen keeps its words for the question.
+  if (evBanner && k === beats.length) return <EventBeat v={v} next={next} />;
   if (online && done)
     return (
       <Stage v={v}>
@@ -376,12 +382,13 @@ function EpisodeGuess({ v }: { v: ViewState }) {
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2" role="group" aria-label={t('play.guess.mission')}>
         {VALUES_CARDS.map((c) => (
-          <button key={c} type="button" aria-pressed={card === c} onClick={() => setCard(c)} className={`min-h-[64px] rounded-2xl p-2 text-start ${card === c ? 'bg-spot text-onspot' : 'bg-card'}`}>
+          <button key={c} type="button" aria-pressed={card === c} onClick={() => setCard(c)} className={`min-h-[56px] rounded-2xl p-2 text-start ${card === c ? 'bg-spot text-onspot' : 'bg-card'}`}>
             <span className="h-show text-lead leading-tight">{missionName(c)}</span>
-            <span className="block text-small">{t(`play.guess.tell.${c}`)}</span>
           </button>
         ))}
       </div>
+      {/* UI V4 (V2): the tell for the picked mission only, so the screen stays short. */}
+      {card && <p className="mt-2 text-small" data-tell>{t(`play.guess.tell.${card}`)}</p>}
     </Stage>
   );
 }

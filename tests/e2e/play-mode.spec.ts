@@ -49,7 +49,7 @@ test.beforeEach(async ({ page }) => {
 
 /** Taps through an episode from the first decision to the summary; returns what it saw. */
 async function playThrough(page: Page, o: { gift?: boolean; noPoll?: boolean } = {}) {
-  const seen = { wheels: 0, prices: 0, claims: 0, cards: 0, mycards: 0, gifts: 0, giftLines: 0 };
+  const seen: Record<string, number> = { wheels: 0, prices: 0, claims: 0, cards: 0, mycards: 0, gifts: 0, giftLines: 0 };
   for (let i = 0; i < 50; i++) {
     await page.waitForTimeout(50);
     await fits(page);
@@ -72,6 +72,11 @@ async function playThrough(page: Page, o: { gift?: boolean; noPoll?: boolean } =
       await expect(page.getByText(/of you (are|is) high risk/)).toHaveCount(0);
       await page.getByRole('button', { name: /low risk/ }).click();
       await page.getByRole('button', { name: 'Say it' }).click();
+    } else if (await page.getByRole('heading', { name: 'Keep someone out of the pool?' }).count()) {
+      // UI V4 (V2): a pool member's bar vote is its own screen, before the cover question.
+      seen.bars = (seen.bars ?? 0) + 1;
+      await page.getByRole('button', { name: 'Nobody', exact: true }).click();
+      await page.getByRole('button', { name: 'Next', exact: true }).click();
     } else if (await page.locator('[data-cards]').count()) {
       seen.cards++;
       await page.getByRole('button', { name: 'Tap to continue' }).click();
@@ -98,7 +103,7 @@ async function playThrough(page: Page, o: { gift?: boolean; noPoll?: boolean } =
     } else if (await page.locator('[data-outcome]').count()) {
       seen.wheels++;
       await page.getByRole('button', { name: 'Tap to continue' }).click();
-    } else if (await page.getByRole('heading', { name: 'Guess a mission' }).count()) {
+    } else if (await page.getByRole('heading', { name: 'Whose mission can you guess?' }).count()) {
       await page.getByRole('group', { name: 'Who?' }).getByRole('button').first().click();
       await page.getByRole('button', { name: 'Get rich' }).click();
       await page.getByRole('button', { name: 'Lock in my guess' }).click();

@@ -102,13 +102,12 @@ export function TrainScreen({ v }: { v: ViewState }) {
   return (
     <Stage v={v} footer={<BigButton onClick={() => act({ train, gift })}>{t('play.stage.lock')}</BigButton>}>
       <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l4.judgeIs', { name: shortName(v, lv.judge) })}</p>
-      <h1 className="h-show mt-1 text-hero leading-tight">{t('play.l4.train.title')}</h1>
+      <h1 className="h-show mt-1 text-title leading-tight">{t('play.l4.train.title')}</h1>
       <Coach id="move" />
-      <p className="mt-2 text-body">{t(lv.policy === 'B' ? 'play.l4.train.beliefBlind' : 'play.l4.train.belief', { group: groupName(g), p: pct(prior) })}</p>
-      <p className="mt-2 text-small">{t('play.l4.train.how')}</p>
+      <p className="mt-1 text-small">{t(lv.policy === 'B' ? 'play.l4.train.beliefBlind' : 'play.l4.train.belief', { group: groupName(g), p: pct(prior) })}</p>
       <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
-        <Tile on={train} title={t('play.l4.train.tile')} desc={lv.myCostBase !== undefined && lv.myCostBase !== lv.myCost ? t('play.l4.train.costCut', { c: lv.myCost ?? 0, was: lv.myCostBase }) : t('play.l4.train.cost', { c: lv.myCost ?? 0 })} note={previewText(lv.preview?.train)} onClick={() => setTrain(true)} />
-        <Tile on={!train} title={t('play.l4.train.skip')} desc={t('play.l4.train.skipDesc')} onClick={() => setTrain(false)} />
+        <Tile on={train} title={t('play.l4.train.tile')} desc={lv.myCostBase !== undefined && lv.myCostBase !== lv.myCost ? t('play.l4.train.costCut', { c: lv.myCost ?? 0, was: lv.myCostBase, p: pct(L4.PASS_IF_SKILLED) }) : t('play.l4.train.cost', { c: lv.myCost ?? 0, p: pct(L4.PASS_IF_SKILLED) })} note={previewText(lv.preview?.train)} onClick={() => setTrain(true)} />
+        <Tile on={!train} title={t('play.l4.train.skip')} desc={t('play.l4.train.skipDesc', { p: pct(L4.PASS_IF_UNSKILLED) })} onClick={() => setTrain(false)} />
       </div>
       <div className="mt-2">
         <GiftTile v={v} gift={gift} setGift={setGift} />
@@ -165,10 +164,7 @@ export function JudgeScreen({ v }: { v: ViewState }) {
   const meter = lv.meterShown && c.meter ? c.meter[w] : null;
   return (
     <Stage v={v} cast={{ focus: w }} footer={<BigButton onClick={() => act({ hires, gift, call })}>{t('play.l4.judge.submit')}</BigButton>}>
-      <div className="flex items-baseline justify-between gap-2">
-        <h1 className="h-show text-title leading-tight">{t('play.l4.judge.title')}</h1>
-        <span className="text-small font-bold text-soft">{t('play.l4.judge.of', { k: Math.min(k, workers.length - 1) + 1, n: workers.length })}</span>
-      </div>
+      <h1 className="h-show text-title leading-tight">{t('play.l4.judge.ask', { name: shortName(v, w) })}</h1>
       <p className="text-small">{t('play.l4.judge.payShort', { g: PLAY.L4.JUDGE_GAIN, l: PLAY.L4.JUDGE_LOSS })}</p>
       <div
         className="mt-2 rounded-2xl bg-card p-3"
@@ -184,11 +180,10 @@ export function JudgeScreen({ v }: { v: ViewState }) {
       >
         <div className="flex items-center gap-2">
           <Face v={v} p={p} size={40} />
-          <span className="h-show flex-1 truncate text-lead">{shortName(v, w)}</span>
-          <span className="text-small font-bold">{lv.policy === 'B' ? t('play.l4.judge.hidden') : groupName(lv.groups[w])}</span>
+          <span className="flex-1 text-small font-bold">{lv.policy === 'B' ? t('play.l4.judge.hidden') : groupName(lv.groups[w])}</span>
         </div>
         <p className="mt-1 text-small">
-          {t(c.pass?.[w] ? 'play.l4.judge.passedTest' : 'play.l4.judge.failedTest')} · {t(claims[w] === 'TRAINED' ? 'play.l4.judge.says' : 'play.l4.judge.quiet')}
+          {t(c.pass?.[w] ? 'play.l4.judge.passedTest' : 'play.l4.judge.failedTest')}, {t(claims[w] === 'TRAINED' ? 'play.l4.judge.says' : 'play.l4.judge.quiet')}
         </p>
         {meter !== null && (
           <div className="mt-2" aria-label={t('play.l4.meter', { p: pct(meter) })} role="img">
@@ -211,10 +206,10 @@ export function JudgeScreen({ v }: { v: ViewState }) {
         </div>
         {note && <p className="mt-1 text-small font-bold" data-preview>{note}</p>}
       </div>
-      <div className="mt-2 flex gap-1.5" aria-label={t('play.l4.judge.picks')}>
+      <div className="mt-2 flex gap-1.5" role="group" aria-label={t('play.l4.judge.label', { k: Math.min(k, workers.length - 1) + 1, n: workers.length })}>
         {workers.map((x, i) => (
-          <button key={x} type="button" onClick={() => setK(i)} aria-current={i === k} className={`min-h-[44px] flex-1 rounded-xl px-1 text-small font-bold ${i === k ? 'border-2 border-spot' : ''} ${hires[x] === 'COMPLEX' ? 'bg-spot text-onspot' : 'bg-card'}`}>
-            {shortName(v, x)}: {t(hires[x] === 'COMPLEX' ? 'play.l4.complex' : 'play.l4.simple')}
+          <button key={x} type="button" onClick={() => setK(i)} aria-current={i === k} aria-label={`${shortName(v, x)}: ${t(hires[x] === 'COMPLEX' ? 'play.l4.complex' : 'play.l4.simple')}`} className={`min-h-[44px] flex-1 rounded-xl px-1 text-small font-bold ${i === k ? 'border-2 border-spot' : ''} ${hires[x] === 'COMPLEX' ? 'bg-spot text-onspot' : 'bg-card'}`}>
+            {shortName(v, x)}
           </button>
         ))}
       </div>

@@ -25,16 +25,27 @@ function seen(id: string): boolean {
   }
 }
 
+// UI V4 (V2): at most one hint on a screen; another waits for a later screen.
+let current: string | null = null;
+
 /** Whether this hint shows on this screen (the first time only). Marks it seen once shown. */
 export function useFirstTime(id: string, active = true): boolean {
-  const [show] = useState(() => active && enabled() && !seen(id));
+  const [show] = useState(() => {
+    const ok = active && enabled() && !seen(id) && (current === null || current === id);
+    if (ok) current = id;
+    return ok;
+  });
   useEffect(() => {
     if (!show) return;
+    current = id;
     try {
       localStorage.setItem(key(id), '1');
     } catch {
       // Storage blocked: the hint shows again next time.
     }
+    return () => {
+      if (current === id) current = null;
+    };
   }, [show, id]);
   return show;
 }

@@ -51,6 +51,7 @@ test('Daily Life starts a life on the day seed and reaches the result card', asy
   expect(g?.mode).toBe('LIFE');
   expect(g?.seed).toMatch(/^daily-\d{4}-\d{2}-\d{2}$/);
   let ledgerSeen = false;
+  const seenHowto = new Set<number>();
   for (let i = 0; i < 400; i++) {
     await page.waitForTimeout(30);
     const d = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, sh: document.documentElement.scrollHeight, ih: window.innerHeight }));
@@ -58,6 +59,19 @@ test('Daily Life starts a life on the day seed and reaches the result card', asy
     expect(d.sh).toBeLessThanOrEqual(d.ih);
     await cleanScreen(page);
     if (await page.locator('[data-result-card]').count()) break;
+    // UI V4 (V2): in a life the player's verbs unlock one at a time: claims from Episode 2, Call it from 3,
+    // Give from 4. Every episode opens with its "How this episode works" card.
+    const st = await page.evaluate(() => {
+      const x = (window as unknown as { __veil: { getState(): { game: { levelIndex: number; phase: { kind: string; step?: string } } } } }).__veil.getState().game;
+      return { level: x.levelIndex, kind: x.phase.kind, step: x.phase.step ?? '' };
+    });
+    if (st.level < 2) expect(await page.getByRole('button', { name: 'Say it' }).count()).toBe(0);
+    if (st.level < 3) expect(await page.locator('[data-call-bubble]').count()).toBe(0);
+    if (st.level < 4) expect(await page.locator('[data-gift-bar]').count()).toBe(0);
+    if (st.kind === 'INTRO' || st.kind === 'VALUES_REVEAL') {
+      seenHowto.add(st.level);
+      await expect(page.locator(`[data-howto="${st.level}"]`)).toBeVisible();
+    }
     // UI V4 (V1): no pop-ups in Play: no dialog, and nothing fixed on top that takes taps.
     expect(await page.locator('[role="dialog"], [data-call-confirm]').count()).toBe(0);
     const fixedOnTop = await page.evaluate(() =>
@@ -97,6 +111,7 @@ test('Daily Life starts a life on the day seed and reaches the result card', asy
     });
   }
   await expect(page.locator('[data-result-card]')).toBeVisible();
+  expect([...seenHowto].sort()).toEqual([1, 2, 3, 4, 5]);
   await expect(page.getByText('Just for fun. Not a diagnosis.')).toBeVisible();
   await expect(page.locator('[data-rival]')).toContainText('Rematch with the same seed?');
 });

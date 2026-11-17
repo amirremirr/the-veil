@@ -18,7 +18,7 @@ import type { CastCue } from './Cast';
 import { Chips, Details, StagedReveal, peakMark, spotlightSteps } from './Peak';
 import { Coach } from './Coach';
 import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
-import { GiftBar, Tile, previewText } from './Episode3';
+import { GiftBar, Tile, giftLines, previewText } from './Episode3';
 import { hostLine, pick, timesWord, bankLineText, ledgerRows } from './logic';
 
 type Gift = { to: string; amount: number };
@@ -45,8 +45,6 @@ export function Unborn({ v, next }: { v: ViewState; next: () => void }) {
         <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l1.unborn.label')}</p>
         <p className="h-show mt-2 text-hero leading-tight text-spot">{t('play.l1.unborn.title')}</p>
         <p className="mt-3 text-body">{t('play.l1.unborn.deck', { a: coins(lv.deck[0]), b: coins(lv.deck[1]), c: coins(lv.deck[2]), d: coins(lv.deck[3]) })}</p>
-        <p className="mt-3 text-body">{t('play.l1.unborn.rules')}</p>
-        <p className="mt-2 text-small">{t('play.l1.unborn.list')}</p>
         <p className="mt-3 text-small">{t('play.l1.unborn.living', { c: v.play!.livingCost })}</p>
       </div>
     </Stage>
@@ -107,10 +105,11 @@ export function VoteScreen1({ v }: { v: ViewState }) {
   const [call, setCall] = useState<string | null>(null);
   const pv = lv.preview;
   return (
-    <Stage v={v} footer={<BigButton disabled={!vote} onClick={() => act({ vote, gift, call })}>{t('play.l1.vote.submit')}</BigButton>}>
-      <p className="text-body font-semibold leading-snug">{knowLine(v)}</p>
+    <Stage v={v} cast={{ marks: Object.fromEntries(lv.peeked.map((id) => [id, t('play.l1.peekedTag')])) }} footer={<BigButton disabled={!vote} onClick={() => act({ vote, gift, call })}>{t('play.l1.vote.submit')}</BigButton>}>
+      <h1 className="h-show text-title leading-tight">{t('play.l1.vote.title')}</h1>
+      <p className="text-small font-semibold leading-snug">{knowLine(v)}</p>
       <Coach id="move" />
-      {lv.peeked.length > 0 && <p className="text-small">{t('play.l1.peekers', { names: lv.peeked.map((id) => shortName(v, id)).join(', ') })}</p>}
+
       <div className="mt-2 grid grid-cols-2 gap-2" role="group" aria-label={t('play.l1.vote.title')}>
         {PRINCIPLES.map((p) => (
           <Tile key={p} on={vote === p} title={ruleName(p)} desc={t(`play.l1.rule.${p}.desc`)} note={previewText(pv?.vote[p])} onClick={() => setVote(p)} />
@@ -192,6 +191,7 @@ export function IncomesBeat({ v, next, last }: { v: ViewState; next: () => void;
         {r.peeked.includes(me) && <p className="mt-2 text-small">{t('play.l1.inc.peekCost', { c: lv.peekCost })}</p>}
         {r.inheritance && <p className="mt-2 text-small">{t('play.l1.inc.inherit', { name: shortName(v, r.inheritance) })}</p>}
         {bankLineText(v) && <p className="mt-2 text-small font-semibold" data-bankline>{bankLineText(v)}<MoneyLedger v={v} /></p>}
+        {giftLines(v, r.gifts) && <p className="mt-1 text-small" data-gifts>{giftLines(v, r.gifts)}</p>}
         <CallResults v={v} />
       </div>
     </Stage>

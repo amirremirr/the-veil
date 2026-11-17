@@ -42,6 +42,8 @@ const browser = await launch();
 const page = await browser.newPage({ viewport: { width, height } });
 await page.goto(url);
 await page.evaluate(() => localStorage.clear());
+// --hints on: a first-time player's screens, with the first-time hint lines (UI V4 V1).
+if (arg('hints', '') === 'on') await page.evaluate(() => localStorage.setItem('veil.play.coach', '1'));
 await page.reload();
 await page.waitForFunction(() => '__autoplay' in window);
 // Play's opening cards (D-139): --opening fresh shows them as a first-time player would, --opening seen
@@ -106,6 +108,7 @@ function measure() {
   // bubbles) or the bottom button. Decision screens must stay at 45 or fewer.
   const content = document.querySelector('[data-content]') || document.querySelector('main [data-cast-stage]')?.parentElement?.querySelector(':scope > div.flex-1') || document.querySelector('main');
   const cwords = content ? (content.innerText || '').trim().split(/\s+/).filter(Boolean).length : 0;
+  const ctext = content ? (content.innerText || '').trim().replace(/\s+/g, ' ') : '';
   const buttons = [...document.querySelectorAll('button')].filter(isVisible).length;
   // Overlap: content is hidden if a bottom bar or floating button still covers it when the page is
   // scrolled to the bottom, or if a floating (not full-width) element covers it at first view.
@@ -157,6 +160,7 @@ function measure() {
     tall: document.documentElement.scrollHeight > window.innerHeight,
     words,
     cwords,
+    ctext,
     buttons,
     height: document.documentElement.scrollHeight,
     hscroll: document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -183,6 +187,8 @@ for (let i = 0; i < 1000; i++) {
     `${group.padEnd(4)} R${m.round} ${`${m.kind}:${m.step}${m.beat ? ` (${m.beat})` : ''}${m.auto ? ' auto' : ''}`.padEnd(32)} words=${String(m.words).padStart(4)} content=${String(m.cwords).padStart(3)} buttons=${String(m.buttons).padStart(2)} height=${String(m.height).padStart(5)}${m.hscroll ? ' HSCROLL' : ''}${ruleset === 'PLAY' && m.tall ? ' TALLER THAN VIEWPORT' : ''}`,
   );
   for (const o of m.overlaps) lines.push(`     OVERLAP: ${o}`);
+  // --text: the screen's own words (UI V4), to check the copy limits.
+  if (process.argv.includes('--text')) lines.push(`     TEXT: ${m.ctext}`);
   // Play beats inside one engine screen: tap to the next beat (presentation only, no engine step).
   if (ruleset === 'PLAY' && m.beatNext) {
     rows.push({ ...m, group, decisions: 0 });

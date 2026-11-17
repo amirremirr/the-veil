@@ -4,14 +4,15 @@ import type { Message, ViewState } from '../../engine/types';
 import { PLAY } from '../../engine/play/params';
 import { t } from '../i18n';
 import { shortName } from '../game';
-import { hostLine, pick } from './logic';
+import { hostLine, pick, verbOn } from './logic';
 import { Bubble } from './OnAir';
 import { useCallRegistration, useStageCue, type CastCue } from './Cast';
 import { useFirstTime } from './Coach';
 
 /** Other contestants with a claim this round (optionally only claims matching `filter`), callable now. */
 export function claimantsNow(v: ViewState, filter?: (value: string) => boolean): string[] {
-  if (!PLAY.CALL_ENABLED) return [];
+  // UI V4 (V2): in a life, Call it unlocks in Episode 3.
+  if (!PLAY.CALL_ENABLED || !verbOn(v, 'call')) return [];
   const out = new Set<string>();
   for (const m of v.messages as Message[]) {
     if (m.level !== v.levelIndex || m.round !== v.round || m.msg.type !== 'CLAIM' || m.from === v.viewer) continue;
@@ -30,7 +31,8 @@ export function CallChips({ v, claimants, value, onPick }: { v: ViewState; claim
   useCallRegistration({ claimants, value, onPick });
   // UI V4 (V1): the first time, the line under the bubbles is the coach hint for calling.
   const first = useFirstTime('call', claimants.length > 0);
-  if (!claimants.length) return null;
+  // After the first time, the bubbles' own "Call it?" tags are the hint; the line shows only while calling.
+  if (!claimants.length || (!value && !first)) return null;
   return (
     <p className={`mt-1 text-small ${value ? 'font-bold text-stamp' : first ? 'font-semibold text-spot' : 'text-soft'}`} data-call data-coach={first && !value ? 'call' : undefined} aria-live="polite">
       {value ? t('play.cast.callingLine', { name: shortName(v, value), n: PLAY.CALL_STAKE }) : first ? t('play.coach.call', { win: PLAY.CALL_PAYOUT, n: PLAY.CALL_STAKE }) : t('play.cast.callHint', { n: PLAY.CALL_STAKE })}

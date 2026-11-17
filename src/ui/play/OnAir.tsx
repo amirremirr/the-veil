@@ -18,6 +18,7 @@ import { ChatFeed, MessageComposer, Sheet } from '../components/TableParts';
 import { useOnline } from '../components/Online';
 import { missionName } from './logic';
 import { PlayOpening } from './Opening';
+import { HowItWorks } from './HowItWorks';
 
 const rounds = (v: ViewState) => Math.max(1, ...v.queue.map((p) => p.round));
 const stop = (e: { stopPropagation(): void }) => e.stopPropagation();
@@ -75,6 +76,15 @@ export function PlayMenu({ v, onClose, chatFirst = false }: { v: ViewState; onCl
         <MissionBar v={v} />
       </section>
       {!chatFirst && chat}
+      {/* UI V4 (V2): the episode's rules card, again, inside the menu. */}
+      {v.levelIndex >= 1 && v.levelIndex <= 5 && (
+        <details className="rounded-2xl bg-card px-3" data-howto-menu>
+          <summary className="flex min-h-[44px] cursor-pointer items-center font-semibold">{t('play.howto.menu')}</summary>
+          <div className="pb-3">
+            <HowItWorks v={v} compact />
+          </div>
+        </details>
+      )}
       {/* D-139: not in multiplayer rooms until Q4. */}
       {!online && (
         <button type="button" className="btn-ghost w-full" onClick={() => setOpening(true)}>

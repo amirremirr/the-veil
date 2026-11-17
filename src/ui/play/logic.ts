@@ -238,3 +238,19 @@ export function ledgerRows(v: ViewState): { from: number; to: number; money: Led
   }
   return { from, to, money, score, scoreFrom, scoreTo };
 }
+
+/**
+ * UI V4 (V2): in a life, the player's verbs unlock one at a time. Episode 1 is vote and peek only; claims
+ * come in Episode 2, "Call it" in Episode 3, Give in Episode 4. A single episode has everything. Presentation
+ * only: where a verb is hidden the human simply doesn't use it (no claim, no call, no gift); bots still do.
+ */
+export type Verb = 'claim' | 'call' | 'give';
+export const VERB_FROM: Record<Verb, number> = { claim: 2, call: 3, give: 4 };
+export function verbOn(v: Pick<ViewState, 'mode' | 'levelIndex'>, verb: Verb): boolean {
+  return v.mode !== 'LIFE' || v.levelIndex >= VERB_FROM[verb];
+}
+/** The verb a life's episode unlocks, if any. */
+export function newVerb(v: Pick<ViewState, 'mode' | 'levelIndex'>): Verb | null {
+  if (v.mode !== 'LIFE') return null;
+  return (Object.keys(VERB_FROM) as Verb[]).find((k) => VERB_FROM[k] === v.levelIndex) ?? null;
+}
