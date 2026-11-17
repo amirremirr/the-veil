@@ -2483,6 +2483,26 @@
       "finaleUsual": "The finale covers your living costs.",
       "thisRound": "this round",
       "wheelHitCovered": "the wheel hit you, but cover paid."
+    },
+    "styles": {
+      "title": "Three style directions",
+      "intro": "The same two screens, the Episode 3 move and the Episode 3 reveal, drawn three ways. A preview only: the game keeps its current look until one is chosen.",
+      "dashMove": "Prices are up and suddenly everyone's low risk. Interesting.",
+      "dashReveal": "Two liars, one caught. Television!",
+      "revealHead": "Marigold said \"low risk\" twice and was high risk.",
+      "chip": "R{r} {s}",
+      "A": {
+        "name": "A. Paper puppets",
+        "desc": "Hand-cut paper characters with ink edges and soft shadows on warm cream paper. Fraunces headlines, Atkinson Hyperlegible text; tomato, mustard and teal."
+      },
+      "B": {
+        "name": "B. Retro TV studio",
+        "desc": "A 1970s game show: deep teal and orange, studio lights and film grain. Flat puppets with big eyes; Fredoka headlines, Nunito text."
+      },
+      "C": {
+        "name": "C. Clean editorial",
+        "desc": "Light page, black text, one blue accent. Minimal line drawings that act with their posture; Inter throughout."
+      }
     }
   }
 }
