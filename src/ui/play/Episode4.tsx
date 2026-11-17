@@ -9,7 +9,7 @@ import { PLAY } from '../../engine/play/params';
 import { L4 } from '../../engine/params';
 import { useStore } from '../store';
 import { t } from '../i18n';
-import { MoneyLedger } from './Ledger';
+import { ChoicesDid } from './Choices';
 import { CallChips, CallResults, claimantsNow } from './Call';
 import { coins, pct } from '../labels';
 import { nameOf, shortName } from '../game';
@@ -19,7 +19,7 @@ import { ReallyButton } from './Really';
 import { Coach } from './Coach';
 import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
 import { GiftBar, Tile, previewText, roundClaims } from './Episode3';
-import { hostLine, pick, timesWord, bankLineText } from './logic';
+import { hostLine, pick, timesWord } from './logic';
 
 type Gift = { to: string; amount: number };
 
@@ -302,10 +302,10 @@ export function HiresBeat({ v, next, last }: { v: ViewState; next: () => void; l
             );
           })}
         </ul>
-        {r.judge !== me && r.jobPay?.[me] !== undefined && <p className="mt-2 text-small">{t(r.train?.[me] ? 'play.l4.res.payTrain' : 'play.l4.res.pay', { p: coins(r.jobPay[me]), c: coins(Math.max(0, (r.costs?.[me] ?? 0) - (v.play!.event?.id === 'GRANT' && v.play!.event.round === v.round ? PLAY.L4_EVENTS.GRANT.COST_CUT : 0))) })}{lv.care[me] && r.job?.[me] === 'COMPLEX' ? ` ${t('play.l4.res.care', { n: lv.policy === 'D' ? L4.CHAOS_COST_SUBSIDIZED : L4.CHAOS_COST })}` : ''}{(() => { const cost = r.train?.[me] ? Math.max(0, (r.costs?.[me] ?? 0) - (v.play!.event?.id === 'GRANT' && v.play!.event.round === v.round ? PLAY.L4_EVENTS.GRANT.COST_CUT : 0)) : 0; const other = Math.round((W[me] ?? 0) - r.jobPay![me] + cost); return other ? ` ${t('play.l4.res.other', { n: `${other > 0 ? '+' : ''}${other}` })}` : ''; })()}</p>}
         {r.judge !== me && <p className="mt-2 text-small">{t('play.l4.res.judgePay', { name: shortName(v, r.judge!), n: coins(r.judgePay ?? 0) })}</p>}
-        {bankLineText(v) && <p className="mt-2 text-small font-semibold" data-bankline>{bankLineText(v)}<MoneyLedger v={v} /></p>}
-        <CallResults v={v} />
+        {/* UI V4 (V3): what your choices did; it adds up to the bank change. */}
+        <ChoicesDid v={v} />
+        <CallResults v={v} quiet />
       </div>
     </Stage>
   );

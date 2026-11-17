@@ -2,6 +2,7 @@
 // Same screen flow as Study (src/shared/flow.ts): the beats inside a screen are presentation only, and the
 // last beat's button performs that screen's one engine step.
 import { useEffect, useState, type ReactNode } from 'react';
+import { motion } from 'framer-motion';
 import type { ValuesCard, ViewState } from '../../engine/types';
 import { VALUES_CARDS } from '../../engine/types';
 import { PLAY } from '../../engine/play/params';
@@ -393,6 +394,92 @@ function EpisodeGuess({ v }: { v: ViewState }) {
   );
 }
 
+/**
+ * UI V4 (V3): who is ahead and by how much, as a bar race at the episode's end. In a life only your own score
+ * and the gaps to the players just above and below you are public, so those bars have lengths and the
+ * others show as "?" (rank only, honestly unknown). With every card public, every bar is exact.
+ */
+function RankRace({ v, ranked }: { v: ViewState; ranked: ViewState['players'] }) {
+  const pl = v.play!;
+  const off = useMotionOff();
+  const me = v.viewer;
+  const mine = Math.round(pl.mission?.score ?? 0);
+  const known: Record<string, number> = {};
+  if (pl.finalScores) for (const p of v.players) known[p.id] = Math.round(pl.finalScores[p.id] ?? 0);
+  else {
+    known[me] = mine;
+    const i = ranked.findIndex((p) => p.id === me);
+    if (pl.gaps?.above !== null && pl.gaps?.above !== undefined && i > 0) known[ranked[i - 1].id] = mine + pl.gaps.above;
+    if (pl.gaps?.below !== null && pl.gaps?.below !== undefined && i < ranked.length - 1) known[ranked[i + 1].id] = mine - pl.gaps.below;
+  }
+  const vals = Object.values(known);
+  const top = Math.max(1, ...vals, ...(pl.finalScores ? [] : [mine]));
+  const low = Math.min(0, ...vals);
+  const span = Math.max(1, top - low);
+  const exact = !!pl.finalScores;
+  return (
+    <ol className="mt-1 space-y-1" aria-label={t('play.stage.ranking')} data-rank-race>
+      {ranked.map((p, i) => {
+        const val = known[p.id];
+        const has = val !== undefined;
+        // Unknown scores sit between their known neighbours: a faint bar, no number.
+        const guess = has ? val : i === 0 ? top : low + span * 0.15;
+        const w = Math.max(4, ((guess - low) / span) * 100);
+        const youRow = p.id === me;
+        return (
+          <li key={p.id} className="flex items-center gap-2" data-race={p.id}>
+            <span className="h-show w-4 text-body">{i + 1}</span>
+            <Face v={v} p={p} size={24} ring={false} />
+            <span className={`w-16 truncate text-small font-bold ${youRow ? 'text-spot' : ''}`}>{shortName(v, p.id)}</span>
+            <span className="relative h-4 flex-1 overflow-hidden rounded-full bg-paper">
+              <motion.span
+                className={`absolute inset-y-0 left-0 rounded-full ${youRow ? 'bg-spot' : has ? 'bg-teal' : 'bg-line'}`}
+                style={has ? undefined : { backgroundImage: 'repeating-linear-gradient(45deg, transparent 0 4px, rgb(255 255 255 / 0.25) 4px 8px)' }}
+                initial={off ? false : { width: 0 }}
+                animate={{ width: `${w}%` }}
+                transition={{ duration: off ? 0 : 0.8, delay: off ? 0 : 0.15 * i, ease: 'easeOut' }}
+              />
+            </span>
+            <span className="h-show w-12 text-end text-body">{has ? `${exact || youRow ? '' : '~'}${val < 0 ? `−${coins(-val)}` : coins(val)}` : '?'}</span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+/** UI V4 (V3): one line on what helped and what hurt your bank most this episode (from its rounds' ledgers). */
+function helpedHurt(v: ViewState): string | null {
+  const sums: Record<string, number> = {};
+  for (const h of v.play!.bankHistory.filter((x) => x.level === v.levelIndex))
+    for (const l of h.ledger?.[v.viewer] ?? []) if (!['living', 'pay', 'other'].includes(l.k)) sums[l.k] = (sums[l.k] ?? 0) + l.n;
+  const xs = Object.entries(sums).map(([k, n]) => ({ k, n: Math.round(n) }));
+  const up = xs.filter((x) => x.n > 0).sort((a, b) => b.n - a.n)[0];
+  const down = xs.filter((x) => x.n < 0).sort((a, b) => a.n - b.n)[0];
+  const name = (k: string) => t(`play.ledger.k.${k === 'income' && v.mode === 'LIFE' && v.levelIndex === 5 ? 'incomeFinale' : k}`);
+  const parts = [up ? t('play.summary.helped', { what: name(up.k), n: `+${up.n}` }) : '', down ? t('play.summary.hurt', { what: name(down.k), n: `−${-down.n}` }) : ''].filter(Boolean);
+  return parts.length ? parts.join(' ') : null;
+}
+
+/** UI V4 (V3): the score's change this episode as labelled pieces: bank, mission (and debt, guesses). */
+function scorePieces(v: ViewState): Array<{ key: string; n: number }> {
+  const pl = v.play!;
+  const hist = pl.bankHistory;
+  const recs = hist.filter((h) => h.level === v.levelIndex);
+  if (!recs.length) return [];
+  const i0 = hist.indexOf(recs[0]);
+  const a = (i0 > 0 ? hist[i0 - 1].parts : hist[0].partsStart)?.[v.viewer];
+  const b = recs[recs.length - 1].parts?.[v.viewer];
+  if (!a || !b) return [];
+  const m = pl.mission!;
+  return [
+    { key: 'bank', n: Math.round(b.bank - a.bank) },
+    { key: 'mission', n: Math.round(b.mission - a.mission) },
+    { key: 'debt', n: Math.round(b.debt - a.debt) },
+    { key: 'guess', n: Math.round(m.guessPoints - a.guess) },
+  ].filter((x) => x.n !== 0 || x.key === 'bank' || x.key === 'mission');
+}
+
 /** v2 Section 10 fix 3, UI V3 (U3): the card guess's result and the ranking, now part of the one summary screen. */
 function RankBlock({ v }: { v: ViewState }) {
   const pl = v.play!;
@@ -408,23 +495,8 @@ function RankBlock({ v }: { v: ViewState }) {
   return (
     <div data-missions>
       <p className="h-show text-lead leading-tight text-spot">{ranked[0].id === v.viewer ? t(hidden ? 'play.summary.leadYou' : 'play.summary.winnerYou') : t(hidden ? 'play.summary.lead' : 'play.summary.winner', { name: shortName(v, ranked[0].id) })}</p>
-      <ol className="mt-1 space-y-1" aria-label={t('play.stage.ranking')}>
-        {ranked.map((p, i) => (
-          <li key={p.id} className={`flex items-center gap-2 rounded-xl px-2 py-0.5 ${p.id === v.viewer ? 'bg-spot text-onspot' : 'bg-card'}`}>
-            <span className="h-show w-4 text-body">{i + 1}</span>
-            <Face v={v} p={p} size={24} ring={false} />
-            <span className="w-20 truncate text-small font-bold">{shortName(v, p.id)}</span>
-            <span className="flex-1 truncate text-small">{p.values ? missionName(p.values) : ''}</span>
-            {!hidden && <span className="h-show w-10 text-end text-body">{coins(scores[p.id] ?? 0)}</span>}
-            {hidden && p.id === v.viewer && <span className="h-show w-10 text-end text-body">{coins(pl.mission?.score ?? 0)}</span>}
-          </li>
-        ))}
-      </ol>
-      {hidden && pl.gaps && (
-        <p className="mt-1 text-small" data-gaps>
-          {[pl.gaps.above !== null ? t(pl.gaps.above ? 'play.summary.gapAbove' : 'play.summary.gapAboveClose', { n: pl.gaps.above }) : '', pl.gaps.below !== null ? t(pl.gaps.below ? 'play.summary.gapBelow' : 'play.summary.gapBelowClose', { n: pl.gaps.below }) : ''].filter(Boolean).join(' ')}
-        </p>
-      )}
+      <RankRace v={v} ranked={ranked} />
+
       <p className="mt-1 text-small text-soft" data-guess>{guessLine}</p>
     </div>
   );
@@ -434,8 +506,9 @@ function RankBlock({ v }: { v: ViewState }) {
  * UI V3 (U3): the score as a two-part bar, the bank half and the mission half (and guess points), with debt
  * as a red notch taken off the end. The words behind it are one tap away ("See the money").
  */
-export function ScoreBar({ m, words }: { m: NonNullable<ViewState['play']>['mission']; words: ReactNode }) {
+export function ScoreBar({ m, words, pieces = [] }: { m: NonNullable<ViewState['play']>['mission']; words: ReactNode; pieces?: Array<{ key: string; n: number }> }) {
   const open = useStagePanel();
+  const off = useMotionOff();
   if (!m) return null;
   const onWords = () => open?.({ title: t('play.score.wordsTitle'), body: words });
   const bankSigned = Math.round(m.bankPart);
@@ -450,6 +523,21 @@ export function ScoreBar({ m, words }: { m: NonNullable<ViewState['play']>['miss
       <div className="flex items-center gap-3">
         <span className="text-small font-bold uppercase tracking-wider text-soft">{t('play.summary.scoreLabel')}</span>
         <span className="h-show text-title">{coins(m.score)}</span>
+        {/* UI V4 (V3): the episode's change flies into the bar as labelled pieces, never as arithmetic. */}
+        <span className="flex flex-wrap gap-1" data-score-pieces>
+          {pieces.map((p, i) => (
+            <motion.span
+              key={p.key}
+              className={`rounded-full px-1.5 text-small font-bold leading-snug ${p.n < 0 ? 'bg-stamp text-onspot' : p.key === 'bank' ? 'bg-spot text-onspot' : 'bg-good text-onspot'}`}
+              initial={off ? false : { y: 36, opacity: 0, scale: 1.3 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              transition={{ duration: off ? 0 : 0.6, delay: off ? 0 : 0.4 + 0.35 * i, ease: 'easeOut' }}
+              data-piece={p.key}
+            >
+              {t(`play.score.piece.${p.key}`, { n: p.n > 0 ? `+${p.n}` : p.n < 0 ? `−${-p.n}` : '0' })}
+            </motion.span>
+          ))}
+        </span>
         <button type="button" className="ms-auto min-h-[44px] text-small font-semibold underline" onClick={onWords} data-score-words>
           {t('play.score.words')}
         </button>
@@ -577,10 +665,11 @@ function EpisodeSummary({ v }: { v: ViewState }) {
         <RankBlock v={v} />
       </div>
       <div className="mt-2">
-        <ScoreBar m={m} words={<ScoreWords v={v} />} />
+        <ScoreBar m={m} words={<ScoreWords v={v} />} pieces={scorePieces(v)} />
       </div>
       <dl className="mt-1 space-y-1.5" data-summary>
         {row(missionName(m.card), complete ? t('play.summary.missionDone') : t('play.summary.missionMissed'), complete ? 'text-good' : 'text-stamp')}
+        {helpedHurt(v) && row(t('play.summary.helpedLabel'), helpedHurt(v)!)}
         {row(t('play.summary.lieLabel'), lieText)}
         {pl.pollMode !== 'NEVER' && v.levelIndex === 3 && row(t('play.summary.readLabel'), readText)}
         {row(t('play.summary.nearMiss'), nm ? nearMissText(v, nm) : t('play.summary.nearMissNone'))}

@@ -52,6 +52,7 @@ test('Daily Life starts a life on the day seed and reaches the result card', asy
   expect(g?.seed).toMatch(/^daily-\d{4}-\d{2}-\d{2}$/);
   let ledgerSeen = false;
   const seenHowto = new Set<number>();
+  let didSeen = 0;
   for (let i = 0; i < 400; i++) {
     await page.waitForTimeout(30);
     const d = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, sh: document.documentElement.scrollHeight, ih: window.innerHeight }));
@@ -68,6 +69,19 @@ test('Daily Life starts a life on the day seed and reaches the result card', asy
     if (st.level < 2) expect(await page.getByRole('button', { name: 'Say it' }).count()).toBe(0);
     if (st.level < 3) expect(await page.locator('[data-call-bubble]').count()).toBe(0);
     if (st.level < 4) expect(await page.locator('[data-gift-bar]').count()).toBe(0);
+    // UI V4 (V3): "What your choices did" adds up to the bank change it shows, to the coin.
+    if (await page.locator('[data-choices-did]').count()) {
+      const sums = await page.locator('[data-choices-did]').evaluate((el) => {
+        const num = (x: string) => Number(x.replace('−', '-').replace('+', '')) || 0;
+        const rows = [...el.querySelectorAll('[data-did] > span:last-child')].map((x) => num(x.textContent ?? '0'));
+        const total = num(el.querySelector('[data-did-total] > span:last-child')?.textContent ?? '0');
+        const m = /Bank (-?\d+) to (-?\d+)/.exec(el.querySelector('[data-did-total]')?.textContent ?? '');
+        return { rows: rows.reduce((a, b) => a + b, 0), total, change: m ? Number(m[2]) - Number(m[1]) : NaN };
+      });
+      expect(sums.rows).toBe(sums.total);
+      expect(sums.total).toBe(sums.change);
+      didSeen++;
+    }
     if (st.kind === 'INTRO' || st.kind === 'VALUES_REVEAL') {
       seenHowto.add(st.level);
       await expect(page.locator(`[data-howto="${st.level}"]`)).toBeVisible();
@@ -112,6 +126,7 @@ test('Daily Life starts a life on the day seed and reaches the result card', asy
   }
   await expect(page.locator('[data-result-card]')).toBeVisible();
   expect([...seenHowto].sort()).toEqual([1, 2, 3, 4, 5]);
+  expect(didSeen).toBeGreaterThanOrEqual(10);
   await expect(page.getByText('Just for fun. Not a diagnosis.')).toBeVisible();
   await expect(page.locator('[data-rival]')).toContainText('Rematch with the same seed?');
 });

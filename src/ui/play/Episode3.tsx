@@ -8,12 +8,12 @@ import type { Message, ViewState } from '../../engine/types';
 import { PLAY } from '../../engine/play/params';
 import { useStore } from '../store';
 import { t } from '../i18n';
-import { MoneyLedger } from './Ledger';
 import { CallChips, CallResults, claimantsNow } from './Call';
 import { coins, pct, signed } from '../labels';
 import { nameOf, shortName, useTalkFrom } from '../game';
 import { useMotionOff } from '../components/common';
 import { ReallyButton } from './Really';
+import { ChoicesDid } from './Choices';
 import { Coach } from './Coach';
 import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
 import { Chips, Details, StagedReveal, peakMark, spotlightSteps } from './Peak';
@@ -268,18 +268,18 @@ export function MoveScreen({ v }: { v: ViewState }) {
         <>
           <div className="mt-auto grid grid-cols-2 gap-2 pt-3" role="group" aria-label={t('play.move.coverAsk')}>
             <Tile on={buy === true} title={t('play.stage.buyTitle')} desc={t('play.stage.buyDesc', { p: coins(lv.premium!) })} note={previewText(pv?.cover)} onClick={() => setBuy(true)} />
-            <Tile on={buy === false} title={t('play.stage.noBuyTitle')} desc={t('play.stage.noBuyDesc', { p: coins(lv.premium!) })} onClick={() => setBuy(false)} />
+            <Tile on={buy === false} title={t('play.stage.noBuyTitle')} desc={t('play.stage.noBuyDesc', { p: coins(lv.premium!), loss: coins(n.loss) })} onClick={() => setBuy(false)} />
           </div>
           <button type="button" aria-pressed={gym} onClick={() => setGym(!gym)} className={`mt-2 flex min-h-[44px] w-full items-center gap-2 rounded-2xl px-3 text-start text-small font-semibold ${gym ? 'bg-spot text-onspot' : 'bg-card'}`} data-gym-row>
             <span aria-hidden className="h-show text-lead">{gym ? '✓' : '+'}</span>
-            <span className="flex-1">{t('play.move.gymRow', { c: n.gymCost })}</span>
+            <span className="flex-1">{t('play.move.gymRow', { c: n.gymCost, p: pct(myOdds(v, true)) })}</span>
             {gym && previewText(pv?.gym) && <span className="font-bold">{previewText(pv?.gym)}</span>}
           </button>
         </>
       ) : (
         <div className="mt-auto grid grid-cols-2 gap-2 pt-3" role="group" aria-label={t('play.move.gymAsk')}>
-          <Tile on={gym} title={t('play.stage.gymTitle')} desc={t('play.stage.gymDesc', { c: n.gymCost })} note={previewText(pv?.gym)} onClick={() => setGym(true)} />
-          <Tile on={!gym} title={t('play.stage.noGymTitle')} desc={t('play.stage.noGymDesc')} onClick={() => setGym(false)} />
+          <Tile on={gym} title={t('play.stage.gymTitle')} desc={t('play.stage.gymDesc', { c: n.gymCost, p: pct(myOdds(v, true)) })} note={previewText(pv?.gym)} onClick={() => setGym(true)} />
+          <Tile on={!gym} title={t('play.stage.noGymTitle')} desc={t('play.stage.noGymDesc', { c: n.gymCost, p: pct(myOdds(v, false)) })} onClick={() => setGym(false)} />
         </div>
       )}
       <div className="mt-2">
@@ -326,10 +326,14 @@ export function GiftBar({ v, gift, note, onPick, previews }: { v: ViewState; gif
   );
 }
 
-/** D-143: "Mission +6" for a preview of at least one point either way, else nothing. */
+/**
+ * D-143: a choice's effect on your mission. UI V4 (V3): a word, not a number: "Helps your mission", "Hurts
+ * your mission", or "No effect on your mission" (under one point either way); nothing without a preview.
+ */
 export function previewText(x: number | null | undefined): string | null {
-  if (x === null || x === undefined || !Number.isFinite(x) || Math.abs(x) < 1) return null;
-  return t('play.move.preview', { n: signed(Math.round(x)) });
+  if (x === null || x === undefined || !Number.isFinite(x)) return null;
+  if (Math.abs(x) < 1) return t('play.move.noEffect');
+  return t(x > 0 ? 'play.move.helps' : 'play.move.hurts');
 }
 
 /**
@@ -356,7 +360,9 @@ export function GiftPicker({ v, gift, onPick, previews }: { v: ViewState; gift: 
       <div className="mt-1 grid grid-cols-3 gap-1">
         {PLAY.GIFT_AMOUNTS.map((a) => {
           const on = gift?.to === to && gift.amount === a;
-          const note = previewText(pv?.gift[to]?.[a]);
+          // Only a mission effect worth naming fits in the button ("No effect" stays off).
+          const raw = pv?.gift[to]?.[a];
+          const note = raw !== undefined && Math.abs(raw) >= 1 ? previewText(raw) : null;
           return (
             <button key={a} type="button" aria-pressed={on} onClick={() => onPick({ to, amount: a })} className={`min-h-[44px] rounded-xl px-1 text-small font-bold ${on ? 'bg-spot text-onspot' : 'bg-paper'}`} data-gift={`${to}:${a}`}>
               {t('play.gift.give', { n: a })}
@@ -584,13 +590,6 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
   const stress = h.stress[me] ?? 0;
   const from = h.banks[me] - change;
   const ch = r.choices[me];
-  let cost: string;
-  if (r.regime !== 'VOL') cost = t('play.stage.costMandate', { T: coins(r.T ?? 0) });
-  else if (mine.kind === 'HIT') cost = t('play.stage.costLoss', { loss: coins(mine.lost) });
-  else if (ch.buy && r.premium !== null && ch.gym) cost = t('play.stage.costCoverGym', { p: coins(r.premium + n.gymCost) });
-  else if (ch.buy && r.premium !== null) cost = t('play.stage.costCover', { p: coins(r.premium) });
-  else if (ch.gym) cost = t('play.stage.costGym', { c: n.gymCost });
-  else cost = t('play.stage.costNone');
   // What you chose this round, next to the money it made (playtest note).
   const bought = ch.buy && r.premium !== null;
   const refused = !!r.applied?.[me] && !bought;
@@ -645,7 +644,7 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
     >
       <p className="text-center text-small font-bold uppercase tracking-wider text-soft">{t('play.stage.resultsOf', { r: v.round })}</p>
       <h1 className="h-show mt-1 text-center text-title leading-tight">{t('play.l3.wheel')}</h1>
-      <div className="relative mx-auto mt-1 h-36 w-36">
+      <div className="relative mx-auto mt-1 h-28 w-28">
         <svg viewBox="0 0 100 100" className="h-full w-full" aria-hidden>
           <motion.g style={{ originX: '50px', originY: '50px' }} initial={{ rotate: 0 }} animate={{ rotate: done ? final : off ? final : [0, final] }} transition={{ duration: done || off ? 0 : spinMs / 1000, ease: 'easeOut' }}>
             <circle cx="50" cy="50" r={WHEEL_R} className="fill-good/80" />
@@ -671,23 +670,23 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
               {t(`play.stage.chose.${chose}`)}
             </span>
           </p>
-          <p className="mt-1 text-small text-soft">
-            {t('play.stage.bankLine', { from: coins(from), to: coins(h.banks[me]) })} {t('play.bank.pay', { w: coins(v.play!.l3?.baseIncome ?? 0) })} {cost} {t('play.bank.living', { c: v.play!.livingCost })}
-          <MoneyLedger v={v} /></p>
-          <CallResults v={v} />
+          {/* UI V4 (V3): what each of your choices did, then luck, then everyone else; it adds up to the change. */}
+          <div className="text-start">
+            <ChoicesDid v={v} />
+          </div>
+          <CallResults v={v} quiet />
           {stress > 0 && (
             <p className="mt-1 text-small font-bold text-stamp" data-debt>
               {t('play.stage.debtCost', { n: Math.round(stress) })}
             </p>
           )}
-          {giftLine && (
-            <p className="mt-1 text-small" data-gifts>
-              {giftLine}
-            </p>
+          {giftLine && <span className="sr-only" data-gifts>{giftLine}</span>}
+          {!voice.host && (
+            <div className="mt-2 text-start">
+              <Bubble who={voice.who} text={voice.text} host={voice.host} bot={voice.bot} />
+            </div>
           )}
-          <div className="mt-3 text-start">
-            <Bubble who={voice.who} text={voice.text} host={voice.host} bot={voice.bot} />
-          </div>
+          {voice.host && <Bubble who={voice.who} text={voice.text} host />}
         </div>
       ) : (
         <p className="mt-6 text-center text-small text-soft">{t('play.cast.spinning')}</p>

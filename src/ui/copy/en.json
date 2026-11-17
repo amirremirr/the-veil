@@ -1295,7 +1295,10 @@
       "lead": "Leading the life: {name}",
       "leadYou": "You lead the life!",
       "scoreLabel": "Your score",
-      "score": "{s} = half your bank {b} + half your mission {m}, minus {d} debt points this life ({e} this episode), plus guesses and Second Chance points {g}. The ranking uses this score."
+      "score": "{s} = half your bank {b} + half your mission {m}, minus {d} debt points this life ({e} this episode), plus guesses and Second Chance points {g}. The ranking uses this score.",
+      "helpedLabel": "This episode",
+      "helped": "Helped most: {what} {n}.",
+      "hurt": "Hurt most: {what} {n}."
     },
     "really": {
       "button": "What was really going on?",
@@ -1362,9 +1365,9 @@
       "chance": "Your chance of disaster",
       "chanceNote": "A disaster costs {loss}. Only you see this.",
       "buyTitle": "Buy cover",
-      "buyDesc": "{p} coins, covers all.",
+      "buyDesc": "Pay {p} now. A hit then costs you 0.",
       "gymTitle": "Hit the gym",
-      "gymDesc": "{c} coins, halves risk.",
+      "gymDesc": "Pay {c}. Your risk drops to {p}.",
       "noCoverTitle": "No cover",
       "noCoverDesc": "SafeHands left town.",
       "mandateTitle": "Mandatory plan",
@@ -1431,9 +1434,9 @@
       "debtCost": "In debt: -{n} points",
       "skip": "Skip",
       "noBuyTitle": "No cover",
-      "noBuyDesc": "Keep your {p} coins.",
+      "noBuyDesc": "Keep {p}. A hit costs you {loss}.",
       "noGymTitle": "No gym",
-      "noGymDesc": "Keep your coins."
+      "noGymDesc": "Keep {c}. Your risk stays {p}."
     },
     "claims": {
       "RISK": {
@@ -1490,10 +1493,13 @@
       "barHow": "Faces show the audience's read. Most of the other members bars someone.",
       "barNobody": "Nobody",
       "barNext": "Next",
-      "gymRow": "Gym (optional): {c} coins, halves your risk",
+      "gymRow": "Gym (optional): pay {c}, risk drops to {p}",
       "gymOn": "Gym: yes, {c} coins. Your risk drops to {p}.",
       "riskLine": "Your risk this round: {p}.",
-      "readLegend": "Faces show the audience's read."
+      "readLegend": "Faces show the audience's read.",
+      "helps": "Helps your mission",
+      "hurts": "Hurts your mission",
+      "noEffect": "No effect on your mission"
     },
     "barBeat": {
       "label": "The Bar",
@@ -1779,9 +1785,9 @@
         "how": "New incomes this round. See yours first for {c} coins.",
         "public": "Everyone sees that you peeked, not what you saw.",
         "yes": "Peek",
-        "yesDesc": "Costs {c} coins.",
+        "yesDesc": "Pay {c} now. You vote knowing your income.",
         "no": "Stay blind",
-        "noDesc": "Vote like round 1.",
+        "noDesc": "Keep {c}. You vote blind.",
         "submit": "Decide"
       },
       "youKnow": "You peeked: income {y}.",
@@ -2365,7 +2371,13 @@
       "guess": "Guess {n}",
       "debt": "Debt -{n}",
       "words": "See the money",
-      "wordsTitle": "Your score, in words"
+      "wordsTitle": "Your score, in words",
+      "piece": {
+        "bank": "{n} bank",
+        "mission": "{n} mission",
+        "debt": "{n} debt",
+        "guess": "{n} guess"
+      }
     },
     "coach": {
       "ok": "Got it",
@@ -2412,6 +2424,65 @@
         "give": "New: give coins to someone."
       },
       "menu": "How this episode works"
+    },
+    "did": {
+      "title": "What your choices did",
+      "luck": "Luck:",
+      "others": "Others:",
+      "usual": "Pay and living costs.",
+      "total": "Bank {from} to {to}.",
+      "andMore": "(and more)",
+      "someone": "someone",
+      "otherMoney": "Other money.",
+      "gave": "You gave {name} {n}.",
+      "gotGift": "{names} gave you coins.",
+      "callRight": "You called {name}: a lie, so you won.",
+      "callWrong": "{name} told the truth, so your call cost you.",
+      "calledCaught": "{names} caught your lie.",
+      "calledWrong": "{names} called you wrong and paid you.",
+      "said": "You said \"{words}\"{how}.",
+      "aLie": " (a lie)",
+      "true": " (true)",
+      "notCalled": "Nobody called it.",
+      "caught": "You were caught.",
+      "calledButTrue": "Someone called it and paid you.",
+      "barred": "The pool barred you.",
+      "inPool": "You stayed in the pool.",
+      "l1won": "You voted {rule}, and it won.",
+      "l1lost": "the table picked {rule}.",
+      "peeked": "You peeked at your income.",
+      "dealt": "you were dealt {y}.",
+      "worked": "You worked {e} hours (pay minus the cost of your hours).",
+      "dieUp": "your die was kind.",
+      "dieDown": "your die was unkind.",
+      "prize": "the table gave you the Hustle Prize.",
+      "tax": "the {t} tax and the equal share.",
+      "launch": "SafeHands signed you up for launch cover.",
+      "coverHit": "You bought cover. The wheel hit you, so it saved you {loss}.",
+      "coverMiss": "You bought cover. The wheel missed you, so it didn't pay off this time.",
+      "outHit": "You stayed out. The wheel hit you, so cover would have saved you.",
+      "outMiss": "You stayed out. The wheel missed you, so you kept {p}.",
+      "refused": "You applied for cover and were barred.",
+      "gym": "You hit the gym: your risk was {p}.",
+      "barWorked": "You voted to bar {name}, and they were barred.",
+      "barFailed": "You voted to bar {name}; not enough others agreed.",
+      "wheelHit": "the wheel hit you.",
+      "wheelMiss": "the wheel missed you.",
+      "plan": "the cover plan the table voted for.",
+      "judged": "Your hires as HireBot: {g} good, {b} bad.",
+      "trained": "You trained, and {r}.",
+      "noTrain": "You didn't train, and {r}.",
+      "passed": "passed the test",
+      "failed": "failed the test",
+      "jobComplex": "HireBot ({name}) gave you the complex job.",
+      "jobSimple": "HireBot ({name}) gave you the simple job.",
+      "comeback": "You took the Second Chance coins.",
+      "donated": "You paid {name} {n} for votes.",
+      "donatedTo": "someone paid you for your vote.",
+      "rules": "the rules the table voted for.",
+      "finaleUsual": "The finale covers your living costs.",
+      "thisRound": "this round",
+      "wheelHitCovered": "the wheel hit you, but cover paid."
     }
   }
 }

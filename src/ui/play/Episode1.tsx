@@ -10,7 +10,7 @@ import type { P1Preview, P1Round } from '../../engine/play/ep1';
 import { CLAIMABLE } from '../../engine/play/ep1';
 import { useStore } from '../store';
 import { t } from '../i18n';
-import { MoneyLedger } from './Ledger';
+import { ChoicesDid } from './Choices';
 import { CallChips, CallResults, claimantsNow } from './Call';
 import { coins, pct } from '../labels';
 import { nameOf, shortName } from '../game';
@@ -19,7 +19,7 @@ import { Chips, Details, StagedReveal, peakMark, spotlightSteps } from './Peak';
 import { Coach } from './Coach';
 import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
 import { GiftBar, Tile, giftLines, previewText } from './Episode3';
-import { hostLine, pick, timesWord, bankLineText, ledgerRows } from './logic';
+import { hostLine, pick, timesWord, ledgerRows } from './logic';
 
 type Gift = { to: string; amount: number };
 
@@ -188,11 +188,11 @@ export function IncomesBeat({ v, next, last }: { v: ViewState; next: () => void;
             </li>
           ))}
         </ul>
-        {r.peeked.includes(me) && <p className="mt-2 text-small">{t('play.l1.inc.peekCost', { c: lv.peekCost })}</p>}
         {r.inheritance && <p className="mt-2 text-small">{t('play.l1.inc.inherit', { name: shortName(v, r.inheritance) })}</p>}
-        {bankLineText(v) && <p className="mt-2 text-small font-semibold" data-bankline>{bankLineText(v)}<MoneyLedger v={v} /></p>}
+        {/* UI V4 (V3): what your choices did; it adds up to the bank change. */}
+        <ChoicesDid v={v} />
         {giftLines(v, r.gifts) && <p className="mt-1 text-small" data-gifts>{giftLines(v, r.gifts)}</p>}
-        <CallResults v={v} />
+        <CallResults v={v} quiet />
       </div>
     </Stage>
   );

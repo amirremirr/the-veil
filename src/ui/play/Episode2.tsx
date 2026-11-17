@@ -7,7 +7,7 @@ import { BANDS } from '../../engine/play/ep2';
 import { PLAY } from '../../engine/play/params';
 import { useStore } from '../store';
 import { t } from '../i18n';
-import { MoneyLedger } from './Ledger';
+import { ChoicesDid } from './Choices';
 import { CallChips, CallResults, claimantsNow } from './Call';
 import { coins, pct } from '../labels';
 import { fmt1 } from '../components/Money';
@@ -17,7 +17,7 @@ import { Coach } from './Coach';
 import { verbOn } from './logic';
 import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
 import { GiftBar, Tile, giftLines, previewText } from './Episode3';
-import { timesWord, bankLineText, roundMoney } from './logic';
+import { timesWord } from './logic';
 
 type Gift = { to: string; amount: number };
 
@@ -187,7 +187,7 @@ export function PrizeScreen({ v }: { v: ViewState }) {
                   <span className="w-16 truncate text-small font-bold">{shortName(v, p.id)}</span>
                   <span className="flex-1 text-small">{t('play.l2.prize.earned', { y: coins(c.y?.[p.id] ?? 0) })}</span>
                   {poll[p.id] !== undefined && <span className="text-small font-semibold">{t('play.l2.poll', { p: pct(poll[p.id]) })}</span>}
-                  {note && <span className="text-small font-bold">{note}</span>}
+                  {note && x === p.id && <span className="text-small font-bold">{note}</span>}
                 </button>
               </li>
             );
@@ -203,8 +203,6 @@ export function PrizeBeat({ v, next }: { v: ViewState; next: () => void }) {
   const r = lv.rounds[lv.rounds.length - 1];
   const w = r.winners ?? [];
   const last = v.round >= PLAY.L2.ROUNDS;
-  // Loop cycle 16: gifts given and received this round, shown apart from the net income.
-  const giftNet = Object.entries(r.gifts ?? {}).reduce((a, [from, g]) => a + (g.to === v.viewer ? g.amount : 0) - (from === v.viewer ? g.amount : 0), 0);
   const head = w.length === 1 ? (w[0] === v.viewer ? t('play.l2.won.you', { n: PLAY.HUSTLE_PRIZE }) : t('play.l2.won.one', { name: shortName(v, w[0]), n: PLAY.HUSTLE_PRIZE })) : t('play.l2.won.split', { names: w.map((x) => shortName(v, x)).join(t('play.barBeat.and')) });
   return (
     <Stage v={v} onTap={next} footer={<AutoButton onClick={next}>{last ? t('play.l1.toReveal') : t('play.stage.nextRound', { r: v.round + 1 })}</AutoButton>}>
@@ -212,10 +210,10 @@ export function PrizeBeat({ v, next }: { v: ViewState; next: () => void }) {
         <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l2.won.label')}</p>
         <h1 className="h-show mt-1 text-hero leading-tight text-spot">{head}</h1>
         <p className="mt-3 text-small"><span className="font-bold">{t('play.cast.prizeVotes')}</span> {v.players.map((p) => t('play.cast.votedFor', { a: shortName(v, p.id), b: r.votes?.[p.id] ? shortName(v, r.votes[p.id]!) : t('play.barBeat.noOne') })).join(', ')}</p>
-        <p className="mt-2 text-small" data-net>{t('play.l2.won.net', { y: coins(r.y?.[v.viewer] ?? 0), t: pct(lv.t ?? 0), k: coins((roundMoney(v) ?? r.W?.[v.viewer] ?? 0) - (r.prize?.[v.viewer] ?? 0) - giftNet) })}{r.prize?.[v.viewer] ? ` ${t('play.l2.won.netPrize', { n: coins(r.prize[v.viewer]) })}` : ''}{giftNet ? ` ${t('play.l2.won.netGifts', { n: `${giftNet > 0 ? '+' : ''}${coins(giftNet)}` })}` : ''}</p>
-        {bankLineText(v) && <p className="mt-2 text-small font-semibold" data-bankline>{bankLineText(v)}<MoneyLedger v={v} /></p>}
+        {/* UI V4 (V3): what your choices did; it adds up to the bank change. */}
+        <ChoicesDid v={v} />
         {giftLines(v, r.gifts as Record<string, Gift> | undefined) && <p className="mt-1 text-small" data-gifts>{giftLines(v, r.gifts as Record<string, Gift> | undefined)}</p>}
-        <CallResults v={v} />
+        <CallResults v={v} quiet />
       </div>
     </Stage>
   );

@@ -51,7 +51,7 @@ export function callLine(v: ViewState, c: CallRecord): string {
 }
 
 /** This round's call results with CAUGHT / CALLED WRONG stamps and one line from Dash. */
-export function CallResults({ v }: { v: ViewState }) {
+export function CallResults({ v, quiet = false }: { v: ViewState; quiet?: boolean }) {
   const calls = (v.play?.calls ?? []).filter((c) => c.level === v.levelIndex && c.round === v.round);
   // UI V3 (U1): CAUGHT lands on the liar, CALLED WRONG on the caller.
   const cue: CastCue = { stamps: {}, expr: {} };
@@ -71,11 +71,13 @@ export function CallResults({ v }: { v: ViewState }) {
   const anyLie = calls.some((c) => c.lie);
   return (
     <div className="mt-2" data-calls>
-      {calls.map((c, k) => (
-        <p key={k} className="text-small">
-          {callLine(v, c)}
-        </p>
-      ))}
+      {/* UI V4 (V3): with "What your choices did" on the screen, the calls are rows there (quiet). */}
+      {!quiet &&
+        calls.map((c, k) => (
+          <p key={k} className="text-small">
+            {callLine(v, c)}
+          </p>
+        ))}
       <div className="mt-1">
         <Bubble who="Dash" host text={hostLine(anyLie ? 'caught' : 'calledWrong', pick(v, `call-${anyLie}`, 6))} />
       </div>
