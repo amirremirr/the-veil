@@ -32,6 +32,11 @@ export const PLAY = {
    */
   MISSION_SCALE_EP: { 1: { EGOIST: 0.65, RAWLSIAN: 2.58, UTILITARIAN: 1.1, MERITOCRAT: 1.11 }, 2: { EGOIST: 0.76, RAWLSIAN: 1.7, UTILITARIAN: 1.01, MERITOCRAT: 1.22 }, 5: { EGOIST: 0.51, RAWLSIAN: 2.14, UTILITARIAN: 1.58, MERITOCRAT: 1.35 }, 4: { EGOIST: 0.78, RAWLSIAN: 1.75, UTILITARIAN: 0.88, MERITOCRAT: 1.31 } } as Partial<Record<number, Record<ValuesCard, number>>>,
   /** D-151: k per mission over a whole life (calibrated in T6; Episode 3's values until then). */
+  /**
+   * UI V3 fix 1: in a life, the bank half of the score counts from the end of Episode 1 ('EP1_END': birth income
+   * is shown and talked about, not scored) or from the start ('START', the old rule).
+   */
+  LIFE_BANK_FROM: 'EP1_END' as 'START' | 'EP1_END',
   /** UI V3 U5: in a life, the mission half is weighted by the episode just played (later episodes weigh more). */
   LIFE_MISSION_EP_MULT: { 1: 1, 2: 1, 3: 1, 4: 1, 5: 4.5 } as Record<number, number>,
   MISSION_SCALE_LIFE: { EGOIST: 0.85, RAWLSIAN: 1.47, UTILITARIAN: 1.15, MERITOCRAT: 1.19 } as Record<ValuesCard, number>,
@@ -159,7 +164,7 @@ export const PLAY = {
    * Episode 1, Born (v2 Section 4, D-152): 2 rounds, v1's income deck; the Peek from round 2. Study's Level 1
    * principles, leakage, floor and gap cap are unchanged.
    */
-  L1: { ROUNDS: 2, INCOME_DECK: [10, 40, 110, 300], PEEK_FROM_ROUND: 2 },
+  L1: { ROUNDS: 2, INCOME_DECK: [10, 40, 110, 300], PEEK_FROM_ROUND: 2, LIFE_INCOME_DECK: null as number[] | null },
   /**
    * Episode 2, First Hustle (v2 Section 4, D-153): 3 rounds, v1's luck die; Study's talents, effort cost, leakage
    * and tax options. BANDS: the top hour of "a little" and of "some" (claims are on a 3-step scale).

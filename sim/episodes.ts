@@ -6,7 +6,7 @@
 import { createInitialState, step } from '../src/engine/engine';
 import { standalone } from '../src/engine/rng';
 import { PLAY } from '../src/engine/play/params';
-import { missionScale, missionValue, playEffortShares } from '../src/engine/play/rules';
+import { bankBase, missionScale, missionValue, playEffortShares } from '../src/engine/play/rules';
 import type { Difficulty, GameState, LevelId, ValuesCard } from '../src/engine/types';
 import { VALUES_CARDS } from '../src/engine/types';
 import { currentRules } from '../src/engine/version';
@@ -55,12 +55,13 @@ function recOf(s: GameState): GameRec {
   const eff = playEffortShares(s);
   const banks = s.players.map((p) => pl.banks[p.id]);
   const mission = s.players.map((p, i) => missionValue(p.values, banks, i, eff));
-  const score = s.players.map((p, i) => PLAY.BANK_WEIGHT * banks[i] + PLAY.MISSION_WEIGHT * missionScale(s, p.values) * mission[i] - pl.debtStress[p.id] + pl.guessPoints[p.id]);
+  const base = s.players.map((p) => bankBase(s, p.id));
+  const score = s.players.map((p, i) => PLAY.BANK_WEIGHT * (banks[i] - base[i]) + PLAY.MISSION_WEIGHT * missionScale(s, p.values) * mission[i] - pl.debtStress[p.id] + pl.guessPoints[p.id]);
   const winner = score.indexOf(Math.max(...score));
   return {
     m: (s as GameState & { __m?: Record<string, [number, number]> }).__m!,
     cards: s.players.map((p) => p.values),
-    bank: banks,
+    bank: banks.map((b, i) => b - base[i]),
     stress: s.players.map((p) => pl.debtStress[p.id]),
     guess: s.players.map((p) => pl.guessPoints[p.id]),
     mission,

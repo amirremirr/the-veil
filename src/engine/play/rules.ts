@@ -53,19 +53,29 @@ export function missionValue(card: ValuesCard, banks: readonly number[], i: numb
   return valuesMetric(card, banks, i, effortShares);
 }
 
-/** Section 4.3 without the guess points: bank half, mission half, minus debt stress. */
-export function scoreOnBanks(card: ValuesCard, banks: readonly number[], i: number, effortShares: readonly number[], stress: number, scale = PLAY.MISSION_SCALE[card]): number {
-  return PLAY.BANK_WEIGHT * banks[i] + PLAY.MISSION_WEIGHT * scale * missionValue(card, banks, i, effortShares) - stress;
+/** Section 4.3 without the guess points: bank half, mission half, minus debt stress. `base`: the bank the bank half counts from (UI V3 fix 1). */
+export function scoreOnBanks(card: ValuesCard, banks: readonly number[], i: number, effortShares: readonly number[], stress: number, scale = PLAY.MISSION_SCALE[card], base = 0): number {
+  return PLAY.BANK_WEIGHT * (banks[i] - base) + PLAY.MISSION_WEIGHT * scale * missionValue(card, banks, i, effortShares) - stress;
 }
 
 const bankList = (s: GameState): number[] => s.players.map((p) => s.play!.banks[p.id]);
+
+/**
+ * UI V3 fix 1: the bank the bank half counts from. In a life with LIFE_BANK_FROM 'EP1_END', after Episode 1 it is
+ * the bank at the end of Episode 1 (birth income is not scored); otherwise 0.
+ */
+export function bankBase(s: GameState, pid: PlayerId): number {
+  if (s.mode !== 'LIFE' || PLAY.LIFE_BANK_FROM !== 'EP1_END' || s.levelIndex <= 1 || !s.play) return 0;
+  const h = s.play.bankHistory.filter((x) => x.level === 1).slice(-1)[0];
+  return h ? h.banks[pid] ?? 0 : 0;
+}
 
 /** A contestant's Play score now: final score if the life (or episode) ended here. */
 export function playScore(s: GameState, pid: PlayerId): number {
   const pl = s.play!;
   const i = s.players.findIndex((p) => p.id === pid);
   const card = s.players[i].values;
-  return scoreOnBanks(card, bankList(s), i, playEffortShares(s), pl.debtStress[pid], missionScale(s, card)) + pl.guessPoints[pid];
+  return scoreOnBanks(card, bankList(s), i, playEffortShares(s), pl.debtStress[pid], missionScale(s, card), bankBase(s, pid)) + pl.guessPoints[pid];
 }
 
 /**
@@ -85,7 +95,7 @@ export function playRoundValue(
   const pl = s.play!;
   const banks = s.players.map((p, j) => pl.banks[p.id] + W[j] - livingCost(s));
   const id = s.players[i].id;
-  return scoreOnBanks(card, banks, i, effortShares, pl.debtStress[id] + mult * debtStressFor(banks[i]), missionScale(s, card)) - mult * futureStress(s, banks[i], drift);
+  return scoreOnBanks(card, banks, i, effortShares, pl.debtStress[id] + mult * debtStressFor(banks[i]), missionScale(s, card), bankBase(s, id)) - mult * futureStress(s, banks[i], drift);
 }
 
 /**
@@ -169,7 +179,7 @@ export function scoreParts(s: GameState, pid: PlayerId): ScoreParts {
   const i = s.players.findIndex((p) => p.id === pid);
   const card = s.players[i].values;
   return {
-    bank: PLAY.BANK_WEIGHT * pl.banks[pid],
+    bank: PLAY.BANK_WEIGHT * (pl.banks[pid] - bankBase(s, pid)),
     mission: PLAY.MISSION_WEIGHT * missionScale(s, card) * missionValue(card, bankList(s), i, playEffortShares(s)),
     debt: -pl.debtStress[pid],
     guess: pl.guessPoints[pid],

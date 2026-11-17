@@ -596,6 +596,11 @@ function EpisodeSummary({ v }: { v: ViewState }) {
       }
     >
       <h1 className="h-show text-title leading-tight">{t('play.summary.title')}</h1>
+      {v.mode === 'LIFE' && v.levelIndex === 1 && PLAY.LIFE_BANK_FROM === 'EP1_END' && (
+        <p className="text-small font-semibold text-spot" data-birth-note>
+          {t('play.cast.birthNotScored')}
+        </p>
+      )}
       <div className="mt-1">
         <RankBlock v={v} />
       </div>

@@ -5,7 +5,7 @@
 import type { GameState, PlayerId } from '../types';
 import { audienceBelief } from './claims';
 import { PLAY } from './params';
-import { missionScale, missionValue, playEffortShares, playRanks, playScore, livingCost } from './rules';
+import { missionScale, missionValue, playEffortShares, playRanks, playScore, livingCost, bankBase } from './rules';
 import type { PlayView } from './types';
 import { playL3Params } from '../levels/level3';
 
@@ -52,7 +52,7 @@ export function playView(s: GameState, viewer: PlayerId, revealAll: boolean): Pl
       card: me.values,
       value,
       scale,
-      bankPart: PLAY.BANK_WEIGHT * banks[i],
+      bankPart: PLAY.BANK_WEIGHT * (banks[i] - bankBase(s, viewer)),
       missionPart: PLAY.MISSION_WEIGHT * scale * value,
       stress: pl.debtStress[viewer],
       guessPoints: pl.guessPoints[viewer],

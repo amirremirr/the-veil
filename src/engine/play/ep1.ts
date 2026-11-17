@@ -55,7 +55,8 @@ const GRID = taxGrid(L1.TAX_GRID_STEP, L1.TAX_GRID_MAX);
 export function p1Params(s: GameState) {
   const ev = activeEvent(s);
   const e = (ev ? (PLAY.L1_EVENTS as Record<string, Record<string, number>>)[ev.id] : null) ?? {};
-  const deck = PLAY.L1.INCOME_DECK.map((y) => y * (e.INCOME_MULT ?? 1));
+  // UI V3 fix 1: a life may carry a compressed deck (PLAY.L1.LIFE_INCOME_DECK).
+  const deck = (s.mode === 'LIFE' && PLAY.L1.LIFE_INCOME_DECK ? PLAY.L1.LIFE_INCOME_DECK : PLAY.L1.INCOME_DECK).map((y) => y * (e.INCOME_MULT ?? 1));
   if (e.TOP_CARD) deck[deck.length - 1] = e.TOP_CARD;
   return { deck, kappa: L1.KAPPA * (e.KAPPA_MULT ?? 1), inheritance: e.INHERITANCE ?? 0 };
 }

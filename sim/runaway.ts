@@ -34,6 +34,10 @@ interface Life {
   leaderLost: number;
   leaderDefined: number;
   sameAsEp3: number;
+  /** (1st score - 4th score) / 1st score at the end; null when the winner's score is not above 0. */
+  gapShare: number | null;
+  /** The contestant with the lowest bank after Episode 1 finishes first. */
+  poorestWins: number;
 }
 
 /** Ids in rank order (ties broken by seat), as a string, from a ranks map. */
@@ -66,11 +70,16 @@ function playOne(seed: string): Life {
   const r3 = lastOf(3).ranks;
   const r4 = lastOf(4).ranks;
   const leaders = ids.filter((id) => r4[id] === 1);
+  const scores = ids.map((id) => sc[id]).sort((a, b) => b - a);
+  const b1 = lastOf(1).banks;
+  const poorest = ids.slice().sort((a, b) => b1[a] - b1[b] || ids.indexOf(a) - ids.indexOf(b))[0];
   return {
     ratio,
     gap,
     sameAsEp2: orderOf(finalRanks, ids) === orderOf(r2, ids) ? 1 : 0,
     sameAsEp3: orderOf(finalRanks, ids) === orderOf(r3, ids) ? 1 : 0,
+    gapShare: scores[0] > 0 ? (scores[0] - scores[scores.length - 1]) / scores[0] : null,
+    poorestWins: finalRanks[poorest] === 1 ? 1 : 0,
     leaderDefined: leaders.length === 1 ? 1 : 0,
     leaderLost: leaders.length === 1 && finalRanks[leaders[0]] !== 1 ? 1 : 0,
   };
@@ -107,5 +116,10 @@ const lost = boot(def.map((x) => x.leaderLost));
 out.push(`Final order = order after Ep2: ${(100 * same.m).toFixed(1)}% ± ${(100 * same.se).toFixed(1)} (target at most 35%)`);
 out.push(`Final order = order after Ep3: ${(100 * same3.m).toFixed(1)}% ± ${(100 * same3.se).toFixed(1)} (reported)`);
 out.push(`Leader after Ep4 loses the lead in the finale: ${(100 * lost.m).toFixed(1)}% ± ${(100 * lost.se).toFixed(1)} of ${def.length} lives with one leader (target at least 20%)`);
+const gs = lives.map((x) => x.gapShare).filter((x): x is number => x !== null);
+const gsm = boot(gs, median);
+const pw = boot(lives.map((x) => x.poorestWins));
+out.push(`Score gap 1st to 4th at the end, share of the winner's score, median: ${(100 * gsm.m).toFixed(1)}% ± ${(100 * gsm.se).toFixed(1)} (target at most 40%; winner's score not above 0 in ${lives.length - gs.length} lives)`);
+out.push(`Contestant born poorest (lowest bank after Ep1) wins: ${(100 * pw.m).toFixed(1)}% ± ${(100 * pw.se).toFixed(1)} (target at least 15%)`);
 out.push(`(${((Date.now() - t0) / 1000).toFixed(0)} s)`);
 console.log(out.join('\n'));
