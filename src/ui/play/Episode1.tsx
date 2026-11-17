@@ -18,7 +18,7 @@ import type { CastCue } from './Cast';
 import { Chips, Details, StagedReveal, peakMark, spotlightSteps } from './Peak';
 import { Coach } from './Coach';
 import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
-import { GiftBar, GiftSheet, Tile, previewText } from './Episode3';
+import { GiftBar, Tile, previewText } from './Episode3';
 import { hostLine, pick, timesWord, bankLineText, ledgerRows } from './logic';
 
 type Gift = { to: string; amount: number };
@@ -82,8 +82,8 @@ export function ClaimScreen1({ v }: { v: ViewState }) {
   const [x, setX] = useState<string | null>(null);
   return (
     <Stage v={v} footer={<BigButton disabled={!x} onClick={() => act(x)}>{t('play.claim.submit')}</BigButton>}>
-      <Coach id="claim" />
       <h1 className="h-show text-hero leading-tight">{t('play.claim.title')}</h1>
+      <Coach id="claim" />
       <div className="mt-3 rounded-2xl bg-card p-3">
         <p className="h-show text-title leading-tight">{knowLine(v)}</p>
       </div>
@@ -104,13 +104,12 @@ export function VoteScreen1({ v }: { v: ViewState }) {
   const lv = lv1(v);
   const [vote, setVote] = useState<PrincipleId | null>(null);
   const [gift, setGift] = useState<Gift | null>(null);
-  const [giving, setGiving] = useState(false);
   const [call, setCall] = useState<string | null>(null);
   const pv = lv.preview;
   return (
     <Stage v={v} footer={<BigButton disabled={!vote} onClick={() => act({ vote, gift, call })}>{t('play.l1.vote.submit')}</BigButton>}>
-      <Coach id="move" />
       <p className="text-body font-semibold leading-snug">{knowLine(v)}</p>
+      <Coach id="move" />
       {lv.peeked.length > 0 && <p className="text-small">{t('play.l1.peekers', { names: lv.peeked.map((id) => shortName(v, id)).join(', ') })}</p>}
       <div className="mt-2 grid grid-cols-2 gap-2" role="group" aria-label={t('play.l1.vote.title')}>
         {PRINCIPLES.map((p) => (
@@ -119,20 +118,8 @@ export function VoteScreen1({ v }: { v: ViewState }) {
       </div>
       <CallChips v={v} claimants={claimantsNow(v)} value={call} onPick={setCall} />
       <div className="mt-auto pt-2">
-        <GiftBar v={v} gift={gift} note={gift ? previewText(pv?.gift[gift.to]?.[gift.amount]) : null} onOpen={() => setGiving(true)} />
+        <GiftBar v={v} gift={gift} previews={pv?.gift} note={gift ? previewText(pv?.gift[gift.to]?.[gift.amount]) : null} onPick={setGift} />
       </div>
-      {giving && (
-        <GiftSheet
-          v={v}
-          gift={gift}
-          previews={pv?.gift}
-          onPick={(g) => {
-            setGift(g);
-            setGiving(false);
-          }}
-          onClose={() => setGiving(false)}
-        />
-      )}
     </Stage>
   );
 }

@@ -1592,6 +1592,8 @@
       "how": "Gifts are public and land after the wheel.",
       "close": "Close",
       "amount": "{n}",
+      "give": "Give {n}",
+      "who": "Give to whom?",
       "none": "No gift",
       "gave": "{from} gave {to} {n}.",
       "gaveYou": "{from} gave you {n}.",
@@ -2274,6 +2276,7 @@
       "confirmHow": "If it's a lie, you win {win}. If it's true, they get your {n}.",
       "cancel": "Cancel",
       "callIt": "Call it",
+      "callItN": "Call it, {n}",
       "callHint": "Think it is a lie? Tap the bubble to call it ({n}).",
       "callingLine": "You're calling {name} for {n}. Tap the bubble to cancel.",
       "claim": {

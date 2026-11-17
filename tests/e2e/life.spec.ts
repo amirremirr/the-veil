@@ -58,12 +58,26 @@ test('Daily Life starts a life on the day seed and reaches the result card', asy
     expect(d.sh).toBeLessThanOrEqual(d.ih);
     await cleanScreen(page);
     if (await page.locator('[data-result-card]').count()) break;
-    // G1: the first "See the money" link opens a ledger whose lines are listed, then closes.
+    // UI V4 (V1): no pop-ups in Play: no dialog, and nothing fixed on top that takes taps.
+    expect(await page.locator('[role="dialog"], [data-call-confirm]').count()).toBe(0);
+    const fixedOnTop = await page.evaluate(() =>
+      [...document.querySelectorAll('body *')].filter((el) => {
+        const cs = getComputedStyle(el);
+        const r = el.getBoundingClientRect();
+        return (cs.position === 'fixed' || cs.position === 'absolute') && cs.pointerEvents !== 'none' && Number(cs.zIndex) >= 20 && r.width > 0 && r.height > 0;
+      }).length,
+    );
+    expect(fixedOnTop).toBe(0);
+    // G1: the first "See the money" link opens the ledger in place (UI V4 V1), its lines listed, then closes.
     if (!ledgerSeen && (await page.locator('[data-ledger]').count())) {
       await page.locator('[data-ledger]').first().click();
-      await expect(page.getByRole('dialog')).toBeVisible();
-      await expect(page.getByRole('dialog')).toContainText('Living costs');
-      await page.getByRole('dialog').getByRole('button', { name: 'Close' }).click();
+      await expect(page.locator('[data-panel]')).toBeVisible();
+      await expect(page.locator('[data-panel]')).toContainText('Living costs');
+      expect(await page.locator('[role="dialog"]').count()).toBe(0);
+      const p = await page.evaluate(() => ({ sh: document.documentElement.scrollHeight, ih: window.innerHeight }));
+      expect(p.sh).toBeLessThanOrEqual(p.ih);
+      await page.locator('[data-panel-close]').click();
+      await expect(page.locator('[data-panel]')).toHaveCount(0);
       ledgerSeen = true;
     }
     if (await page.locator('[data-beat-next]').count()) {

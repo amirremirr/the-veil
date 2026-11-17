@@ -81,9 +81,11 @@ async function playThrough(page: Page, o: { gift?: boolean; noPoll?: boolean } =
       if (await buy.count()) await buy.click();
       // D-142: give once, the first time the move screen comes up.
       if (o.gift && !seen.gifts) {
-        await page.getByRole('button', { name: /^Give/ }).click();
+        await page.locator('[data-gift-bar]').click();
+        // UI V4 (V1): the picker opens in place, not in a sheet.
+        expect(await page.locator('[role="dialog"]').count()).toBe(0);
         await page.locator('[data-gift-sheet] [data-gift]').first().click();
-        await expect(page.getByRole('button', { name: /^Give 5 to / })).toBeVisible();
+        await expect(page.getByRole('button', { name: /^Give: 5 to / })).toBeVisible();
         seen.gifts++;
       }
       await page.getByRole('button', { name: 'Lock in', exact: true }).click();
@@ -138,6 +140,7 @@ test('plays Episode 3 from the title to the episode summary', async ({ page }) =
   await expect(page.getByText('Episode summary')).toBeVisible();
   await page.getByRole('button', { name: 'What was really going on?' }).click();
   await expect(page.getByText("That's adverse selection.", { exact: false })).toBeVisible();
+  expect(await page.locator('[role="dialog"]').count()).toBe(0);
 });
 
 test('two seats on Hard: the setup line, two contestants, no audience poll on any screen (D-141, D-145)', async ({ page }) => {
@@ -166,7 +169,7 @@ test('the opening card: shown on the first visit, Skip goes to Pick your show, t
   await page.getByRole('button', { name: 'Start a new life' }).click();
   await page.getByRole('button', { name: /Quick and fun/ }).click();
   await expect(page.getByRole('heading', { name: 'A game show about fair play' })).toBeVisible();
-  // The card is a fixed overlay: it must fit, with no scrolling either way.
+  // UI V4 (V1): the card is a screen of its own (no overlay): it must fit, with no scrolling either way.
   const card = await page.locator('[data-opening]').evaluate((el) => ({ sh: el.scrollHeight, sw: el.scrollWidth, cw: el.clientWidth, ih: window.innerHeight }));
   expect(card.sw).toBeLessThanOrEqual(card.cw);
   expect(card.sh).toBeLessThanOrEqual(card.ih);
@@ -191,4 +194,47 @@ test('the opening card: shown on the first visit, Skip goes to Pick your show, t
   await expect(page.getByRole('heading', { name: 'A game show about fair play' })).toBeVisible();
   await page.getByRole('button', { name: "Let's play" }).click();
   await expect(page.locator('[data-opening]')).toHaveCount(0);
+});
+
+test('UI V4 V1: calling is confirmed inside the bubble, and first-time hints are lines in the screen', async ({ page }) => {
+  type V = { __veil: { getState(): { start(o: object): void; game: { phase: { kind: string; step?: string } } } }; __autoplay(f: (g: unknown) => boolean): void };
+  // A first-time player: hint lines on.
+  await page.evaluate(() => localStorage.setItem('veil.play.coach', '1'));
+  await page.evaluate(() => (window as unknown as V).__veil.getState().start({ mode: 'EPISODE', level: 3, ruleset: 'PLAY', nPlayers: 4, difficulty: 'NORMAL', seed: 'v4-call-1' }));
+  let called = false;
+  for (let i = 0; i < 60 && !called; i++) {
+    await page.waitForTimeout(60);
+    if (await page.locator('[data-coach]').count()) {
+      // A hint is a line in the flow of the screen, never fixed on top of it.
+      const pos = await page.locator('[data-coach]').first().evaluate((el) => getComputedStyle(el).position);
+      expect(pos).toBe('static');
+    }
+    const bubble = page.locator('[data-call-bubble]').first();
+    if (await bubble.count()) {
+      const id = await bubble.getAttribute('data-call-bubble');
+      await bubble.click();
+      const confirm = page.locator(`[data-podium], [data-cast-stage] [data-bubble="${id}"][data-call-confirm]`);
+      await expect(page.locator('[data-call-confirm]')).toHaveCount(1);
+      await expect(confirm.last()).toBeVisible();
+      expect(await page.locator('[role="dialog"]').count()).toBe(0);
+      await expect(page.locator('[data-call-confirm]').getByRole('button', { name: 'Call it, 10' })).toBeVisible();
+      await page.locator('[data-call-confirm]').getByRole('button', { name: 'Cancel' }).click();
+      await expect(page.locator('[data-call-confirm]')).toHaveCount(0);
+      await page.locator(`[data-call-bubble="${id}"]`).click();
+      await page.locator('[data-call-yes]').click();
+      await expect(page.locator(`[data-call-bubble="${id}"]`)).toHaveAttribute('aria-pressed', 'true');
+      called = true;
+      break;
+    }
+    if (await page.locator('[data-beat-next]').count()) {
+      await page.locator('[data-beat-next]').first().click();
+      continue;
+    }
+    await page.evaluate(() => {
+      const w = window as unknown as V;
+      const g0 = w.__veil.getState().game;
+      w.__autoplay((g) => g !== g0);
+    });
+  }
+  expect(called).toBe(true);
 });

@@ -55,6 +55,8 @@ export function PlayModeSelect() {
   const choose = (n: LevelId) => {
     useStore.setState({ setupFor: { mode: 'EPISODE', level: n }, screen: 'playSetup' });
   };
+  // UI V4 (V1): the opening card is a screen of its own, not a pop-up over this one.
+  if (opening) return <PlayOpening onDone={() => setOpening(false)} />;
   return (
     <Page narrow>
       <BackLink onClick={() => go('howPlay')} />
@@ -101,7 +103,6 @@ export function PlayModeSelect() {
       <button type="button" className="mt-2 text-small font-semibold underline" onClick={() => setOpening(true)}>
         {t('play.opening.menu')}
       </button>
-      {opening && <PlayOpening onDone={() => setOpening(false)} />}
     </Page>
   );
 }

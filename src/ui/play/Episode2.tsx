@@ -15,7 +15,7 @@ import { nameOf, shortName } from '../game';
 import { Chips, Details, StagedReveal, peakMark, spotlightSteps } from './Peak';
 import { Coach } from './Coach';
 import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
-import { GiftBar, GiftSheet, Tile, previewText } from './Episode3';
+import { GiftBar, Tile, previewText } from './Episode3';
 import { timesWord, bankLineText, roundMoney } from './logic';
 
 type Gift = { to: string; amount: number };
@@ -93,17 +93,16 @@ export function EffortScreen({ v }: { v: ViewState }) {
   const [e, setE] = useState(5);
   const [claim, setClaim] = useState<string>('SILENT');
   const [gift, setGift] = useState<Gift | null>(null);
-  const [giving, setGiving] = useState(false);
   const pv = lv.preview;
   const note = previewText(pv?.effort?.[e]);
   return (
     <Stage v={v} footer={<BigButton onClick={() => act({ effort: e, claim, gift })}>{t('play.stage.lock')}</BigButton>}>
-      <Coach id="move" />
       <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l2.effort.tax', { t: pct(lv.t ?? 0) })}</p>
       <label className="mt-1 block">
         <span className="h-show text-title leading-tight">{t('play.l2.effort.title', { e })}</span>
         <input type="range" min={0} max={10} step={1} value={e} onChange={(ev) => setE(Number(ev.target.value))} className="mt-2 w-full" aria-label={t('play.l2.effort.aria')} />
       </label>
+      <Coach id="move" />
       <p className="text-small">
         {t('play.l2.effort.money', { w: coins(lv.myMoney?.[e] ?? 0) })}
         {note && <span className="ms-1 font-bold">{note}</span>}
@@ -117,20 +116,8 @@ export function EffortScreen({ v }: { v: ViewState }) {
         ))}
       </div>
       <div className="mt-auto pt-2">
-        <GiftBar v={v} gift={gift} note={gift ? previewText(pv?.gift[gift.to]?.[gift.amount]) : null} onOpen={() => setGiving(true)} />
+        <GiftBar v={v} gift={gift} previews={pv?.gift} note={gift ? previewText(pv?.gift[gift.to]?.[gift.amount]) : null} onPick={setGift} />
       </div>
-      {giving && (
-        <GiftSheet
-          v={v}
-          gift={gift}
-          previews={pv?.gift}
-          onPick={(g) => {
-            setGift(g);
-            setGiving(false);
-          }}
-          onClose={() => setGiving(false)}
-        />
-      )}
     </Stage>
   );
 }

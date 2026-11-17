@@ -15,10 +15,10 @@ import { coins, pct } from '../labels';
 import { nameOf, shortName } from '../game';
 import type { CastCue } from './Cast';
 import { Chips, Details, StagedReveal, peakMark, spotlightSteps } from './Peak';
-import { DashHost } from './Characters';
+import { ReallyButton } from './Really';
 import { Coach } from './Coach';
 import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
-import { GiftBar, GiftSheet, Tile, previewText, roundClaims } from './Episode3';
+import { GiftBar, Tile, previewText, roundClaims } from './Episode3';
 import { hostLine, pick, timesWord, bankLineText } from './logic';
 
 type Gift = { to: string; amount: number };
@@ -44,32 +44,9 @@ const lv4 = (v: ViewState) => v.levelView as L4View;
 export const groupName = (g: Group) => t(`play.l4.group.${g}`);
 const policyName = (p: Policy) => t(`levels.4.policies.${p}.name`);
 
-function GiftTile({ v, gift, setGift, bar = false }: { v: ViewState; gift: Gift | null; setGift: (g: Gift | null) => void; bar?: boolean }) {
-  const [open, setOpen] = useState(false);
+function GiftTile({ v, gift, setGift }: { v: ViewState; gift: Gift | null; setGift: (g: Gift | null) => void }) {
   const pv = lv4(v).preview?.gift;
-  return (
-    <>
-      {bar ? <GiftBar v={v} gift={gift} note={gift ? previewText(pv?.[gift.to]?.[gift.amount]) : null} onOpen={() => setOpen(true)} /> : <Tile
-        on={!!gift}
-        title={t('play.gift.title')}
-        desc={gift ? t('play.gift.picked', { n: gift.amount, name: shortName(v, gift.to) }) : t('play.gift.desc', { max: Math.max(...PLAY.GIFT_AMOUNTS) })}
-        note={gift ? previewText(pv?.[gift.to]?.[gift.amount]) : null}
-        onClick={() => setOpen(true)}
-      />}
-      {open && (
-        <GiftSheet
-          v={v}
-          gift={gift}
-          previews={pv}
-          onPick={(g) => {
-            setGift(g);
-            setOpen(false);
-          }}
-          onClose={() => setOpen(false)}
-        />
-      )}
-    </>
-  );
+  return <GiftBar v={v} gift={gift} previews={pv} note={gift ? previewText(pv?.[gift.to]?.[gift.amount]) : null} onPick={setGift} />;
 }
 
 /** Before the first decision: your group, your childcare duty, and who judges when. */
@@ -124,14 +101,16 @@ export function TrainScreen({ v }: { v: ViewState }) {
   const prior = lv.policy === 'B' && lv.priors.POOL !== null ? lv.priors.POOL : lv.priors[g];
   return (
     <Stage v={v} footer={<BigButton onClick={() => act({ train, gift })}>{t('play.stage.lock')}</BigButton>}>
-      <Coach id="move" />
       <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l4.judgeIs', { name: shortName(v, lv.judge) })}</p>
       <h1 className="h-show mt-1 text-hero leading-tight">{t('play.l4.train.title')}</h1>
+      <Coach id="move" />
       <p className="mt-2 text-body">{t(lv.policy === 'B' ? 'play.l4.train.beliefBlind' : 'play.l4.train.belief', { group: groupName(g), p: pct(prior) })}</p>
       <p className="mt-2 text-small">{t('play.l4.train.how')}</p>
-      <div className="mt-auto grid grid-cols-3 gap-2 pt-3">
+      <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
         <Tile on={train} title={t('play.l4.train.tile')} desc={lv.myCostBase !== undefined && lv.myCostBase !== lv.myCost ? t('play.l4.train.costCut', { c: lv.myCost ?? 0, was: lv.myCostBase }) : t('play.l4.train.cost', { c: lv.myCost ?? 0 })} note={previewText(lv.preview?.train)} onClick={() => setTrain(true)} />
         <Tile on={!train} title={t('play.l4.train.skip')} desc={t('play.l4.train.skipDesc')} onClick={() => setTrain(false)} />
+      </div>
+      <div className="mt-2">
         <GiftTile v={v} gift={gift} setGift={setGift} />
       </div>
     </Stage>
@@ -146,8 +125,8 @@ export function ClaimScreen4({ v }: { v: ViewState }) {
   const trained = lv.current?.train?.[v.viewer];
   return (
     <Stage v={v} footer={<BigButton disabled={!x} onClick={() => act(x)}>{t('play.claim.submit')}</BigButton>}>
-      <Coach id="claim" />
       <h1 className="h-show text-hero leading-tight">{t('play.claim.title')}</h1>
+      <Coach id="claim" />
       <div className="mt-3 rounded-2xl bg-card p-3">
         <p className="h-show text-title leading-tight">{t(trained ? 'play.l4.claim.youT' : 'play.l4.claim.youU')}</p>
       </div>
@@ -241,7 +220,7 @@ export function JudgeScreen({ v }: { v: ViewState }) {
       </div>
       <CallChips v={v} claimants={claimantsNow(v, (x) => x === 'TRAINED')} value={call} onPick={setCall} />
       <div className="mt-auto pt-2">
-        <GiftTile bar v={v} gift={gift} setGift={setGift} />
+        <GiftTile v={v} gift={gift} setGift={setGift} />
       </div>
     </Stage>
   );
@@ -338,7 +317,7 @@ export function HiresBeat({ v, next, last }: { v: ViewState; next: () => void; l
 }
 
 /** HireBot's beliefs after the round, as Episode 3's price board. */
-export function BeliefBeat({ v, next, onReally }: { v: ViewState; next: () => void; onReally: () => void }) {
+export function BeliefBeat({ v, next }: { v: ViewState; next: () => void }) {
   const lv = lv4(v);
   const r = lv.rounds[lv.rounds.length - 1];
   const a = r.priorsBefore!;
@@ -359,22 +338,8 @@ export function BeliefBeat({ v, next, onReally }: { v: ViewState; next: () => vo
         ))}
         <p className="h-show mt-4 text-title leading-tight">{t('play.l4.board.head')}</p>
         <p className="mt-2 text-small">{t('play.l4.board.sub', { p: pct(lv.threshold) })}</p>
-        <div className="mt-4">
-          <figure className="flex items-end gap-2" data-voice="host">
-            <span aria-hidden className="shrink-0"><DashHost expr="worried" size={64} /></span>
-            <p className="flex-1 rounded-2xl rounded-bl-sm bg-onspot px-3 py-2 text-small text-spot"><span className="font-bold">Dash:</span> {hostLine('l4board', pick(v, 'l4board', 6))}</p>
-          </figure>
-        </div>
-        <button
-          type="button"
-          className="mt-3 text-small font-semibold underline"
-          onClick={(e) => {
-            e.stopPropagation();
-            onReally();
-          }}
-        >
-          {t('play.really.button')}
-        </button>
+        <Bubble who="Dash" host mood="worried" text={hostLine('l4board', pick(v, 'l4board', 6))} />
+        <ReallyButton v={v} className="mt-3" />
       </div>
     </Stage>
   );

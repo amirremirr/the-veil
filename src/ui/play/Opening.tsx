@@ -23,16 +23,19 @@ function markSeen(): void {
   }
 }
 
-/** UI V3 (U3): one card and a Skip link; the rest is taught in play by coach marks (Coach.tsx). */
-export function PlayOpening({ onDone }: { onDone: () => void }) {
+/**
+ * UI V3 (U3): one card and a Skip link; the rest is taught in play by hint lines (Coach.tsx). UI V4 (V1): a
+ * screen of its own (no pop-up); `inline` shows the same card inside the menu.
+ */
+export function PlayOpening({ onDone, inline = false }: { onDone: () => void; inline?: boolean }) {
   const done = () => {
     markSeen();
     onDone();
   };
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-paper text-ink" role="dialog" aria-modal="true" aria-labelledby="opening-title" data-opening={1} onClick={(e) => e.stopPropagation()}>
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pb-4 pt-3">
-        <div className="flex justify-end">
+    <section className={`flex flex-col bg-paper text-ink ${inline ? '' : 'min-h-[100dvh]'}`} aria-labelledby="opening-title" data-opening={1} onClick={(e) => e.stopPropagation()}>
+      <div className={`mx-auto flex w-full max-w-md flex-1 flex-col ${inline ? '' : 'px-4 pb-4 pt-3'}`}>
+        <div className={`flex justify-end ${inline ? 'hidden' : ''}`}>
           <button type="button" className="min-h-[44px] px-2 text-small font-semibold underline" onClick={done} data-opening-skip>
             {t('play.opening.skip')}
           </button>
@@ -56,6 +59,6 @@ export function PlayOpening({ onDone }: { onDone: () => void }) {
           {t('play.opening.go')}
         </button>
       </div>
-    </div>
+    </section>
   );
 }

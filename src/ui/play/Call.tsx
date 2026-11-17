@@ -7,6 +7,7 @@ import { shortName } from '../game';
 import { hostLine, pick } from './logic';
 import { Bubble } from './OnAir';
 import { useCallRegistration, useStageCue, type CastCue } from './Cast';
+import { useFirstTime } from './Coach';
 
 /** Other contestants with a claim this round (optionally only claims matching `filter`), callable now. */
 export function claimantsNow(v: ViewState, filter?: (value: string) => boolean): string[] {
@@ -27,10 +28,12 @@ export function claimantsNow(v: ViewState, filter?: (value: string) => boolean):
  */
 export function CallChips({ v, claimants, value, onPick }: { v: ViewState; claimants: string[]; value: string | null; onPick: (x: string | null) => void }) {
   useCallRegistration({ claimants, value, onPick });
+  // UI V4 (V1): the first time, the line under the bubbles is the coach hint for calling.
+  const first = useFirstTime('call', claimants.length > 0);
   if (!claimants.length) return null;
   return (
-    <p className={`mt-1 text-small ${value ? 'font-bold text-stamp' : 'text-soft'}`} data-call aria-live="polite">
-      {value ? t('play.cast.callingLine', { name: shortName(v, value), n: PLAY.CALL_STAKE }) : t('play.cast.callHint', { n: PLAY.CALL_STAKE })}
+    <p className={`mt-1 text-small ${value ? 'font-bold text-stamp' : first ? 'font-semibold text-spot' : 'text-soft'}`} data-call data-coach={first && !value ? 'call' : undefined} aria-live="polite">
+      {value ? t('play.cast.callingLine', { name: shortName(v, value), n: PLAY.CALL_STAKE }) : first ? t('play.coach.call', { win: PLAY.CALL_PAYOUT, n: PLAY.CALL_STAKE }) : t('play.cast.callHint', { n: PLAY.CALL_STAKE })}
     </p>
   );
 }

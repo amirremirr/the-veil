@@ -1,20 +1,19 @@
 // Play mode's screens (Play spec 7; redesign D-108). One beat per screen, one big element, one voice.
 // Same screen flow as Study (src/shared/flow.ts): the beats inside a screen are presentation only, and the
 // last beat's button performs that screen's one engine step.
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import type { ValuesCard, ViewState } from '../../engine/types';
 import { VALUES_CARDS } from '../../engine/types';
 import { PLAY } from '../../engine/play/params';
 import { useStore } from '../store';
 import { t } from '../i18n';
-import en from '../copy/en.json';
 import { coins, pct } from '../labels';
 import { nameOf, shortName, useView } from '../game';
 import { FlipCard, useMotionOff } from '../components/common';
-import { Sheet as TableSheet } from '../components/TableParts';
 import { LockedInPanel, useOnline, useWaiting } from '../components/Online';
 import { screenDecisionPhase } from '../../shared/flow';
-import { BannerContext, BigButton, Bubble, Face, Stage } from './OnAir';
+import { BannerContext, BigButton, Bubble, Face, Stage, useStagePanel } from './OnAir';
+import { ReallyButton } from './Really';
 import { sfx } from './sound';
 import { BarBeat, CardsReveal, ClaimScreen, MoveScreen, MyCardsBeat, PriceBeat, RegimeScreen, VoteInBeat, WheelBeat, claimsOpen, hasPriceBeat, regimeName, type L3View } from './Episode3';
 import { eventText, hostLine, missionName, pick, timesWord } from './logic';
@@ -32,29 +31,6 @@ import type { NearMiss } from '../../engine/play/types';
 function episodeStartBank(v: ViewState): number {
   const prev = v.play!.bankHistory.filter((h) => h.level < v.levelIndex).slice(-1)[0];
   return prev ? prev.banks[v.viewer] : v.play!.startingBank;
-}
-
-/** How many "What was really going on?" lines an episode has. */
-const reallyCount = (level: number) => ((en as unknown as { play: { really: Record<string, string[]> } }).play.really[`L${level}`] ?? []).length;
-
-/** "What was really going on?": three lines on the mechanism (Play spec 7.5). */
-function ReallySheet({ v, onClose }: { v: ViewState; onClose: () => void }) {
-  const online = useOnline();
-  const chooseMode = useStore((s) => s.chooseMode);
-  return (
-    <TableSheet title={t('play.really.button')} closeLabel={t('play.really.close')} onClose={onClose}>
-      <ul className="space-y-2" data-really>
-        {Array.from({ length: reallyCount(v.levelIndex) }, (_, i) => i).map((i) => (
-          <li key={i}>{t(`play.really.L${v.levelIndex}.${i}`)}</li>
-        ))}
-      </ul>
-      {!online && (
-        <button type="button" className="font-semibold underline" onClick={() => chooseMode('SINGLE_LEVEL', v.levelIndex)}>
-          {t('play.really.link')}
-        </button>
-      )}
-    </TableSheet>
-  );
 }
 
 /** Intros already shown on the mission screen (UI V3 U3): that INTRO moves on by itself. */
@@ -160,7 +136,7 @@ function EventBanner({ v }: { v: ViewState }) {
       </summary>
       <p className="mt-1 text-small italic text-soft">{txt.text}</p>
       <div className="mt-1 pb-1">
-        <Bubble who="Dash" host mood="excited" text={hostLine('eventIntro', pick(v, 'eventIntro', 6), { event: txt.name })} />
+        <Bubble who="Dash" host inline mood="excited" text={hostLine('eventIntro', pick(v, 'eventIntro', 6), { event: txt.name })} />
       </div>
     </details>
   );
@@ -350,14 +326,8 @@ function DecisionFlow4({ v }: { v: ViewState }) {
 function ResultsFlow4({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
   const [k, setK] = useState(0);
-  const [really, setReally] = useState(false);
   if (k === 0) return <HiresBeat v={v} last={false} next={() => setK(1)} />;
-  return (
-    <>
-      <BeliefBeat v={v} next={() => act()} onReally={() => setReally(true)} />
-      {really && <ReallySheet v={v} onClose={() => setReally(false)} />}
-    </>
-  );
+  return <BeliefBeat v={v} next={() => act()} />;
 }
 
 /** A round's results as beats: the Bar (if it voted), the wheel (everyone else in one row), then the price. */
@@ -367,15 +337,9 @@ function ResultsFlow({ v }: { v: ViewState }) {
   const lv = v.levelView as L3View;
   const bar = !!lv.rounds[lv.rounds.length - 1]?.bar;
   const [k, setK] = useState(bar ? -1 : 0);
-  const [really, setReally] = useState(false);
   if (k === -1) return <BarBeat v={v} next={() => setK(0)} />;
   if (k === 0) return <WheelBeat v={v} last={!price} next={() => (price ? setK(1) : act())} />;
-  return (
-    <>
-      <PriceBeat v={v} next={() => act()} onReally={() => setReally(true)} />
-      {really && <ReallySheet v={v} onClose={() => setReally(false)} />}
-    </>
-  );
+  return <PriceBeat v={v} next={() => act()} />;
 }
 
 /** Section 7.4: guess one other contestant's mission. */
@@ -463,8 +427,10 @@ function RankBlock({ v }: { v: ViewState }) {
  * UI V3 (U3): the score as a two-part bar, the bank half and the mission half (and guess points), with debt
  * as a red notch taken off the end. The words behind it are one tap away ("See the money").
  */
-export function ScoreBar({ m, onWords }: { m: NonNullable<ViewState['play']>['mission']; onWords: () => void }) {
+export function ScoreBar({ m, words }: { m: NonNullable<ViewState['play']>['mission']; words: ReactNode }) {
+  const open = useStagePanel();
   if (!m) return null;
+  const onWords = () => open?.({ title: t('play.score.wordsTitle'), body: words });
   const bankSigned = Math.round(m.bankPart);
   const bank = Math.max(0, bankSigned);
   const mission = Math.max(0, Math.round(m.score) - Math.round(m.bankPart) + Math.round(m.stress) - Math.round(m.guessPoints));
@@ -530,7 +496,6 @@ function nearMissText(v: ViewState, nm: NearMiss): string {
 function EpisodeSummary({ v }: { v: ViewState }) {
   const { go, replay, online, leaveOnline, act } = useStore();
   const pl = v.play!;
-  const [sheet, setSheet] = useState<null | 'really' | 'words'>(null);
   const lv = v.levelView as L3View;
   const types = lv.types ?? {};
   const m = pl.mission!;
@@ -605,7 +570,7 @@ function EpisodeSummary({ v }: { v: ViewState }) {
         <RankBlock v={v} />
       </div>
       <div className="mt-2">
-        <ScoreBar m={m} onWords={() => setSheet('words')} />
+        <ScoreBar m={m} words={<ScoreWords v={v} />} />
       </div>
       <dl className="mt-1 space-y-1.5" data-summary>
         {row(missionName(m.card), complete ? t('play.summary.missionDone') : t('play.summary.missionMissed'), complete ? 'text-good' : 'text-stamp')}
@@ -613,19 +578,21 @@ function EpisodeSummary({ v }: { v: ViewState }) {
         {pl.pollMode !== 'NEVER' && v.levelIndex === 3 && row(t('play.summary.readLabel'), readText)}
         {row(t('play.summary.nearMiss'), nm ? nearMissText(v, nm) : t('play.summary.nearMissNone'))}
       </dl>
-      <button type="button" className="mt-1 min-h-[44px] self-start text-small font-semibold underline" onClick={() => setSheet('really')}>
-        {t('play.really.button')}
-      </button>
+      <ReallyButton v={v} className="mt-1 self-start" />
       {v.seed && <p className="mt-2 text-small text-soft">{t('play.summary.seed', { seed: v.seed })}</p>}
       {playtestOn() && <PlaytestPanel v={v} />}
-      {sheet === 'really' && <ReallySheet v={v} onClose={() => setSheet(null)} />}
-      {sheet === 'words' && (
-        <TableSheet title={t('play.score.wordsTitle')} closeLabel={t('play.really.close')} onClose={() => setSheet(null)}>
+    </Stage>
+  );
+}
+
+function ScoreWords({ v }: { v: ViewState }) {
+  const pl = v.play!;
+  const m = pl.mission!;
+  return (
+        <>
           <p data-score-text>{t('play.summary.bankChange', { from: coins(episodeStartBank(v)), to: coins(pl.banks[v.viewer]) })}</p>
           <p>{`${t('play.summary.score', { s: coins(m.score), b: coins(m.bankPart), m: String(Math.round(m.score) - Math.round(m.bankPart) + Math.round(m.stress) - Math.round(m.guessPoints)), d: coins(m.stress), e: coins(m.episodeStress), g: coins(m.guessPoints) })} ${t(`play.missions.${m.card}.points`)}`}</p>
-        </TableSheet>
-      )}
-    </Stage>
+        </>
   );
 }
 

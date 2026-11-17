@@ -58,6 +58,13 @@ export function PlayMenu({ v, onClose, chatFirst = false }: { v: ViewState; onCl
       )}
     </section>
   );
+  // UI V4 (V1): "What is this game?" shows its card inside the menu, not on top of it.
+  if (opening)
+    return (
+      <Sheet title={t('play.stage.menuTitle')} closeLabel={t('play.stage.menuClose')} onClose={onClose}>
+        <PlayOpening inline onDone={() => setOpening(false)} />
+      </Sheet>
+    );
   return (
     <Sheet title={t('play.stage.menuTitle')} closeLabel={t('play.stage.menuClose')} onClose={onClose}>
       {chatFirst && chat}
@@ -77,7 +84,6 @@ export function PlayMenu({ v, onClose, chatFirst = false }: { v: ViewState; onCl
       <button type="button" className="btn-ghost w-full" onClick={() => (online ? leaveOnline() : go('title'))}>
         {t('play.stage.menuQuit')}
       </button>
-      {opening && <PlayOpening onDone={() => setOpening(false)} />}
     </Sheet>
   );
 }
@@ -131,6 +137,34 @@ export function TopBar({ v, onMenu }: { v: ViewState; onMenu: () => void }) {
 export const BannerContext = createContext<ReactNode>(null);
 
 /**
+ * UI V4 (V1): no pop-ups. "See the money", "What was really going on?" and the score in words open in
+ * place: the screen's own content area shows them (with a Close button) instead of a sheet on top.
+ */
+export type StagePanel = { title: string; body: ReactNode };
+export const PanelContext = createContext<((p: StagePanel | null) => void) | null>(null);
+/** Open a panel in place on the enclosing stage (null when there is no stage). */
+export function useStagePanel() {
+  return useContext(PanelContext);
+}
+
+/** UI V4 (V1): Dash's line sits in one fixed slot of the screen, under the cast, never over content. */
+export type DashLine = { text: string; mood: DashExpr };
+export const DashSlotContext = createContext<((key: string, l: DashLine | null) => void) | null>(null);
+
+function DashSlot({ line, dark }: { line: DashLine; dark: boolean }) {
+  return (
+    <figure className="mt-1 flex min-h-[44px] items-center gap-2" data-voice="host" data-dash-slot>
+      <span aria-hidden className="shrink-0">
+        <DashHost expr={line.mood} size={40} />
+      </span>
+      <p className={`line-clamp-2 flex-1 text-small leading-snug ${dark ? 'text-onspot' : ''}`}>
+        <span className="font-bold">Dash:</span> {line.text}
+      </p>
+    </figure>
+  );
+}
+
+/**
  * One screen of the show. `onTap` makes the whole screen advance on a tap (beats); buttons inside stop the
  * tap from bubbling. Content stacks from the top and the action sits at the bottom. UI V3 (U1): the cast
  * stands on the stage under the top bar on every screen with the bar (or when a screen passes `cast`);
@@ -164,6 +198,16 @@ export function Stage({
   const [fit, setFit] = useState(0);
   const [call, setCall] = useState<CallReg | null>(null);
   const [extras, setExtras] = useState<Record<string, CastCue>>({});
+  const [panel, setPanel] = useState<StagePanel | null>(null);
+  const [dash, setDash] = useState<Record<string, DashLine>>({});
+  const setDashLine = useCallback((key: string, l: DashLine | null) => {
+    setDash((x) => {
+      const y = { ...x };
+      if (l) y[key] = l;
+      else delete y[key];
+      return y;
+    });
+  }, []);
   const setCue = useCallback((key: string, c: CastCue | null) => {
     setExtras((x) => {
       const y = { ...x };
@@ -177,13 +221,26 @@ export function Stage({
   const [autoFlash] = useState(() => (flash === undefined && v.play ? screenFlash(v) : null));
   const theFlash = flash === undefined ? autoFlash : flash;
   const showCast = cast !== false && (cast !== undefined || bar);
+  // UI V4 (V1): something opening in place (the Give picker, a call in a bubble) can make the screen taller
+  // without this stage re-rendering, so a resize of the page checks the fit again.
+  const [grew, setGrew] = useState(0);
+  useEffect(() => {
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => setGrew((g) => g + 1));
+    ro.observe(document.body);
+    return () => ro.disconnect();
+  }, []);
   useLayoutEffect(() => {
     if (!showCast || fit >= 3) return;
     if (document.documentElement.scrollHeight > window.innerHeight) setFit(fit + 1);
-  });
+  }, [grew, fit, showCast, children, panel]);
+  const dashLines = Object.values(dash);
+  const dashLine = dashLines[dashLines.length - 1];
   return (
     <CallContext.Provider value={setCall}>
     <CueContext.Provider value={setCue}>
+    <PanelContext.Provider value={setPanel}>
+    <DashSlotContext.Provider value={setDashLine}>
       <div className={`relative flex min-h-[100dvh] flex-col ${tone === 'breaking' ? 'bg-spot text-onspot' : ''} ${onTap ? 'cursor-pointer' : ''}`} onClick={onTap ? () => { sfx('tap'); onTap(); } : undefined} data-stage data-beat={onTap ? 'tap' : undefined}>
         {theFlash && !off && (
           <motion.div
@@ -198,11 +255,24 @@ export function Stage({
         {bar && <TopBar v={v} onMenu={() => { ptTap('menu'); setMenu(true); }} />}
         <main className="relative mx-auto flex w-full max-w-md flex-1 flex-col px-4 pt-2">
           {showCast && <CastStage v={v} cue={mergeCues(cast || {}, ...Object.values(extras))} fit={fit} call={call} />}
-          <div className="flex flex-1 flex-col pt-2">
-            {banner}
-            {children}
+          {dashLine && !panel && <DashSlot line={dashLine} dark={tone === 'breaking'} />}
+          <div className="flex flex-1 flex-col pt-2" data-content>
+            {/* The content stays mounted (its choices are kept) while a panel shows in its place. */}
+            <div className={panel ? 'hidden' : 'contents'}>
+              {banner}
+              {children}
+            </div>
+            {panel && (
+              <section className="flex flex-1 flex-col" aria-labelledby="stage-panel-title" onClick={stop} data-panel>
+                <h2 id="stage-panel-title" className="h-show text-title leading-tight">{panel.title}</h2>
+                <div className="mt-2 flex-1 space-y-2 text-small">{panel.body}</div>
+                <button type="button" className="mt-3 min-h-[52px] w-full rounded-full bg-card text-lead font-bold" onClick={() => setPanel(null)} data-panel-close>
+                  {t('play.ledger.hide')}
+                </button>
+              </section>
+            )}
           </div>
-          {footer && (
+          {footer && !panel && (
             <div className="pt-3" onClick={stop}>
               {footer}
             </div>
@@ -215,6 +285,8 @@ export function Stage({
           </div>
         )}
       </div>
+    </DashSlotContext.Provider>
+    </PanelContext.Provider>
     </CueContext.Provider>
     </CallContext.Provider>
   );
@@ -230,8 +302,19 @@ export function dashMood(kind?: string): DashExpr {
 }
 
 /** The single voice on a screen: Dash (drawn beside his line), or one contestant. */
-export function Bubble({ who, text, host = false, bot, mood }: { who: string; text: string; host?: boolean; bot?: ViewState['players'][number]; mood?: DashExpr }) {
-  if (!text) return null;
+export function Bubble({ who, text, host = false, bot, mood, inline = false }: { who: string; text: string; host?: boolean; bot?: ViewState['players'][number]; mood?: DashExpr; inline?: boolean }) {
+  const slot = useContext(DashSlotContext);
+  // `inline`: a line inside something closed by default (the event card), which stays where it is.
+  const inSlot = host && !!slot && !inline;
+  const m = mood ?? 'neutral';
+  // UI V4 (V1): on a stage, Dash's line goes to the stage's fixed slot; the bubble itself renders nothing.
+  const [key] = useState(() => `d${Math.random().toString(36).slice(2)}`);
+  useEffect(() => {
+    if (!inSlot || !text) return;
+    slot!(key, { text, mood: m });
+    return () => slot!(key, null);
+  }, [inSlot, text, m, key, slot]);
+  if (!text || inSlot) return null;
   if (host)
     return (
       <figure className="flex items-end gap-2" data-voice="host">
@@ -311,7 +394,7 @@ export function AutoButton({ onClick, children, animMs = 0, dark = false }: { on
     let id = 0;
     const fire = () => {
       // A sheet ("See the money", "What was really going on?") holds the beat until it closes.
-      if (document.querySelector('[role="dialog"]')) id = window.setTimeout(fire, 400);
+      if (document.querySelector('[role="dialog"], [data-panel]')) id = window.setTimeout(fire, 400);
       else onClick();
     };
     id = window.setTimeout(fire, ms);

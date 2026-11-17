@@ -13,8 +13,7 @@ import { CallChips, CallResults, claimantsNow } from './Call';
 import { coins, pct, signed } from '../labels';
 import { nameOf, shortName, useTalkFrom } from '../game';
 import { useMotionOff } from '../components/common';
-import { Sheet } from '../components/TableParts';
-import { DashHost } from './Characters';
+import { ReallyButton } from './Really';
 import { Coach } from './Coach';
 import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
 import { Chips, Details, StagedReveal, peakMark, spotlightSteps } from './Peak';
@@ -120,8 +119,8 @@ export function ClaimScreen({ v }: { v: ViewState }) {
   const opts = ['LOW', 'HIGH', 'SILENT'];
   return (
     <Stage v={v} chatFirst footer={<BigButton disabled={!x} onClick={() => act(x)}>{t('play.claim.submit')}</BigButton>}>
-      <Coach id="claim" />
       <h1 className="h-show text-hero leading-tight">{t('play.claim.title')}</h1>
+      <Coach id="claim" />
       <div className="mt-3 rounded-2xl bg-card p-3">
         <p className="h-show text-title leading-tight">{t(`play.claim.you.${lv.myType}`, { p: pct(myOdds(v, false)), worry: t(`play.myCards.worry.${lv.myWorry ?? 'CALM'}`) })}</p>
       </div>
@@ -200,7 +199,6 @@ export function MoveScreen({ v }: { v: ViewState }) {
   const [gym, setGym] = useState(false);
   const [bar, setBar] = useState<string | null>(null);
   const [gift, setGift] = useState<Gift | null>(null);
-  const [giving, setGiving] = useState(false);
   const [call, setCall] = useState<string | null>(null);
   const mandatory = lv.regime !== 'VOL';
   const canBuy = !mandatory && lv.premium !== null;
@@ -221,7 +219,6 @@ export function MoveScreen({ v }: { v: ViewState }) {
   const giftNote = gift ? previewText(pv?.gift[gift.to]?.[gift.amount]) : null;
   return (
     <Stage v={v} chatFirst footer={<BigButton onClick={() => act(decision)}>{t('play.stage.lock')}</BigButton>}>
-      <Coach id="move" />
       {launch && (
         <p className="mb-2 rounded-2xl border-2 border-spot bg-card px-3 py-2 text-small font-semibold leading-snug" data-launch-banner>
           {t('play.stage.launchDesc', { p: coins(lv.premium!) })}
@@ -230,6 +227,7 @@ export function MoveScreen({ v }: { v: ViewState }) {
       <p className="text-body font-semibold leading-snug">
         {t('play.move.risk')} <span className="h-show text-title text-spot" aria-live="polite">{pct(myOdds(v, gym))}</span>
       </p>
+      <Coach id="move" />
       {showRead && poll[v.viewer] !== undefined && <p className="text-small">{t('play.move.youRead', { p: pct(poll[v.viewer]) })}</p>}
       {showRead && (
         <section className="mt-2" aria-labelledby="bar-title">
@@ -274,7 +272,7 @@ export function MoveScreen({ v }: { v: ViewState }) {
         </section>
       )}
       <CallChips v={v} claimants={claimantsNow(v)} value={call} onPick={setCall} />
-      <div className="mt-auto grid grid-cols-3 gap-2 pt-3">
+      <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
         {launch ? (
           <Tile on disabled title={t('play.stage.launchTitle')} desc={t('play.cast.launchShort', { p: coins(lv.premium!) })} />
         ) : canBuy ? (
@@ -285,33 +283,34 @@ export function MoveScreen({ v }: { v: ViewState }) {
           <Tile on={false} disabled title={t('play.stage.noCoverTitle')} desc={t('play.stage.noCoverDesc')} />
         )}
         <Tile on={gym} title={t('play.stage.gymTitle')} desc={t('play.stage.gymDesc', { c: n.gymCost })} note={previewText(pv?.gym)} onClick={() => setGym(!gym)} />
-        <Tile
-          on={!!gift}
-          title={t('play.gift.title')}
-          desc={gift ? t('play.gift.picked', { n: gift.amount, name: shortName(v, gift.to) }) : t('play.gift.desc', { max: Math.max(...PLAY.GIFT_AMOUNTS) })}
-          note={giftNote}
-          onClick={() => setGiving(true)}
-        />
       </div>
-      {giving && (
-        <GiftSheet
-          v={v}
-          gift={gift}
-          onPick={(g) => {
-            setGift(g);
-            setGiving(false);
-          }}
-          onClose={() => setGiving(false)}
-        />
-      )}
+      <div className="mt-2">
+        <GiftBar v={v} gift={gift} note={giftNote} onPick={setGift} />
+      </div>
     </Stage>
   );
 }
 
-/** UI V3 (U1): Give as one slim bar, for move screens where it would sit alone in a big tile. */
-export function GiftBar({ v, gift, note, onOpen }: { v: ViewState; gift: Gift | null; note?: string | null; onOpen: () => void }) {
+/**
+ * UI V3 (U1): Give as one slim bar. UI V4 (V1, V2): the optional second choice of a move screen, collapsed by
+ * default; a tap opens the picker in place (no sheet on top), and picking closes it again.
+ */
+export function GiftBar({ v, gift, note, onPick, previews }: { v: ViewState; gift: Gift | null; note?: string | null; onPick: (g: Gift | null) => void; previews?: Record<string, Record<number, number>> }) {
+  const [open, setOpen] = useState(false);
+  if (open)
+    return (
+      <GiftPicker
+        v={v}
+        gift={gift}
+        previews={previews}
+        onPick={(g) => {
+          onPick(g);
+          setOpen(false);
+        }}
+      />
+    );
   return (
-    <button type="button" aria-pressed={!!gift} onClick={onOpen} className={`flex min-h-[48px] w-full items-center gap-2 rounded-2xl px-3 text-start ${gift ? 'bg-spot text-onspot' : 'bg-card'}`} data-gift-bar>
+    <button type="button" aria-expanded={false} onClick={(e) => { e.stopPropagation(); setOpen(true); }} className={`flex min-h-[44px] w-full items-center gap-2 rounded-2xl px-3 text-start ${gift ? 'bg-spot text-onspot' : 'bg-card'}`} data-gift-bar>
       <span aria-hidden className="h-show text-lead">+</span>
       <span className="flex-1 text-small font-semibold leading-tight">
         <span className="font-bold">{t('play.gift.title')}:</span> {gift ? t('play.gift.picked', { n: gift.amount, name: shortName(v, gift.to) }) : t('play.gift.desc', { max: Math.max(...PLAY.GIFT_AMOUNTS) })}
@@ -327,36 +326,43 @@ export function previewText(x: number | null | undefined): string | null {
   return t('play.move.preview', { n: signed(Math.round(x)) });
 }
 
-/** D-142: pick a gift: one other contestant, one amount, or none. Each option shows its mission preview. */
-export function GiftSheet({ v, gift, onPick, onClose, previews }: { v: ViewState; gift: Gift | null; onPick: (g: Gift | null) => void; onClose: () => void; previews?: Record<string, Record<number, number>> }) {
+/**
+ * D-142: pick a gift: one other contestant, one amount, or none. UI V4 (V1): in place on the screen, two
+ * short rows (who, then how much), so it fits under the main choice.
+ */
+export function GiftPicker({ v, gift, onPick, previews }: { v: ViewState; gift: Gift | null; onPick: (g: Gift | null) => void; previews?: Record<string, Record<number, number>> }) {
   const pv = previews ? { gift: previews } : lv3(v).preview;
+  const others = v.players.filter((p) => p.id !== v.viewer);
+  const [to, setTo] = useState<string>(gift?.to ?? others[0]?.id ?? '');
   return (
-    <Sheet title={t('play.gift.sheet')} closeLabel={t('play.gift.close')} onClose={onClose}>
-      <p className="text-small">{t('play.gift.how')}</p>
-      <ul className="space-y-2" data-gift-sheet>
-        {v.players
-          .filter((p) => p.id !== v.viewer)
-          .map((p) => (
-            <li key={p.id} className="flex items-center gap-2 rounded-2xl bg-card px-3 py-2">
-              <Face v={v} p={p} size={28} />
-              <span className="flex-1 truncate text-small font-bold">{shortName(v, p.id)}</span>
-              {PLAY.GIFT_AMOUNTS.map((a) => {
-                const on = gift?.to === p.id && gift.amount === a;
-                const note = previewText(pv?.gift[p.id]?.[a]);
-                return (
-                  <button key={a} type="button" aria-pressed={on} onClick={() => onPick({ to: p.id, amount: a })} className={`min-h-[44px] min-w-[64px] rounded-xl px-2 text-small font-bold ${on ? 'bg-spot text-onspot' : 'bg-paper'}`} data-gift={`${p.id}:${a}`}>
-                    {t('play.gift.amount', { n: a })}
-                    {note && <span className="block text-small font-semibold">{note}</span>}
-                  </button>
-                );
-              })}
-            </li>
-          ))}
-      </ul>
-      <button type="button" className="btn-ghost w-full" onClick={() => onPick(null)} data-gift="none">
-        {t('play.gift.none')}
-      </button>
-    </Sheet>
+    <section className="rounded-2xl border-2 border-spot bg-card p-2" aria-labelledby="gift-title" onClick={(e) => e.stopPropagation()} data-gift-sheet>
+      <p id="gift-title" className="text-small font-bold">
+        {t('play.gift.sheet')} <span className="font-normal text-soft">{t('play.gift.how')}</span>
+      </p>
+      <div className="mt-1 grid gap-1" style={{ gridTemplateColumns: `repeat(${others.length}, minmax(0, 1fr))` }} role="group" aria-label={t('play.gift.who')}>
+        {others.map((p) => (
+          <button key={p.id} type="button" aria-pressed={to === p.id} onClick={() => setTo(p.id)} className={`flex min-h-[44px] items-center justify-center gap-1 rounded-xl px-1 text-small font-bold ${to === p.id ? 'bg-spot text-onspot' : 'bg-paper'}`} data-gift-to={p.id}>
+            <Face v={v} p={p} size={24} ring={false} />
+            <span className="truncate">{shortName(v, p.id)}</span>
+          </button>
+        ))}
+      </div>
+      <div className="mt-1 grid grid-cols-3 gap-1">
+        {PLAY.GIFT_AMOUNTS.map((a) => {
+          const on = gift?.to === to && gift.amount === a;
+          const note = previewText(pv?.gift[to]?.[a]);
+          return (
+            <button key={a} type="button" aria-pressed={on} onClick={() => onPick({ to, amount: a })} className={`min-h-[44px] rounded-xl px-1 text-small font-bold ${on ? 'bg-spot text-onspot' : 'bg-paper'}`} data-gift={`${to}:${a}`}>
+              {t('play.gift.give', { n: a })}
+              {note && <span className="block text-small font-semibold leading-tight">{note}</span>}
+            </button>
+          );
+        })}
+        <button type="button" className="min-h-[44px] rounded-xl bg-paper px-1 text-small font-bold" onClick={() => onPick(null)} data-gift="none">
+          {t('play.gift.none')}
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -700,7 +706,7 @@ export function hasPriceBeat(v: ViewState): boolean {
 }
 
 /** Beat (c): SafeHands' price change as its own full screen, with one line on why and one voice. */
-export function PriceBeat({ v, next, onReally }: { v: ViewState; next: () => void; onReally: () => void }) {
+export function PriceBeat({ v, next }: { v: ViewState; next: () => void }) {
   const lv = lv3(v);
   const r = lv.rounds[lv.rounds.length - 1];
   const from = r.listPrice ?? r.premium!;
@@ -741,22 +747,8 @@ export function PriceBeat({ v, next, onReally }: { v: ViewState; next: () => voi
         )}
         <p className="h-show mt-4 text-title leading-tight">{t(`play.stage.head${kind}`)}</p>
         <p className="mt-2 text-small">{t(`play.stage.sub${kind}`)}</p>
-        <div className="mt-4">
-          <figure className="flex items-end gap-2" data-voice="host">
-            <span aria-hidden className="shrink-0"><DashHost expr="worried" size={64} /></span>
-            <p className="flex-1 rounded-2xl rounded-bl-sm bg-onspot px-3 py-2 text-small text-spot"><span className="font-bold">Dash:</span> {hostLine(`price${kind}`, pick(v, `price-${kind}`, 6))}</p>
-          </figure>
-        </div>
-        <button
-          type="button"
-          className="mt-3 text-small font-semibold underline"
-          onClick={(e) => {
-            e.stopPropagation();
-            onReally();
-          }}
-        >
-          {t('play.really.button')}
-        </button>
+        <Bubble who="Dash" host mood="worried" text={hostLine(`price${kind}`, pick(v, `price-${kind}`, 6))} />
+        <ReallyButton v={v} className="mt-3" />
       </div>
     </Stage>
   );

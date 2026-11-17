@@ -102,6 +102,10 @@ function measure() {
     return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && cs.display !== 'none' && cs.opacity !== '0';
   };
   const words = (root.innerText || '').trim().split(/\s+/).filter(Boolean).length;
+  // UI V4: the words a player reads on the screen itself, not counting the top bar, the cast (names, banks,
+  // bubbles) or the bottom button. Decision screens must stay at 45 or fewer.
+  const content = document.querySelector('[data-content]') || document.querySelector('main [data-cast-stage]')?.parentElement?.querySelector(':scope > div.flex-1') || document.querySelector('main');
+  const cwords = content ? (content.innerText || '').trim().split(/\s+/).filter(Boolean).length : 0;
   const buttons = [...document.querySelectorAll('button')].filter(isVisible).length;
   // Overlap: content is hidden if a bottom bar or floating button still covers it when the page is
   // scrolled to the bottom, or if a floating (not full-width) element covers it at first view.
@@ -152,6 +156,7 @@ function measure() {
     auto: Number(document.querySelector('[data-auto]')?.getAttribute('data-auto') || 0),
     tall: document.documentElement.scrollHeight > window.innerHeight,
     words,
+    cwords,
     buttons,
     height: document.documentElement.scrollHeight,
     hscroll: document.documentElement.scrollWidth > document.documentElement.clientWidth,
@@ -175,7 +180,7 @@ for (let i = 0; i < 1000; i++) {
     await page.screenshot({ path: `${outDir}/${String(seen.size).padStart(3, '0')}-${key}.png`, fullPage: true });
   }
   lines.push(
-    `${group.padEnd(4)} R${m.round} ${`${m.kind}:${m.step}${m.beat ? ` (${m.beat})` : ''}${m.auto ? ' auto' : ''}`.padEnd(32)} words=${String(m.words).padStart(4)} buttons=${String(m.buttons).padStart(2)} height=${String(m.height).padStart(5)}${m.hscroll ? ' HSCROLL' : ''}${ruleset === 'PLAY' && m.tall ? ' TALLER THAN VIEWPORT' : ''}`,
+    `${group.padEnd(4)} R${m.round} ${`${m.kind}:${m.step}${m.beat ? ` (${m.beat})` : ''}${m.auto ? ' auto' : ''}`.padEnd(32)} words=${String(m.words).padStart(4)} content=${String(m.cwords).padStart(3)} buttons=${String(m.buttons).padStart(2)} height=${String(m.height).padStart(5)}${m.hscroll ? ' HSCROLL' : ''}${ruleset === 'PLAY' && m.tall ? ' TALLER THAN VIEWPORT' : ''}`,
   );
   for (const o of m.overlaps) lines.push(`     OVERLAP: ${o}`);
   // Play beats inside one engine screen: tap to the next beat (presentation only, no engine step).
@@ -220,6 +225,12 @@ for (const gname of groups) {
 for (const gname of groups) table.push(`Pace ${gname}: ${(rows.filter((r) => r.group === gname).reduce((a, r) => a + paceOf(r), 0) / 60).toFixed(1)} min`);
 table.push(`Pace total: ${(rows.reduce((a, r) => a + paceOf(r), 0) / 60).toFixed(1)} min`);
 table.push(`${'Total'.padEnd(6)} ${String(tot.s).padStart(7)}  ${String(tot.tp).padStart(4)}  ${String(tot.d).padStart(9)}  ${String(tot.w).padStart(5)}  ${''.padStart(11)}  ${String(tot.o).padStart(8)}  ${String(tot.h).padStart(7)}`);
+// UI V4 (V2): words on decision screens (content only), at most 45.
+if (ruleset === 'PLAY') {
+  const ds = rows.filter((r) => r.decisions);
+  const over = ds.filter((r) => r.cwords > 45);
+  table.push(`Decision screens: ${ds.length}, content words max ${Math.max(0, ...ds.map((r) => r.cwords))}, mean ${(ds.reduce((a, r) => a + r.cwords, 0) / Math.max(1, ds.length)).toFixed(1)}, over 45: ${over.length}`);
+}
 // Play screens must fit the viewport: one big element per screen, nothing to scroll (D-108).
 const tall = ruleset === 'PLAY' ? rows.filter((r) => r.tall).length : 0;
 if (ruleset === 'PLAY') table.push('', tall ? `FAIL: ${tall} Play screen(s) taller than ${width}x${height}.` : `PASS: every Play screen fits ${width}x${height}.`);
