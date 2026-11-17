@@ -1,6 +1,7 @@
 // Play Episode 1, "Born" (v2 Section 4, D-152): claim your vote, vote before you know your income, and in
 // round 2 the Peek. One beat per screen, as Episode 3. Every string comes from play.l1.*.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { DURATION } from './tokens';
 import { useMotionOff } from '../components/common';
 import { motion } from 'framer-motion';
 import type { ViewState } from '../../engine/types';
@@ -137,8 +138,17 @@ export function VotesBeat({ v, next }: { v: ViewState; next: () => void }) {
       cue.expr![p.id] = 'smug';
     } else if (c && c !== 'SILENT') cue.stamps![p.id] = { text: t('play.cast.kept'), tone: 'good' };
   }
+  // UI V4 (V4): the votes flip one at a time, 1.5 s each (at most 6 s); a tap shows them all, the next tap moves on.
+  const [shown, setShown] = useState(off ? v.players.length : 0);
+  const all = shown >= v.players.length;
+  useEffect(() => {
+    if (off || all) return;
+    const id = setTimeout(() => setShown((x) => x + 1), shown === 0 ? 300 : Math.min(DURATION.revealStep, DURATION.REVEAL_MAX / v.players.length));
+    return () => clearTimeout(id);
+  }, [shown, off, all, v.players.length]);
+  const advance = () => (all ? next() : setShown(v.players.length));
   return (
-    <Stage v={v} cast={cue} onTap={next} footer={<AutoButton animMs={1400} onClick={next}>{t('play.stage.tap')}</AutoButton>}>
+    <Stage v={v} cast={all ? cue : { stamps: {}, expr: {} }} onTap={advance} footer={all ? <AutoButton onClick={next}>{t('play.stage.tap')}</AutoButton> : <button type="button" className="min-h-[52px] w-full rounded-full bg-card text-lead font-bold" onClick={(e) => { e.stopPropagation(); setShown(v.players.length); }} data-skip>{t('play.stage.skip')}</button>}>
       <div className="my-auto" data-vote>
         <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l1.votes.label', { r: v.round })}</p>
         <h1 className="h-show mt-1 text-hero leading-tight text-spot">{ruleName(r.winner)}</h1>
@@ -148,7 +158,7 @@ export function VotesBeat({ v, next }: { v: ViewState; next: () => void }) {
             const c = r.claims[p.id];
             const broke = c && c !== 'SILENT' && c !== r.votes[p.id];
             return (
-              <motion.li key={p.id} className="flex items-center gap-2 rounded-xl bg-card px-2 py-1.5" initial={off ? false : { rotateX: 90, opacity: 0 }} animate={{ rotateX: 0, opacity: 1 }} transition={{ delay: off ? 0 : 0.35 * k, duration: off ? 0 : 0.3 }}>
+              <motion.li key={p.id} className="flex items-center gap-2 rounded-xl bg-card px-2 py-1.5" initial={off ? false : { rotateX: 90, opacity: 0 }} animate={k < shown ? { rotateX: 0, opacity: 1 } : { rotateX: 90, opacity: 0 }} transition={{ duration: off ? 0 : 0.3 }}>
                 <Face v={v} p={p} size={24} />
                 <span className="w-16 truncate text-small font-bold">{shortName(v, p.id)}</span>
                 <span className="flex-1 text-small">{ruleName(r.votes[p.id])}</span>

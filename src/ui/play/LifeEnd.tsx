@@ -13,6 +13,7 @@ import type { CastCue, CastStamp } from './Cast';
 import { ShapePerson, type Expr } from './Characters';
 import { castKind } from './Cast';
 import { sfx } from './sound';
+import { DURATION, revealPick } from './tokens';
 import { missionName } from './logic';
 import { callLine } from './Call';
 import { PlaytestPanel } from './Playtest';
@@ -118,9 +119,11 @@ function receiptMark(r: Receipt): { stamp: CastStamp; expr: Expr } {
  */
 export function ReceiptsReel({ v, next }: { v: ViewState; next: () => void }) {
   const off = useMotionOff();
-  const items = useMemo(() => receipts(v), [v]);
+  const all = useMemo(() => receipts(v), [v]);
+  // UI V4 (V4): each staged moment at least 1.5 s, at most 6 s in all; the end lists the latest of them all.
+  const items = useMemo(() => revealPick(all.length).map((i) => all[i]), [all]);
   const [k, setK] = useState(off ? items.length : 0);
-  const step = Math.min(1500, PLAY.RECEIPTS_MAX_MS / Math.max(1, items.length + 1));
+  const step = DURATION.revealStep;
   useEffect(() => {
     if (off || k >= items.length) return;
     const id = setTimeout(() => setK((x) => x + 1), step);
@@ -128,14 +131,14 @@ export function ReceiptsReel({ v, next }: { v: ViewState; next: () => void }) {
   }, [k, off, items.length, step]);
   const done = k >= items.length;
   const cur = done ? null : items[k];
-  const tally = (id: string) => items.filter((r) => r.pid === id && (r.kind === 'worked' || r.kind === 'caught' || r.kind === 'betrayal')).length;
+  const tally = (id: string) => all.filter((r) => r.pid === id && (r.kind === 'worked' || r.kind === 'caught' || r.kind === 'betrayal')).length;
   const cue: CastCue = cur
     ? { focus: cur.pid, stamps: { [cur.pid]: receiptMark(cur).stamp }, expr: { [cur.pid]: receiptMark(cur).expr } }
     : {
         stamps: Object.fromEntries(v.players.filter((p) => tally(p.id)).map((p) => [p.id, { text: t(tally(p.id) === 1 ? 'play.cast.r.tallyOne' : 'play.cast.r.tally', { n: tally(p.id) }), tone: 'stamp' as const }])),
         expr: Object.fromEntries(v.players.map((p) => [p.id, tally(p.id) ? 'smug' : 'pleased'])),
       };
-  const recent = items.slice(-5);
+  const recent = all.slice(-5);
   return (
     <Stage v={v} cast={cue} onTap={done ? undefined : () => setK(items.length)} footer={<BigButton beatNext={done} onClick={done ? next : () => setK(items.length)}>{done ? t('play.receipts.next') : t('play.receipts.skip')}</BigButton>}>
       <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.receipts.label')}</p>
@@ -151,8 +154,8 @@ export function ReceiptsReel({ v, next }: { v: ViewState; next: () => void }) {
               {r.text}
             </li>
           ))}
-          {items.length > recent.length && <li className="text-small text-soft">{t('play.cast.r.more', { n: items.length - recent.length })}</li>}
-          {!items.length && <li className="text-body">{t('play.receipts.none')}</li>}
+          {all.length > recent.length && <li className="text-small text-soft">{t('play.cast.r.more', { n: all.length - recent.length })}</li>}
+          {!all.length && <li className="text-body">{t('play.receipts.none')}</li>}
         </ul>
       )}
       {done && (

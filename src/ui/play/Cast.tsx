@@ -149,7 +149,7 @@ function Bank({ value, mine }: { value: number; mine: boolean }) {
     }
     const d = value > start ? 1 : -1;
     setDir(d);
-    if (mine) sfx(d > 0 ? 'gain' : 'loss');
+    // UI V4 (V4): the money sound comes once per round result ("What your choices did"), sized by the change.
     let raf = 0;
     const t0 = performance.now();
     const tick = (now: number) => {

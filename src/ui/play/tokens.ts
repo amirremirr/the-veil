@@ -26,7 +26,11 @@ export const SHADOW = {
   glowHit: '0 0 28px rgb(255 62 127 / 0.6)',
 } as const;
 
-/** Durations (ms). Every reveal is at most REVEAL_MAX and can be skipped with a tap. */
+/**
+ * Durations (ms). UI V4 (V4): a reveal shows each item for at least revealStep (1.5 s), takes at most
+ * REVEAL_MAX (6 s) in all, and a tap skips to the end. With more items than fit, it stages an even pick of
+ * them (revealPick) and the end shows them all.
+ */
 export const DURATION = {
   tap: 120,
   bubbleGap: 300,
@@ -36,9 +40,17 @@ export const DURATION = {
   hold: 1200,
   wheelMin: 2000,
   wheelMax: 3000,
-  revealStep: 700,
-  REVEAL_MAX: 4000,
+  revealStep: 1500,
+  REVEAL_MAX: 6000,
 } as const;
+
+/** UI V4 (V4): which of n items a reveal stages, so each gets 1.5 s and the whole takes at most 6 s. */
+export function revealPick(n: number): number[] {
+  const most = Math.floor(DURATION.REVEAL_MAX / DURATION.revealStep);
+  if (n <= most) return Array.from({ length: n }, (_, i) => i);
+  // An even spread that always ends on the last item.
+  return Array.from({ length: most }, (_, i) => Math.round(((i + 1) * n) / most) - 1);
+}
 
 /** The cast's fixed colors (contrast-checked on the stage's dark background). */
 export const CAST_COLORS = {

@@ -2,7 +2,7 @@
 // The top bar holds only ON AIR, the round, your bank and four small avatars with banks. The mission bar,
 // the chat log and leaving the show live in the menu.
 import { onTap as ptTap } from '../playtest';
-import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import type { ViewState } from '../../engine/types';
 import { TALK } from '../../engine/params';
@@ -385,44 +385,77 @@ export function holdFor(words: number): number {
   return Math.min(5000, DURATION.hold + 200 * Math.max(0, words - 12));
 }
 
+/** UI V4 (V4): only a screen of this many words or fewer moves on by itself; every other screen waits. */
+export const AUTO_MAX_WORDS = 8;
+
+/** The words a player reads on the screen itself (not the top bar, the cast or the bottom button). */
+function contentWords(): number {
+  const el = document.querySelector('[data-content]') ?? document.getElementById('root');
+  return ((el as HTMLElement | null)?.innerText ?? '').trim().split(/\s+/).filter(Boolean).length;
+}
+
 /**
- * UI V3 (U3): the button of a beat that only informs. The beat moves on by itself after its animation and a
- * 1.2 second hold (a bar fills to show it), waits while a sheet is open, and a tap skips the wait.
+ * UI V3 (U3): the button of a beat that only informs. UI V4 (V4): it moves on by itself only when the screen
+ * has 8 words or fewer (after its animation and a 1.2 second hold; a thin line fills to show it). A tap or
+ * touch anywhere else on the screen holds it there (the first tap holds, it does not advance); the button
+ * still moves on. Every other screen waits for a tap. It waits while a panel is open.
  */
 export function AutoButton({ onClick, children, animMs = 0, dark = false }: { onClick: () => void; children: ReactNode; animMs?: number; dark?: boolean }) {
   const on = autoAdvanceOn();
   const off = useMotionOff();
-  // Fix 4: 1.2 s, plus 0.2 s for every word over 12 on the screen, at most 5 s (then the animation on top).
-  const [words, setWords] = useState(0);
-  useLayoutEffect(() => {
-    const root = document.getElementById('root');
-    setWords(((root?.innerText ?? '').trim().split(/\s+/).filter(Boolean)).length);
-  }, []);
-  const ms = (off ? 0 : animMs) + holdFor(words);
+  const [words, setWords] = useState<number | null>(null);
+  useLayoutEffect(() => setWords(contentWords()), []);
+  const [held, setHeld] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+  const auto = on && words !== null && words <= AUTO_MAX_WORDS && !held;
+  const ms = (off ? 0 : animMs) + holdFor(words ?? 0);
   useEffect(() => {
-    if (!on) return;
+    if (!auto) return;
     let id = 0;
     const fire = () => {
-      // A sheet ("See the money", "What was really going on?") holds the beat until it closes.
+      // A panel ("See the money", "What was really going on?") holds the beat until it closes.
       if (document.querySelector('[role="dialog"], [data-panel]')) id = window.setTimeout(fire, 400);
       else onClick();
     };
     id = window.setTimeout(fire, ms);
-    return () => clearTimeout(id);
+    // The first touch outside the button holds the screen; a plain tap on the stage is swallowed, so it holds
+    // instead of moving on. Links and buttons still work (and hold too).
+    let swallow = false;
+    const down = (e: PointerEvent) => {
+      const el = e.target as Element | null;
+      if (box.current && el && box.current.contains(el)) return;
+      swallow = !el?.closest('button, a, summary, input, label');
+      setHeld(true);
+    };
+    const click = (e: MouseEvent) => {
+      if (!swallow) return;
+      swallow = false;
+      e.stopPropagation();
+      e.preventDefault();
+    };
+    window.addEventListener('pointerdown', down, true);
+    window.addEventListener('click', click, true);
+    return () => {
+      clearTimeout(id);
+      window.removeEventListener('pointerdown', down, true);
+      // The click that follows the holding touch still needs swallowing after this effect ends.
+      window.setTimeout(() => window.removeEventListener('click', click, true), 600);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [on, ms]);
+  }, [auto, ms]);
   return (
-    <div className="relative" data-auto={ms}>
+    <div ref={box} className="relative" data-auto={auto ? ms : undefined} data-held={held || undefined}>
       <BigButton beatNext dark={dark} onClick={onClick}>
         {children}
       </BigButton>
-      {on && (
+      {auto && (
         <motion.span
           aria-hidden
           className={`pointer-events-none absolute bottom-1 left-6 right-6 h-1 origin-left rounded-full ${dark ? 'bg-spot/60' : 'bg-onspot/40'}`}
           initial={{ scaleX: 0 }}
           animate={{ scaleX: 1 }}
           transition={{ duration: ms / 1000, ease: 'linear' }}
+          data-auto-line
         />
       )}
     </div>

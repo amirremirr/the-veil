@@ -8,6 +8,8 @@ import { hostLine, pick, verbOn } from './logic';
 import { Bubble } from './OnAir';
 import { useCallRegistration, useStageCue, type CastCue } from './Cast';
 import { useFirstTime } from './Coach';
+import { useEffect } from 'react';
+import { sfx } from './sound';
 
 /** Other contestants with a claim this round (optionally only claims matching `filter`), callable now. */
 export function claimantsNow(v: ViewState, filter?: (value: string) => boolean): string[] {
@@ -67,6 +69,11 @@ export function CallResults({ v, quiet = false }: { v: ViewState; quiet?: boolea
     }
   }
   useStageCue('calls', calls.length ? cue : null);
+  // UI V4 (V4): being caught and catching someone each have their own sound.
+  const mine = calls.find((c) => c.caller === v.viewer && c.lie) ? 'catch' : calls.find((c) => c.target === v.viewer && c.lie) ? 'caught' : null;
+  useEffect(() => {
+    if (mine) sfx(mine, 0.2);
+  }, [mine]);
   if (!calls.length) return null;
   const anyLie = calls.some((c) => c.lie);
   return (

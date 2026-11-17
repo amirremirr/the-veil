@@ -243,3 +243,33 @@ test('UI V4 V1: calling is confirmed inside the bubble, and first-time hints are
   }
   expect(called).toBe(true);
 });
+
+test('UI V4 V4: with auto-advance on, a screen of more than 8 words waits for a tap', async ({ page }, info) => {
+  test.skip(info.project.name !== 'mobile-360', 'One phone run is enough.');
+  type V = { __veil: { getState(): { start(o: object): void; game: { phaseIdx: number } } }; __autoplay(f: (g: unknown) => boolean): void };
+  await page.evaluate(() => localStorage.setItem('veil.play.auto', '1'));
+  await page.evaluate(() => (window as unknown as V).__veil.getState().start({ mode: 'EPISODE', level: 3, ruleset: 'PLAY', nPlayers: 4, difficulty: 'NORMAL', seed: 'v4-pace-1' }));
+  let beats = 0;
+  for (let i = 0; i < 60 && beats < 6; i++) {
+    await page.waitForTimeout(80);
+    const next = page.locator('[data-beat-next]');
+    if (await next.count()) {
+      const words = await page.evaluate(() => ((document.querySelector('[data-content]') as HTMLElement | null)?.innerText ?? '').trim().split(/\s+/).filter(Boolean).length);
+      const text = await page.locator('[data-content]').innerText();
+      if (words > 8) {
+        expect(await page.locator('[data-auto]').count()).toBe(0);
+        await page.waitForTimeout(2000);
+        expect(await page.locator('[data-content]').innerText()).toBe(text);
+      }
+      beats++;
+      await next.first().click();
+      continue;
+    }
+    await page.evaluate(() => {
+      const w = window as unknown as V;
+      const g0 = w.__veil.getState().game;
+      w.__autoplay((g) => g !== g0);
+    });
+  }
+  expect(beats).toBeGreaterThanOrEqual(4);
+});

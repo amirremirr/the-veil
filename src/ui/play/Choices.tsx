@@ -10,6 +10,8 @@ import { shortName } from '../game';
 import { ledgerRows } from './logic';
 import { MoneyLedger } from './Ledger';
 import { bandOf } from '../../engine/play/ep2';
+import { useEffect } from 'react';
+import { sfxMoney } from './sound';
 import type { L1View } from './Episode1';
 import type { L2View } from './Episode2';
 import type { L3View } from './Episode3';
@@ -182,10 +184,21 @@ export function choiceRows(v: ViewState): { rows: ChoiceRow[]; from: number; to:
 const label: Record<ChoiceRow['kind'], string> = { choice: '', luck: 'play.did.luck', others: 'play.did.others', usual: '' };
 
 /** The block itself: the rows, then the bank change they add up to, with "See the money" beside it. */
+const sounded = new Set<string>();
+
 export function ChoicesDid({ v }: { v: ViewState }) {
   const x = choiceRows(v);
+  const total = x ? x.to - x.from : 0;
+  // UI V4 (V4): one money sound per round result: a rising jingle for a gain, a "wah-wah" for a loss, longer
+  // the bigger it is, and a tick for no change.
+  const key = `${v.seed ?? ''}|${v.levelIndex}|${v.round}|${v.phaseIdx}`;
+  useEffect(() => {
+    if (!x || sounded.has(key)) return;
+    sounded.add(key);
+    sfxMoney(total, 0.45);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
   if (!x) return null;
-  const total = x.to - x.from;
   return (
     <section className="mt-2 rounded-2xl bg-card px-3 py-2" aria-labelledby="did-title" data-choices-did>
       <h2 id="did-title" className="text-small font-bold uppercase tracking-wider text-soft">
