@@ -12,7 +12,7 @@ import { logitChoice } from '../bots/utility';
 import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import type { LevelDefinition } from '../levels/types';
 import { PLAY } from './params';
-import { activeEvent, giftNet, missionScale, missionValue, playRoundValue, livingCost, setRoundLedger } from './rules';
+import { activeEvent, giftNet, playRoundValue, setRoundLedger } from './rules';
 import { botCall, callChance, callsThisRound, lieBelief, settleCalls, validCall } from './calls';
 import { chooseClaim, honestyOf, postClaims, SILENT } from './claims';
 
@@ -253,69 +253,6 @@ function botPrize(s: GameState, pid: PlayerId): PlayerId {
 
 // ---------------------------------------------------------------------------------------------------------
 
-export interface P2Preview {
-  tax?: Record<string, number>;
-  effort?: number[];
-  prize?: Record<PlayerId, number>;
-  gift: Record<PlayerId, Record<number, number>>;
-}
-
-function missionPts(s: GameState, i: number, W: number[], eff: number[]): number {
-  const card = s.players[i].values;
-  const banks = s.players.map((p, j) => s.play!.banks[p.id] + W[j] - livingCost(s));
-  return PLAY.MISSION_WEIGHT * missionScale(s, card) * missionValue(card, banks, i, eff);
-}
-
-export function p2Preview(s: GameState, pid: PlayerId): P2Preview {
-  const i = idx(s, pid);
-  const l = st(s);
-  const out: P2Preview = { gift: {} };
-  const eff = effortSharesFrom(believedEffort(s, pid));
-  if (s.phase.step === 'TAX') {
-    // Mission points if each tax holds for the episode, against the average over the options (bots' model).
-    const n = s.players.length;
-    const P = p2Params(s);
-    const pool = L2.TALENT_DECK.filter((a) => a !== l.talents[pid]);
-    const perms = orderedDraws(pool, n - 1);
-    const by = PLAY.L2.TAX_OPTIONS.map((t) => {
-      let tot = 0;
-      for (const perm of perms) {
-        const talents = perm.slice();
-        talents.splice(i, 0, l.talents[pid]);
-        const e = talents.map((a) => bestE(t, a, n, P));
-        const y = talents.map((a, j) => gross(a, e[j], mean(P.luck), P.talentMult));
-        tot += PLAY.L2.ROUNDS * missionPts(s, i, wealth(y, e, t, P.costK), effortSharesFrom(e));
-      }
-      return tot / perms.length;
-    });
-    const avg = mean(by);
-    out.tax = Object.fromEntries(PLAY.L2.TAX_OPTIONS.map((t, k) => [String(t), by[k] - avg]));
-  }
-  if (s.phase.step === 'EFFORT') {
-    const base = missionPts(s, i, expectedW(s, i, 0), eff);
-    out.effort = Array.from({ length: L2.EFFORT_MAX + 1 }, (_, e) => missionPts(s, i, expectedW(s, i, e), eff) - base);
-    const W = expectedW(s, i, bestE(l.t ?? 0, l.talents[pid], s.players.length, p2Params(s)));
-    const m0 = missionPts(s, i, W, eff);
-    for (const p of s.players) {
-      if (p.id === pid) continue;
-      out.gift[p.id] = {};
-      for (const a of PLAY.GIFT_AMOUNTS) out.gift[p.id][a] = missionPts(s, i, withGift(s, W, i, { to: p.id, amount: a }), eff) - m0;
-    }
-  }
-  if (s.phase.step === 'PRIZE' && l.current.W) {
-    const W = s.players.map((p) => l.current.W![p.id]);
-    const m0 = missionPts(s, i, W, eff);
-    out.prize = {};
-    s.players.forEach((p, j) => {
-      if (p.id === pid) return;
-      const W2 = W.slice();
-      W2[j] += PLAY.HUSTLE_PRIZE;
-      out.prize![p.id] = missionPts(s, i, W2, eff) - m0;
-    });
-  }
-  return out;
-}
-
 // ---------------------------------------------------------------------------------------------------------
 
 export const playLevel2: LevelDefinition = {
@@ -514,7 +451,6 @@ export const playLevel2: LevelDefinition = {
       current: c.effort && !l.rounds.includes(c as P2Round) ? hide(c) : undefined,
       poll,
       // E5 (D-164): Hard shows no mission hints, as it shows no audience poll.
-      preview: s.difficulty !== 'HARD' && s.phase.kind === 'DECIDE' && s.players.some((p) => p.id === viewer) && s.players.some((p) => p.id === viewer) ? p2Preview(s, viewer) : undefined,
       myMoney: s.phase.kind === 'DECIDE' && s.phase.step === 'EFFORT' && s.players.some((p) => p.id === viewer) ? Array.from({ length: L2.EFFORT_MAX + 1 }, (_, e) => expectedW(s, idx(s, viewer), e)[idx(s, viewer)]) : undefined,
       costK: p2Params(s).costK,
       talentMult: p2Params(s).talentMult,

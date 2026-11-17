@@ -877,7 +877,7 @@
     "choose": {
       "title": "How do you want to play?",
       "fun": "Quick and fun",
-      "funDesc": "A whole life in about 20 minutes. Big swings, drama, secret missions.",
+      "funDesc": "A whole life in about 20 minutes. Big swings, drama, secrets.",
       "econ": "With the economics",
       "econDesc": "The exact models, formulas and research behind each level.",
       "resumePlay": "Continue your show",
@@ -903,7 +903,7 @@
       "levels": {
         "EASY": "See what the audience thinks. Bots are mostly honest.",
         "NORMAL": "The standard game.",
-        "HARD": "No audience poll, no mission hints. Bots lie more."
+        "HARD": "No audience poll. Bots lie more."
       },
       "best": "Best with 4",
       "badge": {
@@ -955,36 +955,8 @@
         "pitch": "Write the rules, then find out where you stand.",
         "sponsor": "Paid for by Friends of Whoever Wins",
         "intro": "Write the rules before you know your income. Then the incomes land, and you can propose changes and pay for votes. Secretly.",
-        "introLife": "Your banks are on the table. Write the rules for sharing them, then propose changes and pay for votes. Secretly. The finale counts most: missions weigh {m} times more."
+        "introLife": "Your banks are on the table. Write the rules for sharing them, then propose changes and pay for votes. Secretly."
       }
-    },
-    "missions": {
-      "EGOIST": {
-        "name": "Get rich",
-        "line": "Only your own bank counts.",
-        "points": "Your mission points follow your own bank, scaled so all four missions are worth about the same."
-      },
-      "RAWLSIAN": {
-        "name": "Protect the poorest",
-        "line": "You win when the lowest bank at the table is high.",
-        "points": "Your mission points follow the poorest bank at the table, scaled so all four missions are worth about the same."
-      },
-      "UTILITARIAN": {
-        "name": "Grow the pie",
-        "line": "You win when the average bank is high.",
-        "points": "Your mission points follow the average bank, scaled so all four missions are worth about the same."
-      },
-      "MERITOCRAT": {
-        "name": "Reward hard work",
-        "line": "You win when money follows effort: hours worked and training count. Before anyone has worked, that means equal banks.",
-        "points": "Your mission points follow the average bank, less when money doesn't follow effort, scaled so all four missions are worth about the same."
-      }
-    },
-    "values": {
-      "title": "Your secret mission",
-      "score": "Your score is half your bank, half your mission. Debt costs points.",
-      "private": "Nobody knows your mission. Keep it secret, or lie about it.",
-      "accept": "Accept the mission"
     },
     "bar": {
       "round": "Round {r} of {n}",
@@ -992,7 +964,6 @@
       "you": "You",
       "rank": "#{n}",
       "rankLabel": "Rank {n}",
-      "mission": "Mission",
       "missionBar": "{name}: {value} of {goal}",
       "chat": "Chat ({n})",
       "menu": "Menu",
@@ -1001,8 +972,7 @@
         "green": "Safe",
         "amber": "Getting tight",
         "red": "In debt"
-      },
-      "debtNote": "In debt: you lose 1 point per coin owed each round, at most {cap}."
+      }
     },
     "events": {
       "title": "Event card",
@@ -1236,21 +1206,6 @@
       "VOTE": "vote {option}"
     },
     "confessional": "Confessional",
-    "guess": {
-      "title": "Whose mission can you guess?",
-      "intro": "Right is worth {pts} points.",
-      "pick": "Who?",
-      "mission": "Their mission",
-      "submit": "Lock in my guess",
-      "skip": "No guess",
-      "youGuessed": "You guessed {name}: {card}.",
-      "tell": {
-        "EGOIST": "Votes for whatever fills their own bank.",
-        "RAWLSIAN": "Votes for taxes and cover that lift the poorest.",
-        "UTILITARIAN": "Votes for whatever grows the whole table.",
-        "MERITOCRAT": "Votes to reward hours and training."
-      }
-    },
     "summary": {
       "title": "Episode summary",
       "winner": "Episode winner: {name}",
@@ -1260,23 +1215,13 @@
       "momentSwing": "Round {r}: {name} {change} coins.",
       "momentSwingYou": "Round {r}: you {change} coins.",
       "bankChange": "Your bank: {from} to {to}",
-      "mission": "Your mission: {name}",
-      "missionDone": "Mission this episode: improved",
-      "missionMissed": "Mission this episode: not improved",
-      "guess": "Your guess: {name} is out to {mission}.",
-      "guessRight": "Correct, +{pts} points.",
-      "guessWrong": "Wrong. {name} was out to {mission}.",
-      "noGuess": "You made no guess.",
       "results": "Full results",
       "colName": "Contestant",
-      "colMission": "Mission",
       "colBank": "Bank",
       "colScore": "Score",
-      "scoreNote": "Score = half the bank + half the mission (x {k} for this mission) - debt points + guess points.",
       "again": "Play again",
       "menu": "Main menu",
       "seed": "Challenge code: {seed}",
-      "missionsLabel": "The missions flip",
       "lieLabel": "Biggest lie",
       "lie": "{name} said \"{claim}\" {n} and was {truth}.",
       "lieYou": "You said \"{claim}\" {n} and were {truth}.",
@@ -1295,7 +1240,6 @@
       "lead": "Leading the life: {name}",
       "leadYou": "You lead the life!",
       "scoreLabel": "Your score",
-      "score": "{s} = half your bank {b} + half your mission {m}, minus {d} debt points this life ({e} this episode), plus guesses and Second Chance points {g}. The ranking uses this score.",
       "helpedLabel": "This episode",
       "helped": "Helped most: {what} {n}.",
       "hurt": "Hurt most: {what} {n}."
@@ -1358,7 +1302,6 @@
     },
     "a11y": {
       "bankOf": "{name}: bank {bank}, rank {rank}",
-      "missionProgress": "Mission progress",
       "bankOnly": "{name}: bank {bank}"
     },
     "stage": {
@@ -1409,7 +1352,6 @@
       "eventLabel": "Event card",
       "voteIn": "The vote is in",
       "menuTitle": "Menu",
-      "menuMission": "Your mission",
       "menuChat": "Chat",
       "menuClose": "Close",
       "menuQuit": "Leave the show",
@@ -1431,7 +1373,6 @@
       "launchDesc": "SafeHands signs everyone up for the launch season, at {p} coins. After that, it's your choice.",
       "headLaunch": "Everyone was in, so the new price is the whole table's average risk.",
       "subLaunch": "From now on, buying cover is your choice.",
-      "debtCost": "In debt: -{n} points",
       "skip": "Skip",
       "noBuyTitle": "No cover",
       "noBuyDesc": "Keep {p}. A hit costs you {loss}.",
@@ -1485,7 +1426,6 @@
       "poll": "{p} risky",
       "pollLabel": "Audience on {name}: {p} think high risk",
       "barPick": "You vote to bar {name}.",
-      "preview": "Mission {n}",
       "pollTitle": "What the audience thinks",
       "coverAsk": "Buy cover this round?",
       "gymAsk": "Hit the gym this round?",
@@ -1496,10 +1436,7 @@
       "gymRow": "Gym (optional): pay {c}, risk drops to {p}",
       "gymOn": "Gym: yes, {c} coins. Your risk drops to {p}.",
       "riskLine": "Your risk this round: {p}.",
-      "readLegend": "Faces show the audience's read.",
-      "helps": "Helps your mission",
-      "hurts": "Hurts your mission",
-      "noEffect": "No effect on your mission"
+      "readLegend": "Faces show the audience's read."
     },
     "barBeat": {
       "label": "The Bar",
@@ -1571,8 +1508,8 @@
         "CALM": "Calm"
       },
       "worryLine": {
-        "WORRIER": "In debt after a round: -{m} points per coin owed, at most {cap}.",
-        "CALM": "In debt after a round: -1 point per coin owed, at most {cap}."
+        "WORRIER": "You hate the thought of debt.",
+        "CALM": "Debt doesn't keep you up at night."
       },
       "unknown": "Nobody knows how many players are high risk or Worriers. Not even the host."
     },
@@ -1596,12 +1533,12 @@
       },
       "c3": {
         "headline": "How you win",
-        "body": "You get coins and a secret mission. Your score: bank plus how well your mission went. Debt hurts. Guess others' missions for bonus points.",
+        "body": "You get coins. Your score is your bank. Debt hurts. Everyone has secrets.",
         "small": "The numbers are exaggerated. The mechanisms are real."
       },
       "one": {
         "loop": "Each round: say something (lies allowed), read the others, make your move. At the end every secret flips.",
-        "win": "Score: half your bank, half your secret mission. Debt hurts."
+        "win": "Score: your bank. The richest at the end wins."
       }
     },
     "gift": {
@@ -2003,13 +1940,13 @@
     "comeback": {
       "label": "A Second Chance",
       "title": "The show feels sorry for you.",
-      "how": "You're last on score. Take {c} coins now, or {p} mission points. Everyone is watching.",
+      "how": "You're last on score. Take {c} coins now, or {p} score points. Everyone is watching.",
       "coins": "Take {c} coins",
       "points": "Take {p} points",
-      "rate": "Your score counts half your bank, so {c} coins are worth {half} points, plus whatever they do for your mission.",
+      "rate": "Your score is your bank, so {c} coins are {c} points.",
       "otherCoins": "{name} was last on score and took the Second Chance: +{c} coins.",
       "otherPoints": "{name} was last on score and took the Second Chance: +{p} points.",
-      "ask": "Coins or mission points?"
+      "ask": "Coins or points?"
     },
     "receipts": {
       "label": "The Receipts",
@@ -2019,7 +1956,7 @@
       "betrayal": "Ep5: {name} took {n} from {donor}. Voted no.",
       "none": "Not one lie all life. The network is furious.",
       "skip": "Skip",
-      "next": "The missions flip",
+      "next": "See how you played",
       "said": {
         "RISK": {
           "LOW": "I'm low risk",
@@ -2050,13 +1987,12 @@
       "best": "Best episode: Ep{ep} {name}, bank {n}",
       "worst": "Worst episode: Ep{ep} {name}, bank {n}",
       "bank": "Final bank: {n}",
-      "missionDone": "Mission over the life, {mission}: improved ({a} to {b})",
-      "missionMissed": "Mission over the life, {mission}: not improved ({a} to {b})",
       "honesty": "Lied {lies} of {made} times. Caught {caught}.",
       "noClaims": "Never made a claim.",
       "small": "Just for fun. Not a diagnosis.",
       "share": "Share the card",
-      "allTrue": "Told the truth {made} of {made} times."
+      "allTrue": "Told the truth {made} of {made} times.",
+      "playedLike": "You played like {name}."
     },
     "titles": {
       "honest": {
@@ -2185,7 +2121,6 @@
         "again": "Do you want another round?",
         "withWhom": "Who would you play this with?",
         "unclear": "Was anything unclear at the start?",
-        "missionChanged": "Did your mission change what you did?",
         "why": "Why did the price go up? (or what was really going on?)"
       },
       "a": {
@@ -2281,12 +2216,6 @@
         "living": "Living costs",
         "other": "Other"
       },
-      "s": {
-        "bank": "Half your bank change",
-        "mission": "Mission points",
-        "debt": "Debt points",
-        "guess": "Guesses and bonuses"
-      },
       "rounded": "Shown in whole coins, rounded so the lines add up. The game keeps the exact amounts."
     },
     "bank": {
@@ -2358,26 +2287,23 @@
       "spinning": "The wheel is turning...",
       "silent": "Silent",
       "voted": "Voted",
-      "birthNotScored": "Birth income is not scored: from Episode 2 on, your bank half counts what you make from here."
+      "birthNotScored": "Birth income is not scored: from Episode 2 on, your score counts what you make from here."
     },
     "sound": {
       "mute": "Mute sound",
       "unmute": "Turn sound on"
     },
     "score": {
-      "a11y": "Score {s}: bank {b}, mission {m}, guess {g}, debt {d} off.",
-      "bank": "Bank half {n}",
-      "mission": "Mission {n}",
-      "guess": "Guess {n}",
-      "debt": "Debt -{n}",
       "words": "See the money",
       "wordsTitle": "Your score, in words",
       "piece": {
         "bank": "{n} bank",
-        "mission": "{n} mission",
         "debt": "{n} debt",
-        "guess": "{n} guess"
-      }
+        "bonus": "{n} Second Chance"
+      },
+      "isBank": "Your score is your bank: {s}.",
+      "isBankSince": "Your score is {s}: the {b} you made since Episode 1 (birth income is not scored).",
+      "bonusLine": "Plus {p} Second Chance points."
     },
     "coach": {
       "ok": "Got it",
@@ -2416,7 +2342,7 @@
       "L5life": [
         "Everyone can see every bank. Write the rules for sharing them.",
         "Then anyone can propose a change and secretly pay for votes.",
-        "The finale counts most: missions weigh {m} times more."
+        "Then the banks are shared out under the rules that win."
       ],
       "new": {
         "claim": "New: say things about yourself. Lies allowed.",
@@ -2502,6 +2428,48 @@
       "C": {
         "name": "C. Clean editorial",
         "desc": "Light page, black text, one blue accent. Minimal line drawings that act with their posture; Inter throughout."
+      }
+    },
+    "principles": {
+      "EGOIST": {
+        "name": "Look after yourself",
+        "line": "You put your own bank first."
+      },
+      "RAWLSIAN": {
+        "name": "Protect the poorest",
+        "line": "You looked out for whoever had least."
+      },
+      "UTILITARIAN": {
+        "name": "Grow the total",
+        "line": "You went for whatever made the table richer."
+      },
+      "MERITOCRAT": {
+        "name": "Reward effort",
+        "line": "You wanted money to follow work."
+      }
+    },
+    "played": {
+      "label": "How you played",
+      "title": "You played like {name}.",
+      "none": "You kept your cards close all life.",
+      "fair": "You said {x} tax was fair. You voted for {y}.",
+      "fairSame": "You said {x} tax was fair, and you voted for {y}.",
+      "fairOnly": "You said {x} tax was fair.",
+      "ex": {
+        "gift": "In Episode {ep} you gave coins away.",
+        "rule": "In Episode {ep} you voted {rule}.",
+        "peek": "In Episode {ep} you paid to peek at your income.",
+        "tax": "In Episode {ep} you voted for a {t} tax.",
+        "hours": "In Episode {ep} you worked {e} hours.",
+        "overclaim": "In Episode {ep} you said you worked more than you did.",
+        "prize": "In Episode {ep} you voted the prize to a hard worker.",
+        "bar": "In Episode {ep} you voted to bar someone from the pool.",
+        "gym": "In Episode {ep} you paid for the gym.",
+        "regime": "In Episode {ep} you voted {rule}.",
+        "train": "In Episode {ep} you paid to train.",
+        "policy": "In Episode {ep} you voted {rule} for HireBot.",
+        "veil": "In the finale you wrote a {t} tax with a floor of {F}.",
+        "lobby": "In the finale you paid someone for their vote."
       }
     }
   }

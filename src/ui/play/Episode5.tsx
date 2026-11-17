@@ -2,7 +2,7 @@
 // donations, vote claims, and the ballots landing one at a time. Every string comes from play.l5.*.
 import { useState } from 'react';
 import type { ViewState } from '../../engine/types';
-import type { Amend5, Lobby5, P5Preview } from '../../engine/play/ep5';
+import type { Amend5, Lobby5 } from '../../engine/play/ep5';
 import { ALL_CONSTITUTIONS, type Constitution } from '../../engine/levels/level5';
 import { L5 } from '../../engine/params';
 import { PLAY } from '../../engine/play/params';
@@ -15,7 +15,6 @@ import { nameOf, shortName } from '../game';
 import type { CastCue } from './Cast';
 import { Details, StagedReveal } from './Peak';
 import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
-import { previewText } from './Episode3';
 import { timesWord } from './logic';
 
 export type L5View = {
@@ -35,7 +34,6 @@ export type L5View = {
   leaked: boolean;
   maxDonation: number;
   need: number;
-  preview?: P5Preview;
 };
 
 const lv5 = (v: ViewState) => v.levelView as L5View;
@@ -72,9 +70,7 @@ export function VeilScreen({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
   const [tx, setT] = useState<number | null>(null);
   const [F, setF] = useState<number | null>(null);
-  const pv = lv5(v).preview;
   const k = tx !== null && F !== null ? ALL_CONSTITUTIONS.findIndex((c) => Math.abs(c.t - tx) < 1e-9 && c.F === F) : -1;
-  const note = k >= 0 ? previewText(pv?.constitutions[k]) : null;
   return (
     <Stage v={v} footer={<BigButton disabled={k < 0} onClick={() => act({ t: tx, F })}>{t('play.l5.veil.submit')}</BigButton>}>
       <h1 className="h-show text-title leading-tight">{t('play.l5.veil.title')}</h1>
@@ -83,7 +79,6 @@ export function VeilScreen({ v }: { v: ViewState }) {
       <Chips opts={L5.TAX_OPTIONS} value={tx} onPick={setT} label={t('play.l5.tax')} fmt={pct} />
       <p className="mt-3 text-small font-bold">{t('play.l5.floor')}</p>
       <Chips opts={L5.FLOOR_OPTIONS} value={F} onPick={setF} label={t('play.l5.floor')} fmt={coins} />
-      {note && <p className="mt-3 text-small font-bold" data-preview>{note}</p>}
     </Stage>
   );
 }
@@ -100,8 +95,6 @@ export function FairScreen({ v }: { v: ViewState }) {
   // UI V4 (V2): proposing a change is a second choice, so it is a small optional row, closed by default.
   const [open, setOpen] = useState(false);
   const proposing = after && open && !!cur && !sameC(prop, cur);
-  const k = ALL_CONSTITUTIONS.findIndex((c) => Math.abs(c.t - tx) < 1e-9 && c.F === F);
-  const note = proposing ? previewText(lv5(v).preview?.constitutions[k]) : null;
   return (
     <Stage v={v} footer={<BigButton disabled={x === null} onClick={() => act(after ? { fair: x, proposal: proposing ? prop : null } : x)}>{t('play.l5.fair.submit')}</BigButton>}>
       <h1 className="h-show text-title leading-tight">{t('play.l5.fair.title')}</h1>
@@ -117,7 +110,6 @@ export function FairScreen({ v }: { v: ViewState }) {
       {after && cur && open && (
         <section className="mt-auto pt-3" aria-label={t('play.l5.lobby.title')}>
           <p className="text-small font-bold">{proposing ? t('play.l5.lobby.propose', { rules: rules(prop) }) : t('play.l5.lobby.keepNow', { rules: rules(cur) })}</p>
-          {note && <p className="text-small font-bold">{note}</p>}
           <Chips opts={L5.TAX_OPTIONS} value={tx} onPick={setT} label={t('play.l5.tax')} fmt={pct} />
           <Chips opts={L5.FLOOR_OPTIONS} value={F} onPick={setF} label={t('play.l5.floor')} fmt={coins} />
         </section>

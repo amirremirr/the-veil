@@ -16,31 +16,14 @@ import { isMuted, onMuted, setMuted, sfx } from './sound';
 import { DURATION } from './tokens';
 import { ChatFeed, MessageComposer, Sheet } from '../components/TableParts';
 import { useOnline } from '../components/Online';
-import { missionName } from './logic';
 import { PlayOpening } from './Opening';
 import { HowItWorks } from './HowItWorks';
 
 const rounds = (v: ViewState) => Math.max(1, ...v.queue.map((p) => p.round));
 const stop = (e: { stopPropagation(): void }) => e.stopPropagation();
 
-export function MissionBar({ v }: { v: ViewState }) {
-  const m = v.play?.mission;
-  if (!m) return null;
-  const value = m.scale * m.value;
-  const share = Math.max(0, Math.min(1, value / m.goal));
-  const label = t('play.bar.missionBar', { name: missionName(m.card), value: coins(value), goal: coins(m.goal) });
-  return (
-    <div>
-      <p className="text-small font-semibold">{label}</p>
-      <div className="mt-1 h-2 overflow-hidden rounded-full bg-line" role="progressbar" aria-label={t('play.a11y.missionProgress')} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(share * 100)} aria-valuetext={label}>
-        <div className="h-full bg-stamp" style={{ width: `${share * 100}%` }} />
-      </div>
-    </div>
-  );
-}
-
-/** The menu: your mission, the full chat log (and replies while talk is open), leaving the show. */
-export function PlayMenu({ v, onClose, chatFirst = false }: { v: ViewState; onClose: () => void; chatFirst?: boolean }) {
+/** The menu: the full chat log (and replies while talk is open), the episode's rules card, leaving the show. */
+export function PlayMenu({ v, onClose }: { v: ViewState; onClose: () => void; chatFirst?: boolean }) {
   const go = useStore((s) => s.go);
   const leaveOnline = useStore((s) => s.leaveOnline);
   const online = useOnline();
@@ -68,14 +51,7 @@ export function PlayMenu({ v, onClose, chatFirst = false }: { v: ViewState; onCl
     );
   return (
     <Sheet title={t('play.stage.menuTitle')} closeLabel={t('play.stage.menuClose')} onClose={onClose}>
-      {chatFirst && chat}
-      <section aria-labelledby="menu-mission">
-        <h2 id="menu-mission" className="label mb-2">
-          {t('play.stage.menuMission')}
-        </h2>
-        <MissionBar v={v} />
-      </section>
-      {!chatFirst && chat}
+      {chat}
       {/* UI V4 (V2): the episode's rules card, again, inside the menu. */}
       {v.levelIndex >= 1 && v.levelIndex <= 5 && (
         <details className="rounded-2xl bg-card px-3" data-howto-menu>

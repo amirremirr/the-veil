@@ -311,7 +311,7 @@ function MoveScreen({ th }: { th: Theme }) {
       <H1 th={th}>{t('play.move.coverAsk')}</H1>
       <p style={{ margin: '4px 0 0', fontWeight: 700, fontSize: 14 }}>{t('play.move.riskLine', { p: '40%' })}</p>
       <div style={{ marginTop: 'auto', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-        <Tile th={th} on title={t('play.stage.buyTitle')} desc={t('play.stage.buyDesc', { p: '61' })} note={t('play.move.helps')} />
+        <Tile th={th} on title={t('play.stage.buyTitle')} desc={t('play.stage.buyDesc', { p: '61' })} />
         <Tile th={th} on={false} title={t('play.stage.noBuyTitle')} desc={t('play.stage.noBuyDesc', { p: '61', loss: '220' })} />
       </div>
       <div style={{ margin: '8px 0 10px', minHeight: 44, display: 'flex', alignItems: 'center', gap: 8, borderRadius: th.radius + 6, padding: '0 12px', background: th.card, border: `${th.id === 'C' ? 1.5 : 2}px solid ${th.cardBorder}`, fontSize: 14, fontWeight: 700 }}>

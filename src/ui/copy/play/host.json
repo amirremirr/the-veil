@@ -128,30 +128,6 @@
     "A slow round for TV. The storm writers want a raise.",
     "Not much to film, folks. Enjoy it while it lasts."
   ],
-  "guessRight": [
-    "Correct! You read {name} like a cheap paperback.",
-    "Nailed it! {name} never stood a chance against your eyebrows.",
-    "Right on the money! {name} is shaking.",
-    "Detective of the year! You cracked {name}.",
-    "Bingo! {name} has been exposed on national TV.",
-    "Spot on! {name} would like a word with their poker face."
-  ],
-  "guessWrong": [
-    "Swing and a miss! {name}'s mission stays a mystery.",
-    "Not even close, darling. {name} is laughing backstage.",
-    "Wrong! {name} hid that mission well.",
-    "Oh no. {name} kept a straight face.",
-    "Nope! Better luck reading people next episode.",
-    "Wrong card! Our audience saw that one coming."
-  ],
-  "guessNone": [
-    "No guess? Playing it safe. Very SafeHands of you.",
-    "You kept your guess to yourself. Mysterious. Pointless, but mysterious.",
-    "No guess tonight. The audience is mildly disappointed.",
-    "Skipping the guess. Bold strategy, zero points.",
-    "No guess. Your detective license is under review.",
-    "You passed. Even the Wheel of Misfortune guessed."
-  ],
   "priceUp": [
     "Healthy people walked out. The price walked up.",
     "SafeHands looked at its buyers and panicked. Prices up!",

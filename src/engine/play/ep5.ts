@@ -11,7 +11,7 @@ import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import type { LevelDefinition } from '../levels/types';
 import { PLAY } from './params';
 import { botCall, callChance, coinValue, lieBelief, settleCalls, validCall } from './calls';
-import { activeEvent, missionScale, missionValue, playEffortShares, playRoundValue, livingCost, setRoundLedger } from './rules';
+import { activeEvent, playEffortShares, playRoundValue, livingCost, setRoundLedger } from './rules';
 import { chooseClaim, credibilityValue, expectedRecord, honestyOf, postClaims, SILENT } from './claims';
 
 export interface Lobby5 {
@@ -252,25 +252,6 @@ function finalize(s: GameState): void {
     { k: 'call' as const, n: l.callNet?.[id] ?? 0 },
   ]])));
   finishRound(s, W, playEffortShares(s), headline(s, 'l5.play', {}));
-}
-
-export interface P5Preview {
-  /** Mission points of each constitution (veil: expected over the deck; later: on the known incomes), against the average. */
-  constitutions: number[];
-}
-
-export function p5Preview(s: GameState, pid: PlayerId): P5Preview {
-  const i = idx(s, pid);
-  const card = s.players[i].values;
-  const l = st(s);
-  const pts = (W: number[]) => {
-    const banks = s.players.map((p, j) => s.play!.banks[p.id] + W[j] - livingCost(s));
-    return PLAY.MISSION_WEIGHT * missionScale(s, card) * missionValue(card, banks, i, playEffortShares(s));
-  };
-  const draws = l.incomes ? [incomesOf(s)] : orderedDraws(p5Deck(), s.players.length);
-  const by = ALL_CONSTITUTIONS.map((c) => mean(draws.map((inc) => pts(l.incomes ? asRound(s, constitutionWealth(inc, c)) : constitutionWealth(inc, c)))));
-  const avg = mean(by);
-  return { constitutions: by.map((x) => x - avg) };
 }
 
 export const playLevel5: LevelDefinition = {
@@ -539,7 +520,6 @@ export const playLevel5: LevelDefinition = {
       maxDonation: P.maxDonation,
       need: P.need,
       // E5 (D-164): Hard shows no mission hints, as it shows no audience poll.
-      preview: s.difficulty !== 'HARD' && s.phase.kind === 'DECIDE' && (s.phase.step === 'VEIL' || s.phase.step === 'FAIR_2') && s.players.some((p) => p.id === viewer) ? p5Preview(s, viewer) : undefined,
       reliability: Object.fromEntries(ids(s).map((id) => [id, reliabilityOf(s, id)])),
     };
   },

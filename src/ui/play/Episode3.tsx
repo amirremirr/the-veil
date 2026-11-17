@@ -3,7 +3,7 @@
 // screen (D-108). Same premium formula as Study; every screen only shows outcomes the engine decided.
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import type { Choice, Gift, L3Preview, L3Round, Regime, RiskType } from '../../engine/levels/level3';
+import type { Choice, Gift, L3Round, Regime, RiskType } from '../../engine/levels/level3';
 import type { Message, ViewState } from '../../engine/types';
 import { PLAY } from '../../engine/play/params';
 import { useStore } from '../store';
@@ -40,8 +40,6 @@ export type L3View = {
   /** D-128: your own worry card, and everyone's once the cards flip. */
   myWorry?: 'WORRIER' | 'CALM';
   worry?: Record<string, 'WORRIER' | 'CALM'>;
-  /** D-143: your mission preview while you decide your move. */
-  preview?: L3Preview;
 };
 const REGIMES: Regime[] = ['VOL', 'M50', 'M100'];
 export const regimeName = (r: Regime) => t(`play.l3.regimes.${r}.name`);
@@ -151,7 +149,7 @@ export function MyCardsBeat({ v, next }: { v: ViewState; next: () => void }) {
           </div>
           <div className={`rounded-2xl p-3 ${worry === 'WORRIER' ? 'bg-spot text-onspot' : 'bg-card'}`}>
             <p className="h-show text-title leading-tight">{t(`play.myCards.worry.${worry}`)}</p>
-            <p className="mt-1 text-small">{t(`play.myCards.worryLine.${worry}`, { m: PLAY.WORRIER_STRESS_MULT, cap: (worry === 'WORRIER' ? PLAY.WORRIER_STRESS_MULT : 1) * PLAY.DEBT_PENALTY_CAP })}</p>
+            <p className="mt-1 text-small">{t(`play.myCards.worryLine.${worry}`)}</p>
           </div>
         </div>
         <p className="mt-4 text-body">{t('play.myCards.unknown')}</p>
@@ -217,8 +215,6 @@ export function MoveScreen({ v }: { v: ViewState }) {
   const [step, setStep] = useState<'bar' | 'move'>(member && showRead ? 'bar' : 'move');
   // D-121: in the launch round SafeHands has already signed everyone up.
   const launch = PLAY.L3_LAUNCH && v.round === 1 && canBuy;
-  const pv = lv.preview;
-  const giftNote = gift ? previewText(pv?.gift[gift.to]?.[gift.amount]) : null;
   const decision: Choice = { buy: canBuy && !launch && !!buy, gym, bar: member ? bar : null, gift, call };
   // The audience's read sits on each face as a small mark, so the screen keeps its words for the question.
   const marks: Record<string, string> = showRead ? Object.fromEntries(Object.entries(poll).map(([id, p]) => [id, pct(p)])) : {};
@@ -229,18 +225,12 @@ export function MoveScreen({ v }: { v: ViewState }) {
         <p className="mt-1 text-small">{t('play.move.barHow')}</p>
         <ul className="mt-auto space-y-1.5 pt-3" role="group" aria-label={t('play.move.barAsk')}>
           {others.map((p) => {
-            const note = previewText(pv?.bar[p.id]);
             return (
               <li key={p.id}>
                 <button type="button" aria-pressed={bar === p.id} onClick={() => setBar(bar === p.id ? null : p.id)} className={`flex min-h-[48px] w-full items-center gap-2 rounded-xl px-2 text-start ${bar === p.id ? 'bg-stamp text-onspot' : 'bg-card'}`}>
                   <Face v={v} p={p} size={24} />
                   <span className="w-20 truncate text-small font-bold">{shortName(v, p.id)}</span>
                   <span className="flex-1 truncate text-small">{claimShort(claims[p.id])}</span>
-                  {note && bar === p.id && (
-                    <span className="text-small font-bold" data-preview="bar">
-                      {note}
-                    </span>
-                  )}
                 </button>
               </li>
             );
@@ -267,23 +257,22 @@ export function MoveScreen({ v }: { v: ViewState }) {
       {canBuy && !launch ? (
         <>
           <div className="mt-auto grid grid-cols-2 gap-2 pt-3" role="group" aria-label={t('play.move.coverAsk')}>
-            <Tile on={buy === true} title={t('play.stage.buyTitle')} desc={t('play.stage.buyDesc', { p: coins(lv.premium!) })} note={previewText(pv?.cover)} onClick={() => setBuy(true)} />
+            <Tile on={buy === true} title={t('play.stage.buyTitle')} desc={t('play.stage.buyDesc', { p: coins(lv.premium!) })} onClick={() => setBuy(true)} />
             <Tile on={buy === false} title={t('play.stage.noBuyTitle')} desc={t('play.stage.noBuyDesc', { p: coins(lv.premium!), loss: coins(n.loss) })} onClick={() => setBuy(false)} />
           </div>
           <button type="button" aria-pressed={gym} onClick={() => setGym(!gym)} className={`mt-2 flex min-h-[44px] w-full items-center gap-2 rounded-2xl px-3 text-start text-small font-semibold ${gym ? 'bg-spot text-onspot' : 'bg-card'}`} data-gym-row>
             <span aria-hidden className="h-show text-lead">{gym ? '✓' : '+'}</span>
             <span className="flex-1">{t('play.move.gymRow', { c: n.gymCost, p: pct(myOdds(v, true)) })}</span>
-            {gym && previewText(pv?.gym) && <span className="font-bold">{previewText(pv?.gym)}</span>}
           </button>
         </>
       ) : (
         <div className="mt-auto grid grid-cols-2 gap-2 pt-3" role="group" aria-label={t('play.move.gymAsk')}>
-          <Tile on={gym} title={t('play.stage.gymTitle')} desc={t('play.stage.gymDesc', { c: n.gymCost, p: pct(myOdds(v, true)) })} note={previewText(pv?.gym)} onClick={() => setGym(true)} />
+          <Tile on={gym} title={t('play.stage.gymTitle')} desc={t('play.stage.gymDesc', { c: n.gymCost, p: pct(myOdds(v, true)) })} onClick={() => setGym(true)} />
           <Tile on={!gym} title={t('play.stage.noGymTitle')} desc={t('play.stage.noGymDesc', { c: n.gymCost, p: pct(myOdds(v, false)) })} onClick={() => setGym(false)} />
         </div>
       )}
       <div className="mt-2">
-        <GiftBar v={v} gift={gift} note={giftNote} onPick={setGift} />
+        <GiftBar v={v} gift={gift} onPick={setGift} />
       </div>
     </Stage>
   );
@@ -293,7 +282,7 @@ export function MoveScreen({ v }: { v: ViewState }) {
  * UI V3 (U1): Give as one slim bar. UI V4 (V1, V2): the optional second choice of a move screen, collapsed by
  * default; a tap opens the picker in place (no sheet on top), and picking closes it again.
  */
-export function GiftBar({ v, gift, note, onPick, previews }: { v: ViewState; gift: Gift | null; note?: string | null; onPick: (g: Gift | null) => void; previews?: Record<string, Record<number, number>> }) {
+export function GiftBar({ v, gift, onPick }: { v: ViewState; gift: Gift | null; onPick: (g: Gift | null) => void }) {
   const [open, setOpen] = useState(false);
   // UI V4 (V2): in a life, Give unlocks in Episode 4.
   if (!verbOn(v, 'give')) return null;
@@ -302,7 +291,6 @@ export function GiftBar({ v, gift, note, onPick, previews }: { v: ViewState; gif
       <GiftPicker
         v={v}
         gift={gift}
-        previews={previews}
         onPick={(g) => {
           onPick(g);
           setOpen(false);
@@ -321,27 +309,15 @@ export function GiftBar({ v, gift, note, onPick, previews }: { v: ViewState; gif
           t('play.gift.row')
         )}
       </span>
-      {note && gift && <span className="text-small font-bold">{note}</span>}
     </button>
   );
-}
-
-/**
- * D-143: a choice's effect on your mission. UI V4 (V3): a word, not a number: "Helps your mission", "Hurts
- * your mission", or "No effect on your mission" (under one point either way); nothing without a preview.
- */
-export function previewText(x: number | null | undefined): string | null {
-  if (x === null || x === undefined || !Number.isFinite(x)) return null;
-  if (Math.abs(x) < 1) return t('play.move.noEffect');
-  return t(x > 0 ? 'play.move.helps' : 'play.move.hurts');
 }
 
 /**
  * D-142: pick a gift: one other contestant, one amount, or none. UI V4 (V1): in place on the screen, two
  * short rows (who, then how much), so it fits under the main choice.
  */
-export function GiftPicker({ v, gift, onPick, previews }: { v: ViewState; gift: Gift | null; onPick: (g: Gift | null) => void; previews?: Record<string, Record<number, number>> }) {
-  const pv = previews ? { gift: previews } : lv3(v).preview;
+export function GiftPicker({ v, gift, onPick }: { v: ViewState; gift: Gift | null; onPick: (g: Gift | null) => void }) {
   const others = v.players.filter((p) => p.id !== v.viewer);
   const [to, setTo] = useState<string>(gift?.to ?? others[0]?.id ?? '');
   return (
@@ -360,13 +336,9 @@ export function GiftPicker({ v, gift, onPick, previews }: { v: ViewState; gift: 
       <div className="mt-1 grid grid-cols-3 gap-1">
         {PLAY.GIFT_AMOUNTS.map((a) => {
           const on = gift?.to === to && gift.amount === a;
-          // Only a mission effect worth naming fits in the button ("No effect" stays off).
-          const raw = pv?.gift[to]?.[a];
-          const note = raw !== undefined && Math.abs(raw) >= 1 ? previewText(raw) : null;
           return (
             <button key={a} type="button" aria-pressed={on} onClick={() => onPick({ to, amount: a })} className={`min-h-[44px] rounded-xl px-1 text-small font-bold ${on ? 'bg-spot text-onspot' : 'bg-paper'}`} data-gift={`${to}:${a}`}>
               {t('play.gift.give', { n: a })}
-              {note && <span className="block text-small font-semibold leading-tight">{note}</span>}
             </button>
           );
         })}
@@ -587,7 +559,6 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
   // D-142: gifts land after the wheel; the change and the bank include them.
   const change = r.W[me] + (r.giftNet?.[me] ?? 0) - (v.play!.l3?.livingCost ?? PLAY.LIVING_COST);
   const giftLine = giftLines(v, r.gifts);
-  const stress = h.stress[me] ?? 0;
   const from = h.banks[me] - change;
   const ch = r.choices[me];
   // What you chose this round, next to the money it made (playtest note).
@@ -675,11 +646,6 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
             <ChoicesDid v={v} />
           </div>
           <CallResults v={v} quiet />
-          {stress > 0 && (
-            <p className="mt-1 text-small font-bold text-stamp" data-debt>
-              {t('play.stage.debtCost', { n: Math.round(stress) })}
-            </p>
-          )}
           {giftLine && <span className="sr-only" data-gifts>{giftLine}</span>}
           {!voice.host && (
             <div className="mt-2 text-start">

@@ -1,7 +1,7 @@
-// Play-mode rules (PLAY_MODE_SPEC.md Sections 4 and 6): the bank, debt stress, missions and scoring,
-// event cards and the end-of-episode card guess. Study games never reach this code (s.play is absent).
+// Play-mode rules (PLAY_MODE_SPEC.md Sections 4 and 6): the bank, debt stress, scoring and event cards.
+// V5 N1 (D-210): no missions and no card guess; a score is the bank (plus Second Chance points). Bots still
+// value their choices by their fixed values trait (scoreOnBanks below). Study games never reach this code.
 import { valuesMetric, equalShares, effortSharesFrom } from '../scoring';
-import { argmaxCard } from '../bots/beliefs';
 import type { Rng } from '../rng';
 import type { GameState, LevelId, PlayerId, ValuesCard } from '../types';
 import { PLAY } from './params';
@@ -30,7 +30,7 @@ export function missionScale(s: Pick<GameState, 'mode' | 'levelIndex'>, card: Va
 export function initPlay(s: GameState): PlayState {
   const start = s.mode === 'EPISODE' ? PLAY.EPISODE_STARTING_BANK : PLAY.LIFE_STARTING_BANK;
   const per = <X>(x: X) => Object.fromEntries(s.players.map((p) => [p.id, x])) as Record<PlayerId, X>;
-  return { banks: per(start), debtStress: per(0), guessPoints: per(0), effort: per(0), event: null, events: [], bankHistory: [], episodeStart: {}, guesses: {}, honesty: {}, belief: {}, belief2: {}, joint: {}, claimLog: [], barReads: [] };
+  return { banks: per(start), debtStress: per(0), guessPoints: per(0), effort: per(0), event: null, events: [], bankHistory: [], episodeStart: {}, honesty: {}, belief: {}, belief2: {}, joint: {}, claimLog: [], barReads: [] };
 }
 
 /** Section 4.2: points lost at the end of a round with this bank. */
@@ -70,12 +70,14 @@ export function bankBase(s: GameState, pid: PlayerId): number {
   return h ? h.banks[pid] ?? 0 : 0;
 }
 
-/** A contestant's Play score now: final score if the life (or episode) ended here. */
+/**
+ * A contestant's Play score now: final score if the life (or episode) ended here. V5 N1: the bank it counts
+ * (from bankBase) plus Second Chance points. No missions, no guesses, no debt points (debt is already a
+ * negative bank). Bots still decide by scoreOnBanks with their values trait: that is their personality.
+ */
 export function playScore(s: GameState, pid: PlayerId): number {
   const pl = s.play!;
-  const i = s.players.findIndex((p) => p.id === pid);
-  const card = s.players[i].values;
-  return scoreOnBanks(card, bankList(s), i, playEffortShares(s), pl.debtStress[pid], missionScale(s, card), bankBase(s, pid)) + pl.guessPoints[pid];
+  return pl.banks[pid] - bankBase(s, pid) + pl.guessPoints[pid];
 }
 
 /**
@@ -176,14 +178,7 @@ export function addBetweenRounds(s: GameState, pid: PlayerId, line: LedgerLine):
 /** G1: a contestant's score parts now (running totals); they sum to playScore. */
 export function scoreParts(s: GameState, pid: PlayerId): ScoreParts {
   const pl = s.play!;
-  const i = s.players.findIndex((p) => p.id === pid);
-  const card = s.players[i].values;
-  return {
-    bank: PLAY.BANK_WEIGHT * (pl.banks[pid] - bankBase(s, pid)),
-    mission: PLAY.MISSION_WEIGHT * missionScale(s, card) * missionValue(card, bankList(s), i, playEffortShares(s)),
-    debt: -pl.debtStress[pid],
-    guess: pl.guessPoints[pid],
-  };
+  return { bank: pl.banks[pid] - bankBase(s, pid), bonus: pl.guessPoints[pid] };
 }
 
 /** Section 4.1 and 4.2: after a round, move every bank and take debt stress. */
@@ -251,35 +246,4 @@ export function activeEvent(s: GameState): PlayEvent | null {
   if (s.phase.step === 'REGIME') return null;
   if (!['BRIEFING', 'TALK', 'DECIDE', 'REVEAL', 'ROUND_SUMMARY'].includes(s.phase.kind)) return null;
   return ev;
-}
-
-/** Section 7.4: one guess per contestant per episode. A human submits {target: card} or nothing. */
-export function playApplyGuess(s: GameState, from: PlayerId, guess: Record<PlayerId, ValuesCard>): boolean {
-  const entries = Object.entries(guess);
-  if (entries.length > 1) return false;
-  const pl = s.play!;
-  const level = s.levelIndex;
-  pl.guesses[level] ??= {};
-  if (entries.length === 1) {
-    const [target, card] = entries[0];
-    const correct = s.players.find((p) => p.id === target)!.values === card;
-    pl.guesses[level]![from] = { target, card, correct };
-    if (correct) pl.guessPoints[from] += PLAY.GUESS_POINTS;
-  }
-  return true;
-}
-
-/** Bots guess too (D-99): the contestant they are surest about, with their most likely card. */
-export function playBotGuesses(s: GameState): void {
-  for (const p of s.players) {
-    if (p.isHuman) continue;
-    const beliefs = s.botBeliefs[p.id] ?? {};
-    let best: { target: PlayerId; conf: number } | null = null;
-    for (const o of s.players) {
-      if (o.id === p.id || !beliefs[o.id]) continue;
-      const conf = Math.max(...Object.values(beliefs[o.id]));
-      if (!best || conf > best.conf + 1e-12) best = { target: o.id, conf };
-    }
-    if (best) playApplyGuess(s, p.id, { [best.target]: argmaxCard(beliefs[best.target]) });
-  }
 }

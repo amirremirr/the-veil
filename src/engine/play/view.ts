@@ -5,7 +5,7 @@
 import type { GameState, PlayerId } from '../types';
 import { audienceBelief } from './claims';
 import { PLAY } from './params';
-import { missionScale, missionValue, playEffortShares, playRanks, playScore, livingCost, bankBase } from './rules';
+import { playRanks, playScore, livingCost, bankBase } from './rules';
 import type { PlayView } from './types';
 import { playL3Params } from '../levels/level3';
 
@@ -43,35 +43,8 @@ export function playView(s: GameState, viewer: PlayerId, revealAll: boolean): Pl
   const pl = s.play!;
   const i = s.players.findIndex((p) => p.id === viewer);
   const me = s.players[i];
-  let mission: PlayView['mission'] = null;
-  if (me) {
-    const banks = s.players.map((p) => pl.banks[p.id]);
-    const value = missionValue(me.values, banks, i, playEffortShares(s));
-    const scale = missionScale(s, me.values);
-    mission = {
-      card: me.values,
-      value,
-      scale,
-      bankPart: PLAY.BANK_WEIGHT * (banks[i] - bankBase(s, viewer)),
-      missionPart: PLAY.MISSION_WEIGHT * scale * value,
-      stress: pl.debtStress[viewer],
-      guessPoints: pl.guessPoints[viewer],
-      score: playScore(s, viewer),
-      goal: missionGoal(s),
-      // Loop cycle 2 (D-168): the mission's value when this episode started (and the life's start), to say whether it grew.
-      startValue: (() => {
-        const eb = pl.episodeStart[s.levelIndex];
-        return eb ? missionValue(me.values, s.players.map((p) => eb[p.id]), i, playEffortShares(s)) : value;
-      })(),
-      lifeStartValue: missionValue(me.values, s.players.map(() => (s.mode === 'EPISODE' ? PLAY.EPISODE_STARTING_BANK : PLAY.LIFE_STARTING_BANK)), i, playEffortShares(s)),
-      episodeStress: pl.bankHistory.filter((h) => h.level === s.levelIndex).reduce((a, h) => a + (h.stress[viewer] ?? 0), 0),
-    };
-  }
-  const guesses: PlayView['guesses'] = {};
-  for (const [lvl, byGuesser] of Object.entries(pl.guesses)) {
-    const mine = Object.fromEntries(Object.entries(byGuesser ?? {}).filter(([g]) => revealAll || g === viewer));
-    guesses[Number(lvl) as keyof typeof guesses] = mine;
-  }
+  // V5 N1: the viewer's own score (no missions), their choices so far and their first fair-tax answer.
+  const score: PlayView['score'] = me ? { total: playScore(s, viewer), bank: pl.banks[viewer] - bankBase(s, viewer), bonus: pl.guessPoints[viewer] } : null;
   return {
     banks: { ...pl.banks },
     debtStress: { ...pl.debtStress },
@@ -85,30 +58,19 @@ export function playView(s: GameState, viewer: PlayerId, revealAll: boolean): Pl
     events: structuredClone(pl.events),
     ranks: pl.bankHistory.some((h) => h.level === s.levelIndex) ? playRanks(s) : null,
     gaps: pl.bankHistory.some((h) => h.level === s.levelIndex) && !revealAll ? gapsOf(s, viewer) : null,
-    mission,
+    score,
+    trail: structuredClone(pl.trail?.[viewer] ?? []),
+    fairFirst: pl.fairFirst?.[viewer] ?? null,
     poll: audiencePoll(s),
     comeback: pl.comeback ?? null,
     calls: (pl.calls ?? []).map((c) => ({ ...c })),
     pollMode: PLAY.DIFFICULTY[s.difficulty].poll,
     record: structuredClone(s.reliability),
-    guesses,
     finalScores: revealAll ? Object.fromEntries(s.players.map((p) => [p.id, playScore(s, p.id)])) : null,
     livingCost: livingCost(s),
     startingBank: s.mode === 'EPISODE' ? PLAY.EPISODE_STARTING_BANK : PLAY.LIFE_STARTING_BANK,
     ...(s.levelIndex === 3 && s.phase.kind !== 'VALUES_REVEAL' ? { l3: l3Numbers(s) } : {}),
   };
-}
-
-/**
- * The mission bar's full mark (D-102): the starting bank plus MISSION_GOAL_SHARE of what the episode's
- * rounds could add (income minus living cost). It is compared with k x mission value, so every mission
- * has the same scale.
- */
-export function missionGoal(s: GameState): number {
-  const rounds = Math.max(1, ...s.phaseQueue.map((p) => p.round));
-  const start = s.mode === 'EPISODE' ? PLAY.EPISODE_STARTING_BANK : PLAY.LIFE_STARTING_BANK;
-  const income = s.levelIndex === 3 ? playL3Params(s, false).BASE_INCOME : 0;
-  return start + rounds * (income - livingCost(s)) * PLAY.MISSION_GOAL_SHARE;
 }
 
 function l3Numbers(s: GameState): NonNullable<PlayView['l3']> {

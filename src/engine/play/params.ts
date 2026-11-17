@@ -2,7 +2,7 @@
 // a Play game only; Study params (../params.ts) are never changed for Play. They live in their own file
 // so the Study params hash reads only Study values (DECISIONS.md D-92). The Play rules version hashes
 // them together with the Study rules (src/engine/version.ts).
-import type { ValuesCard } from '../types';
+import type { BotKey, ValuesCard } from '../types';
 
 export const PLAY = {
   /** Section 4.1: every contestant starts a life with this many coins. */
@@ -13,6 +13,12 @@ export const PLAY = {
   LIVING_COST: 30,
   /** R3 (D-160): a life's own starting bank, living cost per round and Episode 3 loss (tuned for life stakes). */
   LIFE_STARTING_BANK: 10,
+  /**
+   * V5 N1 (D-210): no missions. Each bot's values are a fixed part of its personality and drive its choices the
+   * way its mission did (Marigold protects the poorest, Ugo grows the total, Dot rewards effort, Chet looks
+   * after himself). A human's values are only their own bank: the score is the bank (plus the Second Chance).
+   */
+  BOT_TRAITS: { chet: 'EGOIST', marigold: 'RAWLSIAN', ugo: 'UTILITARIAN', dot: 'MERITOCRAT' } as Record<BotKey, ValuesCard>,
   LIFE_LIVING_COST: 40,
   LIFE_L3_LOSS: 220,
   /** Section 4.2: points lost per coin of debt at the end of a round, capped per round. */
@@ -38,7 +44,9 @@ export const PLAY = {
    */
   LIFE_BANK_FROM: 'EP1_END' as 'START' | 'EP1_END',
   /** UI V3 U5: in a life, the mission half is weighted by the episode just played (later episodes weigh more). */
-  LIFE_MISSION_EP_MULT: { 1: 1, 2: 1, 3: 1, 4: 1, 5: 2 } as Record<number, number>,
+  // V5 N1 (D-210): with no missions this only weighs each bot's values trait in its own choices, by episode.
+  // The finale weight went from 2 to 4 (the best of six sweeps for the finale lead change; see D-210).
+  LIFE_MISSION_EP_MULT: { 1: 1, 2: 1, 3: 1, 4: 1, 5: 4 } as Record<number, number>,
   MISSION_SCALE_LIFE: { EGOIST: 0.85, RAWLSIAN: 1.47, UTILITARIAN: 1.15, MERITOCRAT: 1.19 } as Record<ValuesCard, number>,
   /** The mission bar's full mark: start bank + this share of the episode's income minus living cost (D-102). */
   MISSION_GOAL_SHARE: 0.8,

@@ -30,7 +30,7 @@ function check(s: GameState): number {
       const sum = lines.reduce((a, x) => a + x.n, 0);
       expect(sum).toBeCloseTo(rec.banks[p.id] - from, 6);
       const parts = rec.parts![p.id];
-      expect(parts.bank + parts.mission + parts.debt + parts.guess).toBeCloseTo(playScore(s, p.id), 6);
+      expect(parts.bank + parts.bonus).toBeCloseTo(playScore(s, p.id), 6);
     }
     records++;
   }

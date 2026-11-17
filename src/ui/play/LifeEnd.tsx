@@ -1,11 +1,11 @@
 // The end of a life (v2 Sections 3.4 and 7, D-155): the Receipts reel, then the result card v2.
 // Only public facts at this point (every card and claim is revealed); the card shows the viewer's own data only.
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { LevelId, Message, ViewState } from '../../engine/types';
+import type { LevelId, Message, ValuesCard, ViewState } from '../../engine/types';
 import { PLAY } from '../../engine/play/params';
 import { useStore } from '../store';
 import { t } from '../i18n';
-import { coins } from '../labels';
+import { coins, pct } from '../labels';
 import { shortName } from '../game';
 import { useMotionOff } from '../components/common';
 import { BigButton, Stage } from './OnAir';
@@ -14,7 +14,6 @@ import { ShapePerson, type Expr } from './Characters';
 import { castKind } from './Cast';
 import { sfx } from './sound';
 import { DURATION, revealPick } from './tokens';
-import { missionName } from './logic';
 import { callLine } from './Call';
 import { PlaytestPanel } from './Playtest';
 import { onTap, playtestOn } from '../playtest';
@@ -158,11 +157,6 @@ export function ReceiptsReel({ v, next }: { v: ViewState; next: () => void }) {
           {!all.length && <li className="text-body">{t('play.receipts.none')}</li>}
         </ul>
       )}
-      {done && (
-        <p className="mt-2 text-small font-semibold" data-missions>
-          {v.players.map((p) => `${shortName(v, p.id)}: ${p.values ? missionName(p.values) : ''}`).join(' · ')}
-        </p>
-      )}
     </Stage>
   );
 }
@@ -215,13 +209,12 @@ export function ResultCard({ v }: { v: ViewState }) {
   const eps = Object.keys(ch).map(Number);
   const best = eps.reduce((a, b) => (ch[b] > ch[a] ? b : a), eps[0]);
   const worst = eps.reduce((a, b) => (ch[b] < ch[a] ? b : a), eps[0]);
-  const m = v.play!.mission!;
   const lines = [
     t('play.card.rank', { name: me.name || t('play.card.you'), r: rank, n: v.players.length }),
     t('play.card.best', { ep: best, name: t(`play.episodes.${best}.name`), n: `${(ch[best] ?? 0) >= 0 ? '+' : ''}${coins(ch[best] ?? 0)}` }),
     t('play.card.worst', { ep: worst, name: t(`play.episodes.${worst}.name`), n: `${(ch[worst] ?? 0) >= 0 ? '+' : ''}${coins(ch[worst] ?? 0)}` }),
     t('play.card.bank', { n: coins(v.play!.banks[v.viewer]) }),
-    t(m.value > m.lifeStartValue + 1e-9 ? 'play.card.missionDone' : 'play.card.missionMissed', { mission: missionName(m.card), a: coins(m.lifeStartValue), b: coins(m.value) }),
+    t('play.card.playedLike', { name: BOT_NAME[playedLike(v).top] }),
     !h.made ? t('play.card.noClaims') : h.lies ? t('play.card.honesty', { lies: h.lies, made: h.made, caught: h.caught }) : t('play.card.allTrue', { made: h.made }),
   ];
   const ref = useRef<HTMLDivElement>(null);
@@ -316,11 +309,125 @@ export function ResultCard({ v }: { v: ViewState }) {
   );
 }
 
+// V5 N1: "You played like...". No missions: the human's own choices over the life, mapped to the four
+// principles the bots carry as traits (Chet looks after himself, Marigold protects the poorest, Ugo grows the
+// total, Dot rewards effort), with one example, and their first fair-tax answer against how they voted.
+const BOT_NAME: Record<ValuesCard, string> = { EGOIST: 'Chet', RAWLSIAN: 'Marigold', UTILITARIAN: 'Ugo', MERITOCRAT: 'Dot' };
+type Lean = { card: ValuesCard; w: number; ex: string; vars?: Record<string, string | number> };
+
+/** What each of the human's choices leans toward, in order (an example sentence for each). */
+function leans(v: ViewState): Lean[] {
+  const out: Lean[] = [];
+  for (const it of v.play?.trail ?? []) {
+    const d = it.d as Record<string, unknown> | number | string | boolean | null;
+    const ep = it.level;
+    const obj = (d && typeof d === 'object' ? d : {}) as Record<string, unknown>;
+    if (obj.gift) out.push({ card: 'RAWLSIAN', w: 1, ex: 'gift', vars: { ep } });
+    if (ep === 1 && it.step === 'VOTE') {
+      const r = obj.vote as string;
+      out.push(r === 'P1' ? { card: 'UTILITARIAN', w: 1, ex: 'rule', vars: { ep, rule: t('play.l1.rule.P1.name') } } : { card: 'RAWLSIAN', w: r === 'P3' ? 0.5 : 1, ex: 'rule', vars: { ep, rule: t(`play.l1.rule.${r}.name`) } });
+    }
+    if (ep === 1 && it.step === 'PEEK' && d === true) out.push({ card: 'EGOIST', w: 1, ex: 'peek', vars: { ep } });
+    if (ep === 2 && it.step === 'TAX' && typeof d === 'number') out.push(d === 0 ? { card: 'MERITOCRAT', w: 1, ex: 'tax', vars: { ep, t: pct(d) } } : d >= 0.6 ? { card: 'RAWLSIAN', w: 1, ex: 'tax', vars: { ep, t: pct(d) } } : { card: 'UTILITARIAN', w: 0.5, ex: 'tax', vars: { ep, t: pct(d) } });
+    if (ep === 2 && it.step === 'EFFORT') {
+      const e = Number(obj.effort ?? 0);
+      if (e >= 7) out.push({ card: 'MERITOCRAT', w: 1, ex: 'hours', vars: { ep, e } });
+      if (e <= 2) out.push({ card: 'EGOIST', w: 0.5, ex: 'hours', vars: { ep, e } });
+      const c = obj.claim as string | undefined;
+      if (c && c !== 'SILENT' && ['LITTLE', 'SOME', 'LOT'].indexOf(c) > (e <= 3 ? 0 : e <= 6 ? 1 : 2)) out.push({ card: 'EGOIST', w: 1, ex: 'overclaim', vars: { ep } });
+    }
+    if (ep === 2 && it.step === 'PRIZE') out.push({ card: 'MERITOCRAT', w: 0.5, ex: 'prize', vars: { ep } });
+    if (ep === 3 && it.step === 'CHOICE') {
+      if (obj.bar) out.push({ card: 'EGOIST', w: 1, ex: 'bar', vars: { ep } });
+      if (obj.gym) out.push({ card: 'MERITOCRAT', w: 0.5, ex: 'gym', vars: { ep } });
+    }
+    if (ep === 3 && it.step === 'REGIME') out.push(d === 'VOL' ? { card: 'EGOIST', w: 0.5, ex: 'regime', vars: { ep, rule: t('play.l3.regimes.VOL.name') } } : { card: 'RAWLSIAN', w: 1, ex: 'regime', vars: { ep, rule: t(`play.l3.regimes.${d as string}.name`) } });
+    if (ep === 4 && it.step === 'TRAIN' && obj.train) out.push({ card: 'MERITOCRAT', w: 1, ex: 'train', vars: { ep } });
+    if (ep === 4 && it.step === 'POLICY') {
+      const name = t(`levels.4.policies.${d as string}.name`);
+      out.push(d === 'B' ? { card: 'MERITOCRAT', w: 1, ex: 'policy', vars: { ep, rule: name } } : d === 'A' ? { card: 'EGOIST', w: 0.5, ex: 'policy', vars: { ep, rule: name } } : { card: 'RAWLSIAN', w: 1, ex: 'policy', vars: { ep, rule: name } });
+    }
+    if (ep === 5 && it.step === 'VEIL') {
+      const tx = Number(obj.t ?? 0);
+      const F = Number(obj.F ?? 0);
+      out.push(tx >= 0.5 || F >= 40 ? { card: 'RAWLSIAN', w: 1, ex: 'veil', vars: { ep, t: pct(tx), F } } : tx === 0 && F === 0 ? { card: 'MERITOCRAT', w: 1, ex: 'veil', vars: { ep, t: pct(tx), F } } : { card: 'UTILITARIAN', w: 1, ex: 'veil', vars: { ep, t: pct(tx), F } });
+    }
+    if (ep === 5 && it.step === 'LOBBY' && obj.donateTo) out.push({ card: 'EGOIST', w: 1, ex: 'lobby', vars: { ep } });
+  }
+  return out;
+}
+
+/** The principle the human's choices lean to most, its example, and the share of each principle. */
+export function playedLike(v: ViewState): { top: ValuesCard; ex: string; shares: Record<ValuesCard, number> } {
+  const ls = leans(v);
+  const tot: Record<ValuesCard, number> = { EGOIST: 0, RAWLSIAN: 0, UTILITARIAN: 0, MERITOCRAT: 0 };
+  for (const l of ls) tot[l.card] += l.w;
+  const order: ValuesCard[] = ['EGOIST', 'RAWLSIAN', 'UTILITARIAN', 'MERITOCRAT'];
+  const top = order.reduce((a, b) => (tot[b] > tot[a] ? b : a), 'EGOIST');
+  const ex = ls.filter((l) => l.card === top).sort((a, b) => b.w - a.w)[0];
+  const sum = Math.max(1e-9, order.reduce((a, c) => a + tot[c], 0));
+  return {
+    top,
+    ex: ex ? t(`play.played.ex.${ex.ex}`, ex.vars as Record<string, string>) : t('play.played.none'),
+    shares: Object.fromEntries(order.map((c) => [c, tot[c] / sum])) as Record<ValuesCard, number>,
+  };
+}
+
+/** "You said X was fair. You voted for Y." The first fair-tax answer against the tax the human voted for. */
+function fairLine(v: ViewState): string | null {
+  const first = v.play?.fairFirst;
+  if (first === null || first === undefined) return null;
+  const trail = v.play?.trail ?? [];
+  const veil = trail.find((x) => x.level === 5 && x.step === 'VEIL');
+  const tax2 = trail.find((x) => x.level === 2 && x.step === 'TAX');
+  const voted = veil ? Number((veil.d as { t?: number }).t ?? 0) : typeof tax2?.d === 'number' ? (tax2.d as number) : null;
+  if (voted === null) return t('play.played.fairOnly', { x: pct(first) });
+  return t(Math.abs(voted - first) < 0.051 ? 'play.played.fairSame' : 'play.played.fair', { x: pct(first), y: pct(voted) });
+}
+
+export function PlayedLike({ v, next }: { v: ViewState; next: () => void }) {
+  const p = playedLike(v);
+  const me = v.players.find((x) => x.id === v.viewer)!;
+  const order: ValuesCard[] = ['RAWLSIAN', 'UTILITARIAN', 'MERITOCRAT', 'EGOIST'];
+  const fair = fairLine(v);
+  return (
+    <Stage v={v} bar={false} cast={false} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
+      <div className="my-auto" data-played-like={p.top}>
+        <div className="flex items-end justify-center gap-2" aria-hidden>
+          <ShapePerson kind={castKind(me)} expr="pleased" size={64} />
+          <ShapePerson kind={({ EGOIST: 'chet', RAWLSIAN: 'marigold', UTILITARIAN: 'ugo', MERITOCRAT: 'dot' } as const)[p.top]} expr="smug" size={64} />
+        </div>
+        <p className="mt-2 text-small font-bold uppercase tracking-wider text-soft">{t('play.played.label')}</p>
+        <h1 className="h-show text-hero leading-tight text-spot">{t('play.played.title', { name: BOT_NAME[p.top] })}</h1>
+        <p className="mt-1 text-body font-semibold">{t(`play.principles.${p.top}.line`)}</p>
+        <p className="mt-2 text-body" data-played-example>{p.ex}</p>
+        <ul className="mt-3 space-y-1" aria-label={t('play.played.label')}>
+          {order.map((c) => (
+            <li key={c} className="flex items-center gap-2 text-small">
+              <span className="w-36 truncate font-semibold">{t(`play.principles.${c}.name`)}</span>
+              <span className="relative h-3 flex-1 overflow-hidden rounded-full bg-card">
+                <span className={`absolute inset-y-0 left-0 rounded-full ${c === p.top ? 'bg-spot' : 'bg-soft'}`} style={{ width: `${Math.round(p.shares[c] * 100)}%` }} />
+              </span>
+            </li>
+          ))}
+        </ul>
+        {fair && (
+          <p className="mt-3 text-body font-semibold" data-fair-line>
+            {fair}
+          </p>
+        )}
+      </div>
+    </Stage>
+  );
+}
+
 export function LifeEnd({ v }: { v: ViewState }) {
   const [k, setK] = useState(0);
   // UI V3 (U2): the life-end fanfare plays as the result card comes up.
   useEffect(() => {
-    if (k === 1) sfx('finale');
+    if (k === 2) sfx('finale');
   }, [k]);
-  return k === 0 ? <ReceiptsReel v={v} next={() => setK(1)} /> : <ResultCard v={v} />;
+  if (k === 0) return <ReceiptsReel v={v} next={() => setK(1)} />;
+  if (k === 1) return <PlayedLike v={v} next={() => setK(2)} />;
+  return <ResultCard v={v} />;
 }

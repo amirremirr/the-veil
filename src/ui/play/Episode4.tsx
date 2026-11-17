@@ -2,7 +2,7 @@
 // One beat per screen, as Episode 3. Every number and string comes from the engine view and play.l4.*.
 import { useRef, useState } from 'react';
 import type { ViewState } from '../../engine/types';
-import type { P4Preview, P4Round } from '../../engine/play/ep4';
+import type { P4Round } from '../../engine/play/ep4';
 import type { Group, Job, Policy, Priors } from '../../engine/levels/level4';
 import { POLICIES } from '../../engine/levels/level4';
 import { PLAY } from '../../engine/play/params';
@@ -18,7 +18,7 @@ import { Chips, Details, StagedReveal, peakMark, spotlightSteps } from './Peak';
 import { ReallyButton } from './Really';
 import { Coach } from './Coach';
 import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
-import { GiftBar, Tile, previewText, roundClaims } from './Episode3';
+import { GiftBar, Tile, roundClaims } from './Episode3';
 import { hostLine, pick, timesWord } from './logic';
 
 type Gift = { to: string; amount: number };
@@ -36,7 +36,6 @@ export type L4View = {
   current?: Partial<P4Round>;
   threshold: number;
   meterShown: boolean;
-  preview?: P4Preview;
   cardsOpen: boolean;
 };
 
@@ -45,8 +44,7 @@ export const groupName = (g: Group) => t(`play.l4.group.${g}`);
 const policyName = (p: Policy) => t(`levels.4.policies.${p}.name`);
 
 function GiftTile({ v, gift, setGift }: { v: ViewState; gift: Gift | null; setGift: (g: Gift | null) => void }) {
-  const pv = lv4(v).preview?.gift;
-  return <GiftBar v={v} gift={gift} previews={pv} note={gift ? previewText(pv?.[gift.to]?.[gift.amount]) : null} onPick={setGift} />;
+  return <GiftBar v={v} gift={gift} onPick={setGift} />;
 }
 
 /** Before the first decision: your group, your childcare duty, and who judges when. */
@@ -106,7 +104,7 @@ export function TrainScreen({ v }: { v: ViewState }) {
       <Coach id="move" />
       <p className="mt-1 text-small">{t(lv.policy === 'B' ? 'play.l4.train.beliefBlind' : 'play.l4.train.belief', { group: groupName(g), p: pct(prior) })}</p>
       <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
-        <Tile on={train} title={t('play.l4.train.tile')} desc={lv.myCostBase !== undefined && lv.myCostBase !== lv.myCost ? t('play.l4.train.costCut', { c: lv.myCost ?? 0, was: lv.myCostBase, p: pct(L4.PASS_IF_SKILLED) }) : t('play.l4.train.cost', { c: lv.myCost ?? 0, p: pct(L4.PASS_IF_SKILLED) })} note={previewText(lv.preview?.train)} onClick={() => setTrain(true)} />
+        <Tile on={train} title={t('play.l4.train.tile')} desc={lv.myCostBase !== undefined && lv.myCostBase !== lv.myCost ? t('play.l4.train.costCut', { c: lv.myCost ?? 0, was: lv.myCostBase, p: pct(L4.PASS_IF_SKILLED) }) : t('play.l4.train.cost', { c: lv.myCost ?? 0, p: pct(L4.PASS_IF_SKILLED) })} onClick={() => setTrain(true)} />
         <Tile on={!train} title={t('play.l4.train.skip')} desc={t('play.l4.train.skipDesc', { p: pct(L4.PASS_IF_UNSKILLED) })} onClick={() => setTrain(false)} />
       </div>
       <div className="mt-2">
@@ -160,7 +158,6 @@ export function JudgeScreen({ v }: { v: ViewState }) {
     setHires({ ...hires, [w]: job });
     if (k < workers.length - 1) setK(k + 1);
   };
-  const note = hires[w] === 'COMPLEX' ? previewText(lv.preview?.hire?.[w]) : null;
   const meter = lv.meterShown && c.meter ? c.meter[w] : null;
   return (
     <Stage v={v} cast={{ focus: w }} footer={<BigButton onClick={() => act({ hires, gift, call })}>{t('play.l4.judge.submit')}</BigButton>}>
@@ -204,7 +201,6 @@ export function JudgeScreen({ v }: { v: ViewState }) {
             </button>
           ))}
         </div>
-        {note && <p className="mt-1 text-small font-bold" data-preview>{note}</p>}
       </div>
       <div className="mt-2 flex gap-1.5" role="group" aria-label={t('play.l4.judge.label', { k: Math.min(k, workers.length - 1) + 1, n: workers.length })}>
         {workers.map((x, i) => (

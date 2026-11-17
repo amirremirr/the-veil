@@ -50,7 +50,7 @@ describe('ruleset plumbing', () => {
     expect(() => createInitialState({ ...cfg('x'), mode: 'SINGLE_LEVEL' })).toThrow();
     expect(() => createInitialState({ ...cfg('x'), mode: 'LIFE', level: undefined })).not.toThrow();
   });
-  it('Episode 3 (The Pool) has 4 rounds of claim then move, the regime vote after round 3, the card reveal, then the guess', () => {
+  it('Episode 3 (The Pool) has 4 rounds of claim then move, the regime vote after round 3, then the card reveal (V5 N1: no mission card, no guess)', () => {
     const s = createInitialState(cfg('phases'));
     const g = act(s, HUMAN_ID);
     const q = g.phaseQueue;
@@ -62,7 +62,9 @@ describe('ruleset plumbing', () => {
     }
     expect(q.findIndex((p) => p.step === 'REGIME')).toBeGreaterThan(q.findIndex((p) => p.kind === 'ROUND_SUMMARY' && p.round === 3));
     expect(q.findIndex((p) => p.step === 'REGIME')).toBeLessThan(q.findIndex((p) => p.kind === 'BRIEFING' && p.round === 4));
-    expect(q.slice(-3).map((p) => `${p.kind}:${p.step ?? ''}`)).toEqual(['REVEAL:CARDS', 'GUESS:EPISODE', 'LEVEL_DEBRIEF:']);
+    expect(s.phase.kind).toBe('INTRO');
+    expect(q.some((p) => p.kind === 'GUESS' || p.kind === 'VALUES_REVEAL')).toBe(false);
+    expect(q.slice(-2).map((p) => `${p.kind}:${p.step ?? ''}`)).toEqual(['REVEAL:CARDS', 'LEVEL_DEBRIEF:']);
   });
 });
 
@@ -114,14 +116,14 @@ describe('bank and debt stress', () => {
       expect(pl.episodeStart[3]![s.players[0].id]).toBe(PLAY.EPISODE_STARTING_BANK);
     }
   });
-  it('final score = bank half + mission half - debt stress + guess points', () => {
+  it('V5 N1: the final score is the bank (plus Second Chance points); each bot keeps its fixed values trait', () => {
     const s = botsOnly('score');
-    const banks = s.players.map((p) => s.play!.banks[p.id]);
-    s.players.forEach((p, i) => {
-      const metric = { EGOIST: banks[i], RAWLSIAN: Math.min(...banks), UTILITARIAN: banks.reduce((a, b) => a + b, 0) / banks.length } as Record<string, number>;
-      if (p.values !== 'MERITOCRAT')
-        expect(playScore(s, p.id)).toBeCloseTo(PLAY.BANK_WEIGHT * banks[i] + PLAY.MISSION_WEIGHT * PLAY.MISSION_SCALE[p.values] * metric[p.values] - s.play!.debtStress[p.id] + s.play!.guessPoints[p.id], 9);
-    });
+    for (const p of s.players) {
+      expect(playScore(s, p.id)).toBeCloseTo(s.play!.banks[p.id] + s.play!.guessPoints[p.id], 9);
+      expect(p.values).toBe(PLAY.BOT_TRAITS[p.id as keyof typeof PLAY.BOT_TRAITS]);
+    }
+    const solo = createInitialState(cfg('traits'));
+    expect(solo.players.find((p) => p.isHuman)!.values).toBe('EGOIST');
   });
 });
 
@@ -170,19 +172,12 @@ describe('events', () => {
   });
 });
 
-describe('card guess', () => {
-  it('a correct guess is worth GUESS_POINTS; more than one target is refused', () => {
+describe('no card guess (V5 N1)', () => {
+  it('a Play game never queues a guess, and a guess is refused', () => {
     const states = playSolo('guess');
-    const atGuess = states.find((s) => s.phase.kind === 'GUESS')!;
-    const target = atGuess.players[1];
-    const wrong = target.values === 'EGOIST' ? 'RAWLSIAN' : 'EGOIST';
-    const two = reduce(atGuess, { type: 'SUBMIT_GUESSES', from: HUMAN_ID, guesses: { [target.id]: target.values, [atGuess.players[2].id]: 'EGOIST' } });
-    expect(two).toBe(atGuess);
-    const right = reduce(atGuess, { type: 'SUBMIT_GUESSES', from: HUMAN_ID, guesses: { [target.id]: target.values } });
-    expect(right.play!.guessPoints[HUMAN_ID]).toBe(PLAY.GUESS_POINTS);
-    const no = reduce(atGuess, { type: 'SUBMIT_GUESSES', from: HUMAN_ID, guesses: { [target.id]: wrong } });
-    expect(no.play!.guessPoints[HUMAN_ID]).toBe(0);
-    expect(right.phase.kind).toBe('LEVEL_DEBRIEF');
+    expect(states.some((x) => x.phase.kind === 'GUESS')).toBe(false);
+    const any = states[5];
+    expect(reduce(any, { type: 'SUBMIT_GUESSES', from: HUMAN_ID, guesses: { [any.players[1].id]: 'EGOIST' } })).toBe(any);
   });
 });
 
@@ -225,8 +220,9 @@ describe('privacy', () => {
         expect(v.scores[p.id]).toBeUndefined();
       }
       expect(v.play!.finalScores).toBeNull();
-      expect(v.play!.mission!.card).toBe(s.players[0].values);
-      for (const byGuesser of Object.values(v.play!.guesses)) expect(Object.keys(byGuesser ?? {}).every((g) => g === HUMAN_ID)).toBe(true);
+      // V5 N1: no missions; the viewer sees only their own score and their own choices.
+      expect(v.play!.score!.total).toBeCloseTo(s.play!.banks[HUMAN_ID] - (s.mode === 'LIFE' ? 0 : 0) + s.play!.guessPoints[HUMAN_ID], 6);
+      expect(v.play!.trail.length).toBe((s.play!.trail?.[HUMAN_ID] ?? []).length);
       // Ranks are whole numbers only.
       for (const r of Object.values(v.play!.ranks ?? {})) expect(Number.isInteger(r)).toBe(true);
       if (!s.play!.bankHistory.some((h) => h.level === s.levelIndex)) expect(v.play!.ranks).toBeNull();
@@ -566,25 +562,11 @@ describe('Give (D-142)', () => {
   });
 });
 
-describe('the mission preview (D-143)', () => {
-  it('shows each choice against doing nothing, in mission points, for your own mission only', () => {
-    let checked = 0;
-    for (let k = 0; k < 8; k++) {
-      const s = createInitialState(cfg(`preview-${k}`));
-      toMove(s);
-      const me = s.players.find((p) => p.id === HUMAN_ID)!;
-      const pv = (visibleState(s, HUMAN_ID).levelView as { preview: { cover: number | null; gym: number; gift: Record<string, Record<number, number>> } }).preview;
-      expect(pv).toBeDefined();
-      const other = s.players.find((p) => p.id !== HUMAN_ID)!.id;
-      const g5 = pv.gift[other][5];
-      // A plain transfer leaves the average bank where it was, and an Egoist's mission is its own bank.
-      if (me.values === 'UTILITARIAN' && PLAY.GIFT_MATCH === 0) expect(g5).toBeCloseTo(0, 9);
-      if (me.values === 'EGOIST') expect(g5).toBeCloseTo(-5 * PLAY.MISSION_SCALE.EGOIST, 9);
-      // Round 1 is the launch round: everyone is signed up, so there is no cover choice to preview.
-      expect(pv.cover).toBeNull();
-      checked++;
-    }
-    expect(checked).toBe(8);
+describe('no mission previews (V5 N1)', () => {
+  it('the move screen view carries no mission preview', () => {
+    const s = createInitialState(cfg('preview-0'));
+    toMove(s);
+    expect((visibleState(s, HUMAN_ID).levelView as { preview?: unknown }).preview).toBeUndefined();
   });
 });
 

@@ -2,7 +2,7 @@
 // incomes, and the Hustle Prize. One beat per screen, as Episode 3. Every string comes from play.l2.*.
 import { useState } from 'react';
 import type { ViewState } from '../../engine/types';
-import type { P2Preview, P2Round } from '../../engine/play/ep2';
+import type { P2Round } from '../../engine/play/ep2';
 import { BANDS } from '../../engine/play/ep2';
 import { PLAY } from '../../engine/play/params';
 import { useStore } from '../store';
@@ -16,7 +16,7 @@ import { Chips, Details, StagedReveal, peakMark, spotlightSteps } from './Peak';
 import { Coach } from './Coach';
 import { verbOn } from './logic';
 import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
-import { GiftBar, Tile, giftLines, previewText } from './Episode3';
+import { GiftBar, Tile, giftLines } from './Episode3';
 import { timesWord } from './logic';
 
 type Gift = { to: string; amount: number };
@@ -29,7 +29,6 @@ export type L2View = {
   rounds: Array<Partial<P2Round>>;
   current?: Partial<P2Round>;
   poll: Record<string, number>;
-  preview?: P2Preview;
   myMoney?: number[];
   costK: number;
   talentMult: number;
@@ -73,14 +72,13 @@ export function TaxIn({ v, next }: { v: ViewState; next: () => void }) {
 export function TaxScreen({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
   const [x, setX] = useState<number | null>(null);
-  const pv = lv2(v).preview?.tax;
   return (
     <Stage v={v} footer={<BigButton disabled={x === null} onClick={() => act(x)}>{t('play.l2.tax.submit')}</BigButton>}>
       <h1 className="h-show text-hero leading-tight">{t('play.l2.tax.title')}</h1>
       <p className="mt-1 text-small">{t('play.l2.tax.how')}</p>
       <div className="mt-auto grid grid-cols-3 gap-2 pt-3" role="group" aria-label={t('play.l2.tax.title')}>
         {PLAY.L2.TAX_OPTIONS.map((o) => (
-          <Tile key={o} on={x === o} title={pct(o)} desc={t(o === 0 ? 'play.l2.tax.none' : 'play.l2.tax.shared')} note={previewText(pv?.[String(o)])} onClick={() => setX(o)} />
+          <Tile key={o} on={x === o} title={pct(o)} desc={t(o === 0 ? 'play.l2.tax.none' : 'play.l2.tax.shared')} onClick={() => setX(o)} />
         ))}
       </div>
     </Stage>
@@ -99,8 +97,6 @@ export function EffortScreen({ v }: { v: ViewState }) {
   const [gift, setGift] = useState<Gift | null>(null);
   const [step, setStep] = useState<'hours' | 'claim'>('hours');
   const claims = verbOn(v, 'claim');
-  const pv = lv.preview;
-  const note = previewText(pv?.effort?.[e]);
   if (step === 'claim')
     return (
       <Stage v={v} footer={<BigButton onClick={() => act({ effort: e, claim, gift })}>{t('play.stage.lock')}</BigButton>}>
@@ -127,10 +123,9 @@ export function EffortScreen({ v }: { v: ViewState }) {
       <Coach id="move" />
       <p className="text-small">
         {t('play.l2.effort.money', { w: coins(lv.myMoney?.[e] ?? 0) })}
-        {note && <span className="ms-1 font-bold">{note}</span>}
       </p>
       <div className="mt-auto pt-2">
-        <GiftBar v={v} gift={gift} previews={pv?.gift} note={gift ? previewText(pv?.gift[gift.to]?.[gift.amount]) : null} onPick={setGift} />
+        <GiftBar v={v} gift={gift} onPick={setGift} />
       </div>
     </Stage>
   );
@@ -163,7 +158,7 @@ export function IncomeScreen({ v }: { v: ViewState }) {
   );
 }
 
-/** READ: the Hustle Prize vote. Rows show income, claim, the audience poll and the mission preview. */
+/** READ: the Hustle Prize vote. Rows show income and the audience poll. */
 export function PrizeScreen({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
   const lv = lv2(v);
@@ -179,7 +174,6 @@ export function PrizeScreen({ v }: { v: ViewState }) {
         {v.players
           .filter((p) => p.id !== v.viewer)
           .map((p) => {
-            const note = previewText(lv.preview?.prize?.[p.id]);
             return (
               <li key={p.id}>
                 <button type="button" aria-pressed={x === p.id} onClick={() => setX(p.id)} className={`flex min-h-[48px] w-full items-center gap-2 rounded-xl px-2 text-start ${x === p.id ? 'bg-spot text-onspot' : 'bg-card'}`}>
@@ -187,7 +181,6 @@ export function PrizeScreen({ v }: { v: ViewState }) {
                   <span className="w-16 truncate text-small font-bold">{shortName(v, p.id)}</span>
                   <span className="flex-1 text-small">{t('play.l2.prize.earned', { y: coins(c.y?.[p.id] ?? 0) })}</span>
                   {poll[p.id] !== undefined && <span className="text-small font-semibold">{t('play.l2.poll', { p: pct(poll[p.id]) })}</span>}
-                  {note && x === p.id && <span className="text-small font-bold">{note}</span>}
                 </button>
               </li>
             );

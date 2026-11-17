@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import type { ViewState } from '../../engine/types';
 import type { PrincipleId } from '../../engine/tax';
 import { PRINCIPLES } from '../../engine/tax';
-import type { P1Preview, P1Round } from '../../engine/play/ep1';
+import type { P1Round } from '../../engine/play/ep1';
 import { CLAIMABLE } from '../../engine/play/ep1';
 import { useStore } from '../store';
 import { t } from '../i18n';
@@ -19,7 +19,7 @@ import type { CastCue } from './Cast';
 import { Chips, Details, StagedReveal, peakMark, spotlightSteps } from './Peak';
 import { Coach } from './Coach';
 import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
-import { GiftBar, Tile, giftLines, previewText } from './Episode3';
+import { GiftBar, Tile, giftLines } from './Episode3';
 import { hostLine, pick, timesWord, ledgerRows } from './logic';
 
 type Gift = { to: string; amount: number };
@@ -31,7 +31,6 @@ export type L1View = {
   myIncome?: number;
   deck: number[];
   peekCost: number;
-  preview?: P1Preview;
 };
 
 const lv1 = (v: ViewState) => v.levelView as L1View;
@@ -97,14 +96,13 @@ export function ClaimScreen1({ v }: { v: ViewState }) {
   );
 }
 
-/** The move: vote for a rule (secret), and a gift. Each rule shows its mission preview. */
+/** The move: vote for a rule (secret), and a gift. */
 export function VoteScreen1({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
   const lv = lv1(v);
   const [vote, setVote] = useState<PrincipleId | null>(null);
   const [gift, setGift] = useState<Gift | null>(null);
   const [call, setCall] = useState<string | null>(null);
-  const pv = lv.preview;
   return (
     <Stage v={v} cast={{ marks: Object.fromEntries(lv.peeked.map((id) => [id, t('play.l1.peekedTag')])) }} footer={<BigButton disabled={!vote} onClick={() => act({ vote, gift, call })}>{t('play.l1.vote.submit')}</BigButton>}>
       <h1 className="h-show text-title leading-tight">{t('play.l1.vote.title')}</h1>
@@ -113,12 +111,12 @@ export function VoteScreen1({ v }: { v: ViewState }) {
 
       <div className="mt-2 grid grid-cols-2 gap-2" role="group" aria-label={t('play.l1.vote.title')}>
         {PRINCIPLES.map((p) => (
-          <Tile key={p} on={vote === p} title={ruleName(p)} desc={t(`play.l1.rule.${p}.desc`)} note={previewText(pv?.vote[p])} onClick={() => setVote(p)} />
+          <Tile key={p} on={vote === p} title={ruleName(p)} desc={t(`play.l1.rule.${p}.desc`)} onClick={() => setVote(p)} />
         ))}
       </div>
       <CallChips v={v} claimants={claimantsNow(v)} value={call} onPick={setCall} />
       <div className="mt-auto pt-2">
-        <GiftBar v={v} gift={gift} previews={pv?.gift} note={gift ? previewText(pv?.gift[gift.to]?.[gift.amount]) : null} onPick={setGift} />
+        <GiftBar v={v} gift={gift} onPick={setGift} />
       </div>
     </Stage>
   );

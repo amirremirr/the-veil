@@ -63,7 +63,7 @@ await page.evaluate(
 const state = () =>
   page.evaluate(() => {
     const g = window.__veil.getState().game;
-    const beat = ['data-mycards', 'data-vote', 'data-event', 'data-bar', 'data-outcome', 'data-price', 'data-cards', 'data-missions', 'data-receipts', 'data-receipt', 'data-result-card'].map((a) => (document.querySelector(`[${a}]`) ? a.slice(5) : '')).find(Boolean) || '';
+    const beat = ['data-mycards', 'data-vote', 'data-event', 'data-bar', 'data-outcome', 'data-price', 'data-cards', 'data-ranking', 'data-receipts', 'data-receipt', 'data-result-card'].map((a) => (document.querySelector(`[${a}]`) ? a.slice(5) : '')).find(Boolean) || '';
     return {
       key: `ep${g.levelIndex}-r${g.round}-${g.phase.kind}${g.phase.step ? `-${g.phase.step}` : ''}${beat ? `-${beat}` : ''}`,
       kind: g.phase.kind,
@@ -102,7 +102,7 @@ for (let i = 0; i < 400; i++) {
     continue;
   }
   if (s2.kind === 'RUN_DEBRIEF') {
-    const b = page.getByRole('button', { name: /Skip|The missions flip|Next/ }).first();
+    const b = page.getByRole('button', { name: /Skip|See how you played|Next/ }).first();
     if (await b.count()) await b.click();
     continue;
   }

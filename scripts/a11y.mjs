@@ -32,7 +32,7 @@ for (let i = 0; i < 1500; i++) {
   await page.waitForTimeout(80);
   const m = await page.evaluate(() => {
     const g = window.__veil.getState().game;
-    const beat = ['data-mycards', 'data-vote', 'data-event', 'data-claims', 'data-outcome', 'data-price', 'data-cards', 'data-missions', 'data-receipts', 'data-result-card'].find((a) => document.querySelector(`[${a}]`)) ?? '';
+    const beat = ['data-mycards', 'data-vote', 'data-event', 'data-claims', 'data-outcome', 'data-price', 'data-cards', 'data-ranking', 'data-receipts', 'data-result-card'].find((a) => document.querySelector(`[${a}]`)) ?? '';
     return { kind: g.phase.kind, step: g.phase.step ?? '', level: g.levelIndex, beat, beatNext: !!document.querySelector('[data-beat-next]') };
   });
   if (m.kind === 'END' && m.beat === 'data-result-card' && seen.has('END')) break;
@@ -58,7 +58,7 @@ for (let i = 0; i < 1500; i++) {
     continue;
   }
   if (m.kind === 'RUN_DEBRIEF' || m.kind === 'END') {
-    await page.click('button:has-text("The missions flip"), button:has-text("Skip")').catch(() => {});
+    await page.click('button:has-text("See how you played"), button:has-text("Skip")').catch(() => {});
     continue;
   }
   await page.evaluate(() => {

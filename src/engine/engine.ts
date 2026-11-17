@@ -16,7 +16,8 @@ import { botMessages } from './bots/messaging';
 import { LEVELS } from './levels';
 import { level4Counterfactual } from './counterfactual';
 import { assertSameRules, currentRules } from './version';
-import { initPlay, playApplyGuess, playBotGuesses, playDrawEvent, playStartEpisode, PLAYABLE_EPISODES } from './play/rules';
+import { initPlay, playDrawEvent, playStartEpisode, PLAYABLE_EPISODES } from './play/rules';
+import { PLAY } from './play/params';
 import { playView } from './play/view';
 import { drawHonesty } from './play/claims';
 import { nearMisses } from './play/nearMiss';
@@ -118,6 +119,9 @@ export function createInitialState(config: SetupConfig): GameState {
       publicInfo: {},
     });
   });
+  // V5 N1 (D-210): in Play there are no missions. The deck is still shuffled above (the same draws as before),
+  // but each bot keeps its own fixed values trait and a human's values are their own bank.
+  if (config.ruleset === 'PLAY') for (const p of players) p.values = p.isHuman ? 'EGOIST' : PLAY.BOT_TRAITS[p.id as keyof typeof PLAY.BOT_TRAITS];
   s.players = players;
   for (const p of players) {
     s.scores[p.id] = { byLevel: [0, 0, 0, 0, 0], points: [0, 0, 0, 0, 0], guessBonus: 0 };
@@ -132,7 +136,8 @@ export function createInitialState(config: SetupConfig): GameState {
     s.play.honesty = drawHonesty(s, botRng(s));
   }
   const hasHuman = players.some((p) => p.isHuman);
-  if (hasHuman) {
+  // V5 N1: Play has no mission card to reveal, so a Play game starts at its first episode.
+  if (hasHuman && !s.play) {
     s.phaseQueue = [{ kind: 'VALUES_REVEAL', round: 0 }];
     s.phaseIdx = 0;
     s.phase = s.phaseQueue[0];
@@ -164,8 +169,8 @@ function startLevel(s: GameState, level: LevelId): void {
     // Play: the episode's own round count, and the card guess before the summary when humans play (Play spec 7.4).
     const phases = d.phases(s);
     const last = phases[phases.length - 1]?.round ?? d.rounds;
-    const guess: Phase[] = s.players.some((p) => p.isHuman) ? [{ kind: 'GUESS', step: 'EPISODE', round: last }] : [];
-    s.phaseQueue = [{ kind: 'INTRO', round: 1 }, ...phases, ...guess, { kind: 'LEVEL_DEBRIEF', round: last }];
+    // V5 N1: no mission guess before the summary.
+    s.phaseQueue = [{ kind: 'INTRO', round: 1 }, ...phases, { kind: 'LEVEL_DEBRIEF', round: last }];
   } else s.phaseQueue = [{ kind: 'INTRO', round: 1 }, ...d.phases(s), { kind: 'LEVEL_DEBRIEF', round: d.rounds }];
   s.phaseIdx = 0;
   enterPhase(s);
@@ -210,8 +215,7 @@ function enterPhase(s: GameState): void {
       // Drop unchecked claims that never met their decision.
       for (const m of s.messages) if (m.level === s.levelIndex && !m.resolved) m.resolved = true;
       // Play scores on banks (Play spec 4.3), not level points; bots make their card guess now (D-99).
-      if (s.play) playBotGuesses(s);
-      else awardLevelPoints(s);
+      if (!s.play) awardLevelPoints(s);
       // Counterfactual sandboxes only read the rounds, so they skip the debrief (and its card's-best lines).
       if (s.cf) break;
       const result = d.debrief(s) as Record<string, unknown>;
@@ -401,6 +405,8 @@ export function step(s: GameState, action: Action): boolean {
       const v = d.validate(s, stepId, action.from, action.decision);
       if (v === null) return false;
       s.pending[action.from] = v;
+      // V5 N1: a Play human's choices, in order, for the end-of-life "You played like..." (their own only).
+      if (s.play && playerOf(s, action.from).isHuman) ((s.play.trail ??= {})[action.from] ??= []).push({ level: s.levelIndex, round: s.round, step: stepId, d: structuredClone(v) });
       if (d.deciders(s, stepId).every((pid) => pid in s.pending)) resolveDecide(s);
       return true;
     }
@@ -412,16 +418,8 @@ export function step(s: GameState, action: Action): boolean {
       if (!from || !humans.includes(from) || from in s.pending) return false;
       const guesses = validGuesses(s, from, action.guesses);
       if (!guesses) return false;
-      if (s.play) {
-        // Play (Play spec 7.4): one guess about one contestant, scored at once; the last human closes the screen.
-        if (!playApplyGuess(s, from, guesses)) return false;
-        s.pending[from] = guesses;
-        if (humans.every((h) => h in s.pending)) {
-          s.phaseIdx++;
-          enterPhase(s);
-        }
-        return true;
-      }
+      // V5 N1: Play has no guesses (no GUESS phase is ever queued in Play).
+      if (s.play) return false;
       s.pending[from] = guesses;
       if (humans.every((h) => h in s.pending)) {
         applyGuesses(s, s.pending as Record<PlayerId, Record<PlayerId, ValuesCard>>);

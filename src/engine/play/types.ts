@@ -1,4 +1,4 @@
-import type { LevelId, PlayerId, ValuesCard } from '../types';
+import type { LevelId, PlayerId } from '../types';
 
 /** An event card for one round (Play spec Section 6), or a quiet week. */
 export interface PlayEvent {
@@ -17,12 +17,10 @@ export interface LedgerLine {
   k: LedgerKey;
   n: number;
 }
-/** G1: how a round moved a contestant's score: half the bank change, the mission part, debt points, guesses. */
+/** G1, V5 N1: a contestant's score in parts (running totals): the bank it counts, and Second Chance points. */
 export interface ScoreParts {
   bank: number;
-  mission: number;
-  debt: number;
-  guess: number;
+  bonus: number;
 }
 
 /** H1 (D-194): one call. `lie`: the called claim was false (CAUGHT); otherwise CALLED WRONG. */
@@ -52,18 +50,21 @@ export interface BankRecord {
   ranks: Record<PlayerId, number>;
 }
 
-export interface EpisodeGuess {
-  target: PlayerId;
-  card: ValuesCard;
-  correct: boolean;
+export interface TrailItem {
+  level: LevelId;
+  round: number;
+  step: string;
+  d: unknown;
 }
 
 export interface PlayState {
   banks: Record<PlayerId, number>;
   /** Total debt stress points so far (public: they follow from public banks). */
   debtStress: Record<PlayerId, number>;
-  /** Points from card guesses so far. */
+  /** V5 N1: score points that are not coins (only the Second Chance's points now; there are no guesses). */
   guessPoints: Record<PlayerId, number>;
+  /** V5 N1: each human's choices in order (level, round, step, decision), for "You played like...". */
+  trail?: Record<PlayerId, TrailItem[]>;
   /** Meritocrat effort so far (Section 4.3: Episode 2 effort plus Episode 4 training, in effort units). Public. */
   effort?: Record<PlayerId, number>;
   /** D-155, LIFE only: the game state at the current episode's start (JSON), for the near-miss replay. Never in a view. */
@@ -85,8 +86,6 @@ export interface PlayState {
   bankHistory: BankRecord[];
   /** Banks when each episode started. */
   episodeStart: Partial<Record<LevelId, Record<PlayerId, number>>>;
-  /** End-of-episode card guesses, per episode and guesser. */
-  guesses: Partial<Record<LevelId, Record<PlayerId, EpisodeGuess>>>;
   /** v2 Section 3.5: each bot's honesty trait for this life (private; never in a view). */
   honesty: Record<PlayerId, number>;
   /**
@@ -154,9 +153,14 @@ export interface PlayView {
   ranks: Record<PlayerId, number> | null;
   /** D-180: rounded gaps to the nearest score above and below the viewer; null once scores are public. */
   gaps?: { above: number | null; below: number | null } | null;
-  /** The viewer's own mission and its progress. */
-  /** `goal`: the mission bar's full mark, k x mission value (D-102). */
-  mission: { card: ValuesCard; value: number; score: number; scale: number; bankPart: number; missionPart: number; stress: number; guessPoints: number; goal: number; startValue: number; lifeStartValue: number; episodeStress: number } | null;
+  /**
+   * V5 N1: the viewer's own score (there are no missions): the bank it counts (in a life, the bank since the
+   * end of Episode 1 while LIFE_BANK_FROM is EP1_END), Second Chance points, and the total.
+   */
+  score: { total: number; bank: number; bonus: number } | null;
+  /** V5 N1: the viewer's own choices so far (for "You played like..."), and their first fair-tax answer. */
+  trail: TrailItem[];
+  fairFirst: number | null;
   /**
    * v2 Section 3.2: the audience poll on READ screens, the average over the other bots of their belief that
    * each contestant's hidden fact is true (Episode 3: high risk). Null when the episode has no poll now.
@@ -166,8 +170,6 @@ export interface PlayView {
   pollMode: 'ALWAYS' | 'NORMAL' | 'NEVER';
   /** v2 Section 3.4: every contestant's public honesty record (claims checked so far, how many were true). */
   record: Record<PlayerId, { made: number; kept: number }>;
-  /** The viewer's own card guesses; others' guesses only once every card is public. */
-  guesses: Partial<Record<LevelId, Record<PlayerId, EpisodeGuess>>>;
   /** Final scores of everyone, once every card is public. */
   finalScores: Record<PlayerId, number> | null;
   startingBank: number;

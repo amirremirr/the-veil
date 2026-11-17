@@ -103,10 +103,6 @@ async function playThrough(page: Page, o: { gift?: boolean; noPoll?: boolean } =
     } else if (await page.locator('[data-outcome]').count()) {
       seen.wheels++;
       await page.getByRole('button', { name: 'Tap to continue' }).click();
-    } else if (await page.getByRole('heading', { name: 'Whose mission can you guess?' }).count()) {
-      await page.getByRole('group', { name: 'Who?' }).getByRole('button').first().click();
-      await page.getByRole('button', { name: 'Get rich' }).click();
-      await page.getByRole('button', { name: 'Lock in my guess' }).click();
     } else throw new Error(`unknown screen: ${(await page.locator('body').innerText()).slice(0, 200)}`);
   }
   return seen;
@@ -124,8 +120,8 @@ test('plays Episode 3 from the title to the episode summary', async ({ page }) =
   await page.getByLabel('Challenge code (optional)').fill('e2e-play');
   await page.getByLabel('Your stage name').fill('Ana');
   await page.getByRole('button', { name: 'Go live' }).click();
-  // UI V3 (U3): the mission and the episode's intro share one screen.
-  await expect(page.getByText('Your secret mission')).toBeVisible();
+  // V5 N1: no mission card; the game opens on the episode's "How this episode works" card.
+  await expect(page.getByText('Your secret mission')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Bad Luck Season' })).toBeVisible();
   await fits(page);
   await page.getByRole('button', { name: 'Roll the cameras' }).click();
@@ -157,7 +153,7 @@ test('two seats on Hard: the setup line, two contestants, no audience poll on an
   await page.locator('[data-difficulty="EASY"]').click();
   await expect(page.getByText('See what the audience thinks. Bots are mostly honest.')).toBeVisible();
   await page.locator('[data-difficulty="HARD"]').click();
-  await expect(page.getByText('No audience poll, no mission hints. Bots lie more.')).toBeVisible();
+  await expect(page.getByText('No audience poll. Bots lie more.')).toBeVisible();
   await page.locator('[data-seats="2"]').click();
   await page.getByLabel('Challenge code (optional)').fill('e2e-hard');
   await page.getByRole('button', { name: 'Go live' }).click();

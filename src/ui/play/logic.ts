@@ -36,7 +36,8 @@ export function wheelSlip(variant: number): string {
   return wheel.slips[variant % wheel.slips.length];
 }
 
-export const missionName = (c: ValuesCard) => t(`play.missions.${c}.name`);
+/** V5 N1: the name of a principle (Study's values cards; in Play only the bots' traits and "You played like"). */
+export const principleName = (c: ValuesCard) => t(`play.principles.${c}.name`);
 
 /** The event card's name, story and one-line effect, with this episode's numbers filled in. */
 export function eventText(level: LevelId, id: string, life = false): { name: string; text: string; effect: string } {
@@ -224,19 +225,9 @@ export function ledgerRows(v: ViewState): { from: number; to: number; money: Led
   const lifeFinale = v.mode === 'LIFE' && v.levelIndex === 5;
   const shown = roundToTotal(lines.map((x) => x.n), to - from);
   const money = lines.map((x, i) => ({ key: x.k === 'income' && lifeFinale ? 'incomeFinale' : x.k, n: shown[i] })).filter((r) => r.n !== 0 || r.key === 'living');
-  const a = (prev?.parts ?? rec.partsStart)?.[v.viewer];
-  const b = rec.parts?.[v.viewer];
-  let score: LedgerRow[] = [];
-  let scoreFrom = 0;
-  let scoreTo = 0;
-  if (a && b) {
-    scoreFrom = Math.round(a.bank + a.mission + a.debt + a.guess);
-    scoreTo = Math.round(b.bank + b.mission + b.debt + b.guess);
-    const d = [b.bank - a.bank, b.mission - a.mission, b.debt - a.debt, b.guess - a.guess];
-    const r = roundToTotal(d, scoreTo - scoreFrom);
-    score = ['bank', 'mission', 'debt', 'guess'].map((key, i) => ({ key, n: r[i] })).filter((x) => x.n !== 0);
-  }
-  return { from, to, money, score, scoreFrom, scoreTo };
+  // V5 N1: the score is the bank (plus Second Chance points), so the money lines are the whole story.
+  const score: LedgerRow[] = [];
+  return { from, to, money, score, scoreFrom: 0, scoreTo: 0 };
 }
 
 /**

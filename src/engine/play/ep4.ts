@@ -13,7 +13,7 @@ import type { LevelDefinition } from '../levels/types';
 import { POLICIES, type Group, type Job, type Policy, type Priors } from '../levels/level4';
 import { PLAY } from './params';
 import { botCall, callChance, callsOn, callsThisRound, lieBelief, settleCalls, validCall } from './calls';
-import { activeEvent, addBetweenRounds, giftNet, missionScale, missionValue, playEffortShares, playRanks, playRoundValue, playScore, livingCost, setRoundLedger } from './rules';
+import { activeEvent, addBetweenRounds, giftNet, playEffortShares, playRanks, playRoundValue, playScore, setRoundLedger } from './rules';
 import { chooseClaim, claimsOf, honestyRange, postClaims, SILENT } from './claims';
 
 export interface Gift4 {
@@ -281,41 +281,6 @@ function bestGift(s: GameState, i: number, W: number[]): Gift4 | null {
 
 // ---------------------------------------------------------------------------------------------------------
 // Mission previews (D-143): mission points against doing nothing, under the bots' model.
-
-export interface P4Preview {
-  train?: number;
-  hire?: Record<PlayerId, number>;
-  gift: Record<PlayerId, Record<number, number>>;
-}
-
-function missionPoints(s: GameState, i: number, W: number[], extraEffort = 0): number {
-  const card = s.players[i].values;
-  const banks = s.players.map((p, j) => s.play!.banks[p.id] + W[j] - livingCost(s));
-  return PLAY.MISSION_WEIGHT * missionScale(s, card) * missionValue(card, banks, i, effortWith(s, s.players[i].id, extraEffort));
-}
-
-export function p4Preview(s: GameState, pid: PlayerId): P4Preview {
-  const l = st(s);
-  const P = p4Params(s);
-  const i = idx(s, pid);
-  const base = s.phase.step === 'HIRE' ? expectedW(s, i, { job: Object.fromEntries(workersOf(s).map((w) => [w, 'SIMPLE' as Job])) }, P) : expectedW(s, i, { trained: false }, P);
-  const m0 = missionPoints(s, i, base);
-  const out: P4Preview = { gift: {} };
-  if (s.phase.step === 'TRAIN') out.train = missionPoints(s, i, expectedW(s, i, { trained: true }, P), PLAY.L4_TRAIN_EFFORT) - m0;
-  if (s.phase.step === 'HIRE' && l.current?.reads) {
-    out.hire = {};
-    for (const w of workersOf(s)) {
-      const job = Object.fromEntries(workersOf(s).map((x) => [x, (x === w ? 'COMPLEX' : 'SIMPLE') as Job]));
-      out.hire[w] = missionPoints(s, i, expectedW(s, i, { job }, P)) - m0;
-    }
-  }
-  for (const p of s.players) {
-    if (p.id === pid) continue;
-    out.gift[p.id] = {};
-    for (const a of PLAY.GIFT_AMOUNTS) out.gift[p.id][a] = missionPoints(s, i, withGift(base, i, { to: p.id, amount: a }, s)) - m0;
-  }
-  return out;
-}
 
 // ---------------------------------------------------------------------------------------------------------
 
@@ -655,7 +620,6 @@ export const playLevel4: LevelDefinition = {
       threshold: p4Params(s).threshold,
       meterShown: PLAY.L4.METER[s.difficulty],
       // E5 (D-164): Hard shows no mission hints, as it shows no audience poll.
-      preview: s.difficulty !== 'HARD' && s.phase.kind === 'DECIDE' && (s.phase.step === 'TRAIN' || s.phase.step === 'HIRE') && s.players.some((p) => p.id === viewer) ? p4Preview(s, viewer) : undefined,
       cardsOpen: cards,
     };
   },
