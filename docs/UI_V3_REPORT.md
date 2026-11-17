@@ -50,7 +50,7 @@ Full life, seed `fresh-life-1`, 375 x 760. Taps are screens that need a tap, plu
 
 ## Bundle size
 
-JS went from 250.4 to 263.5 KB gzipped (+13.1; limit +60). CSS went from 6.3 to 6.9 KB gzipped. No new dependency was added.
+JS went from 250.4 to 263.9 KB gzipped (+13.5; limit +60). CSS went from 6.3 to 6.9 KB gzipped. No new dependency was added.
 
 ## Accessibility
 
@@ -79,15 +79,32 @@ Bots only, 1,000 lives. The changes: in a life, Episode 2 pays 3 per hour of tal
 - **U5 rolls back on its own:** it is in its own commit and can be reverted alone.
 - **Before merging:** the room server must be redeployed first.
 
+## Fixes after the first report
+
+- **Birth income is not scored in a life** (engine, D-203, rules hash **1c675c851512f986**). From Episode 2 on, the bank half counts what a contestant gained since the end of Episode 1. The Episode 1 summary says so in one line. A compressed Episode 1 deck was tested too and broke E1 and F-f.
+
+| 1,000 bot lives | Before | After (chosen) | Compressed deck (not chosen) |
+|---|---|---|---|
+| Score gap 1st to 4th, share of winner's score, median (at most 40%) | 37.4% | 37.0% | 35.3% |
+| Born poorest wins (at least 15%) | 10.8% | 18.9% | 16.6% |
+| Final order = order after Ep2 (at most 35%) | 18.9% | 15.6% | 14.9% |
+| Ep4 leader loses the finale (at least 20%) | 21.6% | 30.2% | 23.3% |
+| E checks | all pass | all pass | E1 fails |
+| F-f (30% to 70%) | 51.1% | 51.2% | 19.4% (fails) |
+| F-e (15% to 35% each) | R 35.6% (fails) | U 37.7%, M 12.0% (fails) | R 35.7% (fails) |
+
+- **Stamps** sit on the character's body, never over the podium name (an e2e check enforces it). **The Bar** marks voters with a small "Voted". **Auto-advance** holds 1.2 s plus 0.2 s per word over 12, at most 5 s; a life now paces at 9.3 min (taps 71 + 1 opening card, same seed).
+
 ## Choices made, with alternatives
 
 - **Cast size (D-195).** The cast shrinks on dense screens instead of staying at 72 px. Alternative: move content off those screens.
 - **Avatar storage (D-195).** Your chosen shape is stored in the browser only, so in rooms other players appear as the hexagon. Alternative: send it through the room server.
 - **Sound default (D-196).** Sound is on by default after the first tap. Alternative: off by default.
 - **"Your card" screens (D-197).** In Episodes 2 to 5 these stay a separate beat, because the engine deals cards after the intro. Alternative: deal at the intro, which is a rules change.
-- **Auto-advance hold (D-197).** The hold is 1.2 s as specified; long beats may be fast for slow readers. Auto-advance is switched off under test automation.
+- **Auto-advance hold (D-197, D-202).** The hold is now 1.2 s plus 0.2 s per word over 12, at most 5 s. Auto-advance is switched off under test automation.
 - **Episode 2 hourly rate (D-197).** It keeps one decimal, since it is a rate.
 - **Review loop (D-200).** U4 stopped after 3 cycles, not the spec's stop rule, for budget. The cycle 3 fixes were not reviewed again.
+- **F-e (D-201, D-203).** F-e still fails after fix 1, and a hand recalibration made it much worse, because the finale weighs missions 4.5 times. Alternative: lower that weight.
 - **U5 trade-off (D-201).** The kept configuration fails F-e by 0.6 points. The recalibrated alternative passes F-e, but the finale lead change drops to 17.9%.
 
 ## What is left
@@ -108,5 +125,6 @@ No person has played UI V3. Every review here is an AI proxy, not human evidence
 ## Commit and preview
 
 - **Commit:** the last commit before this report is `635df14` on `ui-v3`; this report is committed after it.
-- **Rules hash:** `9caee8e94a7084b5`; `3bf67478ab66d810` without the U5 commit.
+- **Rules hash:** `1c675c851512f986` (with U5 and fix 1); `9caee8e94a7084b5` without fix 1; `3bf67478ab66d810` without both.
+- **Latest commits:** `147f2b7` (stamps, Voted marks, holds), `5c47d3f` (fix 1, engine, its own commit).
 - **Preview link:** none. This run did not deploy, as instructed, and no preview link was checked.
