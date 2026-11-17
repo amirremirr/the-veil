@@ -12,8 +12,10 @@ import { CallChips, CallResults, claimantsNow } from './Call';
 import { coins, pct } from '../labels';
 import { fmt1 } from '../components/Money';
 import { nameOf, shortName } from '../game';
-import { BigButton, Bubble, Face, Stage } from './OnAir';
-import { GiftSheet, Stamps, Tile, previewText } from './Episode3';
+import { Chips, Details, StagedReveal, peakMark, spotlightSteps } from './Peak';
+import { Coach } from './Coach';
+import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
+import { GiftBar, GiftSheet, Tile, previewText } from './Episode3';
 import { timesWord, bankLineText, roundMoney } from './logic';
 
 type Gift = { to: string; amount: number };
@@ -43,10 +45,10 @@ export function MyCards2({ v, next }: { v: ViewState; next: () => void }) {
   return (
     <Stage v={v} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
       <div className="my-auto" data-mycards>
-        <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.l2.cards.label')}</p>
-        <p className="h-show mt-2 text-5xl leading-none text-spot">{t('play.l2.cards.talent', { a: lv.myTalent })}</p>
-        <p className="mt-3 text-base">{t('play.l2.cards.how', { per: fmt1(lv.talentMult * lv.myTalent) })}</p>
-        <p className="mt-3 text-base">{t('play.l2.cards.secret')}</p>
+        <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l2.cards.label')}</p>
+        <p className="h-show mt-2 text-hero leading-none text-spot">{t('play.l2.cards.talent', { a: lv.myTalent })}</p>
+        <p className="mt-3 text-body">{t('play.l2.cards.how', { per: fmt1(lv.talentMult * lv.myTalent) })}</p>
+        <p className="mt-3 text-body">{t('play.l2.cards.secret')}</p>
       </div>
     </Stage>
   );
@@ -56,12 +58,12 @@ export function MyCards2({ v, next }: { v: ViewState; next: () => void }) {
 export function TaxIn({ v, next }: { v: ViewState; next: () => void }) {
   const lv = lv2(v);
   return (
-    <Stage v={v} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
+    <Stage v={v} onTap={next} footer={<AutoButton onClick={next}>{t('play.stage.tap')}</AutoButton>}>
       <div className="my-auto" data-vote>
-        <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.l2.taxIn.label')}</p>
-        <p className="h-show mt-2 text-5xl leading-none text-spot">{pct(lv.t ?? 0)}</p>
-        <p className="mt-2 text-base">{t('play.l2.taxIn.how')}</p>
-        <p className="mt-3 text-sm">{v.players.map((p) => `${shortName(v, p.id)}: ${pct(lv.tVotes?.[p.id] ?? 0)}`).join(', ')}</p>
+        <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l2.taxIn.label')}</p>
+        <p className="h-show mt-2 text-hero leading-none text-spot">{pct(lv.t ?? 0)}</p>
+        <p className="mt-2 text-body">{t('play.l2.taxIn.how')}</p>
+        <p className="mt-3 text-small"><span className="font-bold">{t('play.cast.votes')}</span> {v.players.map((p) => `${shortName(v, p.id)} ${pct(lv.tVotes?.[p.id] ?? 0)}`).join(', ')}</p>
       </div>
     </Stage>
   );
@@ -73,8 +75,8 @@ export function TaxScreen({ v }: { v: ViewState }) {
   const pv = lv2(v).preview?.tax;
   return (
     <Stage v={v} footer={<BigButton disabled={x === null} onClick={() => act(x)}>{t('play.l2.tax.submit')}</BigButton>}>
-      <h1 className="h-show text-4xl leading-tight">{t('play.l2.tax.title')}</h1>
-      <p className="mt-1 text-sm">{t('play.l2.tax.how')}</p>
+      <h1 className="h-show text-hero leading-tight">{t('play.l2.tax.title')}</h1>
+      <p className="mt-1 text-small">{t('play.l2.tax.how')}</p>
       <div className="mt-auto grid grid-cols-3 gap-2 pt-3" role="group" aria-label={t('play.l2.tax.title')}>
         {PLAY.L2.TAX_OPTIONS.map((o) => (
           <Tile key={o} on={x === o} title={pct(o)} desc={t(o === 0 ? 'play.l2.tax.none' : 'play.l2.tax.shared')} note={previewText(pv?.[String(o)])} onClick={() => setX(o)} />
@@ -96,31 +98,26 @@ export function EffortScreen({ v }: { v: ViewState }) {
   const note = previewText(pv?.effort?.[e]);
   return (
     <Stage v={v} footer={<BigButton onClick={() => act({ effort: e, claim, gift })}>{t('play.stage.lock')}</BigButton>}>
-      <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.l2.effort.tax', { t: pct(lv.t ?? 0) })}</p>
+      <Coach id="move" />
+      <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l2.effort.tax', { t: pct(lv.t ?? 0) })}</p>
       <label className="mt-1 block">
-        <span className="h-show text-3xl leading-tight">{t('play.l2.effort.title', { e })}</span>
+        <span className="h-show text-title leading-tight">{t('play.l2.effort.title', { e })}</span>
         <input type="range" min={0} max={10} step={1} value={e} onChange={(ev) => setE(Number(ev.target.value))} className="mt-2 w-full" aria-label={t('play.l2.effort.aria')} />
       </label>
-      <p className="text-sm">
+      <p className="text-small">
         {t('play.l2.effort.money', { w: coins(lv.myMoney?.[e] ?? 0) })}
         {note && <span className="ms-1 font-bold">{note}</span>}
       </p>
-      <p className="mt-2 text-sm font-bold">{t('play.l2.effort.claim')}</p>
+      <p className="mt-2 text-small font-bold">{t('play.l2.effort.claim')}</p>
       <div className="mt-1 grid grid-cols-4 gap-1.5" role="group" aria-label={t('play.l2.effort.claim')}>
         {[...BANDS, 'SILENT'].map((b) => (
-          <button key={b} type="button" aria-pressed={claim === b} onClick={() => setClaim(b)} className={`min-h-[44px] rounded-xl px-1 text-xs font-bold ${claim === b ? 'bg-spot text-onspot' : 'bg-card'}`}>
+          <button key={b} type="button" aria-pressed={claim === b} onClick={() => setClaim(b)} className={`min-h-[44px] rounded-xl px-1 text-small font-bold ${claim === b ? 'bg-spot text-onspot' : 'bg-card'}`}>
             {b === 'SILENT' ? t('play.l2.silent') : bandName(b)}
           </button>
         ))}
       </div>
-      <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
-        <Tile
-          on={!!gift}
-          title={t('play.gift.title')}
-          desc={gift ? t('play.gift.picked', { n: gift.amount, name: shortName(v, gift.to) }) : t('play.gift.desc', { max: Math.max(...PLAY.GIFT_AMOUNTS) })}
-          note={gift ? previewText(pv?.gift[gift.to]?.[gift.amount]) : null}
-          onClick={() => setGiving(true)}
-        />
+      <div className="mt-auto pt-2">
+        <GiftBar v={v} gift={gift} note={gift ? previewText(pv?.gift[gift.to]?.[gift.amount]) : null} onOpen={() => setGiving(true)} />
       </div>
       {giving && (
         <GiftSheet
@@ -145,22 +142,22 @@ export function IncomeScreen({ v }: { v: ViewState }) {
   const c = lv.current!;
   const me = v.viewer;
   return (
-    <Stage v={v} footer={<BigButton onClick={() => act()}>{t('play.l2.inc.next')}</BigButton>}>
-      <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.l2.inc.label', { r: v.round })}</p>
-      <h1 className="h-show mt-1 text-3xl leading-tight text-spot">{t('play.l2.inc.you', { y: coins(c.y?.[me] ?? 0), d: signedCoins(c.luck?.[me] ?? 0) })}</h1>
-      <p className="mt-1 text-sm">{t('play.l2.inc.how', { h: c.effort?.[me] ?? 0, per: fmt1(lv.talentMult * lv.myTalent), w: coins((c.effort?.[me] ?? 0) * lv.talentMult * lv.myTalent), d: signedCoins(c.luck?.[me] ?? 0) })}</p>
+    <Stage v={v} footer={<AutoButton animMs={1500} onClick={() => act()}>{t('play.l2.inc.next')}</AutoButton>}>
+      <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l2.inc.label', { r: v.round })}</p>
+      <h1 className="h-show mt-1 text-title leading-tight text-spot">{t('play.l2.inc.you', { y: coins(c.y?.[me] ?? 0), d: signedCoins(c.luck?.[me] ?? 0) })}</h1>
+      <p className="mt-1 text-small">{t('play.l2.inc.how', { h: c.effort?.[me] ?? 0, per: fmt1(lv.talentMult * lv.myTalent), w: coins((c.effort?.[me] ?? 0) * lv.talentMult * lv.myTalent), d: signedCoins(c.luck?.[me] ?? 0) })}</p>
       <ul className="mt-3 space-y-1.5" data-outcome>
         {v.players.map((p) => (
           <li key={p.id} className="flex items-center gap-2 rounded-xl bg-card px-2 py-1.5">
             <Face v={v} p={p} size={24} />
-            <span className="w-16 truncate text-sm font-bold">{shortName(v, p.id)}</span>
-            <span className="h-show w-12 text-lg">{coins(c.y?.[p.id] ?? 0)}</span>
-            <span className="flex-1 text-xs">{c.claims?.[p.id] && c.claims[p.id] !== 'SILENT' ? t('play.l2.said', { b: bandName(c.claims[p.id]) }) : t('play.l2.silent')}</span>
-            {c.cameras && c.effort?.[p.id] !== undefined && <span className="text-xs font-bold">{t('play.l2.cam', { e: c.effort[p.id] })}</span>}
+            <span className="w-16 truncate text-small font-bold">{shortName(v, p.id)}</span>
+            <span className="h-show w-12 text-lead">{coins(c.y?.[p.id] ?? 0)}</span>
+            <span className="flex-1 text-small">{c.claims?.[p.id] && c.claims[p.id] !== 'SILENT' ? t('play.l2.said', { b: bandName(c.claims[p.id]) }) : t('play.l2.silent')}</span>
+            {c.cameras && c.effort?.[p.id] !== undefined && <span className="text-small font-bold">{t('play.l2.cam', { e: c.effort[p.id] })}</span>}
           </li>
         ))}
       </ul>
-      <p className="mt-2 text-sm">{t(c.cameras ? 'play.l2.inc.cameras' : 'play.l2.inc.hidden')}</p>
+      <p className="mt-2 text-small">{t(c.cameras ? 'play.l2.inc.cameras' : 'play.l2.inc.hidden')}</p>
     </Stage>
   );
 }
@@ -175,8 +172,8 @@ export function PrizeScreen({ v }: { v: ViewState }) {
   const poll = v.play!.pollMode === 'NEVER' ? {} : lv.poll;
   return (
     <Stage v={v} footer={<BigButton disabled={!x} onClick={() => act(call ? { vote: x, call } : x)}>{t('play.l2.prize.submit')}</BigButton>}>
-      <h1 className="h-show text-3xl leading-tight">{t('play.l2.prize.title', { n: PLAY.HUSTLE_PRIZE })}</h1>
-      <p className="mt-1 text-sm">{t('play.l2.prize.how')}</p>
+      <h1 className="h-show text-title leading-tight">{t('play.l2.prize.title', { n: PLAY.HUSTLE_PRIZE })}</h1>
+      <p className="mt-1 text-small">{t('play.l2.prize.how')}</p>
       <ul className="mt-2 space-y-1.5" aria-label={t('play.l2.prize.title', { n: PLAY.HUSTLE_PRIZE })}>
         {v.players
           .filter((p) => p.id !== v.viewer)
@@ -186,11 +183,11 @@ export function PrizeScreen({ v }: { v: ViewState }) {
               <li key={p.id}>
                 <button type="button" aria-pressed={x === p.id} onClick={() => setX(p.id)} className={`flex min-h-[48px] w-full items-center gap-2 rounded-xl px-2 text-start ${x === p.id ? 'bg-spot text-onspot' : 'bg-card'}`}>
                   <Face v={v} p={p} size={24} />
-                  <span className="w-16 truncate text-sm font-bold">{shortName(v, p.id)}</span>
+                  <span className="w-16 truncate text-small font-bold">{shortName(v, p.id)}</span>
                   <span className="h-show w-10">{coins(c.y?.[p.id] ?? 0)}</span>
-                  <span className="flex-1 text-xs">{c.claims?.[p.id] && c.claims[p.id] !== 'SILENT' ? bandName(c.claims[p.id]) : t('play.l2.silent')}</span>
-                  {poll[p.id] !== undefined && <span className="text-[11px] font-semibold">{t('play.l2.poll', { p: pct(poll[p.id]) })}</span>}
-                  {note && <span className="text-[10px] font-bold">{note}</span>}
+                  <span className="flex-1 text-small">{c.claims?.[p.id] && c.claims[p.id] !== 'SILENT' ? bandName(c.claims[p.id]) : t('play.l2.silent')}</span>
+                  {poll[p.id] !== undefined && <span className="text-small font-semibold">{t('play.l2.poll', { p: pct(poll[p.id]) })}</span>}
+                  {note && <span className="text-small font-bold">{note}</span>}
                 </button>
               </li>
             );
@@ -210,13 +207,13 @@ export function PrizeBeat({ v, next }: { v: ViewState; next: () => void }) {
   const giftNet = Object.entries(r.gifts ?? {}).reduce((a, [from, g]) => a + (g.to === v.viewer ? g.amount : 0) - (from === v.viewer ? g.amount : 0), 0);
   const head = w.length === 1 ? (w[0] === v.viewer ? t('play.l2.won.you', { n: PLAY.HUSTLE_PRIZE }) : t('play.l2.won.one', { name: shortName(v, w[0]), n: PLAY.HUSTLE_PRIZE })) : t('play.l2.won.split', { names: w.map((x) => shortName(v, x)).join(t('play.barBeat.and')) });
   return (
-    <Stage v={v} onTap={next} footer={<BigButton onClick={next}>{last ? t('play.l1.toReveal') : t('play.stage.nextRound', { r: v.round + 1 })}</BigButton>}>
+    <Stage v={v} onTap={next} footer={<AutoButton onClick={next}>{last ? t('play.l1.toReveal') : t('play.stage.nextRound', { r: v.round + 1 })}</AutoButton>}>
       <div className="my-auto" data-outcome>
-        <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.l2.won.label')}</p>
-        <h1 className="h-show mt-1 text-4xl leading-tight text-spot">{head}</h1>
-        <p className="mt-3 text-sm">{v.players.map((p) => `${shortName(v, p.id)}: ${r.votes?.[p.id] ? shortName(v, r.votes[p.id]!) : ''}`).join(', ')}</p>
-        <p className="mt-2 text-sm" data-net>{t('play.l2.won.net', { y: coins(r.y?.[v.viewer] ?? 0), t: pct(lv.t ?? 0), k: coins((roundMoney(v) ?? r.W?.[v.viewer] ?? 0) - (r.prize?.[v.viewer] ?? 0) - giftNet) })}{r.prize?.[v.viewer] ? ` ${t('play.l2.won.netPrize', { n: coins(r.prize[v.viewer]) })}` : ''}{giftNet ? ` ${t('play.l2.won.netGifts', { n: `${giftNet > 0 ? '+' : ''}${coins(giftNet)}` })}` : ''}</p>
-        {bankLineText(v) && <p className="mt-2 text-sm font-semibold" data-bankline>{bankLineText(v)}<MoneyLedger v={v} /></p>}
+        <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l2.won.label')}</p>
+        <h1 className="h-show mt-1 text-hero leading-tight text-spot">{head}</h1>
+        <p className="mt-3 text-small"><span className="font-bold">{t('play.cast.prizeVotes')}</span> {v.players.map((p) => t('play.cast.votedFor', { a: shortName(v, p.id), b: r.votes?.[p.id] ? shortName(v, r.votes[p.id]!) : t('play.barBeat.noOne') })).join(', ')}</p>
+        <p className="mt-2 text-small" data-net>{t('play.l2.won.net', { y: coins(r.y?.[v.viewer] ?? 0), t: pct(lv.t ?? 0), k: coins((roundMoney(v) ?? r.W?.[v.viewer] ?? 0) - (r.prize?.[v.viewer] ?? 0) - giftNet) })}{r.prize?.[v.viewer] ? ` ${t('play.l2.won.netPrize', { n: coins(r.prize[v.viewer]) })}` : ''}{giftNet ? ` ${t('play.l2.won.netGifts', { n: `${giftNet > 0 ? '+' : ''}${coins(giftNet)}` })}` : ''}</p>
+        {bankLineText(v) && <p className="mt-2 text-small font-semibold" data-bankline>{bankLineText(v)}<MoneyLedger v={v} /></p>}
         <CallResults v={v} />
       </div>
     </Stage>
@@ -234,40 +231,60 @@ export function CardsReveal2({ v }: { v: ViewState }) {
   const avgE = (id: string) => lv.rounds.reduce((a, r) => a + (r.effort?.[id] ?? 0), 0) / Math.max(1, lv.rounds.length);
   const bestLuck = (id: string) => Math.max(...lv.rounds.map((r) => r.luck?.[id] ?? 0));
   const peak = sw
-    ? t(star.id === me ? 'play.l2.peak.starYou' : 'play.l2.peak.star', { name: shortName(v, star.id), n: sw, e: avgE(star.id).toFixed(1), d: signedCoins(bestLuck(star.id)) })
+    ? t(star.id === me ? 'play.l2.peak.starYou' : 'play.l2.peak.star', { name: shortName(v, star.id), n: sw, e: avgE(star.id).toFixed(0), d: signedCoins(bestLuck(star.id)) })
     : t('play.l2.peak.none');
   // The twin of "Just a Worrier": a hard worker with bad dice.
   const unlucky = v.players.find((p) => avgE(p.id) >= 7 && Math.min(...lv.rounds.map((r) => r.luck?.[p.id] ?? 0)) < 0);
-  return (
-    <Stage v={v} footer={<BigButton onClick={() => act()}>{t('play.stage.tap')}</BigButton>}>
-      <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.cards.label')}</p>
-      <h1 className="h-show text-3xl leading-tight text-spot">{t('play.l2.peak.title')}</h1>
-      <ul className="mt-2 space-y-1" data-cards>
+  const bandOf = (e: number) => (e <= PLAY.L2.BANDS[0] ? 'LITTLE' : e <= PLAY.L2.BANDS[1] ? 'SOME' : 'LOT');
+  const chipsOf = (id: string) =>
+    lv.rounds.map((r, k) => {
+      const c = r.claims?.[id];
+      const e = r.effort?.[id] ?? 0;
+      const lie = !!c && c !== 'SILENT' && c !== bandOf(e);
+      const stamp = !c || c === 'SILENT' ? t('play.l4.peak.silent') : lie ? t('play.cards.LIE') : t('play.cards.TRUE');
+      return { text: t('play.l2.peak.stamp', { r: k + 1, e, d: signedCoins(r.luck?.[id] ?? 0), stamp }), lie };
+    });
+  const liesOf = (id: string) => chipsOf(id).filter((x) => x.lie).length;
+  const claimsOf = (id: string) => lv.rounds.filter((r) => r.claims?.[id] && r.claims[id] !== 'SILENT').length;
+  const order = v.players.slice().sort((a, b) => liesOf(b.id) - liesOf(a.id));
+  const { steps, final } = spotlightSteps(
+    order.map((p) => ({
+      id: p.id,
+      ...peakMark(v, p.id, liesOf(p.id), claimsOf(p.id)),
+      body: (
+        <div className="rounded-2xl bg-card p-3">
+          <p className="h-show text-lead">{shortName(v, p.id)}</p>
+          <p className="text-small">{t('play.cast.l2avg', { e: avgE(p.id).toFixed(0), w: wins(p.id) })}</p>
+          <div className="mt-2"><Chips items={chipsOf(p.id)} /></div>
+        </div>
+      ),
+    })),
+    <>
+      <Details>
+        <ul className="space-y-1" data-cards-list>
         {v.players.map((p) => (
-          <li key={p.id} className="flex items-center gap-2 rounded-xl bg-card px-2 py-1">
-            <Face v={v} p={p} size={22} />
-            <span className="w-14 truncate text-xs font-bold">{shortName(v, p.id)}</span>
-            <span className="flex-1 text-[11px] leading-tight">
-              <Stamps items={lv.rounds
-                .map((r, k) => {
-                  const c = r.claims?.[p.id];
-                  const e = r.effort?.[p.id] ?? 0;
-                  const b = e <= PLAY.L2.BANDS[0] ? 'LITTLE' : e <= PLAY.L2.BANDS[1] ? 'SOME' : 'LOT';
-                  const stamp = !c || c === 'SILENT' ? t('play.l4.peak.silent') : c === b ? t('play.cards.TRUE') : t('play.cards.LIE');
-                  return t('play.l2.peak.stamp', { r: k + 1, e, d: signedCoins(r.luck?.[p.id] ?? 0), stamp });
-                })
-                } />
-            </span>
+          <li key={p.id} className="rounded-xl bg-card px-2">
+            {/* Each row opens to its rounds, so the per-round stamps are there without the animation too. */}
+            <details>
+              <summary className="flex min-h-[44px] cursor-pointer items-center gap-2">
+                <span className="w-20 shrink-0 truncate text-small font-bold">{shortName(v, p.id)}</span>
+                <span className="flex-1 text-small">{t('play.cast.l2row', { e: avgE(p.id).toFixed(0), w: wins(p.id) })}</span>
+                <span className={`rounded-md px-1.5 text-small font-bold ${liesOf(p.id) ? 'bg-stamp text-onspot' : 'bg-paper text-ink'}`}>{t('play.cast.lies', { n: liesOf(p.id) })}</span>
+              </summary>
+              <div className="pb-1.5"><Chips items={chipsOf(p.id)} /></div>
+            </details>
           </li>
         ))}
       </ul>
-      <p className="h-show mt-3 text-xl leading-tight">{peak}</p>
-      {unlucky && <p className="mt-1 text-sm font-semibold">{t('play.l2.peak.unlucky', { name: shortName(v, unlucky.id) })}</p>}
+      </Details>
+      <p className="h-show mt-2 text-lead leading-tight">{peak}</p>
+      {unlucky && <p className="mt-1 text-small font-semibold">{t('play.l2.peak.unlucky', { name: shortName(v, unlucky.id) })}</p>}
       <div className="mt-2">
-        <Bubble who="Dash" host text={t('play.l2.peak.host')} />
+        <Bubble who="Dash" host mood="excited" text={t('play.l2.peak.host')} />
       </div>
-    </Stage>
+    </>,
   );
+  return <StagedReveal v={v} label={t('play.cards.label')} title={t('play.l2.peak.title')} steps={steps} final={final} onDone={() => act()} />;
 }
 
 export function summary2(v: ViewState): { lie: string } {

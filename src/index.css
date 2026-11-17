@@ -174,3 +174,23 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* UI V3 (U3): on desktop, Play is the phone layout (at most 480 px) centered on a dark studio backdrop:
+   two spotlights from the rig and a stage floor. */
+@media (min-width: 600px) {
+  html[data-ruleset='play'] body {
+    background-color: #07050f;
+    background-image:
+      radial-gradient(ellipse 28% 70% at 12% -5%, rgb(255 210 63 / 0.2), transparent 70%),
+      radial-gradient(ellipse 28% 70% at 88% -5%, rgb(255 62 127 / 0.2), transparent 70%),
+      linear-gradient(to top, rgb(58 49 102 / 0.55) 0%, transparent 28%);
+    background-attachment: fixed;
+  }
+  html[data-ruleset='play'] [data-stage] {
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+    background-color: rgb(var(--paper));
+    box-shadow: 0 0 0 1px rgb(var(--line)), 0 30px 80px rgb(0 0 0 / 0.6);
+  }
+}

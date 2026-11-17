@@ -19,7 +19,7 @@ export function MoneyLedger({ v }: { v: ViewState }) {
       </button>
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-label={t('play.ledger.show')} onClick={(e) => { e.stopPropagation(); setOpen(false); }}>
-          <div className="w-full max-w-sm rounded-2xl bg-paper p-4 text-sm text-ink" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-sm rounded-2xl bg-paper p-4 text-small text-ink" onClick={(e) => e.stopPropagation()}>
             <p className="font-bold">{t('play.ledger.moneyTitle', { a: rows.from, b: rows.to })}</p>
             <ul className="mt-1 space-y-0.5">
               {rows.money.map((r) => (
@@ -42,6 +42,7 @@ export function MoneyLedger({ v }: { v: ViewState }) {
                 </ul>
               </>
             )}
+            <p className="mt-2 text-small text-soft">{t('play.ledger.rounded')}</p>
             <button type="button" className="mt-3 min-h-[44px] w-full rounded-full bg-card font-bold" onClick={(e) => { e.stopPropagation(); setOpen(false); }}>
               {t('play.ledger.hide')}
             </button>

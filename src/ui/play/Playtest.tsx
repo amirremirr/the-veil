@@ -60,14 +60,14 @@ export function PlaytestPanel({ v }: { v: ViewState }) {
   };
   if (!open)
     return (
-      <button type="button" className="mt-2 text-sm font-semibold underline" onClick={() => setOpen(true)} data-playtest-open>
+      <button type="button" className="mt-2 text-small font-semibold underline" onClick={() => setOpen(true)} data-playtest-open>
         {t('play.pt.open')}
       </button>
     );
   const chip = (q: keyof typeof CHOICES) => (
     <div className="mt-1 flex flex-wrap gap-1" role="group" aria-label={t(`play.pt.q.${q}`)}>
       {CHOICES[q].map((o) => (
-        <button key={o} type="button" aria-pressed={s[q] === o} onClick={() => setS({ ...s, [q]: o })} className={`min-h-[44px] rounded-lg px-2 text-xs font-bold ${s[q] === o ? 'bg-spot text-onspot' : 'bg-card'}`}>
+        <button key={o} type="button" aria-pressed={s[q] === o} onClick={() => setS({ ...s, [q]: o })} className={`min-h-[44px] rounded-lg px-2 text-small font-bold ${s[q] === o ? 'bg-spot text-onspot' : 'bg-card'}`}>
           {t(`play.pt.a.${q}.${o}`)}
         </button>
       ))}
@@ -75,21 +75,21 @@ export function PlaytestPanel({ v }: { v: ViewState }) {
   );
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-paper p-4" data-playtest role="dialog" aria-label={t('play.pt.title')}>
-      <h2 className="h-show text-2xl">{t('play.pt.title')}</h2>
-      <p className="text-sm">{t('play.pt.how')}</p>
-      <label className="mt-3 block text-sm font-bold">
+      <h2 className="h-show text-title">{t('play.pt.title')}</h2>
+      <p className="text-small">{t('play.pt.how')}</p>
+      <label className="mt-3 block text-small font-bold">
         {t('play.pt.q.oneSentence')}
-        <input className="mt-1 w-full rounded-lg bg-card p-2 text-sm" maxLength={120} value={s.oneSentence ?? ''} onChange={(e) => setS({ ...s, oneSentence: e.target.value })} />
+        <input className="mt-1 w-full rounded-lg bg-card p-2 text-small" maxLength={120} value={s.oneSentence ?? ''} onChange={(e) => setS({ ...s, oneSentence: e.target.value })} />
       </label>
       {(['cared', 'surprised', 'changed', 'again', 'withWhom', 'unclear', 'missionChanged'] as const).map((q) => (
         <div key={q} className="mt-3">
-          <p className="text-sm font-bold">{t(`play.pt.q.${q}`)}</p>
+          <p className="text-small font-bold">{t(`play.pt.q.${q}`)}</p>
           {chip(q)}
         </div>
       ))}
-      <label className="mt-3 block text-sm font-bold">
+      <label className="mt-3 block text-small font-bold">
         {t('play.pt.q.why')}
-        <input className="mt-1 w-full rounded-lg bg-card p-2 text-sm" maxLength={120} value={s.why ?? ''} onChange={(e) => setS({ ...s, why: e.target.value })} />
+        <input className="mt-1 w-full rounded-lg bg-card p-2 text-small" maxLength={120} value={s.why ?? ''} onChange={(e) => setS({ ...s, why: e.target.value })} />
       </label>
       <div className="mt-4 flex gap-2">
         <button type="button" className="min-h-[48px] flex-1 rounded-full bg-card font-bold" onClick={() => setOpen(false)}>
@@ -101,8 +101,8 @@ export function PlaytestPanel({ v }: { v: ViewState }) {
       </div>
       {code && (
         <div className="mt-3">
-          <p className="text-sm">{t('play.pt.codeHow')}</p>
-          <textarea readOnly className="mt-1 h-28 w-full rounded-lg bg-card p-2 text-[11px]" value={code} data-playtest-code />
+          <p className="text-small">{t('play.pt.codeHow')}</p>
+          <textarea readOnly className="mt-1 h-28 w-full rounded-lg bg-card p-2 text-small" value={code} data-playtest-code />
           <button type="button" className="mt-1 min-h-[44px] w-full rounded-full bg-card font-bold" onClick={copy}>
             {copied ? t('play.daily.copied') : t('play.pt.copy')}
           </button>
@@ -143,17 +143,17 @@ export function PlaytestResults() {
   };
   return (
     <main className="mx-auto max-w-3xl p-4" data-playtest-results>
-      <h1 className="h-show text-3xl">{t('play.pt.results')}</h1>
-      <p className="text-sm">{t('play.pt.paste')}</p>
-      <textarea className="mt-2 h-32 w-full rounded-lg bg-card p-2 text-xs" value={text} onChange={(e) => setText(e.target.value)} aria-label={t('play.pt.paste')} />
+      <h1 className="h-show text-title">{t('play.pt.results')}</h1>
+      <p className="text-small">{t('play.pt.paste')}</p>
+      <textarea className="mt-2 h-32 w-full rounded-lg bg-card p-2 text-small" value={text} onChange={(e) => setText(e.target.value)} aria-label={t('play.pt.paste')} />
       <button type="button" className="mt-2 min-h-[44px] rounded-full bg-spot px-4 font-bold text-onspot" onClick={read}>
         {t('play.pt.read')}
       </button>
-      {bad > 0 && <p className="mt-2 text-sm">{t('play.pt.bad', { n: bad })}</p>}
+      {bad > 0 && <p className="mt-2 text-small">{t('play.pt.bad', { n: bad })}</p>}
       {rows.length > 0 && (
         <>
-          <h2 className="mt-4 text-xl font-bold">{t('play.pt.totals')}</h2>
-          <ul className="text-sm">
+          <h2 className="mt-4 text-lead font-bold">{t('play.pt.totals')}</h2>
+          <ul className="text-small">
             <li>{t('play.pt.tTesters', { n: rows.length })}</li>
             <li>{t('play.pt.tReplay', { n: rows.filter((r) => r.r).length, of: rows.length })}</li>
             <li>{t('play.pt.tFirst', { s: median ?? '-' })}</li>
@@ -161,9 +161,9 @@ export function PlaytestResults() {
             <li>{t('play.pt.tAgain', { list: answers('again') })}</li>
             <li>{t('play.pt.tWho', { list: answers('withWhom') })}</li>
           </ul>
-          <h2 className="mt-4 text-xl font-bold">{t('play.pt.rows')}</h2>
+          <h2 className="mt-4 text-lead font-bold">{t('play.pt.rows')}</h2>
           <div className="overflow-x-auto">
-            <table className="text-xs">
+            <table className="text-small">
               <thead>
                 <tr>
                   {['#', 'mode', 'seats', 'level', 'code', 'first (s)', 'total (s)', 'replay<10s', 'lied', 'barred', 'gave', 'peeked', 'one sentence', 'again', 'with', 'why'].map((h) => (

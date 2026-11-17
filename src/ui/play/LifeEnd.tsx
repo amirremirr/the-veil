@@ -9,6 +9,10 @@ import { coins } from '../labels';
 import { shortName } from '../game';
 import { useMotionOff } from '../components/common';
 import { BigButton, Stage } from './OnAir';
+import type { CastCue, CastStamp } from './Cast';
+import { ShapePerson, type Expr } from './Characters';
+import { castKind } from './Cast';
+import { sfx } from './sound';
 import { missionName } from './logic';
 import { callLine } from './Call';
 import { PlaytestPanel } from './Playtest';
@@ -98,7 +102,20 @@ export function lifeTitle(v: ViewState): string {
   return t(`play.titles.${hk}.${sk === 'steady' ? 'principled' : sk}.${rk}`);
 }
 
-/** The Receipts (v2 3.4): at most 20 seconds, skippable; a static list under reduced motion. */
+/** How a receipt lands on its contestant: a stamp and a face (UI V3 U2). */
+function receiptMark(r: Receipt): { stamp: CastStamp; expr: Expr } {
+  if (r.kind === 'worked') return { stamp: { text: t('play.cast.r.worked'), tone: 'good' }, expr: 'smug' };
+  if (r.kind === 'caught') return { stamp: { text: t('play.call.stampCaught'), tone: 'stamp' }, expr: 'caught' };
+  if (r.kind === 'betrayal') return { stamp: { text: t('play.cast.r.betrayal'), tone: 'stamp' }, expr: 'smug' };
+  const right = /\+\d/.test(r.text);
+  return { stamp: { text: t('play.cast.r.call'), tone: right ? 'good' : 'ink' }, expr: right ? 'pleased' : 'sad' };
+}
+
+/**
+ * The Receipts (v2 3.4), staged (UI V3 U2): one moment at a time, the spotlight on the contestant, a stamp
+ * on them, the line in a card. At most 20 seconds, skippable; the end (shown at once under reduced motion)
+ * keeps each contestant's tally on their podium and the latest lines.
+ */
 export function ReceiptsReel({ v, next }: { v: ViewState; next: () => void }) {
   const off = useMotionOff();
   const items = useMemo(() => receipts(v), [v]);
@@ -109,22 +126,37 @@ export function ReceiptsReel({ v, next }: { v: ViewState; next: () => void }) {
     const id = setTimeout(() => setK((x) => x + 1), step);
     return () => clearTimeout(id);
   }, [k, off, items.length, step]);
-  const shown = items.slice(0, k);
   const done = k >= items.length;
+  const cur = done ? null : items[k];
+  const tally = (id: string) => items.filter((r) => r.pid === id && (r.kind === 'worked' || r.kind === 'caught' || r.kind === 'betrayal')).length;
+  const cue: CastCue = cur
+    ? { focus: cur.pid, stamps: { [cur.pid]: receiptMark(cur).stamp }, expr: { [cur.pid]: receiptMark(cur).expr } }
+    : {
+        stamps: Object.fromEntries(v.players.filter((p) => tally(p.id)).map((p) => [p.id, { text: t(tally(p.id) === 1 ? 'play.cast.r.tallyOne' : 'play.cast.r.tally', { n: tally(p.id) }), tone: 'stamp' as const }])),
+        expr: Object.fromEntries(v.players.map((p) => [p.id, tally(p.id) ? 'smug' : 'pleased'])),
+      };
+  const recent = items.slice(-5);
   return (
-    <Stage v={v} bar={false} footer={<BigButton beatNext={done} onClick={next}>{done ? t('play.receipts.next') : t('play.receipts.skip')}</BigButton>}>
-      <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.receipts.label')}</p>
-      <h1 className="h-show text-4xl leading-tight text-spot">{t('play.receipts.title')}</h1>
-      <ul className="mt-3 max-h-[440px] space-y-1 overflow-hidden" data-receipts aria-live="polite">
-        {(shown.length > 12 ? shown.slice(-12) : shown).map((r, i) => (
-          <li key={`${r.level}-${i}-${r.text}`} className={`rounded-xl px-2 py-1 text-sm ${r.kind === 'worked' ? 'bg-good text-onspot' : r.kind === 'caught' ? 'bg-card' : 'bg-stamp text-onspot'}`}>
-            {r.text}
-          </li>
-        ))}
-        {!items.length && <li className="text-base">{t('play.receipts.none')}</li>}
-      </ul>
+    <Stage v={v} cast={cue} onTap={done ? undefined : () => setK(items.length)} footer={<BigButton beatNext={done} onClick={done ? next : () => setK(items.length)}>{done ? t('play.receipts.next') : t('play.receipts.skip')}</BigButton>}>
+      <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.receipts.label')}</p>
+      <h1 className="h-show text-title leading-tight text-spot">{t('play.receipts.title')}</h1>
+      {cur ? (
+        <p key={k} className={`mt-3 rounded-2xl p-3 text-lead font-bold leading-snug ${cur.kind === 'worked' ? 'bg-good text-onspot' : cur.kind === 'caught' ? 'bg-card' : 'bg-stamp text-onspot'}`} data-receipt={cur.kind} aria-live="polite">
+          {cur.text}
+        </p>
+      ) : (
+        <ul className="mt-2 space-y-1" data-receipts>
+          {recent.map((r, i) => (
+            <li key={`${r.level}-${i}-${r.text}`} className={`rounded-xl px-2 py-1 text-small ${r.kind === 'worked' ? 'bg-good text-onspot' : r.kind === 'caught' ? 'bg-card' : 'bg-stamp text-onspot'}`}>
+              {r.text}
+            </li>
+          ))}
+          {items.length > recent.length && <li className="text-small text-soft">{t('play.cast.r.more', { n: items.length - recent.length })}</li>}
+          {!items.length && <li className="text-body">{t('play.receipts.none')}</li>}
+        </ul>
+      )}
       {done && (
-        <p className="mt-3 text-sm font-semibold" data-missions>
+        <p className="mt-2 text-small font-semibold" data-missions>
           {v.players.map((p) => `${shortName(v, p.id)}: ${p.values ? missionName(p.values) : ''}`).join(' · ')}
         </p>
       )}
@@ -243,33 +275,37 @@ export function ResultCard({ v }: { v: ViewState }) {
         </div>
       }
     >
-      <div ref={ref} className="rounded-3xl bg-spot p-5 text-onspot" data-result-card>
-        <p className="text-xs font-bold uppercase tracking-wider">{t('play.show')}</p>
-        <h1 className="h-show mt-1 text-4xl leading-tight">{title}</h1>
-        <ul className="mt-3 space-y-1 text-sm">
+      {/* Review cycle 2: a win is a gold card with the winner's grin; a bottom-half finish is a dark card with a slump. */}
+      <div className="-mt-2 mb-1 flex justify-center" aria-hidden>
+        <ShapePerson kind={castKind(me)} expr={rank === 1 ? 'pleased' : rank > v.players.length / 2 ? 'sad' : 'smug'} size={44} />
+      </div>
+      <div ref={ref} className={`rounded-3xl p-5 ${rank === 1 ? 'bg-spot text-onspot' : rank > v.players.length / 2 ? 'border-2 border-stamp bg-card text-ink' : 'bg-card text-ink'}`} data-result-card data-rank={rank}>
+        <p className="text-small font-bold uppercase tracking-wider">{t('play.show')}</p>
+        <h1 className="h-show mt-1 text-hero leading-tight">{title}</h1>
+        <ul className="mt-3 space-y-1 text-small">
           {lines.map((l) => (
             <li key={l}>{l}</li>
           ))}
         </ul>
-        <p className="mt-3 text-[11px]">{t('play.card.small')}</p>
+        <p className="mt-3 text-small">{t('play.card.small')}</p>
       </div>
       {mineNow.length > 0 && (
-        <p className="mt-2 text-xs font-semibold" data-achievements>
+        <p className="mt-2 text-small font-semibold" data-achievements>
           {t('play.ach.label', { n: all.length, max: 12 })} {mineNow.map((a) => t(`play.ach.${a}.name`)).join(', ')}
         </p>
       )}
       {playtestOn() && <PlaytestPanel v={v} />}
-      <p className="mt-2 text-sm font-semibold" data-rival>
+      <p className="mt-2 text-small font-semibold" data-rival>
         {rivalLine(v)} {t('play.rival.ask')}
       </p>
       <div className="mt-2 grid grid-cols-3 gap-2">
-        <button type="button" className="min-h-[48px] rounded-full bg-card text-sm font-bold" onClick={share} data-share>
+        <button type="button" className="min-h-[48px] rounded-full bg-card text-small font-bold" onClick={share} data-share>
           {t('play.card.share')}
         </button>
-        <button type="button" className="min-h-[48px] rounded-full bg-card text-sm font-bold" onClick={shareTextNow} data-share-text>
+        <button type="button" className="min-h-[48px] rounded-full bg-card text-small font-bold" onClick={shareTextNow} data-share-text>
           {copied ? t('play.daily.copied') : t(isDaily(v) ? 'play.daily.shareDaily' : 'play.daily.shareText')}
         </button>
-        <button type="button" className="min-h-[48px] rounded-full bg-card text-sm font-bold" onClick={() => replay(true)} data-rematch>
+        <button type="button" className="min-h-[48px] rounded-full bg-card text-small font-bold" onClick={() => replay(true)} data-rematch>
           {t('play.rival.rematch')}
         </button>
       </div>
@@ -279,5 +315,9 @@ export function ResultCard({ v }: { v: ViewState }) {
 
 export function LifeEnd({ v }: { v: ViewState }) {
   const [k, setK] = useState(0);
+  // UI V3 (U2): the life-end fanfare plays as the result card comes up.
+  useEffect(() => {
+    if (k === 1) sfx('finale');
+  }, [k]);
   return k === 0 ? <ReceiptsReel v={v} next={() => setK(1)} /> : <ResultCard v={v} />;
 }

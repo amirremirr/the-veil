@@ -909,6 +909,15 @@
       "badge": {
         "EASY": "Easy",
         "HARD": "Hard: no poll, no hints"
+      },
+      "avatar": "Your contestant",
+      "avatars": {
+        "hex": "Hexagon",
+        "round": "Ball",
+        "diamond": "Diamond",
+        "pill": "Pill",
+        "cloud": "Cloud",
+        "star": "Star"
       }
     },
     "episodes": {
@@ -946,7 +955,7 @@
         "pitch": "Write the rules, then find out where you stand.",
         "sponsor": "Paid for by Friends of Whoever Wins",
         "intro": "Write the rules before you know your income. Then the incomes land, and you can propose changes and pay for votes. Secretly.",
-        "introLife": "Your banks are on the table. Write the rules for sharing them, then propose changes and pay for votes. Secretly."
+        "introLife": "Your banks are on the table. Write the rules for sharing them, then propose changes and pay for votes. Secretly. The finale counts most: missions weigh {m} times more."
       }
     },
     "missions": {
@@ -1419,7 +1428,8 @@
       "launchDesc": "SafeHands signs everyone up for the launch season, at {p} coins. After that, it's your choice.",
       "headLaunch": "Everyone was in, so the new price is the whole table's average risk.",
       "subLaunch": "From now on, buying cover is your choice.",
-      "debtCost": "In debt: -{n} points"
+      "debtCost": "In debt: -{n} points",
+      "skip": "Skip"
     },
     "claims": {
       "RISK": {
@@ -1485,7 +1495,7 @@
       "refusedMany": "{names} applied for cover and were turned away.",
       "and": " and ",
       "rule": "Members are last round's cover holders. Most of the other members voting for you bars you.",
-        "notAppliedNamed": "{names} didn't apply, so no cover this round."
+      "notAppliedNamed": "{names} didn't apply, so no cover this round."
     },
     "cards": {
       "label": "The reveal",
@@ -1568,6 +1578,10 @@
         "headline": "How you win",
         "body": "You get coins and a secret mission. Your score: bank plus how well your mission went. Debt hurts. Guess others' missions for bonus points.",
         "small": "The numbers are exaggerated. The mechanisms are real."
+      },
+      "one": {
+        "loop": "Each round: say something (lies allowed), read the others, make your move. At the end every secret flips.",
+        "win": "Score: half your bank, half your secret mission. Debt hurts."
       }
     },
     "gift": {
@@ -1635,7 +1649,15 @@
         "passed": "passed",
         "failed": "failed",
         "says": "claims training",
-        "quiet": "silent"
+        "quiet": "silent",
+        "of": "Worker {k} of {n}",
+        "payShort": "Complex job: +{g} for you if they trained, -{l} if not.",
+        "passedTest": "Passed the test",
+        "failedTest": "Failed the test",
+        "meterShort": "HireBot meter: {p}",
+        "line": "Hire from {p}",
+        "jobFor": "Job for {name}",
+        "picks": "Your picks"
       },
       "pass": "Pass",
       "fail": "Fail",
@@ -1659,16 +1681,20 @@
       "res": {
         "label": "Round {r} hires",
         "youJudged": "You judged. You earn {n}.",
-          "judgeBase": "Base {b}: you gave nobody the complex job.",
-          "judgeWhy": "Base {b}, +{gp} for trained complex hires ({g} x {gu}), -{lp} for untrained ones ({l} x {lu}). Each row shows the worker's own pay.",
+        "judgeBase": "Base {b}: you gave nobody the complex job.",
+        "judgeWhy": "Base {b}, +{gp} for trained complex hires ({g} x {gu}), -{lp} for untrained ones ({l} x {lu}). Each row shows the worker's own pay.",
         "youComplex": "You got the complex job. You earn {n}.",
         "youSimple": "You got the simple job. You earn {n}.",
         "judgePay": "{name} earned {n} as HireBot.",
         "trainCost": "Training cost you {c} of that.",
         "pay": "Your job paid {p}.",
         "payTrain": "Your job paid {p}; training cost you {c}.",
-          "other": "Gifts and other: {n}.",
-        "care": "(Childcare duty: long hours cost you {n}, so the flexible job pays more.)"
+        "other": "Gifts and other: {n}.",
+        "care": "(Childcare duty: long hours cost you {n}, so the flexible job pays more.)",
+        "youEarned": "You earned {n} as HireBot",
+        "rowBase": "Base pay",
+        "rowGood": "Good hires ({n})",
+        "rowBad": "Bad hires ({n})"
       },
       "stamp": {
         "GOOD": "TRAINED HIRE",
@@ -2226,13 +2252,97 @@
         "mission": "Mission points",
         "debt": "Debt points",
         "guess": "Guesses and bonuses"
-      }
+      },
+      "rounded": "Shown in whole coins, rounded so the lines add up. The game keeps the exact amounts."
     },
     "bank": {
       "round": "Your bank {from} to {to}: {w} this round, then -{c} living costs.",
       "comeback": "That includes your Second Chance: +{c}.",
       "living": "Living costs: -{c}.",
       "pay": "Pay: +{w}."
+    },
+    "cast": {
+      "stage": "The stage",
+      "podiumA11y": "{name}, bank {bank}",
+      "podiumDebtA11y": "{name}, bank {bank}, in debt",
+      "inDebt": "In debt",
+      "tapToCall": "Call it?",
+      "calling": "Calling it",
+      "callA11y": "Claim by {name}: {claim} Call it for {n}",
+      "uncallA11y": "Claim by {name}: {claim} Calling it. Tap to cancel",
+      "confirm": "Call it on {name} for {n}?",
+      "confirmHow": "If it's a lie, you win {win}. If it's true, they get your {n}.",
+      "cancel": "Cancel",
+      "callIt": "Call it",
+      "callHint": "Think it is a lie? Tap the bubble to call it ({n}).",
+      "callingLine": "You're calling {name} for {n}. Tap the bubble to cancel.",
+      "claim": {
+        "vote": "I'm voting {rule}",
+        "effort": "I worked {b}",
+        "trained": "I trained",
+        "l5": {
+          "YES": "I'll vote yes",
+          "NO": "I'll vote no",
+          "SILENT": "..."
+        }
+      },
+      "broke": "Broke promise",
+      "kept": "Kept",
+      "l2avg": "About {e} hours a round. Hustle Prizes: {w}.",
+      "yes": "Yes",
+      "no": "No",
+      "l5card": "{name}: {rules}",
+      "tally": "Yes {y} of {n}",
+      "l5title": "The ballots",
+      "l2row": "{e} h a round, prizes: {w}",
+      "lies": "Lies: {n}",
+      "l4row": "Trained {n} of {w} times",
+      "r": {
+        "worked": "Got away",
+        "betrayal": "Took it",
+        "call": "Called",
+        "tally": "{n} lies",
+        "more": "And {n} more.",
+        "tallyOne": "1 lie"
+      },
+      "youDontDeck": "Income: unknown. One of {a}, {b}, {c} or {d}.",
+      "hire": {
+        "GOOD": "GOOD HIRE",
+        "BAD": "BAD HIRE"
+      },
+      "votes": "Votes:",
+      "prizeVotes": "Who voted for whom:",
+      "votedFor": "{a} for {b}",
+      "l5title2": "Who voted what",
+      "l1keep": "You keep {w}",
+      "l1before": "Your income was {y} before the rule.",
+      "details": "Details",
+      "barred": "BARRED",
+      "votedBar": "Bars {name}",
+      "launchShort": "Everyone is in: {p} coins.",
+      "spinning": "The wheel is turning...",
+      "silent": "Silent",
+      "voted": "Voted",
+      "birthNotScored": "Birth income is not scored: from Episode 2 on, your bank half counts what you make from here."
+    },
+    "sound": {
+      "mute": "Mute sound",
+      "unmute": "Turn sound on"
+    },
+    "score": {
+      "a11y": "Score {s}: bank {b}, mission {m}, guess {g}, debt {d} off.",
+      "bank": "Bank half {n}",
+      "mission": "Mission {n}",
+      "guess": "Guess {n}",
+      "debt": "Debt -{n}",
+      "words": "See the money",
+      "wordsTitle": "Your score, in words"
+    },
+    "coach": {
+      "ok": "Got it",
+      "claim": "Tell the table something about yourself. Lying is allowed: the truth comes out at the end.",
+      "move": "Your move. Pick your tiles, then lock in. The others see what you do, not what you know.",
+      "call": "Think a bubble is a lie? Tap it to call it. Right wins you {win}; wrong gives them your {n}."
     }
   }
 }

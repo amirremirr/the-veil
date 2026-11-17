@@ -55,7 +55,8 @@ export function p2Params(s: GameState) {
   const e = (ev ? (PLAY.L2_EVENTS as Record<string, Record<string, number>>)[ev.id] : null) ?? {};
   return {
     luck: PLAY.L2.LUCK_VALUES.map((x) => x * (e.LUCK_MULT ?? 1)),
-    talentMult: e.TALENT_MULT ?? L2.TALENT_MULT,
+    // UI V3 U5: in a life, Episode 2's pay per hour of talent can be lowered (PLAY.L2.LIFE_TALENT_MULT) to narrow the income spread.
+    talentMult: e.TALENT_MULT ?? (s.mode === 'LIFE' && PLAY.L2.LIFE_TALENT_MULT !== null ? PLAY.L2.LIFE_TALENT_MULT : L2.TALENT_MULT),
     costK: e.EFFORT_COST ?? L2.EFFORT_COST,
     viral: e.VIRAL ?? 0,
     cameras: ev?.id === 'CAMERAS',

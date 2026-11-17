@@ -6,6 +6,7 @@ import { t } from '../i18n';
 import { shortName } from '../game';
 import { hostLine, pick } from './logic';
 import { Bubble } from './OnAir';
+import { useCallRegistration, useStageCue, type CastCue } from './Cast';
 
 /** Other contestants with a claim this round (optionally only claims matching `filter`), callable now. */
 export function claimantsNow(v: ViewState, filter?: (value: string) => boolean): string[] {
@@ -20,20 +21,17 @@ export function claimantsNow(v: ViewState, filter?: (value: string) => boolean):
   return [...out];
 }
 
-/** The call chips: "Call (10): Ana Chet" (tap a name again to clear). Compact, so the move screen stays short. */
+/**
+ * UI V3 (U1): "Call it" is a tap on a claimant's speech bubble on the stage (then "Call it for 10?").
+ * This registers the move screen's call with the stage and shows one line saying how, or who you call.
+ */
 export function CallChips({ v, claimants, value, onPick }: { v: ViewState; claimants: string[]; value: string | null; onPick: (x: string | null) => void }) {
+  useCallRegistration({ claimants, value, onPick });
   if (!claimants.length) return null;
-  // No "No one" chip: tap a selected name again to clear (fewer words on a full move screen).
-  const opts: Array<string | null> = [...claimants];
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-1.5" role="group" aria-label={t('play.call.label', { n: PLAY.CALL_STAKE })} data-call>
-      <span className="text-sm font-bold">{t('play.call.label', { n: PLAY.CALL_STAKE })}</span>
-      {opts.map((o) => (
-        <button key={o ?? 'none'} type="button" aria-pressed={value === o} onClick={() => onPick(value === o ? null : o)} className={`min-h-[44px] min-w-[44px] rounded-xl px-2 text-sm font-bold ${value === o ? 'bg-stamp text-onspot' : 'bg-card'}`}>
-          {o ? shortName(v, o) : t('play.call.none')}
-        </button>
-      ))}
-    </div>
+    <p className={`mt-1 text-small ${value ? 'font-bold text-stamp' : 'text-soft'}`} data-call aria-live="polite">
+      {value ? t('play.cast.callingLine', { name: shortName(v, value), n: PLAY.CALL_STAKE }) : t('play.cast.callHint', { n: PLAY.CALL_STAKE })}
+    </p>
   );
 }
 
@@ -50,13 +48,26 @@ export function callLine(v: ViewState, c: CallRecord): string {
 /** This round's call results with CAUGHT / CALLED WRONG stamps and one line from Dash. */
 export function CallResults({ v }: { v: ViewState }) {
   const calls = (v.play?.calls ?? []).filter((c) => c.level === v.levelIndex && c.round === v.round);
+  // UI V3 (U1): CAUGHT lands on the liar, CALLED WRONG on the caller.
+  const cue: CastCue = { stamps: {}, expr: {} };
+  for (const c of calls) {
+    if (c.lie) {
+      cue.stamps![c.target] = { text: t('play.call.stampCaught'), tone: 'stamp' };
+      cue.expr![c.target] = 'caught';
+      cue.expr![c.caller] = 'smug';
+    } else {
+      cue.stamps![c.caller] = { text: t('play.call.stampWrong'), tone: 'ink' };
+      cue.expr![c.caller] = 'sad';
+      cue.expr![c.target] = 'pleased';
+    }
+  }
+  useStageCue('calls', calls.length ? cue : null);
   if (!calls.length) return null;
   const anyLie = calls.some((c) => c.lie);
   return (
     <div className="mt-2" data-calls>
       {calls.map((c, k) => (
-        <p key={k} className="text-sm">
-          <span className={`mr-1 rounded px-1 text-xs font-bold ${c.lie ? 'bg-stamp text-onspot' : 'bg-card'}`}>{t(c.lie ? 'play.call.stampCaught' : 'play.call.stampWrong')}</span>
+        <p key={k} className="text-small">
           {callLine(v, c)}
         </p>
       ))}

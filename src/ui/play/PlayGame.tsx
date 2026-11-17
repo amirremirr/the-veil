@@ -14,8 +14,9 @@ import { FlipCard, useMotionOff } from '../components/common';
 import { Sheet as TableSheet } from '../components/TableParts';
 import { LockedInPanel, useOnline, useWaiting } from '../components/Online';
 import { screenDecisionPhase } from '../../shared/flow';
-import { BigButton, Bubble, Face, Stage } from './OnAir';
-import { BarBeat, CardsReveal, ClaimScreen, ClaimsBeat, MoveScreen, MyCardsBeat, PriceBeat, RegimeScreen, VoteInBeat, WheelBeat, claimsOpen, hasPriceBeat, regimeName, roundClaims, type L3View } from './Episode3';
+import { BannerContext, BigButton, Bubble, Face, Stage } from './OnAir';
+import { sfx } from './sound';
+import { BarBeat, CardsReveal, ClaimScreen, MoveScreen, MyCardsBeat, PriceBeat, RegimeScreen, VoteInBeat, WheelBeat, claimsOpen, hasPriceBeat, regimeName, type L3View } from './Episode3';
 import { eventText, hostLine, missionName, pick, timesWord } from './logic';
 import { CardsReveal1, ClaimScreen1, IncomesBeat, PeekScreen, Unborn, VoteScreen1, VotesBeat, summary1 } from './Episode1';
 import { CardsReveal2, TaxIn, EffortScreen, IncomeScreen, MyCards2, PrizeBeat, PrizeScreen, TaxScreen, summary2 } from './Episode2';
@@ -56,35 +57,61 @@ function ReallySheet({ v, onClose }: { v: ViewState; onClose: () => void }) {
   );
 }
 
+/** Intros already shown on the mission screen (UI V3 U3): that INTRO moves on by itself. */
+const introMerged = new Set<string>();
+const introKey = (v: ViewState, level: number) => `${v.seed ?? ''}|${v.mode}|${level}`;
+
+/**
+ * UI V3 (U3): your secret mission and the first episode's intro on one screen, so the first decision comes
+ * sooner. "Roll the cameras" accepts the mission and the intro then moves on by itself (not in rooms).
+ */
 function MissionReveal({ v }: { v: ViewState }) {
   const me = v.players.find((p) => p.id === v.viewer)!;
   const off = useMotionOff();
+  const online = useOnline();
   const [flipped, setFlipped] = useState(off);
   const act = useStore((s) => s.act);
+  // In Play the mission is dealt once, right before the first episode's intro.
+  const merge = !online;
+  const level = v.levelIndex;
+  if (merge) introMerged.add(introKey(v, level));
   useEffect(() => {
     const id = setTimeout(() => setFlipped(true), off ? 0 : 400);
     return () => clearTimeout(id);
   }, [off]);
   return (
-    <Stage v={v} bar={false} footer={<BigButton onClick={() => act()}>{t('play.values.accept')}</BigButton>}>
-      <p className="h-show mt-2 text-center text-lg text-spot">{t('play.show')}</p>
+    <Stage v={v} bar={false} footer={<BigButton onClick={() => act()}>{merge ? t('play.intro.go') : t('play.values.accept')}</BigButton>}>
       <FlipCard
-        className="mx-auto mt-4 h-72 w-full"
+        className="mx-auto mt-2 h-44 w-full"
         flipped={flipped}
         back={
           <div className="flex h-full items-center justify-center rounded-3xl bg-card">
-            <span className="h-show text-3xl text-spot">{t('play.show')}</span>
+            <span className="h-show text-title text-spot">{t('play.show')}</span>
           </div>
         }
         front={
-          <div className="flex h-full flex-col justify-center rounded-3xl bg-spot p-6 text-onspot">
-            <p className="text-xs font-bold uppercase tracking-wider">{t('play.values.title')}</p>
-            <p className="h-show mt-2 text-5xl leading-none">{missionName(me.values!)}</p>
-            <p className="mt-3 text-base">{t(`play.missions.${me.values}.line`)}</p>
+          <div className="flex h-full flex-col justify-center rounded-3xl bg-spot p-5 text-onspot">
+            <p className="text-small font-bold uppercase tracking-wider">{t('play.values.title')}</p>
+            <p className="h-show mt-1 text-hero leading-none">{missionName(me.values!)}</p>
+            <p className="mt-2 text-small">{t(`play.missions.${me.values}.line`)}</p>
           </div>
         }
       />
-      <p className="mt-5 text-center text-sm text-soft">{t('play.values.private')}</p>
+      <p className="mt-2 text-center text-small text-soft">{t('play.values.private')}</p>
+      {merge && (
+        <div className="mt-3" data-intro-merged>
+          <p className="text-small font-bold uppercase tracking-wider text-soft">
+            {t('play.modes.ep', { n: level })} · {t(`play.episodes.${level}.sponsor`)}{v.difficulty !== 'NORMAL' ? ` · ${t(`play.setup.badge.${v.difficulty}`)}` : ''}
+          </p>
+          <h1 className="h-show text-title leading-none text-spot">{t(`play.episodes.${level}.name`)}</h1>
+          <p className="mt-2 text-small leading-snug" data-intro>
+            {t(v.mode === 'LIFE' && level === 5 ? 'play.episodes.5.introLife' : `play.episodes.${level}.intro`, { loss: v.play!.l3?.loss ?? 0 })}
+          </p>
+          <div className="mt-2">
+            <Bubble who="Dash" host mood="excited" text={hostLine('welcome', (pick({ ...v, levelIndex: 1, round: 0 }, 'welcome', 6) + level) % 6)} />
+          </div>
+        </div>
+      )}
     </Stage>
   );
 }
@@ -92,37 +119,50 @@ function MissionReveal({ v }: { v: ViewState }) {
 function EpisodeIntro({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
   const n = v.play!.l3;
+  const merged = introMerged.has(introKey(v, v.levelIndex));
+  // UI V3 (U2): the episode fanfare; (U3) an intro already shown with the mission moves straight on.
+  useEffect(() => {
+    if (merged) {
+      introMerged.delete(introKey(v, v.levelIndex));
+      act();
+      return;
+    }
+    sfx('fanfare');
+  }, [v.levelIndex]);
+  if (merged) return null;
   return (
     <Stage v={v} footer={<BigButton onClick={() => act()}>{t('play.intro.go')}</BigButton>}>
-      <p className="text-xs font-bold uppercase tracking-wider text-soft">
+      <p className="text-small font-bold uppercase tracking-wider text-soft">
         {t('play.modes.ep', { n: v.levelIndex })} · {t(`play.episodes.${v.levelIndex}.sponsor`)}{v.difficulty !== 'NORMAL' ? ` · ${t(`play.setup.badge.${v.difficulty}`)}` : ''}
       </p>
-      <h1 className="h-show mt-1 text-5xl leading-none text-spot">{t(`play.episodes.${v.levelIndex}.name`)}</h1>
-      <p className="mt-5 text-lg leading-snug" data-intro>
-        {t(v.mode === 'LIFE' && v.levelIndex === 5 ? 'play.episodes.5.introLife' : `play.episodes.${v.levelIndex}.intro`, { loss: n?.loss ?? 0 })}
+      <h1 className="h-show mt-1 text-hero leading-none text-spot">{t(`play.episodes.${v.levelIndex}.name`)}</h1>
+      <p className="mt-3 text-body leading-snug" data-intro>
+        {t(v.mode === 'LIFE' && v.levelIndex === 5 ? 'play.episodes.5.introLife' : `play.episodes.${v.levelIndex}.intro`, { loss: n?.loss ?? 0, m: PLAY.LIFE_MISSION_EP_MULT[5] ?? 1 })}
       </p>
       <div className="mt-auto pt-4">
-        <Bubble who="Dash" host text={hostLine('welcome', (pick({ ...v, levelIndex: 1, round: 0 }, 'welcome', 6) + v.levelIndex) % 6)} />
+        <Bubble who="Dash" host mood="excited" text={hostLine('welcome', (pick({ ...v, levelIndex: 1, round: 0 }, 'welcome', 6) + v.levelIndex) % 6)} />
       </div>
     </Stage>
   );
 }
 
-function EventBeat({ v, next }: { v: ViewState; next: () => void }) {
+/** UI V3 (U3): the event card as a banner on the round's first screen; it opens to the joke and Dash's line. */
+function EventBanner({ v }: { v: ViewState }) {
   const ev = v.play!.event!;
   const txt = eventText(v.levelIndex, ev.id, v.mode === 'LIFE');
   return (
-    <Stage v={v} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
-      <div className="my-auto" data-event={ev.id}>
-        <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.stage.eventLabel')}</p>
-        <p className="h-show mt-2 text-5xl leading-none text-spot">{txt.name}</p>
-        <p className="mt-3 text-base italic text-soft">{txt.text}</p>
-        <p className="mt-3 rounded-2xl bg-card p-3 text-base font-semibold">{txt.effect}</p>
-        <div className="mt-4">
-          <Bubble who="Dash" host text={hostLine('eventIntro', pick(v, 'eventIntro', 6), { event: txt.name })} />
-        </div>
+    <details className="mb-2 rounded-2xl border-2 border-spot bg-card px-3 py-1.5" data-event={ev.id} data-event-banner>
+      <summary className="flex min-h-[44px] cursor-pointer list-none items-center gap-2">
+        <span className="rounded-full bg-spot px-2 text-small font-bold uppercase text-onspot">{t('play.stage.eventLabel')}</span>
+        <span className="flex-1 text-small font-semibold leading-snug">
+          <span className="h-show text-body text-spot">{txt.name}.</span> {txt.effect}
+        </span>
+      </summary>
+      <p className="mt-1 text-small italic text-soft">{txt.text}</p>
+      <div className="mt-1 pb-1">
+        <Bubble who="Dash" host mood="excited" text={hostLine('eventIntro', pick(v, 'eventIntro', 6), { event: txt.name })} />
       </div>
-    </Stage>
+    </details>
   );
 }
 
@@ -139,21 +179,21 @@ function DecisionFlow({ v }: { v: ViewState }) {
   const lv = v.levelView as L3View;
   const ev = v.play!.event;
   const first = stepId === 'CLAIM' || (stepId === 'CHOICE' && !claimsOpen(v));
-  const beats: Array<'cards' | 'vote' | 'event' | 'claims'> = [];
+  // UI V3 (U1): the claims show as speech bubbles on the move screen, so "The claims are in" is gone.
+  let evBanner = false;
+  const beats: Array<'cards' | 'vote'> = [];
   if (first && v.round === 1) beats.push('cards');
   if (first) {
     if (v.round === PLAY.L3.VOLUNTARY_ROUNDS + 1 && lv.regimeVotes) beats.push('vote');
-    if (ev && ev.id !== 'QUIET' && ev.round === v.round && ev.level === v.levelIndex) beats.push('event');
+    if (ev && ev.id !== 'QUIET' && ev.round === v.round && ev.level === v.levelIndex) evBanner = true;
   }
-  if (stepId === 'CHOICE' && Object.keys(roundClaims(v)).length) beats.push('claims');
   const [k, setK] = useState(0);
+  const wrap = (x: JSX.Element) => (evBanner ? <BannerContext.Provider value={<EventBanner v={v} />}>{x}</BannerContext.Provider> : x);
   const next = () => setK((x) => x + 1);
   if (k < beats.length) {
     const b = beats[k];
     if (b === 'cards') return <MyCardsBeat v={v} next={next} />;
-    if (b === 'vote') return <VoteInBeat v={v} next={next} />;
-    if (b === 'event') return <EventBeat v={v} next={next} />;
-    return <ClaimsBeat v={v} next={next} />;
+    return <VoteInBeat v={v} next={next} />;
   }
   if (online && done)
     return (
@@ -161,9 +201,9 @@ function DecisionFlow({ v }: { v: ViewState }) {
         <LockedInPanel v={v} />
       </Stage>
     );
-  if (stepId === 'REGIME') return <RegimeScreen v={dv} />;
-  if (stepId === 'CLAIM') return <ClaimScreen v={dv} />;
-  return <MoveScreen v={dv} />;
+  if (stepId === 'REGIME') return wrap(<RegimeScreen v={dv} />);
+  if (stepId === 'CLAIM') return wrap(<ClaimScreen v={dv} />);
+  return wrap(<MoveScreen v={dv} />);
 }
 
 /** Episode 1's beats and decision screens (D-152). */
@@ -173,17 +213,15 @@ function DecisionFlow1({ v }: { v: ViewState }) {
   const stepId = v.phase.step;
   const ev = v.play!.event;
   const firstScreen = stepId === 'PEEK' || stepId === 'FAIR_1' || (stepId === 'CLAIM' && v.round < PLAY.L1.PEEK_FROM_ROUND && v.mode !== 'LIFE');
-  const beats: Array<'cards' | 'event' | 'claims'> = [];
+  let evBanner = false;
+  const beats: Array<'cards'> = [];
   if (firstScreen && v.round === 1) beats.push('cards');
-  if (firstScreen && ev && ev.id !== 'QUIET' && ev.round === v.round && ev.level === v.levelIndex) beats.push('event');
-  if (stepId === 'VOTE' && Object.keys(roundClaims(v)).length) beats.push('claims');
+  if (firstScreen && ev && ev.id !== 'QUIET' && ev.round === v.round && ev.level === v.levelIndex) evBanner = true;
   const [k, setK] = useState(0);
+  const wrap = (x: JSX.Element) => (evBanner ? <BannerContext.Provider value={<EventBanner v={v} />}>{x}</BannerContext.Provider> : x);
   const next = () => setK((x) => x + 1);
   if (k < beats.length) {
-    const b = beats[k];
-    if (b === 'cards') return <Unborn v={v} next={next} />;
-    if (b === 'event') return <EventBeat v={v} next={next} />;
-    return <ClaimsBeat v={v} next={next} />;
+    return <Unborn v={v} next={next} />;
   }
   if (online && done)
     return (
@@ -191,10 +229,10 @@ function DecisionFlow1({ v }: { v: ViewState }) {
         <LockedInPanel v={v} />
       </Stage>
     );
-  if (stepId === 'PEEK') return <PeekScreen v={v} />;
-  if (stepId === 'FAIR_1') return <FairScreen v={v} />;
-  if (stepId === 'CLAIM') return <ClaimScreen1 v={v} />;
-  return <VoteScreen1 v={v} />;
+  if (stepId === 'PEEK') return wrap(<PeekScreen v={v} />);
+  if (stepId === 'FAIR_1') return wrap(<FairScreen v={v} />);
+  if (stepId === 'CLAIM') return wrap(<ClaimScreen1 v={v} />);
+  return wrap(<VoteScreen1 v={v} />);
 }
 
 function ResultsFlow1({ v }: { v: ViewState }) {
@@ -211,22 +249,24 @@ function DecisionFlow2({ v }: { v: ViewState }) {
   const stepId = v.phase.step;
   const ev = v.play!.event;
   const firstScreen = stepId === 'TAX' || (stepId === 'EFFORT' && v.round > 1);
-  const beats: Array<'cards' | 'event' | 'tax'> = [];
+  let evBanner = false;
+  const beats: Array<'cards' | 'tax'> = [];
   if (firstScreen && v.round === 1) beats.push('cards');
   if (stepId === 'EFFORT' && v.round === 1) beats.push('tax');
-  if (firstScreen && ev && ev.id !== 'QUIET' && ev.round === v.round && ev.level === v.levelIndex) beats.push('event');
+  if (firstScreen && ev && ev.id !== 'QUIET' && ev.round === v.round && ev.level === v.levelIndex) evBanner = true;
   const [k, setK] = useState(0);
+  const wrap = (x: JSX.Element) => (evBanner ? <BannerContext.Provider value={<EventBanner v={v} />}>{x}</BannerContext.Provider> : x);
   const next = () => setK((x) => x + 1);
-  if (k < beats.length) return beats[k] === 'cards' ? <MyCards2 v={v} next={next} /> : beats[k] === 'tax' ? <TaxIn v={v} next={next} /> : <EventBeat v={v} next={next} />;
+  if (k < beats.length) return beats[k] === 'cards' ? <MyCards2 v={v} next={next} /> : <TaxIn v={v} next={next} />;
   if (online && done)
     return (
       <Stage v={v}>
         <LockedInPanel v={v} />
       </Stage>
     );
-  if (stepId === 'TAX') return <TaxScreen v={v} />;
-  if (stepId === 'PRIZE') return <PrizeScreen v={v} />;
-  return <EffortScreen v={v} />;
+  if (stepId === 'TAX') return wrap(<TaxScreen v={v} />);
+  if (stepId === 'PRIZE') return wrap(<PrizeScreen v={v} />);
+  return wrap(<EffortScreen v={v} />);
 }
 
 /** Episode 5's beats and decision screens (D-154). */
@@ -235,23 +275,25 @@ function DecisionFlow5({ v }: { v: ViewState }) {
   const { done } = useWaiting(v);
   const stepId = v.phase.step ?? '';
   const ev = v.play!.event;
-  const beats: Array<'cards' | 'event'> = [];
+  let evBanner = false;
+  const beats: Array<'cards'> = [];
   if (stepId === 'VEIL') beats.push('cards');
-  if (stepId === 'VEIL' && ev && ev.id !== 'QUIET' && ev.level === v.levelIndex) beats.push('event');
+  if (stepId === 'VEIL' && ev && ev.id !== 'QUIET' && ev.level === v.levelIndex) evBanner = true;
   const [k, setK] = useState(0);
+  const wrap = (x: JSX.Element) => (evBanner ? <BannerContext.Provider value={<EventBanner v={v} />}>{x}</BannerContext.Provider> : x);
   const next = () => setK((x) => x + 1);
-  if (k < beats.length) return beats[k] === 'cards' ? <Finale v={v} next={next} /> : <EventBeat v={v} next={next} />;
+  if (k < beats.length) return <Finale v={v} next={next} />;
   if (online && done)
     return (
       <Stage v={v}>
         <LockedInPanel v={v} />
       </Stage>
     );
-  if (stepId === 'VEIL') return <VeilScreen v={v} />;
-  if (stepId.startsWith('FAIR')) return <FairScreen key={stepId} v={v} />;
-  if (stepId === 'LOBBY') return <LobbyScreen v={v} />;
-  if (stepId === 'CLAIM') return <ClaimScreen5 v={v} />;
-  return <AmendScreen key={stepId} v={v} />;
+  if (stepId === 'VEIL') return wrap(<VeilScreen v={v} />);
+  if (stepId.startsWith('FAIR')) return wrap(<FairScreen key={stepId} v={v} />);
+  if (stepId === 'LOBBY') return wrap(<LobbyScreen v={v} />);
+  if (stepId === 'CLAIM') return wrap(<ClaimScreen5 v={v} />);
+  return wrap(<AmendScreen key={stepId} v={v} />);
 }
 
 /** v1 Section 6.3: the comeback card, offered on air to the contestant in last place after Episode 3. */
@@ -259,10 +301,10 @@ function ComebackScreen({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
   return (
     <Stage v={v} footer={null}>
-      <p className="text-xs font-bold uppercase tracking-wider text-soft">{t('play.comeback.label')}</p>
-      <h1 className="h-show mt-1 text-4xl leading-tight text-spot">{t('play.comeback.title')}</h1>
-      <p className="mt-2 text-base">{t('play.comeback.how', { c: PLAY.COMEBACK.COINS, p: PLAY.COMEBACK.POINTS })}</p>
-      <p className="mt-2 text-sm">{t('play.comeback.rate', { c: PLAY.COMEBACK.COINS, half: PLAY.COMEBACK.COINS * PLAY.BANK_WEIGHT })}</p>
+      <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.comeback.label')}</p>
+      <h1 className="h-show mt-1 text-hero leading-tight text-spot">{t('play.comeback.title')}</h1>
+      <p className="mt-2 text-body">{t('play.comeback.how', { c: PLAY.COMEBACK.COINS, p: PLAY.COMEBACK.POINTS })}</p>
+      <p className="mt-2 text-small">{t('play.comeback.rate', { c: PLAY.COMEBACK.COINS, half: PLAY.COMEBACK.COINS * PLAY.BANK_WEIGHT })}</p>
       <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
         <BigButton onClick={() => act('COINS')}>{t('play.comeback.coins', { c: PLAY.COMEBACK.COINS })}</BigButton>
         <BigButton onClick={() => act('POINTS')}>{t('play.comeback.points', { p: PLAY.COMEBACK.POINTS })}</BigButton>
@@ -279,17 +321,18 @@ function DecisionFlow4({ v }: { v: ViewState }) {
   const lv = v.levelView as L4View;
   const ev = v.play!.event;
   const isFirstScreen = stepId === 'TRAIN' || (stepId === 'HIRE' && lv.judge === v.viewer);
-  const beats: Array<'cards' | 'vote' | 'event'> = [];
+  let evBanner = false;
+  const beats: Array<'cards' | 'vote'> = [];
   if (isFirstScreen && v.round === 1) beats.push('cards');
   if (isFirstScreen && v.round === PLAY.L4.BASELINE_ROUNDS + 1 && lv.policyVotes) beats.push('vote');
-  if (isFirstScreen && ev && ev.id !== 'QUIET' && ev.round === v.round && ev.level === v.levelIndex) beats.push('event');
+  if (isFirstScreen && ev && ev.id !== 'QUIET' && ev.round === v.round && ev.level === v.levelIndex) evBanner = true;
   const [k, setK] = useState(0);
+  const wrap = (x: JSX.Element) => (evBanner ? <BannerContext.Provider value={<EventBanner v={v} />}>{x}</BannerContext.Provider> : x);
   const next = () => setK((x) => x + 1);
   if (k < beats.length) {
     const b = beats[k];
     if (b === 'cards') return <MyCards4 v={v} next={next} />;
-    if (b === 'vote') return <PolicyIn v={v} next={next} />;
-    return <EventBeat v={v} next={next} />;
+    return <PolicyIn v={v} next={next} />;
   }
   if (online && done)
     return (
@@ -297,11 +340,11 @@ function DecisionFlow4({ v }: { v: ViewState }) {
         <LockedInPanel v={v} />
       </Stage>
     );
-  if (stepId === 'COMEBACK') return <ComebackScreen v={v} />;
-  if (stepId === 'POLICY') return <PolicyScreen v={v} />;
-  if (stepId === 'CLAIM') return <ClaimScreen4 v={v} />;
-  if (stepId === 'HIRE') return <JudgeScreen v={v} />;
-  return <TrainScreen v={v} />;
+  if (stepId === 'COMEBACK') return wrap(<ComebackScreen v={v} />);
+  if (stepId === 'POLICY') return wrap(<PolicyScreen v={v} />);
+  if (stepId === 'CLAIM') return wrap(<ClaimScreen4 v={v} />);
+  if (stepId === 'HIRE') return wrap(<JudgeScreen v={v} />);
+  return wrap(<TrainScreen v={v} />);
 }
 
 function ResultsFlow4({ v }: { v: ViewState }) {
@@ -357,21 +400,21 @@ function EpisodeGuess({ v }: { v: ViewState }) {
         </div>
       }
     >
-      <h1 className="h-show text-4xl">{t('play.guess.title')}</h1>
-      <p className="mt-1 text-sm text-soft">{t('play.guess.intro', { pts: PLAY.GUESS_POINTS })}</p>
+      <h1 className="h-show text-hero">{t('play.guess.title')}</h1>
+      <p className="mt-1 text-small text-soft">{t('play.guess.intro', { pts: PLAY.GUESS_POINTS })}</p>
       <div className="mt-4 grid grid-cols-3 gap-2" role="group" aria-label={t('play.guess.pick')}>
         {others.map((p) => (
           <button key={p.id} type="button" aria-pressed={target === p.id} onClick={() => setTarget(p.id)} className={`flex flex-col items-center gap-1 rounded-2xl p-2 ${target === p.id ? 'bg-spot text-onspot' : 'bg-card'}`}>
             <Face v={v} p={p} size={32} />
-            <span className="truncate text-sm font-bold">{shortName(v, p.id)}</span>
+            <span className="truncate text-small font-bold">{shortName(v, p.id)}</span>
           </button>
         ))}
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2" role="group" aria-label={t('play.guess.mission')}>
         {VALUES_CARDS.map((c) => (
           <button key={c} type="button" aria-pressed={card === c} onClick={() => setCard(c)} className={`min-h-[64px] rounded-2xl p-2 text-start ${card === c ? 'bg-spot text-onspot' : 'bg-card'}`}>
-            <span className="h-show text-lg leading-tight">{missionName(c)}</span>
-            <span className="block text-xs">{t(`play.guess.tell.${c}`)}</span>
+            <span className="h-show text-lead leading-tight">{missionName(c)}</span>
+            <span className="block text-small">{t(`play.guess.tell.${c}`)}</span>
           </button>
         ))}
       </div>
@@ -379,8 +422,8 @@ function EpisodeGuess({ v }: { v: ViewState }) {
   );
 }
 
-/** v2 Section 10 fix 3: after the card guess, its result, then every mission flips with the ranking. */
-function MissionsBeat({ v, next }: { v: ViewState; next: () => void }) {
+/** v2 Section 10 fix 3, UI V3 (U3): the card guess's result and the ranking, now part of the one summary screen. */
+function RankBlock({ v }: { v: ViewState }) {
   const pl = v.play!;
   const scores = pl.finalScores ?? {};
   // AI playtest (T7): in a life the cards stay hidden until the end, so rank by the public ranks, without scores.
@@ -392,29 +435,65 @@ function MissionsBeat({ v, next }: { v: ViewState; next: () => void }) {
     ? `${hostLine(myGuess.correct ? 'guessRight' : 'guessWrong', pick(v, 'guess', 6), { name: nameOf(v, myGuess.target) })} ${t('play.guess.youGuessed', { name: shortName(v, myGuess.target), card: missionName(myGuess.card) })}`
     : hostLine('guessNone', pick(v, 'guess', 6));
   return (
-    <Stage v={v} bar={false} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
-      <div className="my-auto" data-missions>
-        <Bubble who="Dash" host text={guessLine} />
-        <p className="mt-5 text-xs font-bold uppercase tracking-wider text-soft">{t(hidden ? 'play.summary.ranksLabel' : 'play.summary.missionsLabel')}</p>
-        <h1 className="h-show mt-1 text-3xl leading-tight text-spot">{ranked[0].id === v.viewer ? t(hidden ? 'play.summary.leadYou' : 'play.summary.winnerYou') : t(hidden ? 'play.summary.lead' : 'play.summary.winner', { name: shortName(v, ranked[0].id) })}</h1>
-        <ol className="mt-3 space-y-1.5" aria-label={t('play.stage.ranking')}>
-          {ranked.map((p, i) => (
-            <li key={p.id} className={`flex items-center gap-2 rounded-xl px-2 py-1.5 ${p.id === v.viewer ? 'bg-spot text-onspot' : 'bg-card'}`}>
-              <span className="h-show w-5 text-lg">{i + 1}</span>
-              <span className="w-20 truncate text-sm font-bold">{shortName(v, p.id)}</span>
-              <span className="flex-1 truncate text-sm">{p.values ? missionName(p.values) : ''}</span>
-              {!hidden && <span className="h-show w-10 text-end">{coins(scores[p.id] ?? 0)}</span>}
-              {hidden && p.id === v.viewer && <span className="h-show w-10 text-end">{coins(pl.mission?.score ?? 0)}</span>}
-            </li>
-          ))}
-        </ol>
-        {hidden && pl.gaps && (
-          <p className="mt-2 text-sm" data-gaps>
-            {[pl.gaps.above !== null ? t(pl.gaps.above ? 'play.summary.gapAbove' : 'play.summary.gapAboveClose', { n: pl.gaps.above }) : '', pl.gaps.below !== null ? t(pl.gaps.below ? 'play.summary.gapBelow' : 'play.summary.gapBelowClose', { n: pl.gaps.below }) : ''].filter(Boolean).join(' ')}
-          </p>
-        )}
+    <div data-missions>
+      <p className="h-show text-lead leading-tight text-spot">{ranked[0].id === v.viewer ? t(hidden ? 'play.summary.leadYou' : 'play.summary.winnerYou') : t(hidden ? 'play.summary.lead' : 'play.summary.winner', { name: shortName(v, ranked[0].id) })}</p>
+      <ol className="mt-1 space-y-1" aria-label={t('play.stage.ranking')}>
+        {ranked.map((p, i) => (
+          <li key={p.id} className={`flex items-center gap-2 rounded-xl px-2 py-0.5 ${p.id === v.viewer ? 'bg-spot text-onspot' : 'bg-card'}`}>
+            <span className="h-show w-4 text-body">{i + 1}</span>
+            <Face v={v} p={p} size={24} ring={false} />
+            <span className="w-20 truncate text-small font-bold">{shortName(v, p.id)}</span>
+            <span className="flex-1 truncate text-small">{p.values ? missionName(p.values) : ''}</span>
+            {!hidden && <span className="h-show w-10 text-end text-body">{coins(scores[p.id] ?? 0)}</span>}
+            {hidden && p.id === v.viewer && <span className="h-show w-10 text-end text-body">{coins(pl.mission?.score ?? 0)}</span>}
+          </li>
+        ))}
+      </ol>
+      {hidden && pl.gaps && (
+        <p className="mt-1 text-small" data-gaps>
+          {[pl.gaps.above !== null ? t(pl.gaps.above ? 'play.summary.gapAbove' : 'play.summary.gapAboveClose', { n: pl.gaps.above }) : '', pl.gaps.below !== null ? t(pl.gaps.below ? 'play.summary.gapBelow' : 'play.summary.gapBelowClose', { n: pl.gaps.below }) : ''].filter(Boolean).join(' ')}
+        </p>
+      )}
+      <p className="mt-1 text-small text-soft" data-guess>{guessLine}</p>
+    </div>
+  );
+}
+
+/**
+ * UI V3 (U3): the score as a two-part bar, the bank half and the mission half (and guess points), with debt
+ * as a red notch taken off the end. The words behind it are one tap away ("See the money").
+ */
+export function ScoreBar({ m, onWords }: { m: NonNullable<ViewState['play']>['mission']; onWords: () => void }) {
+  if (!m) return null;
+  const bankSigned = Math.round(m.bankPart);
+  const bank = Math.max(0, bankSigned);
+  const mission = Math.max(0, Math.round(m.score) - Math.round(m.bankPart) + Math.round(m.stress) - Math.round(m.guessPoints));
+  const guess = Math.max(0, Math.round(m.guessPoints));
+  const debt = Math.max(0, Math.round(m.stress));
+  const total = Math.max(1, bank + mission + guess);
+  const w = (x: number) => `${(x / total) * 100}%`;
+  return (
+    <div data-scorebar>
+      <div className="flex items-center gap-3">
+        <span className="text-small font-bold uppercase tracking-wider text-soft">{t('play.summary.scoreLabel')}</span>
+        <span className="h-show text-title">{coins(m.score)}</span>
+        <button type="button" className="ms-auto min-h-[44px] text-small font-semibold underline" onClick={onWords} data-score-words>
+          {t('play.score.words')}
+        </button>
       </div>
-    </Stage>
+      <div className="relative flex h-5 overflow-hidden rounded-full bg-paper" role="img" aria-label={t('play.score.a11y', { s: coins(m.score), b: bankSigned, m: mission, g: guess, d: debt })}>
+        <div className="h-full bg-spot" style={{ width: w(bank) }} />
+        <div className="h-full bg-good" style={{ width: w(mission) }} />
+        {guess > 0 && <div className="h-full bg-teal/60" style={{ width: w(guess) }} />}
+        {debt > 0 && <div className="absolute inset-y-0 right-0 border-l-2 border-paper bg-stamp" style={{ width: w(Math.min(debt, total)) }} />}
+      </div>
+      <p className="mt-1 flex flex-wrap gap-x-3 text-small">
+        <span><span aria-hidden className="mr-1 inline-block h-2.5 w-2.5 rounded-full bg-spot" />{t('play.score.bank', { n: bankSigned })}</span>
+        <span><span aria-hidden className="mr-1 inline-block h-2.5 w-2.5 rounded-full bg-good" />{t('play.score.mission', { n: mission })}</span>
+        {guess > 0 && <span>{t('play.score.guess', { n: guess })}</span>}
+        {debt > 0 && <span className="font-bold text-stamp">{t('play.score.debt', { n: debt })}</span>}
+      </p>
+    </div>
   );
 }
 
@@ -451,8 +530,7 @@ function nearMissText(v: ViewState, nm: NearMiss): string {
 function EpisodeSummary({ v }: { v: ViewState }) {
   const { go, replay, online, leaveOnline, act } = useStore();
   const pl = v.play!;
-  const [sheet, setSheet] = useState<null | 'really'>(null);
-  const [k, setK] = useState(0);
+  const [sheet, setSheet] = useState<null | 'really' | 'words'>(null);
   const lv = v.levelView as L3View;
   const types = lv.types ?? {};
   const m = pl.mission!;
@@ -490,11 +568,10 @@ function EpisodeSummary({ v }: { v: ViewState }) {
     if (v.phase.kind === 'LEVEL_DEBRIEF') act();
     go('title');
   };
-  if (k === 0) return <MissionsBeat v={v} next={() => setK(1)} />;
   const row = (label: string, text: string, cls = '') => (
     <div>
-      <dt className="text-xs font-bold uppercase tracking-wider text-soft">{label}</dt>
-      <dd className={`text-base font-semibold leading-snug ${cls}`}>{text}</dd>
+      <dt className="text-small font-bold uppercase tracking-wider text-soft">{label}</dt>
+      <dd className={`text-small font-semibold leading-snug ${cls}`}>{text}</dd>
     </div>
   );
   return (
@@ -518,21 +595,36 @@ function EpisodeSummary({ v }: { v: ViewState }) {
         )
       }
     >
-      <h1 className="h-show text-3xl leading-tight text-spot">{t('play.summary.title')}</h1>
-      <dl className="mt-3 space-y-3" data-summary>
+      <h1 className="h-show text-title leading-tight">{t('play.summary.title')}</h1>
+      {v.mode === 'LIFE' && v.levelIndex === 1 && PLAY.LIFE_BANK_FROM === 'EP1_END' && (
+        <p className="text-small font-semibold text-spot" data-birth-note>
+          {t('play.cast.birthNotScored')}
+        </p>
+      )}
+      <div className="mt-1">
+        <RankBlock v={v} />
+      </div>
+      <div className="mt-2">
+        <ScoreBar m={m} onWords={() => setSheet('words')} />
+      </div>
+      <dl className="mt-1 space-y-1.5" data-summary>
+        {row(missionName(m.card), complete ? t('play.summary.missionDone') : t('play.summary.missionMissed'), complete ? 'text-good' : 'text-stamp')}
         {row(t('play.summary.lieLabel'), lieText)}
         {pl.pollMode !== 'NEVER' && v.levelIndex === 3 && row(t('play.summary.readLabel'), readText)}
-        {row(t('play.bar.bank'), t('play.summary.bankChange', { from: coins(episodeStartBank(v)), to: coins(pl.banks[v.viewer]) }))}
-        {row(t('play.summary.scoreLabel'), `${t('play.summary.score', { s: coins(m.score), b: coins(m.bankPart), m: String(Math.round(m.score) - Math.round(m.bankPart) + Math.round(m.stress) - Math.round(m.guessPoints)), d: coins(m.stress), e: coins(m.episodeStress), g: coins(m.guessPoints) })} ${t(`play.missions.${m.card}.points`)}`)}
-        {row(missionName(m.card), complete ? t('play.summary.missionDone') : t('play.summary.missionMissed'), complete ? 'text-good' : 'text-stamp')}
         {row(t('play.summary.nearMiss'), nm ? nearMissText(v, nm) : t('play.summary.nearMissNone'))}
       </dl>
-      <button type="button" className="mt-4 self-start text-sm font-semibold underline" onClick={() => setSheet('really')}>
+      <button type="button" className="mt-1 min-h-[44px] self-start text-small font-semibold underline" onClick={() => setSheet('really')}>
         {t('play.really.button')}
       </button>
-      {v.seed && <p className="mt-2 text-[11px] text-soft">{t('play.summary.seed', { seed: v.seed })}</p>}
+      {v.seed && <p className="mt-2 text-small text-soft">{t('play.summary.seed', { seed: v.seed })}</p>}
       {playtestOn() && <PlaytestPanel v={v} />}
       {sheet === 'really' && <ReallySheet v={v} onClose={() => setSheet(null)} />}
+      {sheet === 'words' && (
+        <TableSheet title={t('play.score.wordsTitle')} closeLabel={t('play.really.close')} onClose={() => setSheet(null)}>
+          <p data-score-text>{t('play.summary.bankChange', { from: coins(episodeStartBank(v)), to: coins(pl.banks[v.viewer]) })}</p>
+          <p>{`${t('play.summary.score', { s: coins(m.score), b: coins(m.bankPart), m: String(Math.round(m.score) - Math.round(m.bankPart) + Math.round(m.stress) - Math.round(m.guessPoints)), d: coins(m.stress), e: coins(m.episodeStress), g: coins(m.guessPoints) })} ${t(`play.missions.${m.card}.points`)}`}</p>
+        </TableSheet>
+      )}
     </Stage>
   );
 }
