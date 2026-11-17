@@ -95,13 +95,16 @@ Bots only, 1,000 lives. The changes: in a life, Episode 2 pays 3 per hour of tal
 
 - **Stamps** sit on the character's body, never over the podium name (an e2e check enforces it). **The Bar** marks voters with a small "Voted". **Auto-advance** holds 1.2 s plus 0.2 s per word over 12, at most 5 s; a life now paces at 9.3 min (taps 71 + 1 opening card, same seed).
 
-- **Finale mission weight** (D-204): tried 3 and 2 on 300 lives each, mission scales untouched. No weight passed both F-e and the finale target, so it stays at 4.5 (no rule change).
+- **Finale mission weight** (D-204, engine, rules hash **b1b485fa65cf3b29**). The weight went from 4.5 to **2**, with mission scales untouched. At 2.5, F-e failed narrowly (Meritocrat 14.6%), so by the owner's rule 2 was used, accepting a lower finale lead change.
 
-| Finale weight | F-e (15% to 35% each) | Ep4 leader loses the finale (at least 20%) |
-|---|---|---|
-| 4.5 (kept; 1,000 lives) | E 21.9, R 31.3, U 37.7, M 12.0 (fails) | 30.2% |
-| 3 | E 24.7, R 29.7, U 33.6, M 12.2 (fails) | 22.7% |
-| 2 | E 25.1, R 25.5, U 31.2, M 17.9 (passes) | 14.0% (fails) |
+| Finale weight | F-e (15% to 35% each) | Ep4 leader loses the finale | Born poorest wins | Gap share |
+|---|---|---|---|---|
+| 4.5 (before; 1,000 lives) | E 21.9, R 31.3, U 37.7, M 12.0 (fails) | 30.2% | 18.9% | 37.0% |
+| 3 (300) | E 24.7, R 29.7, U 33.6, M 12.2 (fails) | 22.7% | 18.7% | 36.3% |
+| 2.5 (300) | E 24.9, R 28.5, U 32.0, M 14.6 (fails) | 19.0% | 20.0% | 36.1% |
+| **2 (chosen; 1,000 lives)** | **E 23.2, R 26.5, U 32.5, M 19.6 (passes)** | **15.7% (below the 20% target, accepted)** | 21.9% | 37.1% |
+
+At weight 2 every E check passes, F-f is 51.2% and the final order matches the order after Episode 2 in 15.2% of lives. F-d is 88.2% (still just under 90%).
 
 - **Axe after the fixes:** 0 violations on 64 screens; focus rings on every element tabbed.
 
@@ -114,7 +117,7 @@ Bots only, 1,000 lives. The changes: in a life, Episode 2 pays 3 per hour of tal
 - **Auto-advance hold (D-197, D-202).** The hold is now 1.2 s plus 0.2 s per word over 12, at most 5 s. Auto-advance is switched off under test automation.
 - **Episode 2 hourly rate (D-197).** It keeps one decimal, since it is a rate.
 - **Review loop (D-200).** U4 stopped after 3 cycles, not the spec's stop rule, for budget. The cycle 3 fixes were not reviewed again.
-- **F-e (D-201, D-203).** F-e still fails after fix 1, and a hand recalibration made it much worse, because the finale weighs missions 4.5 times. Alternative: lower that weight.
+- **F-e versus the finale target (D-204).** With the finale weight at 2, F-e passes. The leader after Episode 4 now loses the finale in 15.7% of lives (target 20%), accepted.
 - **U5 trade-off (D-201).** The kept configuration fails F-e by 0.6 points. The recalibrated alternative passes F-e, but the finale lead change drops to 17.9%.
 
 ## What is left
@@ -125,7 +128,7 @@ Bots only, 1,000 lives. The changes: in a life, Episode 2 pays 3 per hour of tal
 - **Result card disagreement.** "Nobody bought it" can disagree with the Receipts' count of lies that paid; the two use different rules.
 - **Win and loss summaries.** The episode summary looks the same for a win and a loss (the result card differs).
 - **Cast sizes.** The cast is smaller than 72 px on dense screens.
-- **Owner decisions:** F-e versus the finale target (U5), and whether to keep auto-advance at 1.2 s.
+- **Finale lead change:** 15.7%, below the 20% target (accepted, D-204).
 - **Room server.** The two room-server e2e specs were not run (no wrangler in this run); run them with the room server before merging.
 
 ## Human validation: NOT DONE
@@ -135,6 +138,6 @@ No person has played UI V3. Every review here is an AI proxy, not human evidence
 ## Commit and preview
 
 - **Commit:** the last commit before this report is `635df14` on `ui-v3`; this report is committed after it.
-- **Rules hash:** `1c675c851512f986` (with U5 and fix 1); `9caee8e94a7084b5` without fix 1; `3bf67478ab66d810` without both.
+- **Rules hash the room server must serve:** `b1b485fa65cf3b29`. Earlier: `1c675c851512f986` (finale weight 4.5), `9caee8e94a7084b5` (before fix 1), `3bf67478ab66d810` (before U5).
 - **Latest commits:** `147f2b7` (stamps, Voted marks, holds), `5c47d3f` (fix 1, engine, its own commit).
 - **Preview link:** none. This run did not deploy, as instructed, and no preview link was checked.
