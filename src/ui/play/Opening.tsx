@@ -55,7 +55,7 @@ export function PlayOpening({ onDone, inline = false }: { onDone: () => void; in
           <p className="mt-3 text-body leading-snug">{t('play.opening.one.win')}</p>
           <p className="mt-3 text-small text-soft">{t('play.opening.c3.small')}</p>
         </div>
-        <button type="button" className="min-h-[52px] w-full rounded-full bg-stamp text-lead font-bold text-onspot" onClick={done} data-opening-next>
+        <button type="button" className="min-h-[52px] w-full rounded-full bg-action text-lead font-bold text-onaction" onClick={done} data-opening-next>
           {t('play.opening.go')}
         </button>
       </div>

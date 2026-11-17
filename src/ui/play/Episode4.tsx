@@ -298,7 +298,6 @@ export function HiresBeat({ v, next, last }: { v: ViewState; next: () => void; l
             );
           })}
         </ul>
-        {r.judge !== me && <p className="mt-2 text-small">{t('play.l4.res.judgePay', { name: shortName(v, r.judge!), n: coins(r.judgePay ?? 0) })}</p>}
         {/* UI V4 (V3): what your choices did; it adds up to the bank change. */}
         <ChoicesDid v={v} />
         <CallResults v={v} quiet />

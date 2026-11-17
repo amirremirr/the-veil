@@ -239,17 +239,18 @@ function CastStampMark({ s, delay }: { s: CastStamp; delay: number }) {
     }, off ? 0 : delay * 1000 + 120);
     return () => clearTimeout(id);
   }, [s.text, off, delay]);
-  const color = s.tone === 'good' ? 'border-good text-good' : s.tone === 'ink' ? 'border-ink text-ink' : 'border-stamp text-stamp';
+  // V5 N2 (D-211): studio stamps are cream cards with a red, green or ink rim and matching text.
+  const color = s.tone === 'good' ? 'border-[#13675a] text-[#13675a]' : s.tone === 'ink' ? 'border-[#10242a] text-[#10242a]' : 'border-[#c2341f] text-[#c2341f]';
   return (
     <motion.span
-      className="pointer-events-none absolute left-1/2 top-[55%] z-10"
+      className="pointer-events-none absolute left-1/2 top-[48%] z-10"
       initial={off ? { x: '-50%', y: '-50%', rotate: -8 } : { x: '-50%', y: '-50%', scale: 2.4, opacity: 0, rotate: -16 }}
       animate={{ x: '-50%', y: '-50%', scale: 1, opacity: 1, rotate: -8 }}
       transition={off ? { duration: 0 } : { type: 'spring', stiffness: 560, damping: 20, delay }}
     >
       <span
         ref={ref}
-        className={`h-show block whitespace-nowrap rounded-md border-[3px] bg-paper/90 px-1 py-0.5 text-small uppercase leading-none shadow-stamp ${color}`}
+        className={`h-show block whitespace-nowrap rounded-lg border-[3px] bg-[#fff4e0] px-1 py-0.5 text-[14px] uppercase leading-none shadow-stamp ${color}`}
         style={fit < 1 ? { transform: `scale(${fit})` } : undefined}
         data-cast-stamp={s.text}
       >
@@ -319,7 +320,7 @@ export function CastStage({ v, cue = {}, fit = 0, call }: { v: ViewState; cue?: 
                     <span className="sr-only">{t('play.cast.confirm', { name: shortName(v, id), n: PLAY.CALL_STAKE })}</span>
                     <button
                       type="button"
-                      className="min-h-[44px] w-full rounded-xl bg-stamp px-1 text-small font-bold leading-tight text-onspot"
+                      className="min-h-[44px] w-full rounded-xl bg-action px-1 text-small font-bold leading-tight text-onaction"
                       onClick={() => {
                         sfx('lock');
                         call!.onPick(id);

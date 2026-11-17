@@ -326,7 +326,7 @@ export function Bubble({ who, text, host = false, bot, mood, inline = false }: {
   );
 }
 
-/** The bottom action: pink, full width, dark text (white on this pink fails WCAG AA, D-108). */
+/** The bottom action: studio orange, full width, dark text (V5 N2, D-211). */
 export function BigButton({ children, onClick, disabled = false, dark = false, beatNext = false }: { children: ReactNode; onClick: () => void; disabled?: boolean; dark?: boolean; beatNext?: boolean }) {
   return (
     <button
@@ -338,7 +338,7 @@ export function BigButton({ children, onClick, disabled = false, dark = false, b
         sfx(beatNext ? 'tap' : 'lock');
         onClick();
       }}
-      className={`min-h-[52px] w-full rounded-full text-lead font-bold transition-opacity disabled:opacity-40 ${dark ? 'bg-onspot text-spot' : 'bg-stamp text-onspot'}`}
+      className={`min-h-[52px] w-full rounded-full text-lead font-bold transition-opacity disabled:opacity-40 ${dark ? 'bg-onspot text-spot' : 'bg-action text-onaction'}`}
     >
       {children}
     </button>

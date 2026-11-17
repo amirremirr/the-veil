@@ -3,9 +3,12 @@
 // (tailwind.config.ts), the cast and the stage read the rest. Colors that change with the theme stay CSS
 // variables (src/index.css); the cast's own colors are fixed, since the Play stage is always dark.
 
-/** The five type sizes (px, line height). Minimum body text is 14 px (U3). */
+/**
+ * The five type sizes (px, line height). V5 N2 (D-211): Play is dark, so no text is under 16 px; "small" and
+ * "body" are the same size and differ by weight and colour. Headlines are Fredoka, text Nunito (index.css).
+ */
 export const TYPE = {
-  small: [14, 1.3],
+  small: [16, 1.3],
   body: [16, 1.4],
   lead: [20, 1.2],
   title: [28, 1.1],
@@ -52,15 +55,17 @@ export function revealPick(n: number): number[] {
   return Array.from({ length: most }, (_, i) => Math.round(((i + 1) * n) / most) - 1);
 }
 
-/** The cast's fixed colors (contrast-checked on the stage's dark background). */
+/** The cast's fixed colors, V5 N2 (D-211): the Retro TV studio palette, checked on the deep teal stage. */
 export const CAST_COLORS = {
-  ink: '#120e24',
+  ink: '#10242a',
   white: '#ffffff',
-  marigold: { petal: '#ff8a3d', face: '#ffd8a8' },
-  chet: { body: '#f5a524' },
-  ugo: { body: '#2dd4bf', glasses: '#120e24' },
-  dot: { body: '#a5b4fc', dots: '#4338ca' },
-  human: ['#38bdf8', '#fb7185', '#4ade80', '#e879f9', '#e2e8f0', '#fdba74'],
-  dash: { grille: '#ffd23f', mesh: '#e08a00', handle: '#8b5cf6', band: '#ff3e7f', tie: '#2dd4bf', cheek: '#ff8fb1' },
+  lid: '#e9dcc4',
+  cheek: '#ff8f8f',
+  marigold: { petal: '#ff6f59', face: '#ffe2b8' },
+  chet: { body: '#b9a6ff' },
+  ugo: { body: '#f2862e', glasses: '#10242a' },
+  dot: { body: '#8fd3c8', dots: '#1f6f66' },
+  human: ['#ffc94a', '#ff9ec7', '#9be37a', '#7cc8ff', '#fff4e0', '#ffb067'],
+  dash: { grille: '#fff4e0', mesh: '#b9a98a', handle: '#f2862e', band: '#ff6f59', tie: '#8fd3c8', cheek: '#ff8f8f' },
   sweat: '#7dd3fc',
 } as const;

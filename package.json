@@ -16,10 +16,7 @@
     "walkthrough": "node scripts/walkthrough.mjs"
   },
   "dependencies": {
-    "@fontsource/atkinson-hyperlegible": "^5.3.0",
-    "@fontsource/fraunces": "^5.3.0",
     "@fontsource/fredoka": "^5.3.0",
-    "@fontsource/inter": "^5.3.0",
     "@fontsource/nunito": "^5.3.0",
     "framer-motion": "^11.11.17",
     "react": "^18.3.1",

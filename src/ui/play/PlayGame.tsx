@@ -320,7 +320,8 @@ function RankRace({ v, ranked }: { v: ViewState; ranked: ViewState['players'] })
         const val = known[p.id];
         const has = val !== undefined;
         // Unknown scores sit between their known neighbours: a faint bar, no number.
-        const guess = has ? val : i === 0 ? top : low + span * 0.15;
+        const myIndex = ranked.findIndex((x) => x.id === me);
+        const guess = has ? val : i < myIndex ? top : low + span * 0.15;
         const w = Math.max(4, ((guess - low) / span) * 100);
         const youRow = p.id === me;
         return (

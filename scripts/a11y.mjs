@@ -27,6 +27,7 @@ await page.evaluate((s) => {
 }, seed);
 const seen = new Set();
 const byRule = {};
+const small = new Set();
 let screens = 0;
 for (let i = 0; i < 1500; i++) {
   await page.waitForTimeout(80);
@@ -41,6 +42,18 @@ for (let i = 0; i < 1500; i++) {
     seen.add(key);
     screens++;
     const res = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
+    // V5 N2 (D-211): Play is dark, so no visible text under 16 px (stamps, 14 px, are labels on cream).
+    const tiny = await page.evaluate(() =>
+      [...document.querySelectorAll('body *')]
+        .filter((el) => [...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()))
+        .filter((el) => {
+          const r = el.getBoundingClientRect();
+          const cs = getComputedStyle(el);
+          return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && parseFloat(cs.fontSize) < 16 && !el.closest('[data-cast-stamp], .sr-only');
+        })
+        .map((el) => `${parseFloat(getComputedStyle(el).fontSize)}px "${el.textContent.trim().slice(0, 30)}"`),
+    );
+    for (const x of tiny) small.add(`${key}: ${x}`);
     for (const v of res.violations) {
       byRule[v.id] ??= { impact: v.impact, help: v.help, count: 0, screens: [], example: v.nodes[0]?.target?.join(' ') };
       byRule[v.id].count += v.nodes.length;
@@ -87,5 +100,7 @@ writeFileSync('docs/playtest/a11y.json', JSON.stringify(out, null, 2));
 console.log(`screens ${screens}`);
 for (const [id, r] of Object.entries(byRule)) console.log(`${id} (${r.impact}) x${r.count}: ${r.help} | e.g. ${r.example} | ${r.screens.join(', ')}`);
 console.log('focus', JSON.stringify(focus));
+console.log(`text under 16 px: ${small.size}`);
+for (const x of [...small].slice(0, 30)) console.log(`  ${x}`);
 await browser.close();
 await server.close();
