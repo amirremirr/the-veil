@@ -38,7 +38,32 @@ const shot = async (name) => {
   results.push(`${name}: ${ok ? 'fits' : 'TALLER THAN VIEWPORT'}`);
 };
 const done = new Set();
-for (let i = 0; i < 700 && done.size < 6; i++) {
+const words = () => page.evaluate(() => ((document.querySelector('[data-content]')?.innerText ?? '').trim().split(/\s+/).filter(Boolean).length));
+// The second screens of a split decision (UI V4 V2) are not seen by the walkthrough's autoplay: measure them here.
+const measureSplit = async () => {
+  const h = await page.evaluate(() => (document.querySelector('[data-content] h1')?.textContent ?? '').trim());
+  if (h === 'How hard do you work?' && !done.has('split-claim') && (await page.getByRole('button', { name: 'Next', exact: true }).count())) {
+    done.add('split-claim');
+    await page.getByRole('button', { name: 'Next', exact: true }).click();
+    await shot('split-ep2-claim');
+    results.push(`split-ep2-claim: ${await words()} words`);
+    await page.getByRole('button', { name: 'Lock in', exact: true }).click();
+    return true;
+  }
+  if (h === 'Keep someone out of the pool?' && !done.has('split-bar')) {
+    done.add('split-bar');
+    await shot('split-ep3-bar');
+    results.push(`split-ep3-bar: ${await words()} words`);
+    await page.getByRole('button', { name: 'Nobody', exact: true }).click();
+    await page.getByRole('button', { name: 'Next', exact: true }).click();
+    await page.waitForTimeout(100);
+    results.push(`ep3-cover-question: ${await words()} words`);
+    await shot('ep3-cover-question');
+    return false;
+  }
+  return false;
+};
+for (let i = 0; i < 900 && done.size < 9; i++) {
   await page.waitForTimeout(60);
   const g = await page.evaluate(() => {
     const x = window.__veil.getState().game;
@@ -46,6 +71,7 @@ for (let i = 0; i < 700 && done.size < 6; i++) {
   });
   if (g.kind === 'END' || g.kind === 'RUN_DEBRIEF') break;
   const key = `ep${g.level}`;
+  if (await measureSplit()) continue;
   if ((await page.locator('[data-coach]').count()) && !done.has(`coach-${key}`)) {
     done.add(`coach-${key}`);
     await shot(`hint-${key}-${g.step}`);
