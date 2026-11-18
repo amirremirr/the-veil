@@ -201,8 +201,11 @@ export const PLAY = {
     LEAKED_RECEIPTS: {},
     PANIC: { ALL_BUT_ONE: 1 },
   },
-  /** V5 (D-214), LIFE only: once per life, before Episode 4, the contestant last on score gets these coins (no choice). */
-  SECOND_CHANCE_COINS: 120,
+  /**
+   * V5 (D-214), LIFE only: once per life, before Episode 4, the contestant last on score gets these coins (no choice).
+   * 120 to 250 after six sweeps of 300 lives (D-215): it narrows the final score gap most without deciding the life.
+   */
+  SECOND_CHANCE_COINS: 250,
   /** v2 Section 3.4: the Receipts reel runs at most this long (it is skippable). */
   RECEIPTS_MAX_MS: 20000,
   /** D-180: score gaps on a life's ranking are rounded to this many points. */
