@@ -4,13 +4,17 @@ import type { Message, ViewState } from '../../engine/types';
 import { PLAY } from '../../engine/play/params';
 import { t } from '../i18n';
 import { shortName } from '../game';
-import { hostLine, pick } from './logic';
+import { hostLine, pick, verbOn } from './logic';
 import { Bubble } from './OnAir';
 import { useCallRegistration, useStageCue, type CastCue } from './Cast';
+import { useFirstTime } from './Coach';
+import { useEffect } from 'react';
+import { sfx } from './sound';
 
 /** Other contestants with a claim this round (optionally only claims matching `filter`), callable now. */
 export function claimantsNow(v: ViewState, filter?: (value: string) => boolean): string[] {
-  if (!PLAY.CALL_ENABLED) return [];
+  // UI V4 (V2): in a life, Call it unlocks in Episode 3.
+  if (!PLAY.CALL_ENABLED || !verbOn(v, 'call')) return [];
   const out = new Set<string>();
   for (const m of v.messages as Message[]) {
     if (m.level !== v.levelIndex || m.round !== v.round || m.msg.type !== 'CLAIM' || m.from === v.viewer) continue;
@@ -27,10 +31,13 @@ export function claimantsNow(v: ViewState, filter?: (value: string) => boolean):
  */
 export function CallChips({ v, claimants, value, onPick }: { v: ViewState; claimants: string[]; value: string | null; onPick: (x: string | null) => void }) {
   useCallRegistration({ claimants, value, onPick });
-  if (!claimants.length) return null;
+  // UI V4 (V1): the first time, the line under the bubbles is the coach hint for calling.
+  const first = useFirstTime('call', claimants.length > 0);
+  // After the first time, the bubbles' own "Call it?" tags are the hint; the line shows only while calling.
+  if (!claimants.length || (!value && !first)) return null;
   return (
-    <p className={`mt-1 text-small ${value ? 'font-bold text-stamp' : 'text-soft'}`} data-call aria-live="polite">
-      {value ? t('play.cast.callingLine', { name: shortName(v, value), n: PLAY.CALL_STAKE }) : t('play.cast.callHint', { n: PLAY.CALL_STAKE })}
+    <p className={`mt-1 text-small ${value ? 'font-bold text-stamp' : first ? 'font-semibold text-spot' : 'text-soft'}`} data-call data-coach={first && !value ? 'call' : undefined} aria-live="polite">
+      {value ? t('play.cast.callingLine', { name: shortName(v, value), n: PLAY.CALL_STAKE }) : first ? t('play.coach.call', { win: PLAY.CALL_PAYOUT, n: PLAY.CALL_STAKE }) : t('play.cast.callHint', { n: PLAY.CALL_STAKE })}
     </p>
   );
 }
@@ -46,7 +53,7 @@ export function callLine(v: ViewState, c: CallRecord): string {
 }
 
 /** This round's call results with CAUGHT / CALLED WRONG stamps and one line from Dash. */
-export function CallResults({ v }: { v: ViewState }) {
+export function CallResults({ v, quiet = false }: { v: ViewState; quiet?: boolean }) {
   const calls = (v.play?.calls ?? []).filter((c) => c.level === v.levelIndex && c.round === v.round);
   // UI V3 (U1): CAUGHT lands on the liar, CALLED WRONG on the caller.
   const cue: CastCue = { stamps: {}, expr: {} };
@@ -62,15 +69,22 @@ export function CallResults({ v }: { v: ViewState }) {
     }
   }
   useStageCue('calls', calls.length ? cue : null);
+  // UI V4 (V4): being caught and catching someone each have their own sound.
+  const mine = calls.find((c) => c.caller === v.viewer && c.lie) ? 'catch' : calls.find((c) => c.target === v.viewer && c.lie) ? 'caught' : null;
+  useEffect(() => {
+    if (mine) sfx(mine, 0.2);
+  }, [mine]);
   if (!calls.length) return null;
   const anyLie = calls.some((c) => c.lie);
   return (
     <div className="mt-2" data-calls>
-      {calls.map((c, k) => (
-        <p key={k} className="text-small">
-          {callLine(v, c)}
-        </p>
-      ))}
+      {/* UI V4 (V3): with "What your choices did" on the screen, the calls are rows there (quiet). */}
+      {!quiet &&
+        calls.map((c, k) => (
+          <p key={k} className="text-small">
+            {callLine(v, c)}
+          </p>
+        ))}
       <div className="mt-1">
         <Bubble who="Dash" host text={hostLine(anyLie ? 'caught' : 'calledWrong', pick(v, `call-${anyLie}`, 6))} />
       </div>

@@ -4,7 +4,7 @@ import type { LevelId, ValuesCard } from '../engine/types';
 
 /** A Values card's name; in Play, its mission in quotes ("Get rich"), since Play never names the cards. */
 export function cardName(c: ValuesCard, play = false): string {
-  return play ? `"${t(`play.missions.${c}.name`)}"` : t(`values.${c}.name`);
+  return play ? `"${t(`play.principles.${c}.name`)}"` : t(`values.${c}.name`);
 }
 
 export function cardTitle(c: ValuesCard): string {

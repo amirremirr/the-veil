@@ -5,6 +5,7 @@ import { autoDecision } from '../../src/engine/auto';
 import { waitingOn } from '../../src/engine/engine';
 import en from '../../src/ui/copy/en.json';
 import { PLAY } from '../../src/engine/play/params';
+import { wholeBankRule } from '../../src/engine/play/ep5';
 
 function life(seed: string, human = false) {
   const s = createInitialState({ mode: 'LIFE', ruleset: 'PLAY', nPlayers: 4, difficulty: 'NORMAL', seed, ...(human ? {} : { allBots: true }) } as Parameters<typeof createInitialState>[0]);
@@ -25,6 +26,33 @@ function life(seed: string, human = false) {
   return { s, starts };
 }
 
+describe('V5 (D-215): the finale reaches the whole bank', () => {
+  it('taxes each bank above 0, tops everyone (a debt too) up to the floor, and shares the rest equally', () => {
+    const out = wholeBankRule([200, 50, 0, -40], { t: 0.5, F: 20 });
+    // Tax 100 + 25 = 125; after tax 100, 25, 0, -40; top-ups 0, 0, 20, 60 = 80; 45 left, 11.25 each.
+    expect(out.map((x) => Math.round(x * 100) / 100)).toEqual([111.25, 36.25, 31.25, 31.25]);
+    expect(out.reduce((a, b) => a + b, 0)).toBeCloseTo(210, 9);
+    // A short pot cuts each top-up in proportion.
+    const short = wholeBankRule([20, -100], { t: 0.5, F: 0 });
+    expect(short).toEqual([10, -90]);
+  });
+  it('in a life, the rule acts on earnings since Episode 1 (with the donations and calls); birth income is untouched', () => {
+    for (const seed of ['whole-1', 'whole-2', 'whole-3']) {
+      const { s } = life(seed);
+      const lv = s.levelState as { whole?: { before: Record<string, number>; after: Record<string, number>; base: Record<string, number>; rule: { t: number; F: number } }; current: { t: number; F: number } };
+      expect(lv.whole).toBeDefined();
+      const ids = s.players.map((p) => p.id);
+      // V5 (D-216): the rule acts on earnings since the end of Episode 1; the Episode 1 bank is untouched.
+      const end1 = s.play!.bankHistory.filter((h) => h.level === 1).slice(-1)[0];
+      for (const id of ids) expect(lv.whole!.base[id]).toBeCloseTo(end1.banks[id], 9);
+      const after = wholeBankRule(ids.map((id) => lv.whole!.before[id] - lv.whole!.base[id]), lv.whole!.rule);
+      ids.forEach((id, i) => expect(lv.whole!.after[id]).toBeCloseTo(after[i] + lv.whole!.base[id], 6));
+      const fin = s.play!.bankHistory.filter((h) => h.level === 5).slice(-1)[0];
+      for (const id of ids) expect(fin.banks[id]).toBeCloseTo(lv.whole!.after[id], 6);
+    }
+  });
+});
+
 describe('Play LIFE', () => {
   it('plays the five episodes in order and carries banks over, starting at LIFE_STARTING_BANK', () => {
     const { s, starts } = life('life-1');
@@ -32,9 +60,20 @@ describe('Play LIFE', () => {
     expect(Object.values(starts[1])).toEqual([PLAY.LIFE_STARTING_BANK, PLAY.LIFE_STARTING_BANK, PLAY.LIFE_STARTING_BANK, PLAY.LIFE_STARTING_BANK]);
     for (const l of [2, 3, 4, 5]) {
       const last = s.play!.bankHistory.filter((h) => h.level === l - 1).slice(-1)[0];
-      for (const [id, b] of Object.entries(starts[l])) expect(b).toBeCloseTo(last.banks[id] + (l === 4 && s.play!.comeback?.pid === id && s.play!.comeback.took === 'COINS' ? 0 : 0), 6);
+      for (const [id, b] of Object.entries(starts[l])) expect(b).toBeCloseTo(last.banks[id] + (l === 4 && s.play!.comeback?.pid === id ? 0 : 0), 6);
     }
     expect(s.play!.comeback).toBeDefined();
+    // V5 (D-214): no choice; the contestant last after Episode 3 gets SECOND_CHANCE_COINS, on Episode 4's first round.
+    const cb = s.play!.comeback!;
+    expect(Object.keys(cb)).toEqual(['pid']);
+    const end3 = s.play!.bankHistory.filter((h) => h.level === 3).slice(-1)[0];
+    expect(end3.ranks[cb.pid]).toBe(Math.max(...Object.values(end3.ranks)));
+    const first4 = s.play!.bankHistory.find((h) => h.level === 4)!;
+    for (const p of s.players) {
+      const line = first4.ledger![p.id].find((x) => x.k === 'comeback');
+      expect(line?.n).toBe(p.id === cb.pid ? PLAY.SECOND_CHANCE_COINS : undefined);
+    }
+    expect(s.log.some((e) => (e as { step?: string }).step === 'COMEBACK' && (e as { type?: string }).type === 'DECIDE')).toBe(false);
   });
 
   it('replays only the current episode for a human near miss (the snapshot), and reaches the Receipts', () => {

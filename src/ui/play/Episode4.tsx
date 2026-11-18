@@ -2,24 +2,23 @@
 // One beat per screen, as Episode 3. Every number and string comes from the engine view and play.l4.*.
 import { useRef, useState } from 'react';
 import type { ViewState } from '../../engine/types';
-import type { P4Preview, P4Round } from '../../engine/play/ep4';
+import type { P4Round } from '../../engine/play/ep4';
 import type { Group, Job, Policy, Priors } from '../../engine/levels/level4';
 import { POLICIES } from '../../engine/levels/level4';
 import { PLAY } from '../../engine/play/params';
 import { L4 } from '../../engine/params';
 import { useStore } from '../store';
 import { t } from '../i18n';
-import { MoneyLedger } from './Ledger';
+import { ChoicesDid } from './Choices';
 import { CallChips, CallResults, claimantsNow } from './Call';
 import { coins, pct } from '../labels';
 import { nameOf, shortName } from '../game';
 import type { CastCue } from './Cast';
 import { Chips, Details, StagedReveal, peakMark, spotlightSteps } from './Peak';
-import { DashHost } from './Characters';
 import { Coach } from './Coach';
-import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
-import { GiftBar, GiftSheet, Tile, previewText, roundClaims } from './Episode3';
-import { hostLine, pick, timesWord, bankLineText } from './logic';
+import { BigButton, Bubble, Face, Stage } from './OnAir';
+import { GiftBar, Tile, roundClaims } from './Episode3';
+import { hostLine, pick, timesWord } from './logic';
 
 type Gift = { to: string; amount: number };
 
@@ -36,7 +35,6 @@ export type L4View = {
   current?: Partial<P4Round>;
   threshold: number;
   meterShown: boolean;
-  preview?: P4Preview;
   cardsOpen: boolean;
 };
 
@@ -44,32 +42,8 @@ const lv4 = (v: ViewState) => v.levelView as L4View;
 export const groupName = (g: Group) => t(`play.l4.group.${g}`);
 const policyName = (p: Policy) => t(`levels.4.policies.${p}.name`);
 
-function GiftTile({ v, gift, setGift, bar = false }: { v: ViewState; gift: Gift | null; setGift: (g: Gift | null) => void; bar?: boolean }) {
-  const [open, setOpen] = useState(false);
-  const pv = lv4(v).preview?.gift;
-  return (
-    <>
-      {bar ? <GiftBar v={v} gift={gift} note={gift ? previewText(pv?.[gift.to]?.[gift.amount]) : null} onOpen={() => setOpen(true)} /> : <Tile
-        on={!!gift}
-        title={t('play.gift.title')}
-        desc={gift ? t('play.gift.picked', { n: gift.amount, name: shortName(v, gift.to) }) : t('play.gift.desc', { max: Math.max(...PLAY.GIFT_AMOUNTS) })}
-        note={gift ? previewText(pv?.[gift.to]?.[gift.amount]) : null}
-        onClick={() => setOpen(true)}
-      />}
-      {open && (
-        <GiftSheet
-          v={v}
-          gift={gift}
-          previews={pv}
-          onPick={(g) => {
-            setGift(g);
-            setOpen(false);
-          }}
-          onClose={() => setOpen(false)}
-        />
-      )}
-    </>
-  );
+function GiftTile({ v, gift, setGift }: { v: ViewState; gift: Gift | null; setGift: (g: Gift | null) => void }) {
+  return <GiftBar v={v} gift={gift} onPick={setGift} />;
 }
 
 /** Before the first decision: your group, your childcare duty, and who judges when. */
@@ -85,30 +59,6 @@ export function MyCards4({ v, next }: { v: ViewState; next: () => void }) {
         <p className="mt-3 text-body">{t(lv.care[me] ? 'play.l4.cards.care' : 'play.l4.cards.noCare', { n: L4.CHAOS_COST })}</p>
         <p className="mt-3 text-body">{t('play.l4.cards.public')}</p>
         <p className="mt-3 text-small font-semibold">{t('play.l4.cards.judges', { names: order.map((p) => shortName(v, p.id)).join(', ') })}</p>
-        {v.play!.comeback && v.play!.comeback.pid !== v.viewer && (
-          <p className="mt-2 text-small">{t(v.play!.comeback.took === 'COINS' ? 'play.comeback.otherCoins' : 'play.comeback.otherPoints', { name: shortName(v, v.play!.comeback.pid), c: PLAY.COMEBACK.COINS, p: PLAY.COMEBACK.POINTS })}</p>
-        )}
-      </div>
-    </Stage>
-  );
-}
-
-/** The policy vote's result, as a beat before round 3's first screen. */
-export function PolicyIn({ v, next }: { v: ViewState; next: () => void }) {
-  const lv = lv4(v);
-  return (
-    <Stage v={v} onTap={next} footer={<AutoButton onClick={next}>{t('play.stage.tap')}</AutoButton>}>
-      <div className="my-auto" data-vote>
-        <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l4.policyIn')}</p>
-        <p className="h-show mt-2 text-hero leading-tight text-spot">{policyName(lv.policy)}</p>
-        <p className="mt-2 text-body">{t(`levels.4.policies.${lv.policy}.desc`)}</p>
-        <p className="mt-3 text-small"><span className="font-bold">{t('play.cast.votes')}</span> {v.players.map((p) => `${shortName(v, p.id)} ${lv.policyVotes?.[p.id] ? policyName(lv.policyVotes[p.id]) : ''}`).join(' · ')}</p>
-        {(() => {
-          const n: Record<string, number> = {};
-          for (const x of Object.values(lv.policyVotes ?? {})) n[x] = (n[x] ?? 0) + 1;
-          const top = Math.max(0, ...Object.values(n));
-          return Object.values(n).filter((c) => c === top).length > 1 ? <p className="mt-1 text-small">{t('play.l1.votes.tie')}</p> : null;
-        })()}
       </div>
     </Stage>
   );
@@ -124,14 +74,15 @@ export function TrainScreen({ v }: { v: ViewState }) {
   const prior = lv.policy === 'B' && lv.priors.POOL !== null ? lv.priors.POOL : lv.priors[g];
   return (
     <Stage v={v} footer={<BigButton onClick={() => act({ train, gift })}>{t('play.stage.lock')}</BigButton>}>
-      <Coach id="move" />
       <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l4.judgeIs', { name: shortName(v, lv.judge) })}</p>
-      <h1 className="h-show mt-1 text-hero leading-tight">{t('play.l4.train.title')}</h1>
-      <p className="mt-2 text-body">{t(lv.policy === 'B' ? 'play.l4.train.beliefBlind' : 'play.l4.train.belief', { group: groupName(g), p: pct(prior) })}</p>
-      <p className="mt-2 text-small">{t('play.l4.train.how')}</p>
-      <div className="mt-auto grid grid-cols-3 gap-2 pt-3">
-        <Tile on={train} title={t('play.l4.train.tile')} desc={lv.myCostBase !== undefined && lv.myCostBase !== lv.myCost ? t('play.l4.train.costCut', { c: lv.myCost ?? 0, was: lv.myCostBase }) : t('play.l4.train.cost', { c: lv.myCost ?? 0 })} note={previewText(lv.preview?.train)} onClick={() => setTrain(true)} />
-        <Tile on={!train} title={t('play.l4.train.skip')} desc={t('play.l4.train.skipDesc')} onClick={() => setTrain(false)} />
+      <h1 className="h-show mt-1 text-title leading-tight">{t('play.l4.train.title')}</h1>
+      <Coach id="move" />
+      <p className="mt-1 text-small">{t(lv.policy === 'B' ? 'play.l4.train.beliefBlind' : 'play.l4.train.belief', { group: groupName(g), p: pct(prior) })}</p>
+      <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
+        <Tile on={train} title={t('play.l4.train.tile')} desc={lv.myCostBase !== undefined && lv.myCostBase !== lv.myCost ? t('play.l4.train.costCut', { c: lv.myCost ?? 0, was: lv.myCostBase, p: pct(L4.PASS_IF_SKILLED) }) : t('play.l4.train.cost', { c: lv.myCost ?? 0, p: pct(L4.PASS_IF_SKILLED) })} onClick={() => setTrain(true)} />
+        <Tile on={!train} title={t('play.l4.train.skip')} desc={t('play.l4.train.skipDesc', { p: pct(L4.PASS_IF_UNSKILLED) })} onClick={() => setTrain(false)} />
+      </div>
+      <div className="mt-2">
         <GiftTile v={v} gift={gift} setGift={setGift} />
       </div>
     </Stage>
@@ -146,8 +97,8 @@ export function ClaimScreen4({ v }: { v: ViewState }) {
   const trained = lv.current?.train?.[v.viewer];
   return (
     <Stage v={v} footer={<BigButton disabled={!x} onClick={() => act(x)}>{t('play.claim.submit')}</BigButton>}>
-      <Coach id="claim" />
       <h1 className="h-show text-hero leading-tight">{t('play.claim.title')}</h1>
+      <Coach id="claim" />
       <div className="mt-3 rounded-2xl bg-card p-3">
         <p className="h-show text-title leading-tight">{t(trained ? 'play.l4.claim.youT' : 'play.l4.claim.youU')}</p>
       </div>
@@ -182,14 +133,10 @@ export function JudgeScreen({ v }: { v: ViewState }) {
     setHires({ ...hires, [w]: job });
     if (k < workers.length - 1) setK(k + 1);
   };
-  const note = hires[w] === 'COMPLEX' ? previewText(lv.preview?.hire?.[w]) : null;
   const meter = lv.meterShown && c.meter ? c.meter[w] : null;
   return (
     <Stage v={v} cast={{ focus: w }} footer={<BigButton onClick={() => act({ hires, gift, call })}>{t('play.l4.judge.submit')}</BigButton>}>
-      <div className="flex items-baseline justify-between gap-2">
-        <h1 className="h-show text-title leading-tight">{t('play.l4.judge.title')}</h1>
-        <span className="text-small font-bold text-soft">{t('play.l4.judge.of', { k: Math.min(k, workers.length - 1) + 1, n: workers.length })}</span>
-      </div>
+      <h1 className="h-show text-title leading-tight">{t('play.l4.judge.ask', { name: shortName(v, w) })}</h1>
       <p className="text-small">{t('play.l4.judge.payShort', { g: PLAY.L4.JUDGE_GAIN, l: PLAY.L4.JUDGE_LOSS })}</p>
       <div
         className="mt-2 rounded-2xl bg-card p-3"
@@ -205,11 +152,10 @@ export function JudgeScreen({ v }: { v: ViewState }) {
       >
         <div className="flex items-center gap-2">
           <Face v={v} p={p} size={40} />
-          <span className="h-show flex-1 truncate text-lead">{shortName(v, w)}</span>
-          <span className="text-small font-bold">{lv.policy === 'B' ? t('play.l4.judge.hidden') : groupName(lv.groups[w])}</span>
+          <span className="flex-1 text-small font-bold">{lv.policy === 'B' ? t('play.l4.judge.hidden') : groupName(lv.groups[w])}</span>
         </div>
         <p className="mt-1 text-small">
-          {t(c.pass?.[w] ? 'play.l4.judge.passedTest' : 'play.l4.judge.failedTest')} · {t(claims[w] === 'TRAINED' ? 'play.l4.judge.says' : 'play.l4.judge.quiet')}
+          {t(c.pass?.[w] ? 'play.l4.judge.passedTest' : 'play.l4.judge.failedTest')}, {t(claims[w] === 'TRAINED' ? 'play.l4.judge.says' : 'play.l4.judge.quiet')}
         </p>
         {meter !== null && (
           <div className="mt-2" aria-label={t('play.l4.meter', { p: pct(meter) })} role="img">
@@ -230,18 +176,17 @@ export function JudgeScreen({ v }: { v: ViewState }) {
             </button>
           ))}
         </div>
-        {note && <p className="mt-1 text-small font-bold" data-preview>{note}</p>}
       </div>
-      <div className="mt-2 flex gap-1.5" aria-label={t('play.l4.judge.picks')}>
+      <div className="mt-2 flex gap-1.5" role="group" aria-label={t('play.l4.judge.label', { k: Math.min(k, workers.length - 1) + 1, n: workers.length })}>
         {workers.map((x, i) => (
-          <button key={x} type="button" onClick={() => setK(i)} aria-current={i === k} className={`min-h-[44px] flex-1 rounded-xl px-1 text-small font-bold ${i === k ? 'border-2 border-spot' : ''} ${hires[x] === 'COMPLEX' ? 'bg-spot text-onspot' : 'bg-card'}`}>
-            {shortName(v, x)}: {t(hires[x] === 'COMPLEX' ? 'play.l4.complex' : 'play.l4.simple')}
+          <button key={x} type="button" onClick={() => setK(i)} aria-current={i === k} aria-label={`${shortName(v, x)}: ${t(hires[x] === 'COMPLEX' ? 'play.l4.complex' : 'play.l4.simple')}`} className={`min-h-[44px] flex-1 rounded-xl px-1 text-small font-bold ${i === k ? 'border-2 border-spot' : ''} ${hires[x] === 'COMPLEX' ? 'bg-spot text-onspot' : 'bg-card'}`}>
+            {shortName(v, x)}
           </button>
         ))}
       </div>
       <CallChips v={v} claimants={claimantsNow(v, (x) => x === 'TRAINED')} value={call} onPick={setCall} />
       <div className="mt-auto pt-2">
-        <GiftTile bar v={v} gift={gift} setGift={setGift} />
+        <GiftTile v={v} gift={gift} setGift={setGift} />
       </div>
     </Stage>
   );
@@ -295,10 +240,11 @@ export function HiresBeat({ v, next, last }: { v: ViewState; next: () => void; l
         ]
       : null;
   return (
-    <Stage v={v} cast={cue} onTap={next} footer={<BigButton beatNext={!last} onClick={next}>{last ? t('play.stage.nextRound', { r: v.round + 1 }) : t('play.stage.tap')}</BigButton>}>
+    <Stage v={v} cast={cue} onTap={next} footer={<BigButton beatNext={!last} onClick={next}>{last ? t('play.stage.tap') : t('play.stage.nextRound', { r: v.round + 1 })}</BigButton>}>
       <div className="my-auto" data-outcome>
         <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l4.res.label', { r: v.round })}</p>
-        <h1 className="h-show mt-1 text-title leading-tight text-spot">{youLine}</h1>
+        {/* V5 N3: in the last round the rows below say it (the screen stays under 45 words). */}
+        {!last && <h1 className="h-show mt-1 text-title leading-tight text-spot">{youLine}</h1>}
         {judgeRows && (
           <dl className="mt-2 grid grid-cols-[1fr_auto] gap-x-3 rounded-2xl bg-card px-3 py-2 text-small" data-judge-pay>
             {judgeRows.map(([k, n]) => (
@@ -309,72 +255,11 @@ export function HiresBeat({ v, next, last }: { v: ViewState; next: () => void; l
             ))}
           </dl>
         )}
-        <ul className="mt-3 space-y-1.5">
-          {workers.map((w) => {
-            const p = v.players.find((x) => x.id === w)!;
-            const complex = r.job?.[w] === 'COMPLEX';
-            const stamp = complex ? (r.good?.includes(w) ? 'GOOD' : 'BAD') : null;
-            return (
-              <li key={w} className="flex items-center gap-2 rounded-xl bg-card px-2 py-1.5">
-                <Face v={v} p={p} size={24} />
-                <span className="w-16 truncate text-small font-bold">{shortName(v, w)}</span>
-                <span className="flex-1 text-small">
-                  {t(complex ? 'play.l4.complex' : 'play.l4.simple')}
-                  {r.quotaPicks?.includes(w) ? ` · ${t('play.l4.quota')}` : ''} · {t(r.pass?.[w] ? 'play.l4.pass' : 'play.l4.fail')}
-                </span>
-                {stamp && <span className={`rounded px-1 text-small font-bold ${stamp === 'GOOD' ? 'bg-good text-onspot' : 'bg-stamp text-onspot'}`}>{t(`play.cast.hire.${stamp}`)}</span>}
-                <span className="h-show w-10 text-end">{coins(W[w] ?? 0)}</span>
-              </li>
-            );
-          })}
-        </ul>
-        {r.judge !== me && r.jobPay?.[me] !== undefined && <p className="mt-2 text-small">{t(r.train?.[me] ? 'play.l4.res.payTrain' : 'play.l4.res.pay', { p: coins(r.jobPay[me]), c: coins(Math.max(0, (r.costs?.[me] ?? 0) - (v.play!.event?.id === 'GRANT' && v.play!.event.round === v.round ? PLAY.L4_EVENTS.GRANT.COST_CUT : 0))) })}{lv.care[me] && r.job?.[me] === 'COMPLEX' ? ` ${t('play.l4.res.care', { n: lv.policy === 'D' ? L4.CHAOS_COST_SUBSIDIZED : L4.CHAOS_COST })}` : ''}{(() => { const cost = r.train?.[me] ? Math.max(0, (r.costs?.[me] ?? 0) - (v.play!.event?.id === 'GRANT' && v.play!.event.round === v.round ? PLAY.L4_EVENTS.GRANT.COST_CUT : 0)) : 0; const other = Math.round((W[me] ?? 0) - r.jobPay![me] + cost); return other ? ` ${t('play.l4.res.other', { n: `${other > 0 ? '+' : ''}${other}` })}` : ''; })()}</p>}
-        {r.judge !== me && <p className="mt-2 text-small">{t('play.l4.res.judgePay', { name: shortName(v, r.judge!), n: coins(r.judgePay ?? 0) })}</p>}
-        {bankLineText(v) && <p className="mt-2 text-small font-semibold" data-bankline>{bankLineText(v)}<MoneyLedger v={v} /></p>}
-        <CallResults v={v} />
-      </div>
-    </Stage>
-  );
-}
-
-/** HireBot's beliefs after the round, as Episode 3's price board. */
-export function BeliefBeat({ v, next, onReally }: { v: ViewState; next: () => void; onReally: () => void }) {
-  const lv = lv4(v);
-  const r = lv.rounds[lv.rounds.length - 1];
-  const a = r.priorsBefore!;
-  const b = r.priorsAfter!;
-  const voteNext = v.round === PLAY.L4.BASELINE_ROUNDS;
-  const lastRound = v.round >= PLAY.L4.ROUNDS;
-  const rows: Array<[string, number, number]> = lv.policy === 'B' && a.POOL !== null && b.POOL !== null ? [[t('play.l4.everyone'), a.POOL, b.POOL]] : (['CIRCLE', 'SQUARE'] as Group[]).map((g) => [groupName(g), a[g], b[g]]);
-  return (
-    <Stage v={v} bar={false} tone="breaking" onTap={next} footer={<AutoButton dark onClick={next}>{voteNext ? t('play.stage.toVote') : lastRound ? t('play.l1.toReveal') : t('play.stage.nextRound', { r: v.round + 1 })}</AutoButton>}>
-      <div className="my-auto" data-price>
-        <p className="text-small font-bold uppercase tracking-wider">{t('play.l4.board.title')}</p>
-        {rows.map(([name, x, y]) => (
-          <p key={name} className="mt-2 flex items-baseline gap-3">
-            <span className="h-show w-28 shrink-0 truncate text-lead">{name}</span>
-            <span className="h-show text-title line-through opacity-60">{pct(x)}</span>
-            <span className="h-show text-hero leading-none">{pct(y)}</span>
-          </p>
-        ))}
-        <p className="h-show mt-4 text-title leading-tight">{t('play.l4.board.head')}</p>
-        <p className="mt-2 text-small">{t('play.l4.board.sub', { p: pct(lv.threshold) })}</p>
-        <div className="mt-4">
-          <figure className="flex items-end gap-2" data-voice="host">
-            <span aria-hidden className="shrink-0"><DashHost expr="worried" size={64} /></span>
-            <p className="flex-1 rounded-2xl rounded-bl-sm bg-onspot px-3 py-2 text-small text-spot"><span className="font-bold">Dash:</span> {hostLine('l4board', pick(v, 'l4board', 6))}</p>
-          </figure>
-        </div>
-        <button
-          type="button"
-          className="mt-3 text-small font-semibold underline"
-          onClick={(e) => {
-            e.stopPropagation();
-            onReally();
-          }}
-        >
-          {t('play.really.button')}
-        </button>
+        {/* UI V4 (V3): what your choices did; it adds up to the bank change. */}
+        {/* V5 N3: at most 45 words: the workers' hires are the stamps on the stage; before the last round, what
+            your choices did shows on the next round's first screen. */}
+        {last && <ChoicesDid v={v} />}
+        <CallResults v={v} quiet />
       </div>
     </Stage>
   );

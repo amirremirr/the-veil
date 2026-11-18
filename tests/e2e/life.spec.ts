@@ -6,6 +6,8 @@ import { expect, test, type Page } from '@playwright/test';
 async function cleanScreen(page: Page) {
   const text = await page.locator('body').innerText();
   expect(text, text.slice(0, 200)).not.toMatch(/\bplay\.[a-zA-Z]+/);
+  // V5: no unfilled {placeholder} on screen either.
+  expect(text, text.slice(0, 200)).not.toMatch(/\{[a-zA-Z]+\}/);
   const over = await page.evaluate(() =>
     [...document.querySelectorAll('[data-cast-stamp]')]
       .map((el) => {
@@ -51,6 +53,9 @@ test('Daily Life starts a life on the day seed and reaches the result card', asy
   expect(g?.mode).toBe('LIFE');
   expect(g?.seed).toMatch(/^daily-\d{4}-\d{2}-\d{2}$/);
   let ledgerSeen = false;
+  const seenHowto = new Set<number>();
+  let didSeen = 0;
+  let playedSeen = false;
   for (let i = 0; i < 400; i++) {
     await page.waitForTimeout(30);
     const d = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, sh: document.documentElement.scrollHeight, ih: window.innerHeight }));
@@ -58,12 +63,64 @@ test('Daily Life starts a life on the day seed and reaches the result card', asy
     expect(d.sh).toBeLessThanOrEqual(d.ih);
     await cleanScreen(page);
     if (await page.locator('[data-result-card]').count()) break;
-    // G1: the first "See the money" link opens a ledger whose lines are listed, then closes.
+    // V5 N1: no missions anywhere in a life, and the end shows "You played like..." with the fair-tax line.
+    expect(await page.locator('body').innerText()).not.toMatch(/mission/i);
+    if (await page.locator('[data-played-like]').count()) {
+      await expect(page.getByRole('heading', { name: /^You played like (Chet|Marigold|Ugo|Dot)\.$/ })).toBeVisible();
+      await expect(page.locator('[data-played-example]')).not.toBeEmpty();
+      await expect(page.locator('[data-fair-line]')).toContainText('was fair');
+      playedSeen = true;
+    }
+    // UI V4 (V2): in a life the player's verbs unlock one at a time: claims from Episode 2, Call it from 3,
+    // Give from 4. Every episode opens with its "How this episode works" card.
+    const st = await page.evaluate(() => {
+      const x = (window as unknown as { __veil: { getState(): { game: { levelIndex: number; phase: { kind: string; step?: string } } } } }).__veil.getState().game;
+      return { level: x.levelIndex, kind: x.phase.kind, step: x.phase.step ?? '' };
+    });
+    if (st.level < 2) expect(await page.getByRole('button', { name: 'Say it' }).count()).toBe(0);
+    if (st.level < 3) expect(await page.locator('[data-call-bubble]').count()).toBe(0);
+    if (st.level < 4) expect(await page.locator('[data-gift-bar]').count()).toBe(0);
+    // V5 N3: the episode summary is at most 50 words, Episode 4's pay screen at most 45.
+    const contentWords = () => page.locator('[data-content]').evaluate((el) => (el as HTMLElement).innerText.trim().split(/\s+/).filter(Boolean).length);
+    if (await page.locator('[data-summary]').count()) expect(await contentWords()).toBeLessThanOrEqual(50);
+    if (st.level === 4 && st.kind === 'REVEAL' && (await page.locator('[data-outcome]').count())) expect(await contentWords()).toBeLessThanOrEqual(45);
+    // UI V4 (V3): "What your choices did" adds up to the bank change it shows, to the coin.
+    if (await page.locator('[data-choices-did]').count()) {
+      const sums = await page.locator('[data-choices-did]').evaluate((el) => {
+        const num = (x: string) => Number(x.replace('−', '-').replace('+', '')) || 0;
+        const rows = [...el.querySelectorAll('[data-did] > span:last-child')].map((x) => num(x.textContent ?? '0'));
+        const total = num(el.querySelector('[data-did-total] > span:last-child')?.textContent ?? '0');
+        const m = /Bank (-?\d+) to (-?\d+)/.exec(el.querySelector('[data-did-total]')?.textContent ?? '');
+        return { rows: rows.reduce((a, b) => a + b, 0), total, change: m ? Number(m[2]) - Number(m[1]) : NaN };
+      });
+      expect(sums.rows).toBe(sums.total);
+      expect(sums.total).toBe(sums.change);
+      didSeen++;
+    }
+    if (st.kind === 'INTRO' || st.kind === 'VALUES_REVEAL') {
+      seenHowto.add(st.level);
+      await expect(page.locator(`[data-howto="${st.level}"]`)).toBeVisible();
+    }
+    // UI V4 (V1): no pop-ups in Play: no dialog, and nothing fixed on top that takes taps.
+    expect(await page.locator('[role="dialog"], [data-call-confirm]').count()).toBe(0);
+    const fixedOnTop = await page.evaluate(() =>
+      [...document.querySelectorAll('body *')].filter((el) => {
+        const cs = getComputedStyle(el);
+        const r = el.getBoundingClientRect();
+        return (cs.position === 'fixed' || cs.position === 'absolute') && cs.pointerEvents !== 'none' && Number(cs.zIndex) >= 20 && r.width > 0 && r.height > 0;
+      }).length,
+    );
+    expect(fixedOnTop).toBe(0);
+    // G1: the first "See the money" link opens the ledger in place (UI V4 V1), its lines listed, then closes.
     if (!ledgerSeen && (await page.locator('[data-ledger]').count())) {
       await page.locator('[data-ledger]').first().click();
-      await expect(page.getByRole('dialog')).toBeVisible();
-      await expect(page.getByRole('dialog')).toContainText('Living costs');
-      await page.getByRole('dialog').getByRole('button', { name: 'Close' }).click();
+      await expect(page.locator('[data-panel]')).toBeVisible();
+      await expect(page.locator('[data-panel]')).toContainText('Living costs');
+      expect(await page.locator('[role="dialog"]').count()).toBe(0);
+      const p = await page.evaluate(() => ({ sh: document.documentElement.scrollHeight, ih: window.innerHeight }));
+      expect(p.sh).toBeLessThanOrEqual(p.ih);
+      await page.locator('[data-panel-close]').click();
+      await expect(page.locator('[data-panel]')).toHaveCount(0);
       ledgerSeen = true;
     }
     if (await page.locator('[data-beat-next]').count()) {
@@ -73,7 +130,7 @@ test('Daily Life starts a life on the day seed and reaches the result card', asy
     const kind = await page.evaluate(() => (window as unknown as Veil).__veil.getState().game?.phase.kind);
     if (kind === 'RUN_DEBRIEF' || kind === 'END') {
       expect(ledgerSeen).toBe(true);
-      await page.getByRole('button', { name: /Skip|The missions flip/ }).click();
+      await page.getByRole('button', { name: /Skip|See how you played/ }).click();
       continue;
     }
     await page.evaluate(() => {
@@ -83,6 +140,9 @@ test('Daily Life starts a life on the day seed and reaches the result card', asy
     });
   }
   await expect(page.locator('[data-result-card]')).toBeVisible();
+  expect([...seenHowto].sort()).toEqual([1, 2, 3, 4, 5]);
+  expect(didSeen).toBeGreaterThanOrEqual(10);
+  expect(playedSeen).toBe(true);
   await expect(page.getByText('Just for fun. Not a diagnosis.')).toBeVisible();
   await expect(page.locator('[data-rival]')).toContainText('Rematch with the same seed?');
 });

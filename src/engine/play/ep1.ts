@@ -13,7 +13,7 @@ import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import { VALUES_CARDS } from '../types';
 import type { LevelDefinition } from '../levels/types';
 import { PLAY } from './params';
-import { activeEvent, giftNet, missionScale, missionValue, playEffortShares, playRoundValue, livingCost, setRoundLedger } from './rules';
+import { activeEvent, giftNet, playEffortShares, playRoundValue, setRoundLedger } from './rules';
 import { botCall, callChance, coinValue, lieBelief, settleCalls, validCall } from './calls';
 import { chooseClaim, credibilityValue, expectedRecord, honestyOf, postClaims, SILENT } from './claims';
 import { VALUES_PRIOR } from '../params';
@@ -194,40 +194,6 @@ function bestGift(s: GameState, pid: PlayerId, vote: PrincipleId): Gift | null {
 }
 
 // ---------------------------------------------------------------------------------------------------------
-
-export interface P1Preview {
-  /** Mission points if each rule wins, against the average over the rules (under the bots' model). */
-  vote: Record<PrincipleId, number>;
-  gift: Record<PlayerId, Record<number, number>>;
-}
-
-function missionPts(s: GameState, i: number, p: PrincipleId, known: number | null, g: Gift | null): number {
-  const P = p1Params(s);
-  const card = s.players[i].values;
-  const draws = orderedDraws(P.deck, s.players.length).filter((d) => known === null || d[i] === known);
-  let tot = 0;
-  for (const d of draws) {
-    const W = withGift(s, outcome1(p, d, P).W, i, g);
-    const banks = s.players.map((x, j) => s.play!.banks[x.id] + W[j] - livingCost(s));
-    tot += PLAY.MISSION_WEIGHT * missionScale(s, card) * missionValue(card, banks, i, playEffortShares(s));
-  }
-  return tot / draws.length;
-}
-
-export function p1Preview(s: GameState, pid: PlayerId): P1Preview {
-  const i = idx(s, pid);
-  const known = knownIncome(s, pid);
-  const by = PRINCIPLES.map((p) => missionPts(s, i, p, known, null));
-  const avg = mean(by);
-  const vote = Object.fromEntries(PRINCIPLES.map((p, k) => [p, by[k] - avg])) as Record<PrincipleId, number>;
-  const gift: P1Preview['gift'] = {};
-  for (const o of s.players) {
-    if (o.id === pid) continue;
-    gift[o.id] = {};
-    for (const a of PLAY.GIFT_AMOUNTS) gift[o.id][a] = mean(PRINCIPLES.map((p) => missionPts(s, i, p, known, { to: o.id, amount: a }))) - avg;
-  }
-  return { vote, gift };
-}
 
 // ---------------------------------------------------------------------------------------------------------
 
@@ -439,7 +405,6 @@ export const playLevel1: LevelDefinition = {
       deck: p1Params(s).deck,
       peekCost: PLAY.PEEK_COST,
       // E5 (D-164): Hard shows no mission hints, as it shows no audience poll.
-      preview: s.difficulty !== 'HARD' && s.phase.kind === 'DECIDE' && s.phase.step === 'VOTE' && s.players.some((p) => p.id === viewer) ? p1Preview(s, viewer) : undefined,
     };
   },
 };

@@ -15,7 +15,14 @@ export type Sfx =
   | 'stamp'
   | 'sting'
   | 'fanfare'
-  | 'finale';
+  | 'finale'
+  | 'neutral'
+  | 'caught'
+  | 'catch';
+
+/** UI V4 (V4): how big a win or a loss is, for the length of its jingle. */
+export type Size = 'small' | 'medium' | 'big';
+export const sizeOf = (delta: number): Size => (Math.abs(delta) < 20 ? 'small' : Math.abs(delta) < 80 ? 'medium' : 'big');
 
 const KEY = 'veil.play.muted';
 const VOLUME = 0.18;
@@ -106,6 +113,71 @@ function noise(at: number, dur: number, gain = 1, lowpass = 900): void {
   src.start(at);
 }
 
+/** A brassy note through a filter that opens and closes: the "wah" of a sad trombone. */
+function wah(freq: number, at: number, dur: number, slideTo?: number, vibrato = false): void {
+  if (!ctx) return;
+  const o = ctx.createOscillator();
+  const f = ctx.createBiquadFilter();
+  const g = ctx.createGain();
+  o.type = 'sawtooth';
+  o.frequency.setValueAtTime(freq, at);
+  if (slideTo) o.frequency.linearRampToValueAtTime(slideTo, at + dur);
+  if (vibrato) {
+    const lfo = ctx.createOscillator();
+    const depth = ctx.createGain();
+    lfo.frequency.value = 6;
+    depth.gain.value = freq * 0.03;
+    lfo.connect(depth).connect(o.frequency);
+    lfo.start(at + dur * 0.3);
+    lfo.stop(at + dur + 0.02);
+  }
+  f.type = 'lowpass';
+  f.Q.value = 6;
+  f.frequency.setValueAtTime(350, at);
+  f.frequency.linearRampToValueAtTime(1300, at + Math.min(0.12, dur / 3));
+  f.frequency.linearRampToValueAtTime(450, at + dur);
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.exponentialRampToValueAtTime(VOLUME * 0.9, at + 0.03);
+  g.gain.setValueAtTime(VOLUME * 0.9, at + dur * 0.8);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+  o.connect(f).connect(g).connect(ctx.destination);
+  o.start(at);
+  o.stop(at + dur + 0.02);
+}
+
+/**
+ * UI V4 (V4): a win and a loss sound clearly different. A gain is a short rising major jingle, a loss a
+ * descending "wah-wah", each longer the bigger it is (under 20, under 80, 80 or more); no change is a tick.
+ */
+export function sfxMoney(delta: number, delay = 0): void {
+  if (muted || !ctx) return;
+  try {
+    if (ctx.state === 'suspended') void ctx.resume();
+    const n = ctx.currentTime + delay;
+    const size = sizeOf(delta);
+    if (Math.round(delta) === 0) {
+      tone(1200, n, 0.04, 'triangle', 0.5);
+      tone(1200, n + 0.09, 0.04, 'triangle', 0.4);
+      return;
+    }
+    if (delta > 0) {
+      // C major, rising: two notes, a full arpeggio, or an arpeggio and a held chord.
+      const notes = size === 'small' ? [784, 1047] : size === 'medium' ? [523, 659, 784, 1047] : [523, 659, 784, 1047, 1319, 1568];
+      notes.forEach((f, i) => tone(f, n + i * 0.08, i === notes.length - 1 ? 0.25 : 0.1, 'triangle', 0.7));
+      if (size === 'big') [523, 659, 784, 1047].forEach((f) => tone(f, n + notes.length * 0.08, 0.6, 'sine', 0.35));
+      return;
+    }
+    // The sad trombone, falling by semitones: two, three or four notes, the last one long and wobbly.
+    const notes = size === 'small' ? [233, 220] : size === 'medium' ? [247, 233, 220] : [247, 233, 220, 208];
+    notes.forEach((f, i) => {
+      const last = i === notes.length - 1;
+      wah(f, n + i * 0.32, last ? (size === 'big' ? 0.9 : 0.45) : 0.28, last ? f * 0.94 : undefined, last && size !== 'small');
+    });
+  } catch {
+    // Audio failed: the game goes on in silence.
+  }
+}
+
 /** Play one effect now (or `delay` seconds from now). Silent when muted or before the first tap. */
 export function sfx(name: Sfx, delay = 0): void {
   if (muted || !ctx) return;
@@ -150,6 +222,21 @@ export function sfx(name: Sfx, delay = 0): void {
         break;
       case 'fanfare':
         [523, 659, 784, 1047].forEach((f, i) => tone(f, n + i * 0.12, i === 3 ? 0.5 : 0.14, 'triangle', 0.7));
+        break;
+      case 'neutral':
+        tone(1200, n, 0.04, 'triangle', 0.5);
+        break;
+      case 'caught':
+        // You were caught: a falling siren and a buzz.
+        tone(880, n, 0.45, 'square', 0.35, 220);
+        noise(n + 0.05, 0.3, 0.6, 700);
+        tone(110, n + 0.4, 0.25, 'sawtooth', 0.6);
+        break;
+      case 'catch':
+        // You caught a liar: two bright bells and a sparkle.
+        tone(1568, n, 0.18, 'sine', 0.8);
+        tone(2093, n + 0.12, 0.35, 'sine', 0.8);
+        [2637, 3136, 3520].forEach((f, i) => tone(f, n + 0.25 + i * 0.05, 0.08, 'triangle', 0.35));
         break;
       case 'finale':
         [392, 523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, n + i * 0.13, i === 5 ? 0.9 : 0.16, 'triangle', 0.75));

@@ -2,7 +2,6 @@
 import { BOT, L3 } from '../params';
 import { botParams, botRng, finishRound, gameRng, headline, ids, idx, playerOf, pluralityResolve } from '../core';
 import { equalShares, mean, ownNet, roundScore } from '../scoring';
-import { missionScale, missionValue } from '../play/rules';
 import { PLAY } from '../play/params';
 import { activeEvent, isPlay, livingCost, playNet, playRoundValue, roundsLeft, setRoundLedger } from '../play/rules';
 import { audienceBelief, beliefAfterClaim, checkClaims, chooseClaim, claimsOf, initFactBeliefs, observe, postClaims, revealFacts, SILENT } from '../play/claims';
@@ -143,7 +142,7 @@ export const STUDY_L3: L3Params = { ...L3, RISK_MULT: 1, RISK_CAP: 1, PREMIUM_MU
 export interface L3Ctx {
   p: L3Params;
   score(card: ValuesCard, W: readonly number[], i: number, effortShares: readonly number[]): number;
-  /** `mult`: the debt-stress multiplier assumed for player j (D-128: a Worrier's; 1 when calm or unknown). */
+  /** `mult`: 1 if player j is assumed a Worrier (D-213: it pays interest on a debt), 0 when calm or unknown. */
   net(j: number, w: number, mult?: number): number;
 }
 export const STUDY_CTX: L3Ctx = { p: STUDY_L3, score: roundScore, net: (_j, w) => ownNet(w) };
@@ -210,7 +209,7 @@ export function wealthL3(
  * Expected own money minus hardship for one choice (risk neutral apart from the hardship line).
  * Under a mandate the contribution is estimated from the population average risk.
  */
-export function rnValue(type: RiskType, regime: Regime, premium: number | null, ch: Choice, ctx: L3Ctx = STUDY_CTX, j = -1, mult = 1): number {
+export function rnValue(type: RiskType, regime: Regime, premium: number | null, ch: Choice, ctx: L3Ctx = STUDY_CTX, j = -1, mult = 0): number {
   const p = ctx.p;
   const net = (w: number) => ctx.net(j, w, mult);
   const pe = pEffOf(type, ch.gym, p);
@@ -488,7 +487,7 @@ function botBarVote(s: GameState, voter: PlayerId, pStay: number): PlayerId | nu
 
 /**
  * D-133: how likely member m is to buy, as `observer` sees it (public model, no private card): the logit rule
- * on rnValue for each risk type, weighted by the observer's belief that m is high risk, Calm multiplier.
+ * on rnValue for each risk type, weighted by the observer's belief that m is high risk, assumed Calm.
  */
 function publicBuyChance(s: GameState, m: PlayerId, bHigh: number): number {
   const premium = currentPremium(s);
@@ -658,66 +657,6 @@ function botGift(s: GameState, botId: PlayerId, mine: Choice, lambda: number): G
   return logitChoice([0, u[k]], lambda, botRng(s)) === 1 ? opts[k] : null;
 }
 
-/** D-143: the mission preview on the move screen, in mission points (k x mission), each against doing nothing. */
-export interface L3Preview {
-  cover: number | null;
-  gym: number;
-  bar: Record<PlayerId, number>;
-  gift: Record<PlayerId, Record<number, number>>;
-}
-
-/**
- * D-143: how each choice on the move screen changes your mission this round, in mission points against
- * doing nothing (no cover unless the launch round signs you up, no gym, no bar vote, no gift), as an
- * expected value under the bots' model (expectRound). Your bar vote counts only when it decides the vote:
- * the other members are modelled with the bots' bar rule on public beliefs (the audience poll where it is
- * shown, else the prior), and the preview is that chance times the mission change if the target is barred.
- */
-export function missionPreview(s: GameState, pid: PlayerId): L3Preview {
-  const me = playerOf(s, pid);
-  const i = idx(s, pid);
-  const pl = s.play!;
-  const card = me.values;
-  const k = missionScale(s, card);
-  const eff = equalShares(s.players.length);
-  const banks = (W: readonly number[]) => s.players.map((p, j) => pl.banks[p.id] + W[j] - livingCost(s));
-  const mission = (W: readonly number[]) => k * missionValue(card, banks(W), i, eff);
-  const premium = currentPremium(s);
-  const launch = isLaunch(s);
-  const none: Choice = { buy: launch, gym: false };
-  const opts = giftOptions(s, i);
-  const [base, ...gifts] = expectRound(s, i, none, (W) => [mission(W), ...opts.map((g) => mission(withGift(s, W, i, g)))]);
-  const cover = premium !== null && !launch && st(s).regime === 'VOL' ? expectRound(s, i, { buy: true, gym: false }, (W) => [mission(W)])[0] - base : null;
-  const gym = expectRound(s, i, { buy: launch, gym: true }, (W) => [mission(W)])[0] - base;
-  const gift: L3Preview['gift'] = {};
-  opts.forEach((g, n) => ((gift[g.to] ??= {})[g.amount] = gifts[n] - base));
-  const bar: Record<PlayerId, number> = {};
-  const members = membersOf(s);
-  if (members.includes(pid)) {
-    const P = ctxOf(s, false).p;
-    const shown = PLAY.DIFFICULTY[s.difficulty].poll !== 'NEVER';
-    const pub = (j: PlayerId) => (shown ? (audienceBelief(s, j) ?? playPrior(s)) : playPrior(s));
-    for (const x of ids(s)) {
-      if (x === pid) continue;
-      let dist = [1];
-      for (const m of members) {
-        if (m === pid || m === x) continue;
-        const { options, u } = barOptions(s, members, m, pub, expectedRisk(pub(m), P), publicBuyChance(s, m, pub(m)));
-        const q = options.includes(x) ? logitProbs(u, BOT.BELIEF_LAMBDA)[options.indexOf(x)] : 0;
-        const next: number[] = new Array(dist.length + 1).fill(0);
-        dist.forEach((p, c) => {
-          next[c] += p * (1 - q);
-          next[c + 1] += p * q;
-        });
-        dist = next;
-      }
-      const decisive = dist[barNeeds(members, x) - 1] ?? 0;
-      bar[x] = decisive * (expectRound(s, i, none, (W) => [mission(W)], x)[0] - base);
-    }
-  }
-  return { cover, gym, bar, gift };
-}
-
 /**
  * D-110: what a finished round tells every bot about each contestant's risk. Buying (applying for cover),
  * the gym when uninsured, and the wheel's result are each read by Bayes' rule, with the public model of a
@@ -733,7 +672,7 @@ function readRound(s: GameState, r: L3Round): void {
     const ch = r.choices[id];
     // D-128: every combination of risk and worry card, each with its own choice model.
     const likOf = (type: RiskType, worrier: boolean) => {
-      const m = worrier ? PLAY.WORRIER_STRESS_MULT : 1;
+      const m = worrier ? 1 : 0;
       let lik = 1;
       if (r.regime === 'VOL' && r.premium !== null && !r.launch) {
         const vNo = Math.max(rnValue(type, 'VOL', r.premium, { buy: false, gym: false }, ctx, j, m), rnValue(type, 'VOL', r.premium, { buy: false, gym: true }, ctx, j, m));
@@ -1073,7 +1012,7 @@ export const level3: LevelDefinition = {
       const n = s.players.length;
       const out = REGIMES.map(() => 0);
       // Play (D-128): the actor's worry card is private too, so the vote is read under both, equally likely.
-      const mults = isPlay(s) ? [1, PLAY.WORRIER_STRESS_MULT] : [null];
+      const mults = isPlay(s) ? [0, 1] : [null];
       for (const type of ['LOW', 'HIGH'] as RiskType[])
         for (const m of mults) {
           const ce = regimeCE(s, n, idx(s, actor), type, card, BOT.BELIEF_RHO, m === null ? undefined : () => m);
@@ -1136,9 +1075,6 @@ export const level3: LevelDefinition = {
             cardsRevealed: !!l.cardsRevealed,
             members: membersOf(s),
             myWorry: l.worry?.[viewer],
-            // D-143: your own mission preview, while you decide your move.
-            // E5 (D-164): Hard shows no mission hints, as it shows no audience poll.
-            preview: s.difficulty !== 'HARD' && s.phase.kind === 'DECIDE' && s.phase.step === 'CHOICE' && s.players.some((p) => p.id === viewer) ? missionPreview(s, viewer) : undefined,
             worry: revealPrivate || l.cardsRevealed ? l.worry : undefined,
           }
         : {}),

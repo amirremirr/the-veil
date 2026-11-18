@@ -11,7 +11,6 @@ import { shortName } from '../game';
 import { useMotionOff } from '../components/common';
 import { myAvatar, ShapePerson, type CastKind, type Expr } from './Characters';
 import { DURATION } from './tokens';
-import { Coach } from './Coach';
 import { buzz, sfx } from './sound';
 
 export type StampTone = 'stamp' | 'good' | 'ink';
@@ -150,7 +149,7 @@ function Bank({ value, mine }: { value: number; mine: boolean }) {
     }
     const d = value > start ? 1 : -1;
     setDir(d);
-    if (mine) sfx(d > 0 ? 'gain' : 'loss');
+    // UI V4 (V4): the money sound comes once per round result ("What your choices did"), sized by the change.
     let raf = 0;
     const t0 = performance.now();
     const tick = (now: number) => {
@@ -240,17 +239,18 @@ function CastStampMark({ s, delay }: { s: CastStamp; delay: number }) {
     }, off ? 0 : delay * 1000 + 120);
     return () => clearTimeout(id);
   }, [s.text, off, delay]);
-  const color = s.tone === 'good' ? 'border-good text-good' : s.tone === 'ink' ? 'border-ink text-ink' : 'border-stamp text-stamp';
+  // V5 N2 (D-211): studio stamps are cream cards with a red, green or ink rim and matching text.
+  const color = s.tone === 'good' ? 'border-[#13675a] text-[#13675a]' : s.tone === 'ink' ? 'border-[#10242a] text-[#10242a]' : 'border-[#c2341f] text-[#c2341f]';
   return (
     <motion.span
-      className="pointer-events-none absolute left-1/2 top-[55%] z-10"
+      className="pointer-events-none absolute left-1/2 top-[48%] z-10"
       initial={off ? { x: '-50%', y: '-50%', rotate: -8 } : { x: '-50%', y: '-50%', scale: 2.4, opacity: 0, rotate: -16 }}
       animate={{ x: '-50%', y: '-50%', scale: 1, opacity: 1, rotate: -8 }}
       transition={off ? { duration: 0 } : { type: 'spring', stiffness: 560, damping: 20, delay }}
     >
       <span
         ref={ref}
-        className={`h-show block whitespace-nowrap rounded-md border-[3px] bg-paper/90 px-1 py-0.5 text-small uppercase leading-none shadow-stamp ${color}`}
+        className={`h-show block whitespace-nowrap rounded-lg border-[3px] bg-[#fff4e0] px-1 py-0.5 text-[14px] uppercase leading-none shadow-stamp ${color}`}
         style={fit < 1 ? { transform: `scale(${fit})` } : undefined}
         data-cast-stamp={s.text}
       >
@@ -314,7 +314,27 @@ export function CastStage({ v, cue = {}, fit = 0, call }: { v: ViewState; cue?: 
                 transition={off ? { duration: 0 } : { delay: (bubbleIdx(id) * DURATION.bubbleGap) / 1000, type: 'spring', stiffness: 420, damping: 24 }}
                 className="relative flex"
               >
-                {callable ? (
+                {callable && confirm === id ? (
+                  // UI V4 (V1): the call is confirmed inside the bubble itself, never in a pop-up.
+                  <div className="w-full rounded-2xl border-2 border-stamp bg-white px-1 py-1 text-center text-onspot" onClick={(e) => e.stopPropagation()} data-bubble={id} data-call-confirm>
+                    <span className="sr-only">{t('play.cast.confirm', { name: shortName(v, id), n: PLAY.CALL_STAKE })}</span>
+                    <button
+                      type="button"
+                      className="min-h-[44px] w-full rounded-xl bg-action px-1 text-small font-bold leading-tight text-onaction"
+                      onClick={() => {
+                        sfx('lock');
+                        call!.onPick(id);
+                        setConfirm(null);
+                      }}
+                      data-call-yes
+                    >
+                      {t('play.cast.callItN', { n: PLAY.CALL_STAKE })}
+                    </button>
+                    <button type="button" className="mt-1 min-h-[44px] w-full rounded-xl bg-[#e9e6f2] px-1 text-small font-bold leading-tight text-onspot" onClick={() => setConfirm(null)} data-call-cancel>
+                      {t('play.cast.cancel')}
+                    </button>
+                  </div>
+                ) : callable ? (
                   <button
                     type="button"
                     onClick={(e) => {
@@ -398,33 +418,7 @@ export function CastStage({ v, cue = {}, fit = 0, call }: { v: ViewState; cue?: 
           );
         })}
       </ul>
-      {call && call.claimants.length > 0 && <Coach id="call" after="move" />}
       {fly && <CoinFly key={fly.k} viewer={v.viewer} delta={fly.d} />}
-      {confirm && call && (
-        <div className="absolute inset-x-0 top-0 z-20 rounded-2xl border-2 border-stamp bg-paper p-3 shadow-podium" role="dialog" aria-modal="false" aria-labelledby="call-confirm" onClick={(e) => e.stopPropagation()} data-call-confirm>
-          <p id="call-confirm" className="h-show text-lead leading-tight">
-            {t('play.cast.confirm', { name: shortName(v, confirm), n: PLAY.CALL_STAKE })}
-          </p>
-          <p className="mt-1 text-small">{t('play.cast.confirmHow', { win: PLAY.CALL_PAYOUT, n: PLAY.CALL_STAKE })}</p>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <button type="button" className="min-h-[44px] rounded-full bg-card font-bold" onClick={() => setConfirm(null)}>
-              {t('play.cast.cancel')}
-            </button>
-            <button
-              type="button"
-              className="min-h-[44px] rounded-full bg-stamp font-bold text-onspot"
-              onClick={() => {
-                sfx('lock');
-                call.onPick(confirm);
-                setConfirm(null);
-              }}
-              data-call-yes
-            >
-              {t('play.cast.callIt')}
-            </button>
-          </div>
-        </div>
-      )}
     </section>
   );
 }

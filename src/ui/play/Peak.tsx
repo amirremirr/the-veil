@@ -1,6 +1,6 @@
 // UI V3 (U1, U2): an episode's peak as a staged moment. The spotlight moves from contestant to contestant
-// (or ballot to ballot), and a stamp lands on each character. Every step is short, the whole reveal takes at
-// most 4 seconds, a tap skips to the end, and under reduced motion the end shows at once.
+// (or ballot to ballot), and a stamp lands on each character. UI V4 (V4): each step at least 1.5 seconds, the
+// whole reveal at most 6 seconds, a tap skips to the end, and under reduced motion the end shows at once.
 import { useEffect, useState, type ReactNode } from 'react';
 import type { ViewState } from '../../engine/types';
 import { t } from '../i18n';
@@ -8,7 +8,7 @@ import { useMotionOff } from '../components/common';
 import { BigButton, Stage } from './OnAir';
 import type { CastCue } from './Cast';
 import type { Expr } from './Characters';
-import { DURATION } from './tokens';
+import { DURATION, revealPick } from './tokens';
 import { sfx } from './sound';
 
 export type RevealStep = { cue: CastCue; body: ReactNode };
@@ -35,8 +35,11 @@ export function StagedReveal({
   data?: string;
 }) {
   const off = useMotionOff();
+  // UI V4 (V4): at least 1.5 s per item, at most 6 s in all (an even pick when there are more than four).
+  const pick = revealPick(steps.length).map((i) => steps[i]);
+  steps = pick;
   const [k, setK] = useState(off ? steps.length : 0);
-  const step = Math.min(DURATION.revealStep, Math.floor((DURATION.REVEAL_MAX - 400) / Math.max(1, steps.length)));
+  const step = DURATION.revealStep;
   useEffect(() => {
     if (off) {
       setK(steps.length);

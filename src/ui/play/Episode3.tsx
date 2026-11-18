@@ -3,24 +3,22 @@
 // screen (D-108). Same premium formula as Study; every screen only shows outcomes the engine decided.
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import type { Choice, Gift, L3Preview, L3Round, Regime, RiskType } from '../../engine/levels/level3';
+import type { Choice, Gift, L3Round, Regime, RiskType } from '../../engine/levels/level3';
 import type { Message, ViewState } from '../../engine/types';
 import { PLAY } from '../../engine/play/params';
 import { useStore } from '../store';
 import { t } from '../i18n';
-import { MoneyLedger } from './Ledger';
 import { CallChips, CallResults, claimantsNow } from './Call';
 import { coins, pct, signed } from '../labels';
 import { nameOf, shortName, useTalkFrom } from '../game';
 import { useMotionOff } from '../components/common';
-import { Sheet } from '../components/TableParts';
-import { DashHost } from './Characters';
+import { ChoicesDid } from './Choices';
 import { Coach } from './Coach';
-import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
+import { BigButton, Bubble, Face, Stage } from './OnAir';
 import { Chips, Details, StagedReveal, peakMark, spotlightSteps } from './Peak';
-import { RollNumber, type CastCue } from './Cast';
+import { type CastCue } from './Cast';
 import { buzz, sfx } from './sound';
-import { confessional, hostLine, pick, roundOutcome, timesWord } from './logic';
+import { confessional, hostLine, pick, roundOutcome, timesWord, verbOn } from './logic';
 import { renderMessage } from '../game';
 
 export type L3View = {
@@ -41,13 +39,10 @@ export type L3View = {
   /** D-128: your own worry card, and everyone's once the cards flip. */
   myWorry?: 'WORRIER' | 'CALM';
   worry?: Record<string, 'WORRIER' | 'CALM'>;
-  /** D-143: your mission preview while you decide your move. */
-  preview?: L3Preview;
 };
 const REGIMES: Regime[] = ['VOL', 'M50', 'M100'];
 export const regimeName = (r: Regime) => t(`play.l3.regimes.${r}.name`);
 const lv3 = (v: ViewState) => v.levelView as L3View;
-const lastRound = (v: ViewState) => Math.max(1, ...v.queue.map((p) => p.round));
 
 /** Your own odds this round (you know your type and the event). */
 export function myOdds(v: ViewState, gym: boolean): number {
@@ -74,7 +69,7 @@ export function Tile({ on, title, desc, note, onClick, disabled = false }: { on:
       aria-pressed={onClick ? on : undefined}
       disabled={disabled}
       onClick={onClick}
-      className={`flex min-h-[112px] flex-col justify-between rounded-2xl p-2.5 text-start transition-colors disabled:cursor-default ${on ? 'bg-spot text-onspot' : 'bg-card text-ink'}`}
+      className={`flex min-h-[96px] flex-col justify-between rounded-2xl p-2.5 text-start transition-colors disabled:cursor-default ${on ? 'bg-spot text-onspot' : 'bg-card text-ink'}`}
     >
       <span aria-hidden className={`grid h-6 w-6 place-items-center rounded-full border-2 ${onClick ? '' : 'invisible'} ${on ? 'border-onspot bg-onspot' : 'border-soft'}`}>
         {on && (
@@ -120,15 +115,13 @@ export function ClaimScreen({ v }: { v: ViewState }) {
   const opts = ['LOW', 'HIGH', 'SILENT'];
   return (
     <Stage v={v} chatFirst footer={<BigButton disabled={!x} onClick={() => act(x)}>{t('play.claim.submit')}</BigButton>}>
+      <h1 className="h-show text-title leading-tight">{t('play.claim.title')}</h1>
       <Coach id="claim" />
-      <h1 className="h-show text-hero leading-tight">{t('play.claim.title')}</h1>
-      <div className="mt-3 rounded-2xl bg-card p-3">
-        <p className="h-show text-title leading-tight">{t(`play.claim.you.${lv.myType}`, { p: pct(myOdds(v, false)), worry: t(`play.myCards.worry.${lv.myWorry ?? 'CALM'}`) })}</p>
-      </div>
-      <p className="mt-2 text-small">{t('play.claim.why')}</p>
+      <p className="mt-1 text-body font-semibold">{t(`play.claim.you.${lv.myType}`, { p: pct(myOdds(v, false)), worry: t(`play.myCards.worry.${lv.myWorry ?? 'CALM'}`) })}</p>
+      <p className="text-small">{t('play.claim.why')}</p>
       <div className="mt-auto space-y-2 pt-3" role="group" aria-label={t('play.claim.title')}>
         {opts.map((o) => (
-          <button key={o} type="button" aria-pressed={x === o} onClick={() => setX(o)} className={`block w-full rounded-2xl p-3 text-start ${x === o ? 'bg-spot text-onspot' : 'bg-card'}`}>
+          <button key={o} type="button" aria-pressed={x === o} onClick={() => setX(o)} className={`block min-h-[48px] w-full rounded-2xl px-3 py-2 text-start ${x === o ? 'bg-spot text-onspot' : 'bg-card'}`}>
             <span className="h-show block text-lead leading-tight">{t(`play.claim.opts.${o}.title`)}</span>
           </button>
         ))}
@@ -152,7 +145,7 @@ export function MyCardsBeat({ v, next }: { v: ViewState; next: () => void }) {
           </div>
           <div className={`rounded-2xl p-3 ${worry === 'WORRIER' ? 'bg-spot text-onspot' : 'bg-card'}`}>
             <p className="h-show text-title leading-tight">{t(`play.myCards.worry.${worry}`)}</p>
-            <p className="mt-1 text-small">{t(`play.myCards.worryLine.${worry}`, { m: PLAY.WORRIER_STRESS_MULT, cap: (worry === 'WORRIER' ? PLAY.WORRIER_STRESS_MULT : 1) * PLAY.DEBT_PENALTY_CAP })}</p>
+            <p className="mt-1 text-small">{t(`play.myCards.worryLine.${worry}`, { r: pct(PLAY.WORRIER_DEBT_RATE) })}</p>
           </div>
         </div>
         <p className="mt-4 text-body">{t('play.myCards.unknown')}</p>
@@ -188,25 +181,25 @@ export function ClaimsBeat({ v, next }: { v: ViewState; next: () => void }) {
 }
 
 /**
- * v2 3.2 and 3.3: the move. READ: everyone's claim and the audience poll; a pool member may vote to bar
- * one applicant. ACT: cover, the gym (public) and a gift (D-142, public). Every choice shows how it changes
- * your mission against doing nothing (D-143), hidden under one point.
+ * v2 3.2 and 3.3: the move. READ: everyone's claim (bubbles) and the audience poll (a mark on each face); a
+ * pool member may vote to bar one applicant. ACT: cover, the gym (public) and a gift (D-142, public).
+ * UI V4 (V2): one decision per screen. A pool member first answers "Keep someone out of the pool?" on its
+ * own screen; then one question, "Buy cover this round?" (or "Hit the gym this round?" when cover is not a
+ * choice), with the gym and Give as small optional rows.
  */
 export function MoveScreen({ v }: { v: ViewState }) {
   const lv = lv3(v);
   const n = v.play!.l3!;
   const act = useStore((s) => s.act);
-  const [buy, setBuy] = useState(false);
+  const [buy, setBuy] = useState<boolean | null>(null);
   const [gym, setGym] = useState(false);
   const [bar, setBar] = useState<string | null>(null);
   const [gift, setGift] = useState<Gift | null>(null);
-  const [giving, setGiving] = useState(false);
   const [call, setCall] = useState<string | null>(null);
   const mandatory = lv.regime !== 'VOL';
   const canBuy = !mandatory && lv.premium !== null;
   const members = lv.members ?? [];
   const member = members.includes(v.viewer);
-  const decision: Choice = { buy: canBuy && buy, gym, bar: member ? bar : null, gift, call };
   const cover = lv.regime === 'M50' ? 50 : 100;
   const T = n.loading * (cover / 100) * n.loss * n.pBar + n.mandateExtra;
   const claims = roundClaims(v);
@@ -215,192 +208,141 @@ export function MoveScreen({ v }: { v: ViewState }) {
   // D-145: on Easy the audience poll is on every round's move; otherwise the read shows from round 2.
   const always = v.play!.pollMode === 'ALWAYS';
   const showRead = always || (canBuy && v.round > 1);
+  const [step, setStep] = useState<'bar' | 'move'>(member && showRead ? 'bar' : 'move');
   // D-121: in the launch round SafeHands has already signed everyone up.
   const launch = PLAY.L3_LAUNCH && v.round === 1 && canBuy;
-  const pv = lv.preview;
-  const giftNote = gift ? previewText(pv?.gift[gift.to]?.[gift.amount]) : null;
-  return (
-    <Stage v={v} chatFirst footer={<BigButton onClick={() => act(decision)}>{t('play.stage.lock')}</BigButton>}>
-      <Coach id="move" />
-      {launch && (
-        <p className="mb-2 rounded-2xl border-2 border-spot bg-card px-3 py-2 text-small font-semibold leading-snug" data-launch-banner>
-          {t('play.stage.launchDesc', { p: coins(lv.premium!) })}
-        </p>
-      )}
-      <p className="text-body font-semibold leading-snug">
-        {t('play.move.risk')} <span className="h-show text-title text-spot" aria-live="polite">{pct(myOdds(v, gym))}</span>
-      </p>
-      {showRead && poll[v.viewer] !== undefined && <p className="text-small">{t('play.move.youRead', { p: pct(poll[v.viewer]) })}</p>}
-      {showRead && (
-        <section className="mt-2" aria-labelledby="bar-title">
-          <h2 id="bar-title" className="text-small font-bold">
-            {member ? t('play.move.barTitle') : members.length ? t('play.move.notMember') : t('play.move.pollTitle')}
-          </h2>
-          <ul className="mt-2 space-y-1.5" role={member ? 'group' : undefined} aria-label={member ? t('play.move.barTitle') : undefined}>
-            {others.map((p) => {
-              const share = poll[p.id];
-              const note = member ? previewText(pv?.bar[p.id]) : null;
-              const body = (
-                <>
+  const decision: Choice = { buy: canBuy && !launch && !!buy, gym, bar: member ? bar : null, gift, call };
+  // The audience's read sits on each face as a small mark, so the screen keeps its words for the question.
+  const marks: Record<string, string> = showRead ? Object.fromEntries(Object.entries(poll).map(([id, p]) => [id, pct(p)])) : {};
+  if (step === 'bar')
+    return (
+      <Stage v={v} chatFirst cast={{ marks }} footer={<BigButton onClick={() => setStep('move')}>{t('play.move.barNext')}</BigButton>}>
+        <h1 className="h-show text-title leading-tight">{t('play.move.barAsk')}</h1>
+        <p className="mt-1 text-small">{t('play.move.barHow')}</p>
+        <ul className="mt-auto space-y-1.5 pt-3" role="group" aria-label={t('play.move.barAsk')}>
+          {others.map((p) => {
+            return (
+              <li key={p.id}>
+                <button type="button" aria-pressed={bar === p.id} onClick={() => setBar(bar === p.id ? null : p.id)} className={`flex min-h-[44px] w-full items-center gap-2 rounded-xl px-2 text-start ${bar === p.id ? 'bg-stamp text-onspot' : 'bg-card'}`}>
                   <Face v={v} p={p} size={24} />
-                  <span className="w-16 truncate text-small font-bold">{shortName(v, p.id)}</span>
+                  <span className="w-20 truncate text-small font-bold">{shortName(v, p.id)}</span>
                   <span className="flex-1 truncate text-small">{claimShort(claims[p.id])}</span>
-                  {note && (
-                    <span className="text-small font-bold" data-preview="bar">
-                      {note}
-                    </span>
-                  )}
-                  {share !== undefined && (
-                    <span className="text-small font-semibold" aria-label={t('play.move.pollLabel', { p: pct(share), name: nameOf(v, p.id) })}>
-                      {t('play.move.poll', { p: pct(share) })}
-                    </span>
-                  )}
-                </>
-              );
-              return (
-                <li key={p.id}>
-                  {member ? (
-                    <button type="button" aria-pressed={bar === p.id} onClick={() => setBar(bar === p.id ? null : p.id)} className={`flex min-h-[44px] w-full items-center gap-2 rounded-xl px-2 text-start ${bar === p.id ? 'bg-stamp text-onspot' : 'bg-card'}`}>
-                      {body}
-                    </button>
-                  ) : (
-                    <div className="flex min-h-[36px] items-center gap-2 rounded-xl bg-card px-2">{body}</div>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-          {member && bar && <p className="mt-1 text-small font-semibold">{t('play.move.barPick', { name: shortName(v, bar) })}</p>}
-        </section>
-      )}
+                </button>
+              </li>
+            );
+          })}
+          <li>
+            <button type="button" aria-pressed={bar === null} onClick={() => setBar(null)} className={`flex min-h-[48px] w-full items-center rounded-xl px-3 text-start text-small font-bold ${bar === null ? 'bg-spot text-onspot' : 'bg-card'}`}>
+              {t('play.move.barNobody')}
+            </button>
+          </li>
+        </ul>
+      </Stage>
+    );
+  const ready = !canBuy || launch || buy !== null;
+  return (
+    <Stage v={v} chatFirst cast={{ marks }} footer={<BigButton disabled={!ready} onClick={() => act(decision)}>{t('play.stage.lock')}</BigButton>}>
+      <h1 className="h-show text-title leading-tight">{t(canBuy && !launch ? 'play.move.coverAsk' : 'play.move.gymAsk')}</h1>
+      <p className="text-small font-semibold leading-snug">
+        {t('play.move.riskLine', { p: pct(myOdds(v, gym)) })}
+        {launch ? ` ${t('play.cast.launchShort', { p: coins(lv.premium!) })}` : mandatory ? ` ${t('play.stage.mandateDesc', { T: coins(T), c: cover })}` : !canBuy ? ` ${t('play.stage.noCoverDesc')}` : ''}
+        {showRead && !member ? ` ${t('play.move.readLegend')}` : ''}
+      </p>
+      <Coach id="move" />
       <CallChips v={v} claimants={claimantsNow(v)} value={call} onPick={setCall} />
-      <div className="mt-auto grid grid-cols-3 gap-2 pt-3">
-        {launch ? (
-          <Tile on disabled title={t('play.stage.launchTitle')} desc={t('play.cast.launchShort', { p: coins(lv.premium!) })} />
-        ) : canBuy ? (
-          <Tile on={buy} title={t('play.stage.buyTitle')} desc={t('play.stage.buyDesc', { p: coins(lv.premium!) })} note={previewText(pv?.cover)} onClick={() => setBuy(!buy)} />
-        ) : mandatory ? (
-          <Tile on={false} disabled title={t('play.stage.mandateTitle')} desc={t('play.stage.mandateDesc', { T: coins(T), c: cover })} />
-        ) : (
-          <Tile on={false} disabled title={t('play.stage.noCoverTitle')} desc={t('play.stage.noCoverDesc')} />
-        )}
-        <Tile on={gym} title={t('play.stage.gymTitle')} desc={t('play.stage.gymDesc', { c: n.gymCost })} note={previewText(pv?.gym)} onClick={() => setGym(!gym)} />
-        <Tile
-          on={!!gift}
-          title={t('play.gift.title')}
-          desc={gift ? t('play.gift.picked', { n: gift.amount, name: shortName(v, gift.to) }) : t('play.gift.desc', { max: Math.max(...PLAY.GIFT_AMOUNTS) })}
-          note={giftNote}
-          onClick={() => setGiving(true)}
-        />
-      </div>
-      {giving && (
-        <GiftSheet
-          v={v}
-          gift={gift}
-          onPick={(g) => {
-            setGift(g);
-            setGiving(false);
-          }}
-          onClose={() => setGiving(false)}
-        />
+      {canBuy && !launch ? (
+        <>
+          <div className="mt-auto grid grid-cols-2 gap-2 pt-3" role="group" aria-label={t('play.move.coverAsk')}>
+            <Tile on={buy === true} title={t('play.stage.buyTitle')} desc={t('play.stage.buyDesc', { p: coins(lv.premium!) })} onClick={() => setBuy(true)} />
+            <Tile on={buy === false} title={t('play.stage.noBuyTitle')} desc={t('play.stage.noBuyDesc', { p: coins(lv.premium!), loss: coins(n.loss) })} onClick={() => setBuy(false)} />
+          </div>
+          <button type="button" aria-pressed={gym} onClick={() => setGym(!gym)} className={`mt-2 flex min-h-[44px] w-full items-center gap-2 rounded-2xl px-3 text-start text-small font-semibold ${gym ? 'bg-spot text-onspot' : 'bg-card'}`} data-gym-row>
+            <span aria-hidden className="h-show text-lead">{gym ? '✓' : '+'}</span>
+            <span className="flex-1">{t('play.move.gymRow', { c: n.gymCost, p: pct(myOdds(v, true)) })}</span>
+          </button>
+        </>
+      ) : (
+        <div className="mt-auto grid grid-cols-2 gap-2 pt-3" role="group" aria-label={t('play.move.gymAsk')}>
+          <Tile on={gym} title={t('play.stage.gymTitle')} desc={t('play.stage.gymDesc', { c: n.gymCost, p: pct(myOdds(v, true)) })} onClick={() => setGym(true)} />
+          <Tile on={!gym} title={t('play.stage.noGymTitle')} desc={t('play.stage.noGymDesc', { c: n.gymCost, p: pct(myOdds(v, false)) })} onClick={() => setGym(false)} />
+        </div>
       )}
+      <div className="mt-2">
+        <GiftBar v={v} gift={gift} onPick={setGift} />
+      </div>
     </Stage>
   );
 }
 
-/** UI V3 (U1): Give as one slim bar, for move screens where it would sit alone in a big tile. */
-export function GiftBar({ v, gift, note, onOpen }: { v: ViewState; gift: Gift | null; note?: string | null; onOpen: () => void }) {
+/**
+ * UI V3 (U1): Give as one slim bar. UI V4 (V1, V2): the optional second choice of a move screen, collapsed by
+ * default; a tap opens the picker in place (no sheet on top), and picking closes it again.
+ */
+export function GiftBar({ v, gift, onPick }: { v: ViewState; gift: Gift | null; onPick: (g: Gift | null) => void }) {
+  const [open, setOpen] = useState(false);
+  // UI V4 (V2): in a life, Give unlocks in Episode 4.
+  if (!verbOn(v, 'give')) return null;
+  if (open)
+    return (
+      <GiftPicker
+        v={v}
+        gift={gift}
+        onPick={(g) => {
+          onPick(g);
+          setOpen(false);
+        }}
+      />
+    );
   return (
-    <button type="button" aria-pressed={!!gift} onClick={onOpen} className={`flex min-h-[48px] w-full items-center gap-2 rounded-2xl px-3 text-start ${gift ? 'bg-spot text-onspot' : 'bg-card'}`} data-gift-bar>
+    <button type="button" aria-expanded={false} onClick={(e) => { e.stopPropagation(); setOpen(true); }} className={`flex min-h-[44px] w-full items-center gap-2 rounded-2xl px-3 text-start ${gift ? 'bg-spot text-onspot' : 'bg-card'}`} data-gift-bar>
       <span aria-hidden className="h-show text-lead">+</span>
       <span className="flex-1 text-small font-semibold leading-tight">
-        <span className="font-bold">{t('play.gift.title')}:</span> {gift ? t('play.gift.picked', { n: gift.amount, name: shortName(v, gift.to) }) : t('play.gift.desc', { max: Math.max(...PLAY.GIFT_AMOUNTS) })}
+        {gift ? (
+          <>
+            <span className="font-bold">{t('play.gift.title')}:</span> {t('play.gift.picked', { n: gift.amount, name: shortName(v, gift.to) })}
+          </>
+        ) : (
+          t('play.gift.row')
+        )}
       </span>
-      {note && gift && <span className="text-small font-bold">{note}</span>}
     </button>
   );
 }
 
-/** D-143: "Mission +6" for a preview of at least one point either way, else nothing. */
-export function previewText(x: number | null | undefined): string | null {
-  if (x === null || x === undefined || !Number.isFinite(x) || Math.abs(x) < 1) return null;
-  return t('play.move.preview', { n: signed(Math.round(x)) });
-}
-
-/** D-142: pick a gift: one other contestant, one amount, or none. Each option shows its mission preview. */
-export function GiftSheet({ v, gift, onPick, onClose, previews }: { v: ViewState; gift: Gift | null; onPick: (g: Gift | null) => void; onClose: () => void; previews?: Record<string, Record<number, number>> }) {
-  const pv = previews ? { gift: previews } : lv3(v).preview;
+/**
+ * D-142: pick a gift: one other contestant, one amount, or none. UI V4 (V1): in place on the screen, two
+ * short rows (who, then how much), so it fits under the main choice.
+ */
+export function GiftPicker({ v, gift, onPick }: { v: ViewState; gift: Gift | null; onPick: (g: Gift | null) => void }) {
+  const others = v.players.filter((p) => p.id !== v.viewer);
+  const [to, setTo] = useState<string>(gift?.to ?? others[0]?.id ?? '');
   return (
-    <Sheet title={t('play.gift.sheet')} closeLabel={t('play.gift.close')} onClose={onClose}>
-      <p className="text-small">{t('play.gift.how')}</p>
-      <ul className="space-y-2" data-gift-sheet>
-        {v.players
-          .filter((p) => p.id !== v.viewer)
-          .map((p) => (
-            <li key={p.id} className="flex items-center gap-2 rounded-2xl bg-card px-3 py-2">
-              <Face v={v} p={p} size={28} />
-              <span className="flex-1 truncate text-small font-bold">{shortName(v, p.id)}</span>
-              {PLAY.GIFT_AMOUNTS.map((a) => {
-                const on = gift?.to === p.id && gift.amount === a;
-                const note = previewText(pv?.gift[p.id]?.[a]);
-                return (
-                  <button key={a} type="button" aria-pressed={on} onClick={() => onPick({ to: p.id, amount: a })} className={`min-h-[44px] min-w-[64px] rounded-xl px-2 text-small font-bold ${on ? 'bg-spot text-onspot' : 'bg-paper'}`} data-gift={`${p.id}:${a}`}>
-                    {t('play.gift.amount', { n: a })}
-                    {note && <span className="block text-small font-semibold">{note}</span>}
-                  </button>
-                );
-              })}
-            </li>
-          ))}
-      </ul>
-      <button type="button" className="btn-ghost w-full" onClick={() => onPick(null)} data-gift="none">
-        {t('play.gift.none')}
-      </button>
-    </Sheet>
-  );
-}
-
-/** The Bar's result, its own beat before the wheel. */
-export function BarBeat({ v, next }: { v: ViewState; next: () => void }) {
-  const lv = lv3(v);
-  const r = lv.rounds[lv.rounds.length - 1];
-  const b = r.bar!;
-  // D-133: more than one applicant can be barred in a round.
-  const names = (xs: string[]) => xs.map((x) => shortName(v, x)).join(t('play.barBeat.and'));
-  const one = b.barred.length === 1 ? b.barred[0] : null;
-  const head = !b.barred.length
-    ? t('play.barBeat.none')
-    : one
-      ? t(one === v.viewer ? 'play.barBeat.barredYou' : 'play.barBeat.barred', { name: nameOf(v, one) })
-      : t('play.barBeat.barredMany', { names: names(b.barred) });
-  const r1 = b.refused.length === 1 ? b.refused[0] : null;
-  const sub = !b.barred.length
-    ? ''
-    : !b.refused.length
-      ? t('play.barBeat.notApplied')
-      : r1
-        ? t(r1 === v.viewer ? 'play.barBeat.refusedYou' : 'play.barBeat.refused', { name: shortName(v, r1) })
-        : t('play.barBeat.refusedMany', { names: names(b.refused) });
-  // AI playtest (T1): a barred contestant who did not apply this round is named too, so two bars never read as one.
-  const idle = b.refused.length ? b.barred.filter((x) => !b.refused.includes(x)) : [];
-  const subIdle = idle.length ? ` ${t('play.barBeat.notAppliedNamed', { names: names(idle) })}` : '';
-  // User review fix 4: the Bar on the stage. BARRED lands on the barred (dimmed), each member wears a vote mark.
-  const cue: CastCue = {
-    stamps: Object.fromEntries(b.barred.map((x) => [x, { text: t('play.cast.barred'), tone: 'stamp' as const }])),
-    dim: b.barred,
-    // Fix 3: a small "voted" mark on each member who voted to bar (who they barred is the BARRED stamp).
-    marks: Object.fromEntries(b.members.filter((m) => b.votes[m]).map((m) => [m, t('play.cast.voted')])),
-    expr: Object.fromEntries(b.barred.map((x) => [x, 'shocked' as const])),
-  };
-  return (
-    <Stage v={v} cast={cue} onTap={next} footer={<AutoButton onClick={next}>{t('play.stage.tap')}</AutoButton>}>
-      <div className="my-auto text-center" data-bar={b.barred.join(' ') || 'none'}>
-        <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.barBeat.label')}</p>
-        <p className={`h-show mt-2 text-title leading-tight ${b.barred.length ? 'text-stamp' : 'text-spot'}`}>{head}</p>
-        {sub && <p className="mt-2 text-body">{sub}{subIdle}</p>}
-        <p className="mt-3 text-small text-soft">{t('play.barBeat.rule')}</p>
+    <section className="rounded-2xl border-2 border-spot bg-card p-2" aria-labelledby="gift-title" onClick={(e) => e.stopPropagation()} data-gift-sheet>
+      <p id="gift-title" className="text-small font-bold">
+        {t('play.gift.sheet')} <span className="font-normal text-soft">{t('play.gift.how')}</span>
+      </p>
+      <div className="mt-1 grid gap-1" style={{ gridTemplateColumns: `repeat(${others.length}, minmax(0, 1fr))` }} role="group" aria-label={t('play.gift.who')}>
+        {others.map((p) => (
+          <button key={p.id} type="button" aria-pressed={to === p.id} onClick={() => setTo(p.id)} className={`flex min-h-[44px] items-center justify-center gap-1 rounded-xl px-1 text-small font-bold ${to === p.id ? 'bg-spot text-onspot' : 'bg-paper'}`} data-gift-to={p.id}>
+            <Face v={v} p={p} size={24} ring={false} />
+            <span className="truncate">{shortName(v, p.id)}</span>
+          </button>
+        ))}
       </div>
-    </Stage>
+      <div className="mt-1 grid grid-cols-3 gap-1">
+        {PLAY.GIFT_AMOUNTS.map((a) => {
+          const on = gift?.to === to && gift.amount === a;
+          return (
+            <button key={a} type="button" aria-pressed={on} onClick={() => onPick({ to, amount: a })} className={`min-h-[44px] rounded-xl px-1 text-small font-bold ${on ? 'bg-spot text-onspot' : 'bg-paper'}`} data-gift={`${to}:${a}`}>
+              {t('play.gift.give', { n: a })}
+            </button>
+          );
+        })}
+        <button type="button" className="min-h-[44px] rounded-xl bg-paper px-1 text-small font-bold" onClick={() => onPick(null)} data-gift="none">
+          {t('play.gift.none')}
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -509,21 +451,6 @@ export function RegimeScreen({ v }: { v: ViewState }) {
   );
 }
 
-/** "The vote is in", the beat before round 3. */
-export function VoteInBeat({ v, next }: { v: ViewState; next: () => void }) {
-  const lv = lv3(v);
-  return (
-    <Stage v={v} onTap={next} footer={<AutoButton onClick={next}>{t('play.stage.tap')}</AutoButton>}>
-      <div className="my-auto text-center" data-vote>
-        <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.stage.voteIn')}</p>
-        <p className="h-show mt-2 text-hero leading-tight text-spot">{regimeName(lv.regime)}</p>
-        <p className="mt-4 text-small text-soft"><span className="font-bold">{t('play.cast.votes')}</span> {v.players.map((p) => `${shortName(v, p.id)} ${regimeName(lv.regimeVotes![p.id])}`).join(' · ')}</p>
-        {lv.regimeTie && <p className="mt-1 text-small">{t('play.l1.votes.tie')}</p>}
-      </div>
-    </Stage>
-  );
-}
-
 const WHEEL_R = 46;
 function slice(share: number): string {
   const a = Math.min(0.9999, share) * 2 * Math.PI;
@@ -568,25 +495,9 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
   const h = hist[hist.length - 1];
   // D-142: gifts land after the wheel; the change and the bank include them.
   const change = r.W[me] + (r.giftNet?.[me] ?? 0) - (v.play!.l3?.livingCost ?? PLAY.LIVING_COST);
-  const gifts = Object.entries(r.gifts ?? {});
-  const giftLine = gifts.length
-    ? [
-        // Sentences to you stay in the second person (D-146).
-        ...gifts.map(([from, g]) =>
-          from === me ? t('play.gift.youGave', { to: shortName(v, g.to), n: g.amount }) : t(g.to === me ? 'play.gift.gaveYou' : 'play.gift.gave', { from: shortName(v, from), to: shortName(v, g.to), n: g.amount }),
-        ),
-      ].join(' ')
-    : '';
-  const stress = h.stress[me] ?? 0;
+  const giftLine = giftLines(v, r.gifts);
   const from = h.banks[me] - change;
   const ch = r.choices[me];
-  let cost: string;
-  if (r.regime !== 'VOL') cost = t('play.stage.costMandate', { T: coins(r.T ?? 0) });
-  else if (mine.kind === 'HIT') cost = t('play.stage.costLoss', { loss: coins(mine.lost) });
-  else if (ch.buy && r.premium !== null && ch.gym) cost = t('play.stage.costCoverGym', { p: coins(r.premium + n.gymCost) });
-  else if (ch.buy && r.premium !== null) cost = t('play.stage.costCover', { p: coins(r.premium) });
-  else if (ch.gym) cost = t('play.stage.costGym', { c: n.gymCost });
-  else cost = t('play.stage.costNone');
   // What you chose this round, next to the money it made (playtest note).
   const bought = ch.buy && r.premium !== null;
   const refused = !!r.applied?.[me] && !bought;
@@ -641,7 +552,7 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
     >
       <p className="text-center text-small font-bold uppercase tracking-wider text-soft">{t('play.stage.resultsOf', { r: v.round })}</p>
       <h1 className="h-show mt-1 text-center text-title leading-tight">{t('play.l3.wheel')}</h1>
-      <div className="relative mx-auto mt-1 h-36 w-36">
+      <div className={`relative mx-auto mt-1 ${last ? 'h-20 w-20' : 'h-28 w-28'}`}>
         <svg viewBox="0 0 100 100" className="h-full w-full" aria-hidden>
           <motion.g style={{ originX: '50px', originY: '50px' }} initial={{ rotate: 0 }} animate={{ rotate: done ? final : off ? final : [0, final] }} transition={{ duration: done || off ? 0 : spinMs / 1000, ease: 'easeOut' }}>
             <circle cx="50" cy="50" r={WHEEL_R} className="fill-good/80" />
@@ -667,23 +578,27 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
               {t(`play.stage.chose.${chose}`)}
             </span>
           </p>
-          <p className="mt-1 text-small text-soft">
-            {t('play.stage.bankLine', { from: coins(from), to: coins(h.banks[me]) })} {t('play.bank.pay', { w: coins(v.play!.l3?.baseIncome ?? 0) })} {cost} {t('play.bank.living', { c: v.play!.livingCost })}
-          <MoneyLedger v={v} /></p>
-          <CallResults v={v} />
-          {stress > 0 && (
-            <p className="mt-1 text-small font-bold text-stamp" data-debt>
-              {t('play.stage.debtCost', { n: Math.round(stress) })}
+          {/* UI V4 (V3): what each of your choices did, then luck, then everyone else; it adds up to the change. */}
+          {/* V5 N3: the Bar's result is a line here, not a screen of its own. */}
+          {r.bar && (
+            <p className="mt-1 text-small font-semibold" data-bar={r.bar.barred.join(' ') || 'none'}>
+              {r.bar.barred.length ? t(r.bar.barred.includes(me) ? 'play.carry.barredYou' : 'play.carry.barred', { names: r.bar.barred.map((x) => shortName(v, x)).join(t('play.barBeat.and')) }) : t('play.barBeat.none')}
             </p>
           )}
-          {giftLine && (
-            <p className="mt-1 text-small" data-gifts>
-              {giftLine}
-            </p>
+          {/* UI V4 (V3): what your choices did; V5 N3: before the last round it shows on the next round's first screen. */}
+          {last && (
+            <div className="text-start">
+              <ChoicesDid v={v} />
+            </div>
           )}
-          <div className="mt-3 text-start">
-            <Bubble who={voice.who} text={voice.text} host={voice.host} bot={voice.bot} />
-          </div>
+          <CallResults v={v} quiet />
+          {giftLine && <span className="sr-only" data-gifts>{giftLine}</span>}
+          {!voice.host && (
+            <div className="mt-2 text-start">
+              <Bubble who={voice.who} text={voice.text} host={voice.host} bot={voice.bot} />
+            </div>
+          )}
+          {voice.host && <Bubble who={voice.who} text={voice.text} host />}
         </div>
       ) : (
         <p className="mt-6 text-center text-small text-soft">{t('play.cast.spinning')}</p>
@@ -692,74 +607,14 @@ export function WheelBeat({ v, next, last }: { v: ViewState; next: () => void; l
   );
 }
 
-/** Whether this round's results get the "breaking news" price beat (Play spec redesign, beat c). */
-export function hasPriceBeat(v: ViewState): boolean {
-  const lv = lv3(v);
-  const r = lv.rounds[lv.rounds.length - 1];
-  return !!r && r.regime === 'VOL' && r.premium !== null && v.round < lastRound(v);
-}
-
-/** Beat (c): SafeHands' price change as its own full screen, with one line on why and one voice. */
-export function PriceBeat({ v, next, onReally }: { v: ViewState; next: () => void; onReally: () => void }) {
-  const lv = lv3(v);
-  const r = lv.rounds[lv.rounds.length - 1];
-  const from = r.listPrice ?? r.premium!;
-  const to = r.nextPremium;
-  const kind = to === null ? 'Gone' : r.launch ? 'Launch' : to > from + 1e-9 ? 'Up' : to < from - 1e-9 ? 'Down' : 'Same';
-  const change = to === null ? 0 : (to - from) / from;
-  const voteNext = v.round === PLAY.L3.VOLUNTARY_ROUNDS;
-  // UI V3 (U2): a sting when the price jumps or the insurer leaves.
-  useEffect(() => {
-    if (to === null || to > from * 1.1) sfx('sting');
-  }, []);
-  return (
-    <Stage
-      v={v}
-      bar={false}
-      tone="breaking"
-      onTap={next}
-      footer={
-        <AutoButton dark animMs={900} onClick={next}>
-          {voteNext ? t('play.stage.toVote') : t('play.stage.nextRound', { r: v.round + 1 })}
-        </AutoButton>
-      }
-    >
-      <div className="flex items-center justify-between">
-        <span className="rounded-full bg-onspot px-2 py-0.5 text-small font-bold uppercase tracking-wider text-spot">{t('play.stage.breaking')}</span>
-        <span className="text-small font-semibold">{t('play.l3.ticker')}</span>
-      </div>
-      <div className="my-auto">
-        <p className="text-small font-bold uppercase tracking-wider">{t('play.stage.priceOf')}</p>
-        <p className="mt-1 flex items-baseline gap-3" data-price>
-          {(to === null || Math.round(to) !== Math.round(from)) && <span className="h-show text-hero line-through opacity-60">{Math.round(from)}</span>}
-          <span className="h-show text-hero leading-none">{to === null ? t('play.stage.closed') : <RollNumber from={from} to={to} />}</span>
-        </p>
-        {to !== null && (
-          <span className="mt-2 inline-block rounded-md bg-onspot px-2 py-0.5 text-small font-bold text-spot">
-            {kind === 'Same' || (kind === 'Launch' && Math.abs(to - from) < 1e-9) ? t('play.stage.same') : t(to > from ? 'play.stage.up' : 'play.stage.down', { p: pct(Math.abs(change)) })}
-          </span>
-        )}
-        <p className="h-show mt-4 text-title leading-tight">{t(`play.stage.head${kind}`)}</p>
-        <p className="mt-2 text-small">{t(`play.stage.sub${kind}`)}</p>
-        <div className="mt-4">
-          <figure className="flex items-end gap-2" data-voice="host">
-            <span aria-hidden className="shrink-0"><DashHost expr="worried" size={64} /></span>
-            <p className="flex-1 rounded-2xl rounded-bl-sm bg-onspot px-3 py-2 text-small text-spot"><span className="font-bold">Dash:</span> {hostLine(`price${kind}`, pick(v, `price-${kind}`, 6))}</p>
-          </figure>
-        </div>
-        <button
-          type="button"
-          className="mt-3 text-small font-semibold underline"
-          onClick={(e) => {
-            e.stopPropagation();
-            onReally();
-          }}
-        >
-          {t('play.really.button')}
-        </button>
-      </div>
-    </Stage>
-  );
+/** This round's gifts as plain lines ("Chet gave Dot 5."); sentences to you stay in the second person (D-146). */
+export function giftLines(v: ViewState, gifts: Record<string, Gift> | undefined): string {
+  const me = v.viewer;
+  return Object.entries(gifts ?? {})
+    .map(([from, g]) =>
+      from === me ? t('play.gift.youGave', { to: shortName(v, g.to), n: g.amount }) : t(g.to === me ? 'play.gift.gaveYou' : 'play.gift.gave', { from: shortName(v, from), to: shortName(v, g.to), n: g.amount }),
+    )
+    .join(' ');
 }
 
 /** E5 fix: a list of reveal stamps where every LIE stands out. */

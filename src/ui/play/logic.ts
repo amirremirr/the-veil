@@ -36,7 +36,8 @@ export function wheelSlip(variant: number): string {
   return wheel.slips[variant % wheel.slips.length];
 }
 
-export const missionName = (c: ValuesCard) => t(`play.missions.${c}.name`);
+/** V5 N1: the name of a principle (Study's values cards; in Play only the bots' traits and "You played like"). */
+export const principleName = (c: ValuesCard) => t(`play.principles.${c}.name`);
 
 /** The event card's name, story and one-line effect, with this episode's numbers filled in. */
 export function eventText(level: LevelId, id: string, life = false): { name: string; text: string; effect: string } {
@@ -179,13 +180,16 @@ export function bankLineText(v: ViewState): string | null {
   const from = prev ? prev.banks[v.viewer] : pl.startingBank;
   const to = last.banks[v.viewer];
   // Loop cycle 2: from the rounded banks, so the line adds up exactly as shown.
-  const money = Math.round(to) - Math.round(from) + pl.livingCost;
+  // V5 (D-213): a Worrier's interest is its own line after the living costs.
+  const interest = -(last.ledger?.[v.viewer] ?? []).filter((l) => l.k === 'interest').reduce((x, l) => x + l.n, 0);
+  const money = Math.round(to) - Math.round(from) + pl.livingCost + Math.round(interest);
   const sign = (x: number) => `${x >= 0 ? '+' : ''}${Math.round(x)}`;
-  const line = t('play.bank.round', { from: Math.round(from), to: Math.round(to), w: sign(money), c: pl.livingCost });
+  const base = t('play.bank.round', { from: Math.round(from), to: Math.round(to), w: sign(money), c: pl.livingCost });
+  const line = interest ? `${base} ${t('play.bank.interest', { n: Math.round(interest) })}` : base;
   // Loop cycle 16: the Second Chance coins land before Episode 4's first round, so that round's line includes them.
   const cb = pl.comeback;
   const firstOfEp4 = v.levelIndex === 4 && hist.filter((h) => h.level === 4).length === 1;
-  return firstOfEp4 && cb && cb.pid === v.viewer && cb.took === 'COINS' ? `${line} ${t('play.bank.comeback', { c: PLAY.COMEBACK.COINS })}` : line;
+  return firstOfEp4 && cb && cb.pid === v.viewer ? `${line} ${t('play.bank.comeback', { c: PLAY.SECOND_CHANCE_COINS })}` : line;
 }
 
 /**
@@ -224,17 +228,23 @@ export function ledgerRows(v: ViewState): { from: number; to: number; money: Led
   const lifeFinale = v.mode === 'LIFE' && v.levelIndex === 5;
   const shown = roundToTotal(lines.map((x) => x.n), to - from);
   const money = lines.map((x, i) => ({ key: x.k === 'income' && lifeFinale ? 'incomeFinale' : x.k, n: shown[i] })).filter((r) => r.n !== 0 || r.key === 'living');
-  const a = (prev?.parts ?? rec.partsStart)?.[v.viewer];
-  const b = rec.parts?.[v.viewer];
-  let score: LedgerRow[] = [];
-  let scoreFrom = 0;
-  let scoreTo = 0;
-  if (a && b) {
-    scoreFrom = Math.round(a.bank + a.mission + a.debt + a.guess);
-    scoreTo = Math.round(b.bank + b.mission + b.debt + b.guess);
-    const d = [b.bank - a.bank, b.mission - a.mission, b.debt - a.debt, b.guess - a.guess];
-    const r = roundToTotal(d, scoreTo - scoreFrom);
-    score = ['bank', 'mission', 'debt', 'guess'].map((key, i) => ({ key, n: r[i] })).filter((x) => x.n !== 0);
-  }
-  return { from, to, money, score, scoreFrom, scoreTo };
+  // V5 N1: the score is the bank (plus Second Chance points), so the money lines are the whole story.
+  const score: LedgerRow[] = [];
+  return { from, to, money, score, scoreFrom: 0, scoreTo: 0 };
+}
+
+/**
+ * UI V4 (V2): in a life, the player's verbs unlock one at a time. Episode 1 is vote and peek only; claims
+ * come in Episode 2, "Call it" in Episode 3, Give in Episode 4. A single episode has everything. Presentation
+ * only: where a verb is hidden the human simply doesn't use it (no claim, no call, no gift); bots still do.
+ */
+export type Verb = 'claim' | 'call' | 'give';
+export const VERB_FROM: Record<Verb, number> = { claim: 2, call: 3, give: 4 };
+export function verbOn(v: Pick<ViewState, 'mode' | 'levelIndex'>, verb: Verb): boolean {
+  return v.mode !== 'LIFE' || v.levelIndex >= VERB_FROM[verb];
+}
+/** The verb a life's episode unlocks, if any. */
+export function newVerb(v: Pick<ViewState, 'mode' | 'levelIndex'>): Verb | null {
+  if (v.mode !== 'LIFE') return null;
+  return (Object.keys(VERB_FROM) as Verb[]).find((k) => VERB_FROM[k] === v.levelIndex) ?? null;
 }

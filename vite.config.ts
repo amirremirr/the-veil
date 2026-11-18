@@ -18,7 +18,7 @@ export default defineConfig({
   plugins: [react()],
   define: { __RULES_COMMIT__: JSON.stringify(commit()) },
   test: {
-    include: ['tests/engine/**/*.test.ts', 'tests/server/**/*.test.ts'],
+    include: ['tests/engine/**/*.test.ts', 'tests/server/**/*.test.ts', 'tests/ui/**/*.test.ts'],
     environment: 'node',
   },
 });

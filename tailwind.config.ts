@@ -21,6 +21,9 @@ export default {
         spot: token('spot'),
         // Text on spotlight yellow: always stage blue, in light and dark (D-104).
         onspot: token('onspot'),
+        // V5 N2: Play's main action colour (studio orange) and the text on it.
+        action: token('action'),
+        onaction: token('onaction'),
       },
       fontFamily: {
         display: ['Fraunces', 'Georgia', 'serif'],

@@ -1,25 +1,23 @@
 // Play Episode 1, "Born" (v2 Section 4, D-152): claim your vote, vote before you know your income, and in
 // round 2 the Peek. One beat per screen, as Episode 3. Every string comes from play.l1.*.
 import { useState } from 'react';
-import { useMotionOff } from '../components/common';
-import { motion } from 'framer-motion';
 import type { ViewState } from '../../engine/types';
 import type { PrincipleId } from '../../engine/tax';
 import { PRINCIPLES } from '../../engine/tax';
-import type { P1Preview, P1Round } from '../../engine/play/ep1';
+import type { P1Round } from '../../engine/play/ep1';
 import { CLAIMABLE } from '../../engine/play/ep1';
 import { useStore } from '../store';
 import { t } from '../i18n';
-import { MoneyLedger } from './Ledger';
+import { ChoicesDid } from './Choices';
+import type { CastCue } from './Cast';
 import { CallChips, CallResults, claimantsNow } from './Call';
 import { coins, pct } from '../labels';
 import { nameOf, shortName } from '../game';
-import type { CastCue } from './Cast';
 import { Chips, Details, StagedReveal, peakMark, spotlightSteps } from './Peak';
 import { Coach } from './Coach';
-import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
-import { GiftBar, GiftSheet, Tile, previewText } from './Episode3';
-import { hostLine, pick, timesWord, bankLineText, ledgerRows } from './logic';
+import { BigButton, Bubble, Face, Stage } from './OnAir';
+import { GiftBar, Tile, giftLines } from './Episode3';
+import { hostLine, pick, timesWord, ledgerRows } from './logic';
 
 type Gift = { to: string; amount: number };
 
@@ -30,28 +28,10 @@ export type L1View = {
   myIncome?: number;
   deck: number[];
   peekCost: number;
-  preview?: P1Preview;
 };
 
 const lv1 = (v: ViewState) => v.levelView as L1View;
 export const ruleName = (p: string) => t(`play.l1.rule.${p}.name`);
-
-/** Before the first claim: what you know (nothing) and the deck. */
-export function Unborn({ v, next }: { v: ViewState; next: () => void }) {
-  const lv = lv1(v);
-  return (
-    <Stage v={v} onTap={next} footer={<AutoButton animMs={2500} onClick={next}>{t('play.stage.tap')}</AutoButton>}>
-      <div className="my-auto" data-mycards>
-        <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l1.unborn.label')}</p>
-        <p className="h-show mt-2 text-hero leading-tight text-spot">{t('play.l1.unborn.title')}</p>
-        <p className="mt-3 text-body">{t('play.l1.unborn.deck', { a: coins(lv.deck[0]), b: coins(lv.deck[1]), c: coins(lv.deck[2]), d: coins(lv.deck[3]) })}</p>
-        <p className="mt-3 text-body">{t('play.l1.unborn.rules')}</p>
-        <p className="mt-2 text-small">{t('play.l1.unborn.list')}</p>
-        <p className="mt-3 text-small">{t('play.l1.unborn.living', { c: v.play!.livingCost })}</p>
-      </div>
-    </Stage>
-  );
-}
 
 /** Round 2: pay to see your income first. Everyone will see that you peeked. */
 export function PeekScreen({ v }: { v: ViewState }) {
@@ -65,7 +45,7 @@ export function PeekScreen({ v }: { v: ViewState }) {
       <p className="mt-2 text-small font-semibold">{t('play.l1.peek.public')}</p>
       <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
         <Tile on={x === true} title={t('play.l1.peek.yes')} desc={t('play.l1.peek.yesDesc', { c: lv.peekCost })} onClick={() => setX(true)} />
-        <Tile on={x === false} title={t('play.l1.peek.no')} desc={t('play.l1.peek.noDesc')} onClick={() => setX(false)} />
+        <Tile on={x === false} title={t('play.l1.peek.no')} desc={t('play.l1.peek.noDesc', { c: lv.peekCost })} onClick={() => setX(false)} />
       </div>
     </Stage>
   );
@@ -82,8 +62,8 @@ export function ClaimScreen1({ v }: { v: ViewState }) {
   const [x, setX] = useState<string | null>(null);
   return (
     <Stage v={v} footer={<BigButton disabled={!x} onClick={() => act(x)}>{t('play.claim.submit')}</BigButton>}>
-      <Coach id="claim" />
       <h1 className="h-show text-hero leading-tight">{t('play.claim.title')}</h1>
+      <Coach id="claim" />
       <div className="mt-3 rounded-2xl bg-card p-3">
         <p className="h-show text-title leading-tight">{knowLine(v)}</p>
       </div>
@@ -98,80 +78,27 @@ export function ClaimScreen1({ v }: { v: ViewState }) {
   );
 }
 
-/** The move: vote for a rule (secret), and a gift. Each rule shows its mission preview. */
+/** The move: vote for a rule (secret), and a gift. */
 export function VoteScreen1({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
   const lv = lv1(v);
   const [vote, setVote] = useState<PrincipleId | null>(null);
   const [gift, setGift] = useState<Gift | null>(null);
-  const [giving, setGiving] = useState(false);
   const [call, setCall] = useState<string | null>(null);
-  const pv = lv.preview;
   return (
-    <Stage v={v} footer={<BigButton disabled={!vote} onClick={() => act({ vote, gift, call })}>{t('play.l1.vote.submit')}</BigButton>}>
+    <Stage v={v} cast={{ marks: Object.fromEntries(lv.peeked.map((id) => [id, t('play.l1.peekedTag')])) }} footer={<BigButton disabled={!vote} onClick={() => act({ vote, gift, call })}>{t('play.l1.vote.submit')}</BigButton>}>
+      <h1 className="h-show text-title leading-tight">{t('play.l1.vote.title')}</h1>
+      <p className="text-small font-semibold leading-snug">{knowLine(v)}</p>
       <Coach id="move" />
-      <p className="text-body font-semibold leading-snug">{knowLine(v)}</p>
-      {lv.peeked.length > 0 && <p className="text-small">{t('play.l1.peekers', { names: lv.peeked.map((id) => shortName(v, id)).join(', ') })}</p>}
+
       <div className="mt-2 grid grid-cols-2 gap-2" role="group" aria-label={t('play.l1.vote.title')}>
         {PRINCIPLES.map((p) => (
-          <Tile key={p} on={vote === p} title={ruleName(p)} desc={t(`play.l1.rule.${p}.desc`)} note={previewText(pv?.vote[p])} onClick={() => setVote(p)} />
+          <Tile key={p} on={vote === p} title={ruleName(p)} desc={t(`play.l1.rule.${p}.desc`)} onClick={() => setVote(p)} />
         ))}
       </div>
       <CallChips v={v} claimants={claimantsNow(v)} value={call} onPick={setCall} />
       <div className="mt-auto pt-2">
-        <GiftBar v={v} gift={gift} note={gift ? previewText(pv?.gift[gift.to]?.[gift.amount]) : null} onOpen={() => setGiving(true)} />
-      </div>
-      {giving && (
-        <GiftSheet
-          v={v}
-          gift={gift}
-          previews={pv?.gift}
-          onPick={(g) => {
-            setGift(g);
-            setGiving(false);
-          }}
-          onClose={() => setGiving(false)}
-        />
-      )}
-    </Stage>
-  );
-}
-
-/** Results beat 1: votes flip one at a time (all at once under reduced motion), with broken-promise stamps. */
-export function VotesBeat({ v, next }: { v: ViewState; next: () => void }) {
-  const lv = lv1(v);
-  const r = lv.rounds[lv.rounds.length - 1];
-  const off = useMotionOff();
-  // UI V3 (U1): a broken promise lands as a stamp on the promise breaker.
-  const cue: CastCue = { stamps: {}, expr: {} };
-  for (const p of v.players) {
-    const c = r.claims[p.id];
-    if (c && c !== 'SILENT' && c !== r.votes[p.id]) {
-      cue.stamps![p.id] = { text: t('play.cast.broke'), tone: 'stamp' };
-      cue.expr![p.id] = 'smug';
-    } else if (c && c !== 'SILENT') cue.stamps![p.id] = { text: t('play.cast.kept'), tone: 'good' };
-  }
-  return (
-    <Stage v={v} cast={cue} onTap={next} footer={<AutoButton animMs={1400} onClick={next}>{t('play.stage.tap')}</AutoButton>}>
-      <div className="my-auto" data-vote>
-        <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l1.votes.label', { r: v.round })}</p>
-        <h1 className="h-show mt-1 text-hero leading-tight text-spot">{ruleName(r.winner)}</h1>
-        <p className="mt-1 text-small">{t('play.l1.votes.tax', { t: pct(r.t) })}{r.tie ? ` ${t('play.l1.votes.tie')}` : ''}</p>
-        <ul className="mt-3 space-y-1.5">
-          {v.players.map((p, k) => {
-            const c = r.claims[p.id];
-            const broke = c && c !== 'SILENT' && c !== r.votes[p.id];
-            return (
-              <motion.li key={p.id} className="flex items-center gap-2 rounded-xl bg-card px-2 py-1.5" initial={off ? false : { rotateX: 90, opacity: 0 }} animate={{ rotateX: 0, opacity: 1 }} transition={{ delay: off ? 0 : 0.35 * k, duration: off ? 0 : 0.3 }}>
-                <Face v={v} p={p} size={24} />
-                <span className="w-16 truncate text-small font-bold">{shortName(v, p.id)}</span>
-                <span className="flex-1 text-small">{ruleName(r.votes[p.id])}</span>
-                {r.peeked.includes(p.id) && <span className="text-small font-bold">{t('play.l1.peekedTag')}</span>}
-                {broke && <span className="rounded bg-stamp px-1 text-small font-bold text-onspot">{t('play.l1.votes.broke', { rule: ruleName(c) })}</span>}
-              </motion.li>
-            );
-          })}
-        </ul>
+        <GiftBar v={v} gift={gift} onPick={setGift} />
       </div>
     </Stage>
   );
@@ -186,10 +113,19 @@ export function IncomesBeat({ v, next, last }: { v: ViewState; next: () => void;
   // G1: your own "after the rule" comes from the rounded ledger, so it matches the bank line to the coin.
   const lr = ledgerRows(v);
   const myPost = lr ? String(lr.money.filter((x) => x.key === 'income' || x.key === 'rule').reduce((a, x) => a + x.n, 0)) : coins(r.post[me]);
+  // V5 N3: the vote's result is on this screen too (the rule that won, kept and broken promises as stamps).
+  const cue: CastCue = { stamps: {}, expr: {} };
+  for (const p of v.players) {
+    const c = r.claims[p.id];
+    if (c && c !== 'SILENT' && c !== r.votes[p.id]) {
+      cue.stamps![p.id] = { text: t('play.cast.broke'), tone: 'stamp' };
+      cue.expr![p.id] = 'smug';
+    } else if (c && c !== 'SILENT') cue.stamps![p.id] = { text: t('play.cast.kept'), tone: 'good' };
+  }
   return (
-    <Stage v={v} onTap={next} footer={<BigButton beatNext={!last} onClick={next}>{last ? t('play.l1.toReveal') : t('play.stage.nextRound', { r: v.round + 1 })}</BigButton>}>
+    <Stage v={v} cast={cue} onTap={next} footer={<BigButton beatNext={!last} onClick={next}>{last ? t('play.l1.toReveal') : t('play.stage.nextRound', { r: v.round + 1 })}</BigButton>}>
       <div className="my-auto" data-outcome>
-        <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l1.inc.label')}</p>
+        <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l1.inc.won', { rule: ruleName(r.winner), t: pct(r.t) })}</p>
         <h1 className="h-show mt-1 text-title leading-tight text-spot">{t('play.cast.l1keep', { w: myPost })}</h1>
         <p className="text-small">{t('play.cast.l1before', { y: coins(r.incomes[me]) })}</p>
         <ul className="mt-3 space-y-1.5">
@@ -202,10 +138,11 @@ export function IncomesBeat({ v, next, last }: { v: ViewState; next: () => void;
             </li>
           ))}
         </ul>
-        {r.peeked.includes(me) && <p className="mt-2 text-small">{t('play.l1.inc.peekCost', { c: lv.peekCost })}</p>}
         {r.inheritance && <p className="mt-2 text-small">{t('play.l1.inc.inherit', { name: shortName(v, r.inheritance) })}</p>}
-        {bankLineText(v) && <p className="mt-2 text-small font-semibold" data-bankline>{bankLineText(v)}<MoneyLedger v={v} /></p>}
-        <CallResults v={v} />
+        {/* UI V4 (V3): what your choices did; V5 N3: before the last round it shows on the next round's first screen. */}
+        {last && <ChoicesDid v={v} />}
+        {giftLines(v, r.gifts) && <p className="mt-1 text-small" data-gifts>{giftLines(v, r.gifts)}</p>}
+        <CallResults v={v} quiet />
       </div>
     </Stage>
   );

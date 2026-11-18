@@ -2,21 +2,20 @@
 // donations, vote claims, and the ballots landing one at a time. Every string comes from play.l5.*.
 import { useState } from 'react';
 import type { ViewState } from '../../engine/types';
-import type { Amend5, Lobby5, P5Preview } from '../../engine/play/ep5';
+import type { Amend5, Lobby5 } from '../../engine/play/ep5';
 import { ALL_CONSTITUTIONS, type Constitution } from '../../engine/levels/level5';
 import { L5 } from '../../engine/params';
 import { PLAY } from '../../engine/play/params';
 import { useStore } from '../store';
 import { t } from '../i18n';
-import { MoneyLedger } from './Ledger';
+import { ChoicesDid } from './Choices';
 import { CallChips, CallResults } from './Call';
 import { coins, pct } from '../labels';
 import { nameOf, shortName } from '../game';
 import type { CastCue } from './Cast';
 import { Details, StagedReveal } from './Peak';
 import { AutoButton, BigButton, Bubble, Face, Stage } from './OnAir';
-import { previewText } from './Episode3';
-import { timesWord, bankLineText } from './logic';
+import { timesWord } from './logic';
 
 export type L5View = {
   veil?: Record<string, Constitution>;
@@ -32,10 +31,10 @@ export type L5View = {
   myFair1?: number;
   myFair2?: number;
   W?: Record<string, number>;
+  whole?: { before: Record<string, number>; after: Record<string, number>; base: Record<string, number>; rule: Constitution };
   leaked: boolean;
   maxDonation: number;
   need: number;
-  preview?: P5Preview;
 };
 
 const lv5 = (v: ViewState) => v.levelView as L5View;
@@ -72,9 +71,7 @@ export function VeilScreen({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
   const [tx, setT] = useState<number | null>(null);
   const [F, setF] = useState<number | null>(null);
-  const pv = lv5(v).preview;
   const k = tx !== null && F !== null ? ALL_CONSTITUTIONS.findIndex((c) => Math.abs(c.t - tx) < 1e-9 && c.F === F) : -1;
-  const note = k >= 0 ? previewText(pv?.constitutions[k]) : null;
   return (
     <Stage v={v} footer={<BigButton disabled={k < 0} onClick={() => act({ t: tx, F })}>{t('play.l5.veil.submit')}</BigButton>}>
       <h1 className="h-show text-title leading-tight">{t('play.l5.veil.title')}</h1>
@@ -83,7 +80,6 @@ export function VeilScreen({ v }: { v: ViewState }) {
       <Chips opts={L5.TAX_OPTIONS} value={tx} onPick={setT} label={t('play.l5.tax')} fmt={pct} />
       <p className="mt-3 text-small font-bold">{t('play.l5.floor')}</p>
       <Chips opts={L5.FLOOR_OPTIONS} value={F} onPick={setF} label={t('play.l5.floor')} fmt={coins} />
-      {note && <p className="mt-3 text-small font-bold" data-preview>{note}</p>}
     </Stage>
   );
 }
@@ -97,19 +93,24 @@ export function FairScreen({ v }: { v: ViewState }) {
   const [tx, setT] = useState<number>(cur?.t ?? 0);
   const [F, setF] = useState<number>(cur?.F ?? 0);
   const prop = { t: tx, F };
-  const proposing = after && !!cur && !sameC(prop, cur);
-  const k = ALL_CONSTITUTIONS.findIndex((c) => Math.abs(c.t - tx) < 1e-9 && c.F === F);
-  const note = proposing ? previewText(lv5(v).preview?.constitutions[k]) : null;
+  // UI V4 (V2): proposing a change is a second choice, so it is a small optional row, closed by default.
+  const [open, setOpen] = useState(false);
+  const proposing = after && open && !!cur && !sameC(prop, cur);
   return (
     <Stage v={v} footer={<BigButton disabled={x === null} onClick={() => act(after ? { fair: x, proposal: proposing ? prop : null } : x)}>{t('play.l5.fair.submit')}</BigButton>}>
       <h1 className="h-show text-title leading-tight">{t('play.l5.fair.title')}</h1>
       <p className="mt-1 text-small">{t(after ? 'play.l5.fair.after' : v.levelIndex === 1 ? 'play.l5.fair.born' : v.mode === 'LIFE' ? 'play.l5.fair.beforeLife' : 'play.l5.fair.before')}</p>
       {after && <p className="mt-2 text-small font-bold">{t('play.l5.fair.label')}</p>}
       <Chips opts={L5.TAX_OPTIONS} value={x} onPick={setX} label={t('play.l5.fair.title')} fmt={pct} />
-      {after && cur && (
+      {after && cur && !open && (
+        <button type="button" aria-expanded={false} onClick={() => setOpen(true)} className="mt-auto flex min-h-[44px] w-full items-center gap-2 rounded-2xl bg-card px-3 text-start text-small font-semibold" data-propose-row>
+          <span aria-hidden className="h-show text-lead">+</span>
+          {t('play.l5.fair.proposeRow')}
+        </button>
+      )}
+      {after && cur && open && (
         <section className="mt-auto pt-3" aria-label={t('play.l5.lobby.title')}>
           <p className="text-small font-bold">{proposing ? t('play.l5.lobby.propose', { rules: rules(prop) }) : t('play.l5.lobby.keepNow', { rules: rules(cur) })}</p>
-          {note && <p className="text-small font-bold">{note}</p>}
           <Chips opts={L5.TAX_OPTIONS} value={tx} onPick={setT} label={t('play.l5.tax')} fmt={pct} />
           <Chips opts={L5.FLOOR_OPTIONS} value={F} onPick={setF} label={t('play.l5.floor')} fmt={coins} />
         </section>
@@ -209,14 +210,15 @@ export function AmendScreen({ v }: { v: ViewState }) {
       footer={<BigButton disabled={x === null} onClick={() => act(call ? { vote: x, call } : x)}>{t('play.l5.amend.submit')}</BigButton>}
     >
       <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l5.amend.label', { k: k + 1, n: lv.order.length, name: shortName(v, proposer) })}</p>
-      <h1 className="h-show mt-1 text-title leading-tight">{rules(prop)}</h1>
-      <p className="mt-1 text-small">{t('play.l5.amend.now', { rules: rules(lv.current!), n: lv.need })}</p>
-      {(() => {
-        const prev = lv.amendments.filter((a) => a.passed).slice(-1)[0];
-        return prev ? <p className="mt-1 text-small font-semibold">{t('play.l5.amend.passedBefore', { name: shortName(v, prev.proposer) })}</p> : null;
-      })()}
+      <h1 className="h-show mt-1 text-title leading-tight">{t('play.l5.amend.ask', { rules: rules(prop) })}</h1>
+      <p className="mt-1 text-small">
+        {t('play.l5.amend.now', { rules: rules(lv.current!), n: lv.need })}
+        {(() => {
+          const prev = lv.amendments.filter((a) => a.passed).slice(-1)[0];
+          return prev ? ` ${prev.proposer === v.viewer ? t('play.l5.amend.passedBeforeYou') : t('play.l5.amend.passedBefore', { name: shortName(v, prev.proposer) })}` : '';
+        })()}
+      </p>
       {got > 0 && <p className="mt-1 text-small font-bold">{t('play.l5.amend.got', { n: got, name: shortName(v, proposer) })}</p>}
-      <p className="mt-2 text-small">{t('play.l5.amend.claims', { list: v.players.map((p) => `${shortName(v, p.id)} ${t(`play.l5.said.${lv.claims?.[p.id]?.[proposer] ?? 'SILENT'}`)}`).join(', ') })}</p>
       <CallChips v={v} claimants={callable} value={call} onPick={setCall} />
       <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
         {[true, false].map((o) => (
@@ -250,7 +252,7 @@ export function AmendReveal({ v }: { v: ViewState }) {
   const live = lv.amendments.filter((a) => !a.withdrawn);
   const n = v.players.length;
   const stepsAm = live.map((a) => {
-    const cue: CastCue = { stamps: {}, expr: {}, focus: null };
+    const cue: CastCue = { stamps: {}, expr: {}, focus: null, ...(lv.whole ? { banks: lv.whole.before } : {}) };
     for (const p of v.players) {
       const c = a.claims[p.id];
       const yes = !!a.votes[p.id];
@@ -272,7 +274,8 @@ export function AmendReveal({ v }: { v: ViewState }) {
       ),
     };
   });
-  const finalCue: CastCue = { expr: {} };
+  // V5 (D-215): in a life the podiums keep the banks before the rule; the next beat applies it to them.
+  const finalCue: CastCue = { expr: {}, ...(lv.whole ? { banks: lv.whole.before } : {}) };
   for (const [from, lb] of Object.entries(lv.lobby ?? {})) {
     if (!lb.donateTo || lb.amount <= 0) continue;
     const a = live.find((x) => x.proposer === from);
@@ -303,16 +306,65 @@ export function AmendReveal({ v }: { v: ViewState }) {
           {x}
         </p>
       ))}
-      {bankLineText(v) && <p className="mt-1 text-small font-semibold" data-bankline>{bankLineText(v)}<MoneyLedger v={v} /></p>}
-      <CallResults v={v} />
+      <CallResults v={v} quiet />
       <p className="mt-1 text-small">{t('play.l5.peak.shift', { a: pct(lv.fair1?.[me] ?? 0), b: pct(lv.fair2?.[me] ?? 0), d: `${shift >= 0 ? '+' : ''}${Math.round(shift * 100)}` })}</p>
       </Details>
+      {/* UI V4 (V3): what your choices did; it adds up to the bank change. In a life it shows on the next beat. */}
+      {!lv.whole && <ChoicesDid v={v} />}
       <div className="mt-2">
         <Bubble who="Dash" host mood={stamps.length ? 'excited' : 'wink'} text={stamps.length ? t('play.l5.peak.hostBought') : t('play.l5.peak.hostClean')} />
       </div>
     </>
   );
   return <StagedReveal v={v} label={t('play.l5.peak.label')} title={t('play.cast.l5title2')} steps={stepsAm} final={{ cue: finalCue, body: finalBody }} onDone={() => act()} />;
+}
+
+/**
+ * V5 (D-215), LIFE only: the winning rule acts on every whole bank, staged: the rule on the podiums' old banks,
+ * then each bank counts to its new value, with what your choices did.
+ */
+export function WholeBankBeat({ v }: { v: ViewState }) {
+  const act = useStore((s) => s.act);
+  const lv = lv5(v);
+  const w = lv.whole;
+  if (!w) return null;
+  const r = (x: number) => Math.round(x);
+  const flash: Record<string, 'gain' | 'hit'> = {};
+  const expr: CastCue['expr'] = {};
+  for (const p of v.players) {
+    const d = w.after[p.id] - w.before[p.id];
+    if (Math.abs(d) >= 0.5) flash[p.id] = d > 0 ? 'gain' : 'hit';
+    expr[p.id] = d > 0.5 ? 'pleased' : d < -0.5 ? 'sad' : 'neutral';
+  }
+  const none = w.rule.t < 1e-9 && w.rule.F <= 0;
+  const how = <p className="text-body">{t(none ? 'play.l5.whole.none' : 'play.l5.whole.how', { t: pct(w.rule.t), F: coins(w.rule.F) })}</p>;
+  const order = v.players.slice().sort((a, b) => w.after[b.id] - w.base[b.id] - (w.after[a.id] - w.base[a.id]));
+  const final = (
+    <>
+      {how}
+      <ul className="mt-2 space-y-1" data-whole-bank>
+        {order.map((p) => (
+          <li key={p.id} className="flex items-center gap-2 rounded-xl bg-card px-2 py-1">
+            <Face v={v} p={p} size={24} />
+            <span className="w-20 truncate text-small font-bold">{shortName(v, p.id)}</span>
+            <span className="flex-1 text-small">{t('play.l5.whole.row', { a: r(w.before[p.id] - w.base[p.id]), b: r(w.after[p.id] - w.base[p.id]) })}</span>
+          </li>
+        ))}
+      </ul>
+      <ChoicesDid v={v} />
+    </>
+  );
+  return (
+    <StagedReveal
+      v={v}
+      label={t('play.l5.whole.label')}
+      title={t('play.l5.whole.title')}
+      steps={[{ cue: { banks: w.before }, body: how }]}
+      final={{ cue: { flash, expr }, body: final }}
+      onDone={() => act()}
+      data="whole"
+    />
+  );
 }
 
 export function summary5(v: ViewState): { lie: string } {

@@ -2,11 +2,11 @@
 //   npm run sim -- --ruleset PLAY --mode EPISODE --episode 4 --games 500
 // Every table is bots only: these numbers describe the bots, not people (D-76). Each statistic is the mean
 // ± a bootstrap SE over games (resampling whole games). E checks and F-f decide the exit code; the rest is
-// reported. `--calibrate 1` also prints the MISSION_SCALE that would bring every mission's win share to 25%.
+// reported. V5 N1: no missions, so no F-e and no mission calibration.
 import { createInitialState, step } from '../src/engine/engine';
 import { standalone } from '../src/engine/rng';
 import { PLAY } from '../src/engine/play/params';
-import { bankBase, missionScale, missionValue, playEffortShares } from '../src/engine/play/rules';
+import { bankBase, playScore } from '../src/engine/play/rules';
 import type { Difficulty, GameState, LevelId, ValuesCard } from '../src/engine/types';
 import { VALUES_CARDS } from '../src/engine/types';
 import { currentRules } from '../src/engine/version';
@@ -24,7 +24,6 @@ const nPlayers = Number(arg('players', '4')) as 2 | 3 | 4;
 const difficulty = arg('difficulty', 'NORMAL') as Difficulty;
 const seedBase = arg('seed', 'play');
 const BOOT = Number(arg('boot', '300'));
-const calibrate = arg('calibrate', '0') === '1';
 Object.assign(PLAY, JSON.parse(arg('play', '{}')));
 
 export interface GameRec {
@@ -52,12 +51,12 @@ function playOne(seed: string): GameState {
 
 function recOf(s: GameState): GameRec {
   const pl = s.play!;
-  const eff = playEffortShares(s);
   const banks = s.players.map((p) => pl.banks[p.id]);
-  const mission = s.players.map((p, i) => missionValue(p.values, banks, i, eff));
   const base = s.players.map((p) => bankBase(s, p.id));
-  const score = s.players.map((p, i) => PLAY.BANK_WEIGHT * (banks[i] - base[i]) + PLAY.MISSION_WEIGHT * missionScale(s, p.values) * mission[i] - pl.debtStress[p.id] + pl.guessPoints[p.id]);
+  // V5 N1: the score is the bank (plus Second Chance points); missions are gone.
+  const score = s.players.map((p) => playScore(s, p.id));
   const winner = score.indexOf(Math.max(...score));
+  const mission = s.players.map(() => 0);
   return {
     m: (s as GameState & { __m?: Record<string, [number, number]> }).__m!,
     cards: s.players.map((p) => p.values),
@@ -131,18 +130,14 @@ function bootSlope(recs: GameRec[], xk: string, yk: string): { mean: number; se:
   return { mean: m, se: Math.sqrt(ok.reduce((a, b) => a + (b - mu) ** 2, 0) / Math.max(1, ok.length - 1)), n: recs.length };
 }
 
-function winShares(recs: GameRec[], scale: Record<ValuesCard, number>): Record<ValuesCard, number> {
+/** V5 N1, reported only: how often each bot's values trait wins (per seat; 25% each would be even at 4 seats). */
+function winShares(recs: GameRec[]): Record<ValuesCard, number> {
   const wins: Record<string, number> = {};
   const seats: Record<string, number> = {};
-  for (const r of recs) {
-    const sc = r.bank.map((b, i) => PLAY.BANK_WEIGHT * b + PLAY.MISSION_WEIGHT * scale[r.cards[i]] * r.mission[i] - r.stress[i] + r.guess[i]);
-    const w = sc.indexOf(Math.max(...sc));
-    r.cards.forEach((c, i) => {
-      seats[c] = (seats[c] ?? 0) + 1;
-      if (i === w) wins[c] = (wins[c] ?? 0) + 1;
-    });
-  }
-  // Per seat: a card's chance of winning, rescaled so a fair game gives every card 1 / seats per table.
+  for (const r of recs) r.cards.forEach((c, i) => {
+    seats[c] = (seats[c] ?? 0) + 1;
+    if (i === r.winner) wins[c] = (wins[c] ?? 0) + 1;
+  });
   const n = recs[0]?.cards.length ?? 4;
   return Object.fromEntries(VALUES_CARDS.map((c) => [c, ((wins[c] ?? 0) / Math.max(1, seats[c] ?? 0)) * (n / 4)])) as Record<ValuesCard, number>;
 }
@@ -168,19 +163,9 @@ for (const m of metrics) {
   const status = m.min === undefined && m.max === undefined ? 'REPORT' : pass ? 'PASS' : 'FAIL';
   out.push(`${status.padEnd(6)} ${m.gate ? '[gate]    ' : '[reported]'} ${m.label}: ${(m.pct ? r.mean * 100 : r.mean).toFixed(m.pct ? 1 : 3)}${m.pct ? '%' : ''} ± ${(m.pct ? r.se * 100 : r.se).toFixed(m.pct ? 1 : 3)} (target ${target}; n=${r.n})`);
 }
-const scale = Object.fromEntries(VALUES_CARDS.map((c) => [c, missionScale({ mode, levelIndex: mode === 'LIFE' ? 5 : episode } as GameState, c)])) as Record<ValuesCard, number>;
-const ws = winShares(recs, scale);
-const wsOk = VALUES_CARDS.every((c) => ws[c] >= 0.15 && ws[c] <= 0.35);
-out.push(`${wsOk ? 'PASS' : 'FAIL'}   [reported] F-e mission win shares (15% to 35% each): ${VALUES_CARDS.map((c) => `${c} ${(ws[c] * 100).toFixed(1)}%`).join(', ')}`);
-if (calibrate) {
-  let k = { ...scale };
-  for (let it = 0; it < 60; it++) {
-    const w = winShares(recs, k);
-    k = Object.fromEntries(VALUES_CARDS.map((c) => [c, Math.max(0.05, k[c] * Math.pow(0.25 / Math.max(0.01, w[c]), 0.3))])) as Record<ValuesCard, number>;
-  }
-  const w = winShares(recs, k);
-  out.push(`Calibrated MISSION_SCALE: ${JSON.stringify(Object.fromEntries(VALUES_CARDS.map((c) => [c, Number(k[c].toFixed(2))])))} -> ${VALUES_CARDS.map((c) => `${c} ${(w[c] * 100).toFixed(1)}%`).join(', ')}`);
-}
+// V5 N1: F-e (mission win shares) is dropped with the missions; the bots' wins by values trait are reported.
+const ws = winShares(recs);
+out.push(`REPORT [reported] wins by bot values trait (per seat; no target): ${VALUES_CARDS.map((c) => `${c} ${(ws[c] * 100).toFixed(1)}%`).join(', ')}`);
 out.push('', fail ? 'A gating target fails.' : 'All gating targets pass.', `Time: ${((Date.now() - t0) / 1000).toFixed(1)}s.`);
 console.log(out.join('\n'));
 if (fail) process.exitCode = 1;

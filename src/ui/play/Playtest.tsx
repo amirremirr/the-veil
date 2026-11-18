@@ -32,7 +32,6 @@ const CHOICES = {
   again: ['yes', 'maybe', 'no'],
   withWhom: ['friend', 'family', 'partner', 'colleague', 'nobody'],
   unclear: ['yes', 'no'],
-  missionChanged: ['yes', 'bit', 'no'],
 } as const;
 
 export function PlaytestPanel({ v }: { v: ViewState }) {
@@ -81,7 +80,7 @@ export function PlaytestPanel({ v }: { v: ViewState }) {
         {t('play.pt.q.oneSentence')}
         <input className="mt-1 w-full rounded-lg bg-card p-2 text-small" maxLength={120} value={s.oneSentence ?? ''} onChange={(e) => setS({ ...s, oneSentence: e.target.value })} />
       </label>
-      {(['cared', 'surprised', 'changed', 'again', 'withWhom', 'unclear', 'missionChanged'] as const).map((q) => (
+      {(['cared', 'surprised', 'changed', 'again', 'withWhom', 'unclear'] as const).map((q) => (
         <div key={q} className="mt-3">
           <p className="text-small font-bold">{t(`play.pt.q.${q}`)}</p>
           {chip(q)}

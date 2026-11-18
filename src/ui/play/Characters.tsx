@@ -1,4 +1,5 @@
-// UI V3 (U1): the cast as "shape people", drawn in code (no downloaded assets). Each contestant is its
+// UI V3 (U1): the cast as "shape people", drawn in code (no downloaded assets). V5 N2 (D-211): flat studio
+// puppets in the Retro TV palette with big expressive eyes. Each contestant is its
 // old motif with eyes, a mouth and two short legs: Marigold the flower, Chet the triangle, Ugo the square
 // with glasses, Dot the dot grid. The human picks one of six shapes. No feature suggests ethnicity or
 // gender. Six expressions each; Dash Fortuna, the microphone-headed host, has four.
@@ -32,71 +33,90 @@ export function setMyAvatar(x: HumanAvatar): void {
   }
 }
 
-/** Eyes and a mouth at (cx, cy), scaled by s. */
+/**
+ * V5 N2 (D-211): the Retro TV studio puppet face. Big expressive eyes (a white eye with a large pupil and a
+ * highlight), a thick mouth, brows and lids that carry the feeling, blush when pleased or smug.
+ */
 function Face({ expr, cx, cy, s = 1, wink = false }: { expr: Expr; cx: number; cy: number; s?: number; wink?: boolean }) {
   const ink = C.ink;
-  const ex = 10 * s;
+  const ex = 10.5 * s;
   const ey = cy - 4 * s;
-  const eyes: JSX.Element[] = [];
-  const eye = (x: number, r: number, px: number, py: number, pr: number) => (
-    <g key={x}>
-      <circle cx={x} cy={ey} r={r} fill={C.white} stroke={ink} strokeWidth={1.2 * s} />
-      <circle cx={x + px} cy={ey + py} r={pr} fill={ink} />
+  const my = cy + 11 * s;
+  const sw = 2.8 * s;
+  const parts: JSX.Element[] = [];
+  /** One eye: white with an ink rim, a big pupil looking (dx, dy), a highlight; lid covers the top (0 to 1). */
+  const eye = (x: number, o: { ry?: number; dx?: number; dy?: number; pr?: number; lid?: number; lidTilt?: number } = {}) => {
+    const rx = 6.6 * s;
+    const ry = (o.ry ?? 7.8) * s;
+    const pr = (o.pr ?? 4.2) * s;
+    const px = x + (o.dx ?? 0) * s;
+    const py = ey + (o.dy ?? 0) * s + 0.8 * s;
+    const lid = o.lid ?? 0;
+    const tilt = (o.lidTilt ?? 0) * s;
+    const top = ey - ry;
+    const lidY = top + lid * 2 * ry;
+    return (
+      <g key={`e${x}`}>
+        <ellipse cx={x} cy={ey} rx={rx} ry={ry} fill={C.white} stroke={ink} strokeWidth={1.8 * s} />
+        <circle cx={px} cy={py} r={pr} fill={ink} />
+        <circle cx={px - pr * 0.4} cy={py - pr * 0.45} r={pr * 0.36} fill={C.white} />
+        {lid > 0 && (
+          <path
+            d={`M${x - rx - 1.2 * s} ${top - 2 * s} H${x + rx + 1.2 * s} V${lidY + tilt} L${x - rx - 1.2 * s} ${lidY - tilt} Z`}
+            fill={C.lid}
+            stroke={ink}
+            strokeWidth={1.8 * s}
+            strokeLinejoin="round"
+          />
+        )}
+      </g>
+    );
+  };
+  const happy = (x: number) => <path key={`h${x}`} d={`M${x - 6 * s} ${ey + 2 * s} Q${x} ${ey - 7 * s} ${x + 6 * s} ${ey + 2 * s}`} fill="none" stroke={ink} strokeWidth={sw} strokeLinecap="round" />;
+  const brow = (d: string) => <path key={d} d={d} fill="none" stroke={ink} strokeWidth={sw} strokeLinecap="round" />;
+  const blush = () => (
+    <g key="blush" opacity={0.85}>
+      <ellipse cx={cx - ex - 4 * s} cy={my - 2 * s} rx={4 * s} ry={2.6 * s} fill={C.cheek} />
+      <ellipse cx={cx + ex + 4 * s} cy={my - 2 * s} rx={4 * s} ry={2.6 * s} fill={C.cheek} />
     </g>
   );
-  const arc = (x: number) => <path key={x} d={`M${x - 5 * s} ${ey + 1.5 * s} Q${x} ${ey - 5 * s} ${x + 5 * s} ${ey + 1.5 * s}`} fill="none" stroke={ink} strokeWidth={2.6 * s} strokeLinecap="round" />;
   let mouth: JSX.Element;
-  const my = cy + 10 * s;
   switch (expr) {
     case 'pleased':
-      eyes.push(arc(cx - ex), arc(cx + ex));
-      mouth = <path d={`M${cx - 9 * s} ${my - 2 * s} Q${cx} ${my + 10 * s} ${cx + 9 * s} ${my - 2 * s} Z`} fill={ink} />;
+      parts.push(happy(cx - ex), happy(cx + ex), blush());
+      mouth = <path d={`M${cx - 9 * s} ${my - 2 * s} Q${cx} ${my + 11 * s} ${cx + 9 * s} ${my - 2 * s} Z`} fill={ink} stroke={ink} strokeWidth={1.5 * s} strokeLinejoin="round" />;
       break;
     case 'smug':
-      eyes.push(
-        ...[cx - ex, cx + ex].map((x) => (
-          <g key={x}>
-            <circle cx={x} cy={ey} r={5.2 * s} fill={C.white} stroke={ink} strokeWidth={1.2 * s} />
-            <circle cx={x + 2 * s} cy={ey + 1.2 * s} r={2.6 * s} fill={ink} />
-            <path d={`M${x - 6 * s} ${ey - 0.6 * s} H${x + 6 * s}`} stroke={ink} strokeWidth={2.6 * s} strokeLinecap="round" />
-          </g>
-        )),
-      );
-      mouth = <path d={`M${cx - 8 * s} ${my} Q${cx + 2 * s} ${my + 5 * s} ${cx + 9 * s} ${my - 4 * s}`} fill="none" stroke={ink} strokeWidth={2.6 * s} strokeLinecap="round" />;
+      parts.push(eye(cx - ex, { dx: 2.2, dy: 0.5, lid: 0.45, lidTilt: 1.2 }), eye(cx + ex, { dx: 2.2, dy: 0.5, lid: 0.45, lidTilt: -1.2 }), blush());
+      mouth = <path d={`M${cx - 8 * s} ${my + 1 * s} Q${cx + 2 * s} ${my + 6 * s} ${cx + 10 * s} ${my - 4 * s}`} fill="none" stroke={ink} strokeWidth={sw} strokeLinecap="round" />;
       break;
     case 'shocked':
-      eyes.push(eye(cx - ex, 6.8 * s, 0, 0, 1.8 * s), eye(cx + ex, 6.8 * s, 0, 0, 1.8 * s));
-      eyes.push(
-        <path key="b1" d={`M${cx - ex - 6 * s} ${ey - 10 * s} Q${cx - ex} ${ey - 14 * s} ${cx - ex + 6 * s} ${ey - 10 * s}`} fill="none" stroke={ink} strokeWidth={2.2 * s} strokeLinecap="round" />,
-        <path key="b2" d={`M${cx + ex - 6 * s} ${ey - 10 * s} Q${cx + ex} ${ey - 14 * s} ${cx + ex + 6 * s} ${ey - 10 * s}`} fill="none" stroke={ink} strokeWidth={2.2 * s} strokeLinecap="round" />,
-      );
-      mouth = <ellipse cx={cx} cy={my + 2 * s} rx={4.5 * s} ry={6 * s} fill={ink} />;
+      parts.push(eye(cx - ex, { ry: 9.4, pr: 2.6 }), eye(cx + ex, { ry: 9.4, pr: 2.6 }));
+      parts.push(brow(`M${cx - ex - 6 * s} ${ey - 13 * s} Q${cx - ex} ${ey - 17 * s} ${cx - ex + 6 * s} ${ey - 13 * s}`), brow(`M${cx + ex - 6 * s} ${ey - 13 * s} Q${cx + ex} ${ey - 17 * s} ${cx + ex + 6 * s} ${ey - 13 * s}`));
+      mouth = <ellipse cx={cx} cy={my + 2 * s} rx={4.6 * s} ry={6 * s} fill={ink} />;
       break;
     case 'sad':
-      eyes.push(eye(cx - ex, 5.2 * s, 0, 2 * s, 2.5 * s), eye(cx + ex, 5.2 * s, 0, 2 * s, 2.5 * s));
-      eyes.push(
-        <path key="b1" d={`M${cx - ex - 6 * s} ${ey - 6 * s} L${cx - ex + 5 * s} ${ey - 10 * s}`} stroke={ink} strokeWidth={2.2 * s} strokeLinecap="round" />,
-        <path key="b2" d={`M${cx + ex + 6 * s} ${ey - 6 * s} L${cx + ex - 5 * s} ${ey - 10 * s}`} stroke={ink} strokeWidth={2.2 * s} strokeLinecap="round" />,
-      );
-      mouth = <path d={`M${cx - 8 * s} ${my + 4 * s} Q${cx} ${my - 4 * s} ${cx + 8 * s} ${my + 4 * s}`} fill="none" stroke={ink} strokeWidth={2.6 * s} strokeLinecap="round" />;
+      parts.push(eye(cx - ex, { dy: 2.2, lid: 0.35, lidTilt: -2.2 }), eye(cx + ex, { dy: 2.2, lid: 0.35, lidTilt: 2.2 }));
+      parts.push(brow(`M${cx - ex - 6 * s} ${ey - 9 * s} L${cx - ex + 5 * s} ${ey - 13 * s}`), brow(`M${cx + ex + 6 * s} ${ey - 9 * s} L${cx + ex - 5 * s} ${ey - 13 * s}`));
+      mouth = <path d={`M${cx - 8 * s} ${my + 5 * s} Q${cx} ${my - 3 * s} ${cx + 8 * s} ${my + 5 * s}`} fill="none" stroke={ink} strokeWidth={sw} strokeLinecap="round" />;
       break;
     case 'caught':
-      eyes.push(eye(cx - ex, 6 * s, 3 * s, 0, 2.4 * s), eye(cx + ex, 6 * s, 3 * s, 0, 2.4 * s));
-      eyes.push(<path key="sw" d={`M${cx + ex + 11 * s} ${ey - 6 * s} q${3 * s} ${5 * s} 0 ${7 * s} q${-3 * s} ${-2 * s} 0 ${-7 * s}Z`} fill={C.sweat} stroke={ink} strokeWidth={0.8 * s} />);
-      mouth = <path d={`M${cx - 9 * s} ${my + 1 * s} q${3 * s} ${-3 * s} ${6 * s} 0 t${6 * s} 0 t${6 * s} 0`} fill="none" stroke={ink} strokeWidth={2.4 * s} strokeLinecap="round" />;
+      parts.push(eye(cx - ex, { ry: 8.6, dx: 3.2, pr: 3.4 }), eye(cx + ex, { ry: 8.6, dx: 3.2, pr: 3.4 }));
+      parts.push(<path key="sweat" d={`M${cx + ex + 11 * s} ${ey - 7 * s} q${3.5 * s} ${5.5 * s} 0 ${8 * s} q${-3.5 * s} ${-2.5 * s} 0 ${-8 * s}Z`} fill={C.sweat} stroke={ink} strokeWidth={1.2 * s} />);
+      mouth = <path d={`M${cx - 9 * s} ${my + 1 * s} q${3 * s} ${-3.4 * s} ${6 * s} 0 t${6 * s} 0 t${6 * s} 0`} fill="none" stroke={ink} strokeWidth={sw} strokeLinecap="round" />;
       break;
     default:
-      if (wink) eyes.push(eye(cx - ex, 5.2 * s, 0, 0, 2.6 * s), arc(cx + ex));
-      else eyes.push(eye(cx - ex, 5.2 * s, 0, 0, 2.6 * s), eye(cx + ex, 5.2 * s, 0, 0, 2.6 * s));
+      if (wink) parts.push(eye(cx - ex), happy(cx + ex), blush());
+      else parts.push(eye(cx - ex), eye(cx + ex));
       mouth = wink ? (
-        <path d={`M${cx - 9 * s} ${my - 1 * s} Q${cx} ${my + 8 * s} ${cx + 9 * s} ${my - 1 * s}`} fill="none" stroke={ink} strokeWidth={2.6 * s} strokeLinecap="round" />
+        <path d={`M${cx - 9 * s} ${my - 1 * s} Q${cx} ${my + 9 * s} ${cx + 9 * s} ${my - 1 * s}`} fill="none" stroke={ink} strokeWidth={sw} strokeLinecap="round" />
       ) : (
-        <path d={`M${cx - 7 * s} ${my} Q${cx} ${my + 3 * s} ${cx + 7 * s} ${my}`} fill="none" stroke={ink} strokeWidth={2.6 * s} strokeLinecap="round" />
+        <path d={`M${cx - 6 * s} ${my} Q${cx} ${my + 4 * s} ${cx + 6 * s} ${my}`} fill="none" stroke={ink} strokeWidth={sw} strokeLinecap="round" />
       );
   }
   return (
     <g data-expr={expr}>
-      {eyes}
+      {parts}
       {mouth}
     </g>
   );
@@ -121,7 +141,7 @@ function star(cx: number, cy: number, r1: number, r2: number): string {
 
 /** The body of a character, its face on top. viewBox 0 0 100 100, feet on the floor at y 97. */
 function Body({ kind, expr }: { kind: CastKind; expr: Expr }) {
-  const st = { stroke: C.ink, strokeWidth: 2.5, strokeLinejoin: 'round' as const };
+  const st = { stroke: C.ink, strokeWidth: 3, strokeLinejoin: 'round' as const };
   switch (kind) {
     case 'marigold':
       return (

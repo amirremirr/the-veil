@@ -2,7 +2,7 @@
 // a Play game only; Study params (../params.ts) are never changed for Play. They live in their own file
 // so the Study params hash reads only Study values (DECISIONS.md D-92). The Play rules version hashes
 // them together with the Study rules (src/engine/version.ts).
-import type { ValuesCard } from '../types';
+import type { BotKey, ValuesCard } from '../types';
 
 export const PLAY = {
   /** Section 4.1: every contestant starts a life with this many coins. */
@@ -13,6 +13,12 @@ export const PLAY = {
   LIVING_COST: 30,
   /** R3 (D-160): a life's own starting bank, living cost per round and Episode 3 loss (tuned for life stakes). */
   LIFE_STARTING_BANK: 10,
+  /**
+   * V5 N1 (D-210): no missions. Each bot's values are a fixed part of its personality and drive its choices the
+   * way its mission did (Marigold protects the poorest, Ugo grows the total, Dot rewards effort, Chet looks
+   * after himself). A human's values are only their own bank: the score is the bank (plus the Second Chance).
+   */
+  BOT_TRAITS: { chet: 'EGOIST', marigold: 'RAWLSIAN', ugo: 'UTILITARIAN', dot: 'MERITOCRAT' } as Record<BotKey, ValuesCard>,
   LIFE_LIVING_COST: 40,
   LIFE_L3_LOSS: 220,
   /** Section 4.2: points lost per coin of debt at the end of a round, capped per round. */
@@ -38,7 +44,9 @@ export const PLAY = {
    */
   LIFE_BANK_FROM: 'EP1_END' as 'START' | 'EP1_END',
   /** UI V3 U5: in a life, the mission half is weighted by the episode just played (later episodes weigh more). */
-  LIFE_MISSION_EP_MULT: { 1: 1, 2: 1, 3: 1, 4: 1, 5: 2 } as Record<number, number>,
+  // V5 N1 (D-210): with no missions this only weighs each bot's values trait in its own choices, by episode.
+  // The finale weight went from 2 to 4 (the best of six sweeps for the finale lead change; see D-210).
+  LIFE_MISSION_EP_MULT: { 1: 1, 2: 1, 3: 1, 4: 1, 5: 4 } as Record<number, number>,
   MISSION_SCALE_LIFE: { EGOIST: 0.85, RAWLSIAN: 1.47, UTILITARIAN: 1.15, MERITOCRAT: 1.19 } as Record<ValuesCard, number>,
   /** The mission bar's full mark: start bank + this share of the episode's income minus living cost (D-102). */
   MISSION_GOAL_SHARE: 0.8,
@@ -59,10 +67,11 @@ export const PLAY = {
   /** D-121: round 1 of Episode 3 is a launch round: SafeHands signs everyone up at the pooled price. */
   L3_LAUNCH: true,
   /**
-   * D-128: Episode 3's second hidden card. A Worrier's debt stress is multiplied by this (the per-round cap
-   * too, D-144). Calm players are unchanged. The author's range: 1.5 to 4.
+   * V5 (D-213): Episode 3's second hidden card. A Worrier who ends a round in debt pays this share of the debt
+   * as interest, rounded up (a ledger line, "Worrier interest"). Calm players pay none. Replaces D-128's debt
+   * stress multiplier, which stopped costing anything once the score became the bank (D-210).
    */
-  WORRIER_STRESS_MULT: 3,
+  WORRIER_DEBT_RATE: 0.1,
   /** D-141: each seat is a Worrier with this chance, drawn on its own (like the risk card, 50/50). */
   WORRIER_SHARE: 0.5,
   /**
@@ -192,8 +201,11 @@ export const PLAY = {
     LEAKED_RECEIPTS: {},
     PANIC: { ALL_BUT_ONE: 1 },
   },
-  /** v1 Section 6.3, LIFE only: once per life, before Episode 4, the last-placed contestant takes COINS now or POINTS mission points. */
-  COMEBACK: { COINS: 120, POINTS: 40 },
+  /**
+   * V5 (D-214), LIFE only: once per life, before Episode 4, the contestant last on score gets these coins (no choice).
+   * 180 after sweeping 120, 180 and 250 on 300 lives each (D-216): best on all three life targets.
+   */
+  SECOND_CHANCE_COINS: 180,
   /** v2 Section 3.4: the Receipts reel runs at most this long (it is skippable). */
   RECEIPTS_MAX_MS: 20000,
   /** D-180: score gaps on a life's ranking are rounded to this many points. */
