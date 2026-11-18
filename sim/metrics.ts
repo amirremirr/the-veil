@@ -405,7 +405,6 @@ function life(): EpisodeMetrics {
       { key: 'fc', label: 'F-c first and second within 15% at the end', min: 0.4, pct: true },
       { key: 'fd', label: 'F-d episodes with a big moment', min: 0.9, pct: true },
       { key: 'ff', label: 'F-f someone goes into debt during the life', min: 0.3, max: 0.7, pct: true },
-      { key: 'cb', label: 'Comeback card: took the coins', pct: true },
     ],
     watch(s) {
       if (s.phase.kind !== 'LEVEL_DEBRIEF' || seen.has(s.levelIndex)) return;
@@ -435,7 +434,6 @@ function life(): EpisodeMetrics {
       out.fc = b(sorted[0] > 0 ? (sorted[0] - sorted[1]) / sorted[0] <= 0.15 : false);
       out.fd = [fd.reduce((a, c) => a + c, 0), 5];
       out.ff = b(debt);
-      out.cb = pl.comeback ? b(pl.comeback.took === 'COINS') : [0, 0];
       return out;
     },
   };

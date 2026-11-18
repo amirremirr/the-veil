@@ -1943,13 +1943,9 @@
     "comeback": {
       "label": "A Second Chance",
       "title": "The show feels sorry for you.",
-      "how": "You're last on score. Take {c} coins now, or {p} score points. Everyone is watching.",
-      "coins": "Take {c} coins",
-      "points": "Take {p} points",
-      "rate": "Your score is your bank, so {c} coins are {c} points.",
-      "otherCoins": "{name} was last on score and took the Second Chance: +{c} coins.",
-      "otherPoints": "{name} was last on score and took the Second Chance: +{p} points.",
-      "ask": "Coins or points?"
+      "titleOther": "The show feels sorry for {name}.",
+      "you": "You're last on score after Episode 3, so the show gives you {c} coins.",
+      "other": "Last on score after Episode 3: {name}. The show gives them {c} coins."
     },
     "receipts": {
       "label": "The Receipts",
@@ -2408,7 +2404,7 @@
       "failed": "failed",
       "jobComplex": "Complex job from {name}.",
       "jobSimple": "Simple job from {name}.",
-      "comeback": "You took the Second Chance coins.",
+      "comeback": "You got the Second Chance coins.",
       "donated": "You paid {name} {n} for votes.",
       "donatedTo": "someone paid you for your vote.",
       "rules": "the rules the table voted for.",

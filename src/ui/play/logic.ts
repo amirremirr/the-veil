@@ -189,7 +189,7 @@ export function bankLineText(v: ViewState): string | null {
   // Loop cycle 16: the Second Chance coins land before Episode 4's first round, so that round's line includes them.
   const cb = pl.comeback;
   const firstOfEp4 = v.levelIndex === 4 && hist.filter((h) => h.level === 4).length === 1;
-  return firstOfEp4 && cb && cb.pid === v.viewer && cb.took === 'COINS' ? `${line} ${t('play.bank.comeback', { c: PLAY.COMEBACK.COINS })}` : line;
+  return firstOfEp4 && cb && cb.pid === v.viewer ? `${line} ${t('play.bank.comeback', { c: PLAY.SECOND_CHANCE_COINS })}` : line;
 }
 
 /**

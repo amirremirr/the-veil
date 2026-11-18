@@ -59,9 +59,6 @@ export function MyCards4({ v, next }: { v: ViewState; next: () => void }) {
         <p className="mt-3 text-body">{t(lv.care[me] ? 'play.l4.cards.care' : 'play.l4.cards.noCare', { n: L4.CHAOS_COST })}</p>
         <p className="mt-3 text-body">{t('play.l4.cards.public')}</p>
         <p className="mt-3 text-small font-semibold">{t('play.l4.cards.judges', { names: order.map((p) => shortName(v, p.id)).join(', ') })}</p>
-        {v.play!.comeback && v.play!.comeback.pid !== v.viewer && (
-          <p className="mt-2 text-small">{t(v.play!.comeback.took === 'COINS' ? 'play.comeback.otherCoins' : 'play.comeback.otherPoints', { name: shortName(v, v.play!.comeback.pid), c: PLAY.COMEBACK.COINS, p: PLAY.COMEBACK.POINTS })}</p>
-        )}
       </div>
     </Stage>
   );

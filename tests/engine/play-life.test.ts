@@ -32,9 +32,20 @@ describe('Play LIFE', () => {
     expect(Object.values(starts[1])).toEqual([PLAY.LIFE_STARTING_BANK, PLAY.LIFE_STARTING_BANK, PLAY.LIFE_STARTING_BANK, PLAY.LIFE_STARTING_BANK]);
     for (const l of [2, 3, 4, 5]) {
       const last = s.play!.bankHistory.filter((h) => h.level === l - 1).slice(-1)[0];
-      for (const [id, b] of Object.entries(starts[l])) expect(b).toBeCloseTo(last.banks[id] + (l === 4 && s.play!.comeback?.pid === id && s.play!.comeback.took === 'COINS' ? 0 : 0), 6);
+      for (const [id, b] of Object.entries(starts[l])) expect(b).toBeCloseTo(last.banks[id] + (l === 4 && s.play!.comeback?.pid === id ? 0 : 0), 6);
     }
     expect(s.play!.comeback).toBeDefined();
+    // V5 (D-214): no choice; the contestant last after Episode 3 gets SECOND_CHANCE_COINS, on Episode 4's first round.
+    const cb = s.play!.comeback!;
+    expect(Object.keys(cb)).toEqual(['pid']);
+    const end3 = s.play!.bankHistory.filter((h) => h.level === 3).slice(-1)[0];
+    expect(end3.ranks[cb.pid]).toBe(Math.max(...Object.values(end3.ranks)));
+    const first4 = s.play!.bankHistory.find((h) => h.level === 4)!;
+    for (const p of s.players) {
+      const line = first4.ledger![p.id].find((x) => x.k === 'comeback');
+      expect(line?.n).toBe(p.id === cb.pid ? PLAY.SECOND_CHANCE_COINS : undefined);
+    }
+    expect(s.log.some((e) => (e as { step?: string }).step === 'COMEBACK' && (e as { type?: string }).type === 'DECIDE')).toBe(false);
   });
 
   it('replays only the current episode for a human near miss (the snapshot), and reaches the Receipts', () => {

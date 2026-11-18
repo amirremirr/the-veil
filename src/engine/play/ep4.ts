@@ -13,7 +13,7 @@ import type { LevelDefinition } from '../levels/types';
 import { POLICIES, type Group, type Job, type Policy, type Priors } from '../levels/level4';
 import { PLAY } from './params';
 import { botCall, callChance, callsOn, callsThisRound, lieBelief, settleCalls, validCall } from './calls';
-import { activeEvent, addBetweenRounds, giftNet, playEffortShares, playRanks, playRoundValue, playScore, setRoundLedger } from './rules';
+import { activeEvent, addBetweenRounds, giftNet, playEffortShares, playRanks, playRoundValue, setRoundLedger } from './rules';
 import { chooseClaim, claimsOf, honestyRange, postClaims, SILENT } from './claims';
 
 export interface Gift4 {
@@ -383,8 +383,9 @@ export const playLevel4: LevelDefinition = {
   },
   phases(s) {
     const out: Phase[] = [];
-    // v1 Section 6.3: in a life, the comeback card comes before Episode 4 for whoever is last after Episode 3.
-    if (s.mode === 'LIFE') out.push({ kind: 'DECIDE', step: 'COMEBACK', round: 1 });
+    // V5 (D-214): in a life, the Second Chance comes before Episode 4: whoever is last after Episode 3 gets
+    // SECOND_CHANCE_COINS. One screen, no decision.
+    if (s.mode === 'LIFE') out.push({ kind: 'REVEAL', step: 'COMEBACK', round: 1 });
     for (let r = 1; r <= PLAY.L4.ROUNDS; r++) {
       out.push(
         { kind: 'BRIEFING', round: r },
@@ -400,6 +401,14 @@ export const playLevel4: LevelDefinition = {
     return out;
   },
   onEnter(s, phase) {
+    if (phase.kind === 'REVEAL' && phase.step === 'COMEBACK') {
+      if (s.play!.comeback) return;
+      const pid = comebackSeat(s);
+      s.play!.banks[pid] += PLAY.SECOND_CHANCE_COINS;
+      addBetweenRounds(s, pid, { k: 'comeback', n: PLAY.SECOND_CHANCE_COINS });
+      s.play!.comeback = { pid };
+      return;
+    }
     if (phase.kind === 'REVEAL' && phase.step === 'CARDS') {
       // v2 3.4: every claim of the episode is stamped against that round's training, and feeds the record.
       const l = st(s);
@@ -424,7 +433,6 @@ export const playLevel4: LevelDefinition = {
     l.current = { judge: l.judge, workers: workersOf(s), policy: l.policy, priorsBefore: { ...l.priors }, costs: { ...l.costs }, gifts: {} };
   },
   deciders(s, step) {
-    if (step === 'COMEBACK') return s.play!.comeback ? [] : [comebackSeat(s)];
     if (step === 'POLICY') return ids(s);
     if (step === 'HIRE') return [st(s).judge];
     return workersOf(s);
@@ -435,7 +443,6 @@ export const playLevel4: LevelDefinition = {
       return gf && typeof gf.to === 'string' && gf.to !== pid && ids(s).includes(gf.to) && PLAY.GIFT_AMOUNTS.includes(gf.amount) ? { to: gf.to, amount: gf.amount } : null;
     };
     if (step === 'POLICY') return POLICIES.includes(d as Policy) ? d : null;
-    if (step === 'COMEBACK') return d === 'COINS' || d === 'POINTS' ? d : null;
     if (step === 'CLAIM') return d === 'TRAINED' || d === SILENT ? d : null;
     if (step === 'TRAIN') {
       const c = d as { train?: unknown; gift?: unknown };
@@ -452,14 +459,6 @@ export const playLevel4: LevelDefinition = {
     return null;
   },
   botDecide(s, botId, step) {
-    if (step === 'COMEBACK') {
-      // The option that raises the bot's Play score more (the coins count half, and move its mission).
-      const before = playScore(s, botId);
-      s.play!.banks[botId] += PLAY.COMEBACK.COINS;
-      const coinsGain = playScore(s, botId) - before;
-      s.play!.banks[botId] -= PLAY.COMEBACK.COINS;
-      return coinsGain >= PLAY.COMEBACK.POINTS ? 'COINS' : 'POINTS';
-    }
     if (step === 'TRAIN') return botTrain(s, botId);
     if (step === 'CLAIM') {
       const trained = st(s).current!.train![botId];
@@ -472,16 +471,6 @@ export const playLevel4: LevelDefinition = {
     const l = st(s);
     const c = l.current!;
     const g = gameRng(s);
-    if (step === 'COMEBACK') {
-      const [pid, took] = Object.entries(decisions)[0] as [PlayerId, 'COINS' | 'POINTS'];
-      if (took === 'COINS') {
-        s.play!.banks[pid] += PLAY.COMEBACK.COINS;
-        addBetweenRounds(s, pid, { k: 'comeback', n: PLAY.COMEBACK.COINS });
-      }
-      else s.play!.guessPoints[pid] += PLAY.COMEBACK.POINTS;
-      s.play!.comeback = { pid, took };
-      return;
-    }
     if (step === 'POLICY') {
       const votes = ids(s).map((id) => POLICIES.indexOf(decisions[id] as Policy));
       const { winner } = pluralityResolve(votes, POLICIES.length, g);

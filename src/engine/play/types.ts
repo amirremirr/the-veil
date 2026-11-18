@@ -72,7 +72,7 @@ export interface PlayState {
   /** R4, LIFE only: every contestant's first unpaid fair-tax answer, given before birth in Episode 1. */
   fairFirst?: Record<PlayerId, number>;
   /** v1 Section 6.3, LIFE only: the comeback card, once per life. */
-  comeback?: { pid: PlayerId; took: 'COINS' | 'POINTS' };
+  comeback?: { pid: PlayerId };
   /** H1 (D-194): every call so far (public). */
   calls?: CallRecord[];
   /** G1: the current round's money lines, set by the episode just before the round finishes. */
@@ -137,7 +137,7 @@ export interface NearMiss {
 
 export interface PlayView {
   /** v1 Section 6.3: the comeback card's taker and choice, public on air. */
-  comeback?: { pid: PlayerId; took: 'COINS' | 'POINTS' } | null;
+  comeback?: { pid: PlayerId } | null;
   /** H1 (D-194): every call so far, public (it is TV). */
   calls?: CallRecord[];
   /** Public (it is TV): every bank, debt stress, the bank history and every event. */

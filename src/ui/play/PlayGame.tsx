@@ -13,6 +13,7 @@ import { useMotionOff } from '../components/common';
 import { LockedInPanel, useOnline, useWaiting } from '../components/Online';
 import { screenDecisionPhase } from '../../shared/flow';
 import { AutoButton, BannerContext, BigButton, Bubble, Stage, useStagePanel } from './OnAir';
+import type { CastCue } from './Cast';
 import { ChoicesDid } from './Choices';
 import { HowItWorks } from './HowItWorks';
 import { sfx } from './sound';
@@ -219,18 +220,20 @@ function DecisionFlow5({ v }: { v: ViewState }) {
   return wrap(<AmendScreen key={stepId} v={v} />);
 }
 
-/** v1 Section 6.3: the comeback card, offered on air to the contestant in last place after Episode 3. */
+/** V5 (D-214): the Second Chance, one screen before Episode 4: whoever is last on score gets the coins. No decision. */
 function ComebackScreen({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
+  const cb = v.play!.comeback;
+  if (!cb) return null;
+  const mine = cb.pid === v.viewer;
+  const name = shortName(v, cb.pid);
+  const cue: CastCue = { stamps: { [cb.pid]: { text: `+${PLAY.SECOND_CHANCE_COINS}`, tone: 'good' } }, expr: { [cb.pid]: 'pleased' } };
   return (
-    <Stage v={v} footer={null}>
-      <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.comeback.label')} · {t('play.comeback.title')}</p>
-      <h1 className="h-show mt-1 text-hero leading-tight text-spot">{t('play.comeback.ask')}</h1>
-      <p className="mt-2 text-body">{t('play.comeback.how', { c: PLAY.COMEBACK.COINS, p: PLAY.COMEBACK.POINTS })}</p>
-      <p className="mt-2 text-small">{t('play.comeback.rate', { c: PLAY.COMEBACK.COINS, half: PLAY.COMEBACK.COINS * PLAY.BANK_WEIGHT })}</p>
-      <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
-        <BigButton onClick={() => act('COINS')}>{t('play.comeback.coins', { c: PLAY.COMEBACK.COINS })}</BigButton>
-        <BigButton onClick={() => act('POINTS')}>{t('play.comeback.points', { p: PLAY.COMEBACK.POINTS })}</BigButton>
+    <Stage v={v} cast={cue} onTap={() => act()} footer={<BigButton onClick={() => act()}>{t('play.stage.tap')}</BigButton>}>
+      <div className="my-auto" data-comeback>
+        <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.comeback.label')}</p>
+        <h1 className="h-show mt-1 text-hero leading-tight text-spot">{mine ? t('play.comeback.title') : t('play.comeback.titleOther', { name })}</h1>
+        <p className="mt-2 text-body">{mine ? t('play.comeback.you', { c: PLAY.SECOND_CHANCE_COINS }) : t('play.comeback.other', { name, c: PLAY.SECOND_CHANCE_COINS })}</p>
       </div>
     </Stage>
   );
@@ -261,7 +264,6 @@ function DecisionFlow4({ v }: { v: ViewState }) {
         <LockedInPanel v={v} />
       </Stage>
     );
-  if (stepId === 'COMEBACK') return wrap(<ComebackScreen v={v} />);
   if (stepId === 'POLICY') return wrap(<PolicyScreen v={v} />);
   if (stepId === 'CLAIM') return wrap(<ClaimScreen4 v={v} />);
   if (stepId === 'HIRE') return wrap(<JudgeScreen v={v} />);
@@ -562,6 +564,7 @@ export function PlayGameScreen() {
   }
   if (v.levelIndex === 4) {
     if (k === 'DECIDE') return <DecisionFlow4 key={`${v.levelIndex}-${v.phaseIdx}`} v={v} />;
+    if (k === 'REVEAL' && v.phase.step === 'COMEBACK') return <ComebackScreen v={v} />;
     if (k === 'REVEAL' && next?.kind === 'ROUND_SUMMARY') return <ResultsFlow4 key={`${v.levelIndex}-${v.phaseIdx}`} v={v} />;
     if (k === 'REVEAL' && v.phase.step === 'CARDS') return <CardsReveal4 v={v} />;
     return null;
