@@ -180,7 +180,7 @@ export function PrizeBeat({ v, next }: { v: ViewState; next: () => void }) {
   const r = lv.rounds[lv.rounds.length - 1];
   const w = r.winners ?? [];
   const last = v.round >= PLAY.L2.ROUNDS;
-  const head = w.length === 1 ? (w[0] === v.viewer ? t('play.l2.won.you', { n: PLAY.HUSTLE_PRIZE }) : t('play.l2.won.one', { name: shortName(v, w[0]), n: PLAY.HUSTLE_PRIZE })) : t('play.l2.won.split', { names: w.map((x) => shortName(v, x)).join(t('play.barBeat.and')) });
+  const head = w.length === 1 ? (w[0] === v.viewer ? t('play.l2.won.you', { n: PLAY.HUSTLE_PRIZE }) : t('play.l2.won.one', { name: shortName(v, w[0]), n: PLAY.HUSTLE_PRIZE })) : w.length === v.players.length && w.length > 2 ? t('play.l2.won.splitAll', { n: w.length }) : t('play.l2.won.split', { names: w.map((x) => shortName(v, x)).join(t('play.barBeat.and')) });
   return (
     <Stage v={v} onTap={next} footer={<AutoButton onClick={next}>{last ? t('play.l1.toReveal') : t('play.stage.nextRound', { r: v.round + 1 })}</AutoButton>}>
       <div className="my-auto" data-outcome>

@@ -1822,6 +1822,7 @@
         "you": "You won {n} coins.",
         "one": "Prize to {name}: {n} coins.",
         "split": "Split: {names}.",
+        "splitAll": "Split {n} ways.",
         "bank": "Your money this round: {w}."
       },
       "peak": {
@@ -1913,9 +1914,9 @@
       "whole": {
         "label": "The last twist",
         "title": "The new rules apply to everything you've earned",
-        "how": "Everyone pays {t} of what they earned since Episode 1. The pot lifts everyone's earnings to at least {F}, and the rest is shared equally.",
+        "how": "Earnings since Episode 1 pay {t} tax. The pot lifts everyone's to at least {F}; the rest is shared.",
         "none": "The rules that won are tax {t} and floor {F}: they take nothing and give nothing, so every bank stays as it is.",
-        "row": "earned {a} to {b}"
+        "row": "{a} to {b}"
       },
       "peak": {
         "label": "The ballots",
@@ -1990,8 +1991,8 @@
     "card": {
       "rank": "{name}: #{r} of {n}",
       "you": "You",
-      "best": "Best episode: Ep{ep} {name}, bank {n}",
-      "worst": "Worst episode: Ep{ep} {name}, bank {n}",
+      "best": "Best episode: Ep{ep}, bank {n}",
+      "worst": "Worst episode: Ep{ep}, bank {n}",
       "bank": "Final bank: {n}",
       "honesty": "Lied {lies} of {made} times. Caught {caught}.",
       "noClaims": "Never made a claim.",
