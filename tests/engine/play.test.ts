@@ -6,7 +6,7 @@ import { autoDecision } from '../../src/engine/auto';
 import { act, newTable, screenKind, tableStep, type Table } from '../../src/shared/flow';
 import { PLAY } from '../../src/engine/play/params';
 import { observe } from '../../src/engine/play/claims';
-import { debtStressFor, futureStress, playScore, roundsLeft } from '../../src/engine/play/rules';
+import { debtStressFor, futureStress, playScore, roundsLeft, worrierInterest } from '../../src/engine/play/rules';
 import { baselineBanks } from '../../src/engine/play/nearMiss';
 import { canResume, currentRules, gameRecord, paramsHash, RulesMismatchError } from '../../src/engine/version';
 import type { L3Debrief } from '../../src/engine/levels/level3';
@@ -107,9 +107,11 @@ describe('bank and debt stress', () => {
       for (const h of pl.bankHistory)
         for (const p of s.players) {
           banks[p.id] += h.W[p.id] - PLAY.LIVING_COST;
-          expect(h.banks[p.id]).toBeCloseTo(banks[p.id], 9);
+          // V5 (D-213): a Worrier in debt pays interest on it.
           const worry = (s.levelState as { worry: Record<string, string> }).worry[p.id];
-          expect(h.stress[p.id]).toBe((worry === 'WORRIER' ? PLAY.WORRIER_STRESS_MULT : 1) * debtStressFor(banks[p.id]));
+          if (worry === 'WORRIER') banks[p.id] -= worrierInterest(banks[p.id]);
+          expect(h.banks[p.id]).toBeCloseTo(banks[p.id], 9);
+          expect(h.stress[p.id]).toBe(debtStressFor(banks[p.id]));
           stress[p.id] += h.stress[p.id];
         }
       for (const p of s.players) expect(pl.debtStress[p.id]).toBeCloseTo(stress[p.id], 9);
@@ -474,19 +476,34 @@ describe('the worry card (D-128)', () => {
     }
     for (const m of [...Object.values(s.play!.belief), ...Object.values(s.play!.belief2)]) for (const b of Object.values(m)) expect(b).toBeCloseTo(0.5, 9);
   });
-  it('the debt stress of a Worrier in the score is WORRIER_STRESS_MULT times the Calm amount', () => {
-    expect(PLAY.WORRIER_STRESS_MULT).toBe(3);
+  it('V5 (D-213): a Worrier who ends a round in debt pays WORRIER_DEBT_RATE of the debt, rounded up, as a ledger line', () => {
+    expect(PLAY.WORRIER_DEBT_RATE).toBe(0.1);
+    expect(worrierInterest(5)).toBe(0);
+    expect(worrierInterest(0)).toBe(0);
+    expect(worrierInterest(-30)).toBe(3);
+    expect(worrierInterest(-31)).toBe(4);
+    expect(worrierInterest(-0.5)).toBe(1);
     let checked = 0;
+    let calm = 0;
     for (const s of games) {
       const l = s.levelState as { worry: Record<string, string> };
       for (const h of s.play!.bankHistory)
-        for (const p of s.players)
+        for (const p of s.players) {
+          const line = (h.ledger?.[p.id] ?? []).find((x) => x.k === 'interest');
+          if (l.worry[p.id] !== 'WORRIER') {
+            expect(line).toBeUndefined();
+            if (h.banks[p.id] < 0) calm++;
+            continue;
+          }
           if (h.banks[p.id] < 0) {
             checked++;
-            expect(h.stress[p.id]).toBe((l.worry[p.id] === 'WORRIER' ? 3 : 1) * debtStressFor(h.banks[p.id]));
-          }
+            const before = h.banks[p.id] + (line ? -line.n : 0);
+            expect(line!.n).toBe(-worrierInterest(before));
+          } else expect(line).toBeUndefined();
+        }
     }
     expect(checked).toBeGreaterThan(0);
+    expect(calm).toBeGreaterThan(0);
   });
 });
 

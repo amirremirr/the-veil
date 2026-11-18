@@ -92,21 +92,36 @@ export function playRoundValue(
   i: number,
   effortShares: readonly number[],
   drift: number | null = null,
-  mult: number = stressMult(s, s.players[i].id),
+  worry: number = worried(s, s.players[i].id),
 ): number {
   const pl = s.play!;
   const banks = s.players.map((p, j) => pl.banks[p.id] + W[j] - livingCost(s));
   const id = s.players[i].id;
-  return scoreOnBanks(card, banks, i, effortShares, pl.debtStress[id] + mult * debtStressFor(banks[i]), missionScale(s, card), bankBase(s, id)) - mult * futureStress(s, banks[i], drift);
+  // V5 (D-213): a Worrier's interest is coins, so it comes off the bank this round and in the rounds still to come.
+  if (worry) banks[i] -= worry * (worrierInterest(banks[i]) + futureInterest(s, banks[i], drift));
+  return scoreOnBanks(card, banks, i, effortShares, pl.debtStress[id] + debtStressFor(banks[i]), missionScale(s, card), bankBase(s, id)) - futureStress(s, banks[i], drift);
 }
 
 /**
- * D-128: a contestant's debt-stress multiplier now: WORRIER_STRESS_MULT for a Worrier in Episode 3, else 1.
- * Worry is private, so only the contestant's own valuation and the scoring read it.
+ * V5 (D-213): 1 for a Worrier in Episode 3 (who pays interest on a debt), else 0. Worry is private, so only the
+ * contestant's own valuation and the bank read it.
  */
-export function stressMult(s: GameState, pid: PlayerId): number {
+export function worried(s: GameState, pid: PlayerId): number {
   const worry = s.levelIndex === 3 ? (s.levelState as { worry?: Record<PlayerId, string> } | null)?.worry : undefined;
-  return worry?.[pid] === 'WORRIER' ? PLAY.WORRIER_STRESS_MULT : 1;
+  return worry?.[pid] === 'WORRIER' ? 1 : 0;
+}
+
+/** V5 (D-213): a Worrier's interest on a bank of `bank` at the end of a round: WORRIER_DEBT_RATE of the debt, rounded up. */
+export function worrierInterest(bank: number): number {
+  return bank < 0 ? Math.ceil(Math.round(PLAY.WORRIER_DEBT_RATE * -bank * 1e6) / 1e6) : 0;
+}
+
+/** V5 (D-213): the interest a bank of `bank` would still cost in the episode's later rounds, drifting by `drift` a round. */
+export function futureInterest(s: GameState, bank: number, drift: number | null): number {
+  if (drift === null) return 0;
+  let out = 0;
+  for (let k = 1; k <= roundsLeft(s); k++) out += worrierInterest(bank + k * drift);
+  return out;
 }
 
 /** The last round of each phase queue (a level's queue never changes once built; cached for speed only). */
@@ -136,14 +151,14 @@ export function futureStress(s: GameState, bank: number, drift: number | null): 
 
 /**
  * A selfish, risk-neutral contestant's value of `w` coins this round (the simple model bots use for
- * others, replacing Study's hardship-adjusted own money): money minus the debt stress it would cause.
- * `j < 0` uses the table's average bank.
+ * others, replacing Study's hardship-adjusted own money): money minus the debt stress it would cause, and
+ * a Worrier's interest when `worry` is 1 (D-213). `j < 0` uses the table's average bank.
  */
-export function playNet(s: GameState, j: number, w: number, drift: number | null = null, mult = 1): number {
+export function playNet(s: GameState, j: number, w: number, drift: number | null = null, worry = 0): number {
   const pl = s.play!;
   const bank = j >= 0 ? pl.banks[s.players[j].id] : bankList(s).reduce((a, b) => a + b, 0) / s.players.length;
   const after = bank + w - livingCost(s);
-  return w - mult * (debtStressFor(after) + futureStress(s, after, drift));
+  return w - debtStressFor(after) - futureStress(s, after, drift) - worry * (worrierInterest(after) + futureInterest(s, after, drift));
 }
 
 /** Ranks by Play score (1 = leading; ties share the better rank). */
@@ -188,7 +203,10 @@ export function playFinishRound(s: GameState, W: readonly number[]): void {
   if (!pl.bankHistory.length) rec.partsStart = Object.fromEntries(s.players.map((p) => [p.id, scoreParts(s, p.id)]));
   s.players.forEach((p, i) => {
     pl.banks[p.id] += W[i] - livingCost(s);
-    const st = stressMult(s, p.id) * debtStressFor(pl.banks[p.id]);
+    // V5 (D-213): a Worrier who ends the round in debt pays interest on it, as its own ledger line.
+    const interest = worried(s, p.id) * worrierInterest(pl.banks[p.id]);
+    pl.banks[p.id] -= interest;
+    const st = debtStressFor(pl.banks[p.id]);
     pl.debtStress[p.id] += st;
     rec.W[p.id] = W[i];
     rec.banks[p.id] = pl.banks[p.id];
@@ -198,6 +216,7 @@ export function playFinishRound(s: GameState, W: readonly number[]): void {
     const rest = W[i] - (pl.pendingLedger?.[p.id] ?? [{ k: 'income', n: W[i] }]).reduce((a, x) => a + x.n, 0);
     if (Math.abs(rest) > 1e-9) lines.push({ k: 'other', n: rest });
     lines.push({ k: 'living', n: -livingCost(s) });
+    if (interest) lines.push({ k: 'interest', n: -interest });
     rec.ledger![p.id] = lines;
   });
   for (const p of s.players) rec.parts![p.id] = scoreParts(s, p.id);

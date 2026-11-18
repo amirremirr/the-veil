@@ -1510,8 +1510,8 @@
         "CALM": "Calm"
       },
       "worryLine": {
-        "WORRIER": "You hate the thought of debt.",
-        "CALM": "Debt doesn't keep you up at night."
+        "WORRIER": "End a round in debt and you pay {r} of the debt as interest, rounded up.",
+        "CALM": "No interest on debt."
       },
       "unknown": "Nobody knows how many players are high risk or Worriers. Not even the host."
     },
@@ -2217,6 +2217,7 @@
         "call": "Calls",
         "comeback": "Second Chance",
         "living": "Living costs",
+        "interest": "Worrier interest",
         "other": "Other"
       },
       "rounded": "Shown in whole coins, rounded so the lines add up. The game keeps the exact amounts."
@@ -2224,6 +2225,7 @@
     "bank": {
       "round": "Your bank {from} to {to}: {w} this round, then -{c} living costs.",
       "comeback": "That includes your Second Chance: +{c}.",
+      "interest": "Then -{n} Worrier interest.",
       "living": "Living costs: -{c}.",
       "pay": "Pay: +{w}."
     },
@@ -2376,6 +2378,7 @@
       "caught": "You were caught.",
       "calledButTrue": "Someone called it and paid you.",
       "barred": "The pool barred you.",
+      "interest": "You ended in debt, so you paid Worrier interest.",
       "inPool": "You stayed in the pool.",
       "l1won": "You voted {rule}, and it won.",
       "l1lost": "the table picked {rule}.",

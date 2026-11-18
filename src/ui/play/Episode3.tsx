@@ -145,7 +145,7 @@ export function MyCardsBeat({ v, next }: { v: ViewState; next: () => void }) {
           </div>
           <div className={`rounded-2xl p-3 ${worry === 'WORRIER' ? 'bg-spot text-onspot' : 'bg-card'}`}>
             <p className="h-show text-title leading-tight">{t(`play.myCards.worry.${worry}`)}</p>
-            <p className="mt-1 text-small">{t(`play.myCards.worryLine.${worry}`)}</p>
+            <p className="mt-1 text-small">{t(`play.myCards.worryLine.${worry}`, { r: pct(PLAY.WORRIER_DEBT_RATE) })}</p>
           </div>
         </div>
         <p className="mt-4 text-body">{t('play.myCards.unknown')}</p>

@@ -67,10 +67,11 @@ export const PLAY = {
   /** D-121: round 1 of Episode 3 is a launch round: SafeHands signs everyone up at the pooled price. */
   L3_LAUNCH: true,
   /**
-   * D-128: Episode 3's second hidden card. A Worrier's debt stress is multiplied by this (the per-round cap
-   * too, D-144). Calm players are unchanged. The author's range: 1.5 to 4.
+   * V5 (D-213): Episode 3's second hidden card. A Worrier who ends a round in debt pays this share of the debt
+   * as interest, rounded up (a ledger line, "Worrier interest"). Calm players pay none. Replaces D-128's debt
+   * stress multiplier, which stopped costing anything once the score became the bank (D-210).
    */
-  WORRIER_STRESS_MULT: 3,
+  WORRIER_DEBT_RATE: 0.1,
   /** D-141: each seat is a Worrier with this chance, drawn on its own (like the risk card, 50/50). */
   WORRIER_SHARE: 0.5,
   /**

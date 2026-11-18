@@ -132,6 +132,8 @@ export function choiceRows(v: ViewState): { rows: ChoiceRow[]; from: number; to:
     rows.push({ kind: 'luck', text: t(hit ? (lossN ? 'play.did.wheelHit' : 'play.did.wheelHitCovered') : 'play.did.wheelMiss'), n: lossN });
     const plan = take('plan');
     if (plan) rows.push({ kind: 'others', text: t('play.did.plan'), n: plan });
+    const interest = take('interest');
+    if (interest) rows.push({ kind: 'choice', text: t('play.did.interest'), n: interest });
     rows.push(...giftRows(v, take('gift'), r.gifts as Record<string, Gift>));
   } else if (level === 4) {
     const lv = v.levelView as L4View;

@@ -142,7 +142,7 @@ export const STUDY_L3: L3Params = { ...L3, RISK_MULT: 1, RISK_CAP: 1, PREMIUM_MU
 export interface L3Ctx {
   p: L3Params;
   score(card: ValuesCard, W: readonly number[], i: number, effortShares: readonly number[]): number;
-  /** `mult`: the debt-stress multiplier assumed for player j (D-128: a Worrier's; 1 when calm or unknown). */
+  /** `mult`: 1 if player j is assumed a Worrier (D-213: it pays interest on a debt), 0 when calm or unknown. */
   net(j: number, w: number, mult?: number): number;
 }
 export const STUDY_CTX: L3Ctx = { p: STUDY_L3, score: roundScore, net: (_j, w) => ownNet(w) };
@@ -209,7 +209,7 @@ export function wealthL3(
  * Expected own money minus hardship for one choice (risk neutral apart from the hardship line).
  * Under a mandate the contribution is estimated from the population average risk.
  */
-export function rnValue(type: RiskType, regime: Regime, premium: number | null, ch: Choice, ctx: L3Ctx = STUDY_CTX, j = -1, mult = 1): number {
+export function rnValue(type: RiskType, regime: Regime, premium: number | null, ch: Choice, ctx: L3Ctx = STUDY_CTX, j = -1, mult = 0): number {
   const p = ctx.p;
   const net = (w: number) => ctx.net(j, w, mult);
   const pe = pEffOf(type, ch.gym, p);
@@ -487,7 +487,7 @@ function botBarVote(s: GameState, voter: PlayerId, pStay: number): PlayerId | nu
 
 /**
  * D-133: how likely member m is to buy, as `observer` sees it (public model, no private card): the logit rule
- * on rnValue for each risk type, weighted by the observer's belief that m is high risk, Calm multiplier.
+ * on rnValue for each risk type, weighted by the observer's belief that m is high risk, assumed Calm.
  */
 function publicBuyChance(s: GameState, m: PlayerId, bHigh: number): number {
   const premium = currentPremium(s);
@@ -672,7 +672,7 @@ function readRound(s: GameState, r: L3Round): void {
     const ch = r.choices[id];
     // D-128: every combination of risk and worry card, each with its own choice model.
     const likOf = (type: RiskType, worrier: boolean) => {
-      const m = worrier ? PLAY.WORRIER_STRESS_MULT : 1;
+      const m = worrier ? 1 : 0;
       let lik = 1;
       if (r.regime === 'VOL' && r.premium !== null && !r.launch) {
         const vNo = Math.max(rnValue(type, 'VOL', r.premium, { buy: false, gym: false }, ctx, j, m), rnValue(type, 'VOL', r.premium, { buy: false, gym: true }, ctx, j, m));
@@ -1012,7 +1012,7 @@ export const level3: LevelDefinition = {
       const n = s.players.length;
       const out = REGIMES.map(() => 0);
       // Play (D-128): the actor's worry card is private too, so the vote is read under both, equally likely.
-      const mults = isPlay(s) ? [1, PLAY.WORRIER_STRESS_MULT] : [null];
+      const mults = isPlay(s) ? [0, 1] : [null];
       for (const type of ['LOW', 'HIGH'] as RiskType[])
         for (const m of mults) {
           const ce = regimeCE(s, n, idx(s, actor), type, card, BOT.BELIEF_RHO, m === null ? undefined : () => m);

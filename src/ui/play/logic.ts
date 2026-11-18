@@ -180,9 +180,12 @@ export function bankLineText(v: ViewState): string | null {
   const from = prev ? prev.banks[v.viewer] : pl.startingBank;
   const to = last.banks[v.viewer];
   // Loop cycle 2: from the rounded banks, so the line adds up exactly as shown.
-  const money = Math.round(to) - Math.round(from) + pl.livingCost;
+  // V5 (D-213): a Worrier's interest is its own line after the living costs.
+  const interest = -(last.ledger?.[v.viewer] ?? []).filter((l) => l.k === 'interest').reduce((x, l) => x + l.n, 0);
+  const money = Math.round(to) - Math.round(from) + pl.livingCost + Math.round(interest);
   const sign = (x: number) => `${x >= 0 ? '+' : ''}${Math.round(x)}`;
-  const line = t('play.bank.round', { from: Math.round(from), to: Math.round(to), w: sign(money), c: pl.livingCost });
+  const base = t('play.bank.round', { from: Math.round(from), to: Math.round(to), w: sign(money), c: pl.livingCost });
+  const line = interest ? `${base} ${t('play.bank.interest', { n: Math.round(interest) })}` : base;
   // Loop cycle 16: the Second Chance coins land before Episode 4's first round, so that round's line includes them.
   const cb = pl.comeback;
   const firstOfEp4 = v.levelIndex === 4 && hist.filter((h) => h.level === 4).length === 1;

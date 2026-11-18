@@ -12,7 +12,7 @@ export interface PlayEvent {
 
 /** Bank after every finished round, in seat order of the record. */
 /** G1: one line of a round's money ledger. */
-export type LedgerKey = 'income' | 'rule' | 'peek' | 'inheritance' | 'gift' | 'prize' | 'hours' | 'pay' | 'cover' | 'gym' | 'loss' | 'plan' | 'training' | 'judge' | 'donation' | 'comeback' | 'call' | 'living' | 'other';
+export type LedgerKey = 'income' | 'rule' | 'peek' | 'inheritance' | 'gift' | 'prize' | 'hours' | 'pay' | 'cover' | 'gym' | 'loss' | 'plan' | 'training' | 'judge' | 'donation' | 'comeback' | 'call' | 'living' | 'interest' | 'other';
 export interface LedgerLine {
   k: LedgerKey;
   n: number;
