@@ -1,6 +1,6 @@
 {
   "seed": "a11y-1",
-  "screens": 55,
+  "screens": 53,
   "rules": {},
   "focusOnLastScreen": {
     "tabbed": 7,
