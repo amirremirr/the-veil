@@ -156,7 +156,11 @@ export const PLAY = {
    * JUDGE_CLAIM_WEIGHT: how far a bot judge's read moves toward "trained" on the claim "I trained", times the
    * worker's record (D-151). METER: whether a human judge sees the HireBot meter, per difficulty (open item 2).
    */
-  L4: { ROUNDS: 4, BASELINE_ROUNDS: 2, JUDGE_BASE: 40, JUDGE_GAIN: 20, JUDGE_LOSS: 30, METER: { EASY: true, NORMAL: true, HARD: false } as Record<string, boolean> },
+  L4: {
+    ROUNDS: 4,
+    /** V6 (D-217): rounds by seat count, so every seat judges the same number of times (3 seats: 3 rounds). */
+    ROUNDS_BY_SEATS: { 2: 4, 3: 3, 4: 4 } as Record<number, number>,
+    BASELINE_ROUNDS: 2, JUDGE_BASE: 40, JUDGE_GAIN: 20, JUDGE_LOSS: 30, METER: { EASY: true, NORMAL: true, HARD: false } as Record<string, boolean> },
   /** R2 (D-159): how far a judge trusts "I trained": k = this x the worker's chance of being honest (0 = meter only). */
   CLAIM_WEIGHT_EP4: 0.25,
   /** D-151: Meritocrat effort for one round of training (Episode 2 effort is in hours, 0 to 10). */

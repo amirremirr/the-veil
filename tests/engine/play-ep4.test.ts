@@ -18,15 +18,23 @@ describe('Play Episode 4', () => {
     expect(PLAY.L4.JUDGE_LOSS / (PLAY.L4.JUDGE_GAIN + PLAY.L4.JUDGE_LOSS)).toBeCloseTo(L4.THRESHOLD, 12);
   });
 
-  it('rotates the judge: each seat once at 4 seats, and 4 rounds at 2 and 3 seats', () => {
-    for (const n of [2, 3, 4] as const) {
-      const s = bots(`rot-${n}`, n);
-      const l = s.levelState as P4State;
-      expect(l.rounds.length).toBe(4);
-      const judges = l.rounds.map((r) => r.judge);
-      expect(judges).toEqual([0, 1, 2, 3].map((k) => s.players[k % n].id));
-      for (const r of l.rounds) expect(r.workers).not.toContain(r.judge);
-    }
+  it('V6 (D-217): every seat judges equally often (3 rounds at 3 seats, 4 at 2 and 4) from a random starting seat', () => {
+    const starts: Record<number, Set<number>> = { 2: new Set(), 3: new Set(), 4: new Set() };
+    for (const n of [2, 3, 4] as const)
+      for (let k = 0; k < 12; k++) {
+        const s = bots(`rot-${n}-${k}`, n);
+        const l = s.levelState as P4State;
+        expect(l.rounds.length).toBe(n === 3 ? 3 : 4);
+        const start = l.judgeStart!;
+        starts[n].add(start);
+        const judges = l.rounds.map((r) => r.judge);
+        expect(judges).toEqual(l.rounds.map((_, r) => s.players[(start + r) % n].id));
+        const count = s.players.map((p) => judges.filter((j) => j === p.id).length);
+        expect(new Set(count).size).toBe(1);
+        for (const r of l.rounds) expect(r.workers).not.toContain(r.judge);
+      }
+    // The starting judge is drawn, not always the first seat.
+    for (const n of [2, 3, 4]) expect(starts[n].size).toBeGreaterThan(1);
   });
 
   it('pays the judge 40 + 20 per good hire - 30 per bad hire (no event)', () => {

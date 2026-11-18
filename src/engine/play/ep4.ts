@@ -58,6 +58,8 @@ export interface P4State {
   policyVotes?: Record<PlayerId, Policy>;
   costs: Record<PlayerId, number>;
   judge: PlayerId;
+  /** V6 (D-217): the seat index that judges round 1, drawn on the game stream. */
+  judgeStart?: number;
   current?: Partial<P4Round>;
   rounds: P4Round[];
 }
@@ -114,8 +116,12 @@ export function comebackSeat(s: GameState): PlayerId {
   return s.players.filter((p) => r[p.id] === worst).slice(-1)[0].id;
 }
 
-/** The judge seat for a round: seat order, wrapping when there are fewer than 4 seats. */
-export const judgeOf = (s: GameState, round: number): PlayerId => s.players[(round - 1) % s.players.length].id;
+/** V6 (D-217): Episode 4's rounds at this table: every seat judges equally often (3 seats: 3 rounds, else 4). */
+export const rounds4 = (s: GameState): number => PLAY.L4.ROUNDS_BY_SEATS[s.players.length] ?? PLAY.L4.ROUNDS;
+
+/** The judge seat for a round: seat order from a random starting seat (V6, D-217), wrapping around the table. */
+export const judgeOf = (s: GameState, round: number, start = (s.levelState as P4State | undefined)?.judgeStart ?? 0): PlayerId =>
+  s.players[(start + round - 1) % s.players.length].id;
 
 const workersOf = (s: GameState): PlayerId[] => ids(s).filter((id) => id !== st(s).judge);
 
@@ -336,7 +342,7 @@ function botPolicy(s: GameState, pid: PlayerId): Policy {
     l.policy = pol;
     if (pol === 'B') l.priors.POOL = pooled(l);
     let total = 0;
-    for (let r = PLAY.L4.BASELINE_ROUNDS + 1; r <= PLAY.L4.ROUNDS; r++) {
+    for (let r = PLAY.L4.BASELINE_ROUNDS + 1; r <= rounds4(s); r++) {
       l.judge = judgeOf(s, r);
       const P = p4Params(s, false);
       const W = s.players.map((p) => {
@@ -348,7 +354,7 @@ function botPolicy(s: GameState, pid: PlayerId): Policy {
     }
     l.policy = saved.policy;
     l.priors = { ...saved.priors };
-    return total / (PLAY.L4.ROUNDS - PLAY.L4.BASELINE_ROUNDS);
+    return total / (rounds4(s) - PLAY.L4.BASELINE_ROUNDS);
   });
   l.judge = saved.judge;
   return POLICIES[logitChoice(u, botParams(s, pid).lambda, botRng(s))];
@@ -374,7 +380,8 @@ export const playLevel4: LevelDefinition = {
       pl.publicInfo.group = groups[id];
       pl.publicInfo.care = care[id];
     }
-    s.levelState = { groups, care, priors: { CIRCLE: L4.PRIOR_CIRCLE, SQUARE: L4.PRIOR_SQUARE, POOL: null }, policy: 'A', costs: {}, judge: judgeOf(s, 1), rounds: [] } satisfies P4State;
+    const judgeStart = Math.floor(g.next() * n);
+    s.levelState = { groups, care, priors: { CIRCLE: L4.PRIOR_CIRCLE, SQUARE: L4.PRIOR_SQUARE, POOL: null }, policy: 'A', costs: {}, judge: judgeOf(s, 1, judgeStart), judgeStart, rounds: [] } satisfies P4State;
     // Episode 4's hidden fact is training, read through the meter and the claim; Episode 3's tables are cleared.
     const pl = s.play!;
     pl.joint = {};
@@ -386,7 +393,8 @@ export const playLevel4: LevelDefinition = {
     // V5 (D-214): in a life, the Second Chance comes before Episode 4: whoever is last after Episode 3 gets
     // SECOND_CHANCE_COINS. One screen, no decision.
     if (s.mode === 'LIFE') out.push({ kind: 'REVEAL', step: 'COMEBACK', round: 1 });
-    for (let r = 1; r <= PLAY.L4.ROUNDS; r++) {
+    const R = rounds4(s);
+    for (let r = 1; r <= R; r++) {
       out.push(
         { kind: 'BRIEFING', round: r },
         { kind: 'DECIDE', step: 'TRAIN', round: r },
@@ -397,7 +405,7 @@ export const playLevel4: LevelDefinition = {
       );
       if (r === PLAY.L4.BASELINE_ROUNDS) out.push({ kind: 'DECIDE', step: 'POLICY', round: r }, { kind: 'REVEAL', step: 'POLICY', round: r });
     }
-    out.push({ kind: 'REVEAL', step: 'CARDS', round: PLAY.L4.ROUNDS });
+    out.push({ kind: 'REVEAL', step: 'CARDS', round: R });
     return out;
   },
   onEnter(s, phase) {
@@ -602,6 +610,8 @@ export const playLevel4: LevelDefinition = {
       policy: l.policy,
       policyVotes: l.policyVotes,
       judge: l.judge,
+      // V6 (D-217): the judge for each round, public from the start.
+      judges: Array.from({ length: rounds4(s) }, (_, k) => judgeOf(s, k + 1)),
       myCost: s.players.some((p) => p.id === viewer) ? Math.max(0, l.costs[viewer] - p4Params(s).costCut) : undefined,
       myCostBase: s.players.some((p) => p.id === viewer) ? l.costs[viewer] : undefined,
       rounds: l.rounds.map((r) => hideTrain(r)),

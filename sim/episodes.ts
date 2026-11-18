@@ -31,6 +31,8 @@ export interface GameRec {
   m: Record<string, [number, number]>;
   cards: ValuesCard[];
   bank: number[];
+  /** V6: each seat's raw final bank (seat order as dealt). */
+  rawBank: number[];
   stress: number[];
   guess: number[];
   mission: number[];
@@ -61,6 +63,7 @@ function recOf(s: GameState): GameRec {
     m: (s as GameState & { __m?: Record<string, [number, number]> }).__m!,
     cards: s.players.map((p) => p.values),
     bank: banks.map((b, i) => b - base[i]),
+    rawBank: banks,
     stress: s.players.map((p) => pl.debtStress[p.id]),
     guess: s.players.map((p) => pl.guessPoints[p.id]),
     mission,
@@ -166,6 +169,16 @@ for (const m of metrics) {
 // V5 N1: F-e (mission win shares) is dropped with the missions; the bots' wins by values trait are reported.
 const ws = winShares(recs);
 out.push(`REPORT [reported] wins by bot values trait (per seat; no target): ${VALUES_CARDS.map((c) => `${c} ${(ws[c] * 100).toFixed(1)}%`).join(', ')}`);
+// V6 part 1: final bank by seat position (seat order as dealt), each with a bootstrap SE over games. A seat
+// passes when its mean is within 1 SE (its own) of the mean over all seats. Reported, not gating.
+{
+  const n = recs[0]?.rawBank.length ?? nPlayers;
+  const seat = (k: number) => boot(recs, (x) => [x.rawBank[k], 1]);
+  const all = recs.reduce((a, x) => a + x.rawBank.reduce((c, y) => c + y, 0), 0) / (recs.length * n);
+  const rows = Array.from({ length: n }, (_, k) => seat(k));
+  const ok = rows.every((r) => Math.abs(r.mean - all) <= r.se);
+  out.push(`${ok ? 'PASS  ' : 'FAIL  '} [reported] final bank by seat (mean ${all.toFixed(1)}; each seat within 1 SE): ${rows.map((r, k) => `seat ${k + 1} ${r.mean.toFixed(1)} ± ${r.se.toFixed(1)} (${r.mean - all >= 0 ? '+' : ''}${(r.mean - all).toFixed(1)})`).join(', ')}`);
+}
 out.push('', fail ? 'A gating target fails.' : 'All gating targets pass.', `Time: ${((Date.now() - t0) / 1000).toFixed(1)}s.`);
 console.log(out.join('\n'));
 if (fail) process.exitCode = 1;
