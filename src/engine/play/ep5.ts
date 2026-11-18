@@ -11,7 +11,7 @@ import type { GameState, Phase, PlayerId, ValuesCard } from '../types';
 import type { LevelDefinition } from '../levels/types';
 import { PLAY } from './params';
 import { botCall, callChance, coinValue, lieBelief, settleCalls, validCall } from './calls';
-import { activeEvent, playEffortShares, playRoundValue, livingCost, setRoundLedger } from './rules';
+import { activeEvent, bankBase, playEffortShares, playRoundValue, livingCost, setRoundLedger } from './rules';
 import { chooseClaim, credibilityValue, expectedRecord, honestyOf, postClaims, SILENT } from './claims';
 
 export interface Lobby5 {
@@ -49,10 +49,11 @@ export interface P5State {
   amendments: Amend5[];
   W?: Record<PlayerId, number>;
   /**
-   * V5 (D-215), LIFE only: the winning rule applied to every whole bank at the end of the finale. `before` is each
-   * bank with the finale's donations and calls; `after` is the bank once the rule has acted on it.
+   * V5 (D-215, D-216), LIFE only: the winning rule applied at the end of the finale to what each contestant has
+   * earned since the end of Episode 1 (the scored bank). `before` is each bank with the finale's donations and
+   * calls; `after` is the bank once the rule has acted; `base` is the bank at the end of Episode 1 (not taxed).
    */
-  whole?: { before: Record<PlayerId, number>; after: Record<PlayerId, number>; rule: Constitution };
+  whole?: { before: Record<PlayerId, number>; after: Record<PlayerId, number>; base: Record<PlayerId, number>; rule: Constitution };
 }
 
 const st = (s: GameState) => s.levelState as P5State;
@@ -113,15 +114,18 @@ export function wholeBankRule(banks: readonly number[], c: Constitution): number
 /**
  * The finale's money for everyone (seat order) under rule `c`, with the lobby's donations and `moves` (coins
  * that change hands in the finale: a donor's plan, the calls). In a single episode the rule acts on the dealt
- * incomes and the moves come after it. In a life (V5, D-215) the rule acts once on every whole bank at the end
- * of the finale, moves included, and the finale covers the living cost, so the bank becomes the after-rule amount.
+ * incomes and the moves come after it. In a life (V5, D-216) the rule acts once at the end of the finale, moves
+ * included, on each contestant's earnings since the end of Episode 1 (the scored bank, bank minus bankBase): only
+ * positive earnings are taxed, the floor tops up earnings below it, the rest is shared equally. Birth income is not
+ * taxed, as it is not scored. The finale covers the living cost.
  */
 function roundW(s: GameState, c: Constitution, lobby: Record<PlayerId, Lobby5> | undefined | null, moves?: readonly number[]): number[] {
   const add = (W: number[]) => (moves ? W.map((w, j) => w + moves[j]) : W);
   if (s.mode !== 'LIFE') return add(withDonations(s, constitutionWealth(incomesOf(s), c), lobby ?? undefined));
   const banks = ids(s).map((id) => s.play!.banks[id]);
+  const base = ids(s).map((id) => bankBase(s, id));
   const pre = add(withDonations(s, banks.slice(), lobby ?? undefined));
-  return wholeBankRule(pre, c).map((a, j) => a - banks[j] + livingCost(s));
+  return wholeBankRule(pre.map((b, j) => b - base[j]), c).map((a, j) => a + base[j] - banks[j] + livingCost(s));
 }
 
 /** A bot's proposal: its sigma mix of the mission-best and the money-best constitution, as Study. */
@@ -258,12 +262,13 @@ function finalize(s: GameState): void {
   l.W = Object.fromEntries(ids(s).map((id, i) => [id, W[i]]));
   const don = withDonations(s, ids(s).map(() => 0), l.lobby);
   if (s.mode === 'LIFE') {
-    // V5 (D-215): the rule acts on every whole bank once the donations and calls have landed; the staged beat
-    // shows each bank before and after. The finale covers the living cost (as D-155).
+    // V5 (D-216): the rule acts on everyone's earnings since Episode 1 once the donations and calls have landed;
+    // the staged beat shows each bank and its earnings before and after. The finale covers the living cost.
     const banks = ids(s).map((id) => s.play!.banks[id]);
     l.whole = {
       before: Object.fromEntries(ids(s).map((id, i) => [id, banks[i] + don[i] + calls[i]])),
       after: Object.fromEntries(ids(s).map((id, i) => [id, banks[i] + W[i] - livingCost(s)])),
+      base: Object.fromEntries(ids(s).map((id) => [id, bankBase(s, id)])),
       rule: { ...l.current! },
     };
     setRoundLedger(s, Object.fromEntries(ids(s).map((id, i) => [id, [

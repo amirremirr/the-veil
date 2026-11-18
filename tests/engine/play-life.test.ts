@@ -36,14 +36,17 @@ describe('V5 (D-215): the finale reaches the whole bank', () => {
     const short = wholeBankRule([20, -100], { t: 0.5, F: 0 });
     expect(short).toEqual([10, -90]);
   });
-  it('in a life, every bank ends the finale at the rule applied to it with the donations and calls', () => {
+  it('in a life, the rule acts on earnings since Episode 1 (with the donations and calls); birth income is untouched', () => {
     for (const seed of ['whole-1', 'whole-2', 'whole-3']) {
       const { s } = life(seed);
-      const lv = s.levelState as { whole?: { before: Record<string, number>; after: Record<string, number>; rule: { t: number; F: number } }; current: { t: number; F: number } };
+      const lv = s.levelState as { whole?: { before: Record<string, number>; after: Record<string, number>; base: Record<string, number>; rule: { t: number; F: number } }; current: { t: number; F: number } };
       expect(lv.whole).toBeDefined();
       const ids = s.players.map((p) => p.id);
-      const after = wholeBankRule(ids.map((id) => lv.whole!.before[id]), lv.whole!.rule);
-      ids.forEach((id, i) => expect(lv.whole!.after[id]).toBeCloseTo(after[i], 6));
+      // V5 (D-216): the rule acts on earnings since the end of Episode 1; the Episode 1 bank is untouched.
+      const end1 = s.play!.bankHistory.filter((h) => h.level === 1).slice(-1)[0];
+      for (const id of ids) expect(lv.whole!.base[id]).toBeCloseTo(end1.banks[id], 9);
+      const after = wholeBankRule(ids.map((id) => lv.whole!.before[id] - lv.whole!.base[id]), lv.whole!.rule);
+      ids.forEach((id, i) => expect(lv.whole!.after[id]).toBeCloseTo(after[i] + lv.whole!.base[id], 6));
       const fin = s.play!.bankHistory.filter((h) => h.level === 5).slice(-1)[0];
       for (const id of ids) expect(fin.banks[id]).toBeCloseTo(lv.whole!.after[id], 6);
     }

@@ -31,7 +31,7 @@ export type L5View = {
   myFair1?: number;
   myFair2?: number;
   W?: Record<string, number>;
-  whole?: { before: Record<string, number>; after: Record<string, number>; rule: Constitution };
+  whole?: { before: Record<string, number>; after: Record<string, number>; base: Record<string, number>; rule: Constitution };
   leaked: boolean;
   maxDonation: number;
   need: number;
@@ -338,7 +338,7 @@ export function WholeBankBeat({ v }: { v: ViewState }) {
   }
   const none = w.rule.t < 1e-9 && w.rule.F <= 0;
   const how = <p className="text-body">{t(none ? 'play.l5.whole.none' : 'play.l5.whole.how', { t: pct(w.rule.t), F: coins(w.rule.F) })}</p>;
-  const order = v.players.slice().sort((a, b) => w.after[b.id] - w.after[a.id]);
+  const order = v.players.slice().sort((a, b) => w.after[b.id] - w.base[b.id] - (w.after[a.id] - w.base[a.id]));
   const final = (
     <>
       {how}
@@ -347,7 +347,7 @@ export function WholeBankBeat({ v }: { v: ViewState }) {
           <li key={p.id} className="flex items-center gap-2 rounded-xl bg-card px-2 py-1">
             <Face v={v} p={p} size={24} />
             <span className="w-20 truncate text-small font-bold">{shortName(v, p.id)}</span>
-            <span className="flex-1 text-small">{t('play.l5.whole.row', { a: r(w.before[p.id]), b: r(w.after[p.id]) })}</span>
+            <span className="flex-1 text-small">{t('play.l5.whole.row', { a: r(w.before[p.id] - w.base[p.id]), b: r(w.after[p.id] - w.base[p.id]) })}</span>
           </li>
         ))}
       </ul>
