@@ -21,7 +21,7 @@ import { CardsReveal, ClaimScreen, MoveScreen, MyCardsBeat, RegimeScreen, WheelB
 import { eventText, hostLine, pick, timesWord, verbOn } from './logic';
 import { CardsReveal1, ClaimScreen1, IncomesBeat, PeekScreen, VoteScreen1, summary1 } from './Episode1';
 import { CardsReveal2, EffortScreen, IncomeScreen, MyCards2, PrizeBeat, PrizeScreen, TaxScreen, summary2 } from './Episode2';
-import { AmendReveal, AmendScreen, ClaimScreen5, FairScreen, Finale, IncomesScreen, LobbyScreen, VeilScreen, summary5 } from './Episode5';
+import { AmendReveal, AmendScreen, ClaimScreen5, FairScreen, Finale, IncomesScreen, LobbyScreen, VeilScreen, WholeBankBeat, summary5 } from './Episode5';
 import { LifeEnd } from './LifeEnd';
 import { PlaytestPanel } from './Playtest';
 import { onScreen, onTap, playtestOn } from '../playtest';
@@ -544,6 +544,7 @@ export function PlayGameScreen() {
     // the next screen.
     if (k === 'REVEAL' && v.phase.step === 'INCOMES') return v.mode === 'LIFE' && !online ? <AutoAct v={v} value={undefined} /> : <IncomesScreen v={v} />;
     if (k === 'REVEAL' && v.phase.step === 'AMENDMENTS') return <AmendReveal v={v} />;
+    if (k === 'REVEAL' && v.phase.step === 'WHOLE_BANK') return <WholeBankBeat v={v} />;
     return null;
   }
   if (v.levelIndex === 2) {

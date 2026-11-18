@@ -31,6 +31,7 @@ export type L5View = {
   myFair1?: number;
   myFair2?: number;
   W?: Record<string, number>;
+  whole?: { before: Record<string, number>; after: Record<string, number>; rule: Constitution };
   leaked: boolean;
   maxDonation: number;
   need: number;
@@ -251,7 +252,7 @@ export function AmendReveal({ v }: { v: ViewState }) {
   const live = lv.amendments.filter((a) => !a.withdrawn);
   const n = v.players.length;
   const stepsAm = live.map((a) => {
-    const cue: CastCue = { stamps: {}, expr: {}, focus: null };
+    const cue: CastCue = { stamps: {}, expr: {}, focus: null, ...(lv.whole ? { banks: lv.whole.before } : {}) };
     for (const p of v.players) {
       const c = a.claims[p.id];
       const yes = !!a.votes[p.id];
@@ -273,7 +274,8 @@ export function AmendReveal({ v }: { v: ViewState }) {
       ),
     };
   });
-  const finalCue: CastCue = { expr: {} };
+  // V5 (D-215): in a life the podiums keep the banks before the rule; the next beat applies it to them.
+  const finalCue: CastCue = { expr: {}, ...(lv.whole ? { banks: lv.whole.before } : {}) };
   for (const [from, lb] of Object.entries(lv.lobby ?? {})) {
     if (!lb.donateTo || lb.amount <= 0) continue;
     const a = live.find((x) => x.proposer === from);
@@ -307,14 +309,62 @@ export function AmendReveal({ v }: { v: ViewState }) {
       <CallResults v={v} quiet />
       <p className="mt-1 text-small">{t('play.l5.peak.shift', { a: pct(lv.fair1?.[me] ?? 0), b: pct(lv.fair2?.[me] ?? 0), d: `${shift >= 0 ? '+' : ''}${Math.round(shift * 100)}` })}</p>
       </Details>
-      {/* UI V4 (V3): what your choices did; it adds up to the bank change. */}
-      <ChoicesDid v={v} />
+      {/* UI V4 (V3): what your choices did; it adds up to the bank change. In a life it shows on the next beat. */}
+      {!lv.whole && <ChoicesDid v={v} />}
       <div className="mt-2">
         <Bubble who="Dash" host mood={stamps.length ? 'excited' : 'wink'} text={stamps.length ? t('play.l5.peak.hostBought') : t('play.l5.peak.hostClean')} />
       </div>
     </>
   );
   return <StagedReveal v={v} label={t('play.l5.peak.label')} title={t('play.cast.l5title2')} steps={stepsAm} final={{ cue: finalCue, body: finalBody }} onDone={() => act()} />;
+}
+
+/**
+ * V5 (D-215), LIFE only: the winning rule acts on every whole bank, staged: the rule on the podiums' old banks,
+ * then each bank counts to its new value, with what your choices did.
+ */
+export function WholeBankBeat({ v }: { v: ViewState }) {
+  const act = useStore((s) => s.act);
+  const lv = lv5(v);
+  const w = lv.whole;
+  if (!w) return null;
+  const r = (x: number) => Math.round(x);
+  const flash: Record<string, 'gain' | 'hit'> = {};
+  const expr: CastCue['expr'] = {};
+  for (const p of v.players) {
+    const d = w.after[p.id] - w.before[p.id];
+    if (Math.abs(d) >= 0.5) flash[p.id] = d > 0 ? 'gain' : 'hit';
+    expr[p.id] = d > 0.5 ? 'pleased' : d < -0.5 ? 'sad' : 'neutral';
+  }
+  const none = w.rule.t < 1e-9 && w.rule.F <= 0;
+  const how = <p className="text-body">{t(none ? 'play.l5.whole.none' : 'play.l5.whole.how', { t: pct(w.rule.t), F: coins(w.rule.F) })}</p>;
+  const order = v.players.slice().sort((a, b) => w.after[b.id] - w.after[a.id]);
+  const final = (
+    <>
+      {how}
+      <ul className="mt-2 space-y-1" data-whole-bank>
+        {order.map((p) => (
+          <li key={p.id} className="flex items-center gap-2 rounded-xl bg-card px-2 py-1">
+            <Face v={v} p={p} size={24} />
+            <span className="w-20 truncate text-small font-bold">{shortName(v, p.id)}</span>
+            <span className="flex-1 text-small">{t('play.l5.whole.row', { a: r(w.before[p.id]), b: r(w.after[p.id]) })}</span>
+          </li>
+        ))}
+      </ul>
+      <ChoicesDid v={v} />
+    </>
+  );
+  return (
+    <StagedReveal
+      v={v}
+      label={t('play.l5.whole.label')}
+      title={t('play.l5.whole.title')}
+      steps={[{ cue: { banks: w.before }, body: how }]}
+      final={{ cue: { flash, expr }, body: final }}
+      onDone={() => act()}
+      data="whole"
+    />
+  );
 }
 
 export function summary5(v: ViewState): { lie: string } {

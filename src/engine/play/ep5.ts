@@ -48,6 +48,11 @@ export interface P5State {
   claims?: Record<PlayerId, Record<PlayerId, string>>;
   amendments: Amend5[];
   W?: Record<PlayerId, number>;
+  /**
+   * V5 (D-215), LIFE only: the winning rule applied to every whole bank at the end of the finale. `before` is each
+   * bank with the finale's donations and calls; `after` is the bank once the rule has acted on it.
+   */
+  whole?: { before: Record<PlayerId, number>; after: Record<PlayerId, number>; rule: Constitution };
 }
 
 const st = (s: GameState) => s.levelState as P5State;
@@ -92,21 +97,37 @@ function incomesOf(s: GameState): number[] {
 }
 
 /**
- * D-155: in a life the incomes are the banks (debt counts as 0 for the tax base), and the rules redistribute
- * them: the round's money is the after-rules amount minus the bank it came from, plus the living cost, so the
- * bank becomes the after-rules amount (a debt stays). In a single episode the after-rules amount is the money.
+ * V5 (D-215): a rule applied to whole banks. Each pays the tax on their bank above 0; the pot tops everyone (a debt
+ * too) up to the floor, and what is left is shared equally. When the pot is short, each top-up is cut in proportion.
  */
-function asRound(s: GameState, W: number[]): number[] {
-  if (s.mode !== 'LIFE') return W;
-  const base = incomesOf(s);
-  return W.map((w, j) => w - base[j] + livingCost(s));
+export function wholeBankRule(banks: readonly number[], c: Constitution): number[] {
+  const after = banks.map((b) => b - c.t * Math.max(0, b));
+  const pot = banks.reduce((a, b) => a + c.t * Math.max(0, b), 0);
+  const short = after.map((a) => Math.max(0, c.F - a));
+  const need = short.reduce((a, b) => a + b, 0);
+  if (need <= pot + 1e-9) return after.map((a, i) => a + short[i] + (pot - need) / banks.length);
+  const ratio = need > 0 ? pot / need : 0;
+  return after.map((a, i) => a + short[i] * ratio);
+}
+
+/**
+ * The finale's money for everyone (seat order) under rule `c`, with the lobby's donations and `moves` (coins
+ * that change hands in the finale: a donor's plan, the calls). In a single episode the rule acts on the dealt
+ * incomes and the moves come after it. In a life (V5, D-215) the rule acts once on every whole bank at the end
+ * of the finale, moves included, and the finale covers the living cost, so the bank becomes the after-rule amount.
+ */
+function roundW(s: GameState, c: Constitution, lobby: Record<PlayerId, Lobby5> | undefined | null, moves?: readonly number[]): number[] {
+  const add = (W: number[]) => (moves ? W.map((w, j) => w + moves[j]) : W);
+  if (s.mode !== 'LIFE') return add(withDonations(s, constitutionWealth(incomesOf(s), c), lobby ?? undefined));
+  const banks = ids(s).map((id) => s.play!.banks[id]);
+  const pre = add(withDonations(s, banks.slice(), lobby ?? undefined));
+  return wholeBankRule(pre, c).map((a, j) => a - banks[j] + livingCost(s));
 }
 
 /** A bot's proposal: its sigma mix of the mission-best and the money-best constitution, as Study. */
 function botProposal(s: GameState, pid: PlayerId): Constitution | null {
   const i = idx(s, pid);
-  const inc = incomesOf(s);
-  const Ws = ALL_CONSTITUTIONS.map((c) => asRound(s, constitutionWealth(inc, c)));
+  const Ws = ALL_CONSTITUTIONS.map((c) => roundW(s, c, null));
   // G2 (D-188): the Play value already weighs the bot's own bank and its mission; Study's extra pull toward
   // the money-best constitution (sigma) counted own money twice, so the proposal is the Play-value best.
   const prop = PLAY.L5.PROPOSAL_PLAY_VALUE
@@ -121,9 +142,8 @@ function botProposal(s: GameState, pid: PlayerId): Constitution | null {
 }
 
 function passProbability(s: GameState, pid: PlayerId, prop: Constitution, target: PlayerId | null, d: number, P: ReturnType<typeof p5Params>): number {
-  const inc = incomesOf(s);
-  const Wa = constitutionWealth(inc, prop);
-  const Wc = constitutionWealth(inc, st(s).current!);
+  const Wa = roundW(s, prop, null);
+  const Wc = roundW(s, st(s).current!, null);
   const claims = st(s).claims;
   const ps = ids(s).map((id, j) => {
     if (id === pid) return 1;
@@ -162,23 +182,18 @@ function donorPlan(s: GameState, pid: PlayerId, logit: boolean, claimsOverride?:
   if (claimsOverride) l.claims = claimsOverride;
   const P = p5Params(s);
   const i = idx(s, pid);
-  const inc = incomesOf(s);
-  const Wa = asRound(s, constitutionWealth(inc, prop));
-  const Wc = asRound(s, constitutionWealth(inc, st(s).current!));
   const amounts = PLAY.L5.DONATION_OPTIONS_BOT.filter((a) => a <= P.maxDonation);
   const combos: Array<{ to: PlayerId | null; d: number }> = [{ to: null, d: 0 }];
   for (const to of ids(s)) if (to !== pid && l.claims?.[to]?.[pid] === 'YES') for (const d of amounts) if (d > 0) combos.push({ to, d });
   const u = combos.map(({ to, d }) => {
-    const shift = (W: number[]) => {
-      const out = W.slice();
-      if (to) {
-        out[i] -= d;
-        out[idx(s, to)] += d;
-      }
-      return out;
-    };
+    // V5 (D-215): in a life the donation moves coins before the rule acts on the whole bank.
+    const moves = ids(s).map(() => 0);
+    if (to) {
+      moves[i] -= d;
+      moves[idx(s, to)] += d;
+    }
     const p = passProbability(s, pid, prop, to, d, P);
-    return p * value(s, i, shift(Wa)) + (1 - p) * value(s, i, shift(Wc));
+    return p * value(s, i, roundW(s, prop, null, moves)) + (1 - p) * value(s, i, roundW(s, st(s).current!, null, moves));
   });
   l.claims = saved;
   const k = logit ? logitChoice(u, botParams(s, pid).lambda, botRng(s)) : argmax(u);
@@ -203,9 +218,8 @@ function pYes(s: GameState, pid: PlayerId, k: number, statusQuo: Constitution): 
   const l = st(s);
   const a = l.lobby![l.order[k]];
   const i = idx(s, pid);
-  const inc = incomesOf(s);
-  const Sa = value(s, i, withDonations(s, asRound(s, constitutionWealth(inc, a.proposal!)), l.lobby));
-  const Sc = value(s, i, withDonations(s, asRound(s, constitutionWealth(inc, statusQuo)), l.lobby));
+  const Sa = value(s, i, roundW(s, a.proposal!, l.lobby));
+  const Sc = value(s, i, roundW(s, statusQuo, l.lobby));
   let p = logitProbs([Sa, Sc], botParams(s, pid).lambda)[0];
   if (a.donateTo === pid) p = Math.min(1, p + (PLAY.L5.RECIPROCITY * a.amount) / p5Params(s).maxDonation);
   return { p, gap: Sa - Sc };
@@ -239,18 +253,36 @@ function botFair(s: GameState, pid: PlayerId, after: boolean): number {
 function finalize(s: GameState): void {
   const l = st(s);
   if (l.W) return;
-  const W = withDonations(s, asRound(s, constitutionWealth(incomesOf(s), l.current!)), l.lobby).map((w, i) => w + (l.callNet?.[ids(s)[i]] ?? 0));
+  const calls = ids(s).map((id) => l.callNet?.[id] ?? 0);
+  const W = roundW(s, l.current!, l.lobby, calls);
   l.W = Object.fromEntries(ids(s).map((id, i) => [id, W[i]]));
-  // G1: the money lines. In a life the rules act on the banks and the finale covers the living cost (asRound).
-  const inc = incomesOf(s);
-  const after = constitutionWealth(inc, l.current!);
-  const don = withDonations(s, inc.map(() => 0), l.lobby);
-  setRoundLedger(s, Object.fromEntries(ids(s).map((id, i) => [id, [
-    { k: 'income' as const, n: s.mode === 'LIFE' ? livingCost(s) : inc[i] },
-    { k: 'rule' as const, n: after[i] - inc[i] },
-    { k: 'donation' as const, n: don[i] },
-    { k: 'call' as const, n: l.callNet?.[id] ?? 0 },
-  ]])));
+  const don = withDonations(s, ids(s).map(() => 0), l.lobby);
+  if (s.mode === 'LIFE') {
+    // V5 (D-215): the rule acts on every whole bank once the donations and calls have landed; the staged beat
+    // shows each bank before and after. The finale covers the living cost (as D-155).
+    const banks = ids(s).map((id) => s.play!.banks[id]);
+    l.whole = {
+      before: Object.fromEntries(ids(s).map((id, i) => [id, banks[i] + don[i] + calls[i]])),
+      after: Object.fromEntries(ids(s).map((id, i) => [id, banks[i] + W[i] - livingCost(s)])),
+      rule: { ...l.current! },
+    };
+    setRoundLedger(s, Object.fromEntries(ids(s).map((id, i) => [id, [
+      { k: 'income' as const, n: livingCost(s) },
+      { k: 'donation' as const, n: don[i] },
+      { k: 'call' as const, n: calls[i] },
+      { k: 'rule' as const, n: W[i] - livingCost(s) - don[i] - calls[i] },
+    ]])));
+  } else {
+    // G1: the money lines. In a single episode the rules act on the dealt incomes.
+    const inc = incomesOf(s);
+    const after = constitutionWealth(inc, l.current!);
+    setRoundLedger(s, Object.fromEntries(ids(s).map((id, i) => [id, [
+      { k: 'income' as const, n: inc[i] },
+      { k: 'rule' as const, n: after[i] - inc[i] },
+      { k: 'donation' as const, n: don[i] },
+      { k: 'call' as const, n: calls[i] },
+    ]])));
+  }
   finishRound(s, W, playEffortShares(s), headline(s, 'l5.play', {}));
 }
 
@@ -277,7 +309,10 @@ export const playLevel5: LevelDefinition = {
       { kind: 'DECIDE', step: 'LOBBY', round: 1 },
     ];
     for (let k = 0; k < s.players.length; k++) out.push({ kind: 'DECIDE', step: `AMEND_${k}`, round: 1 });
-    out.push({ kind: 'REVEAL', step: 'AMENDMENTS', round: 1 }, { kind: 'ROUND_SUMMARY', round: 1 });
+    out.push({ kind: 'REVEAL', step: 'AMENDMENTS', round: 1 });
+    // V5 (D-215): in a life, the winning rule then acts on everything everyone owns, as its own staged beat.
+    if (s.mode === 'LIFE') out.push({ kind: 'REVEAL', step: 'WHOLE_BANK', round: 1 });
+    out.push({ kind: 'ROUND_SUMMARY', round: 1 });
     return out;
   },
   onEnter(s, phase) {
@@ -516,6 +551,7 @@ export const playLevel5: LevelDefinition = {
       fair1: open ? l.fair1 : undefined,
       fair2: open ? l.fair2 : undefined,
       W: l.W,
+      whole: l.whole,
       leaked: P.leaked,
       maxDonation: P.maxDonation,
       need: P.need,

@@ -1910,6 +1910,13 @@
         "ask": "Vote yes on {rules}?",
         "passedBeforeYou": "Your change just passed."
       },
+      "whole": {
+        "label": "The last twist",
+        "title": "The new rules apply to everything you own",
+        "how": "Everyone pays {t} of their bank. The pot lifts every bank to at least {F}, and the rest is shared equally.",
+        "none": "The rules that won are tax {t} and floor {F}: they take nothing and give nothing, so every bank stays as it is.",
+        "row": "{a} to {b}"
+      },
       "peak": {
         "label": "The ballots",
         "final": "Final rules: {rules}",
@@ -2486,7 +2493,7 @@
       "income": "You made {y} this round (your luck die: {d}).",
       "barred": "The pool barred {names}.",
       "barredYou": "The pool barred you.",
-      "rules": "The table wrote the rules: tax {t}, floor {F}. Your bank has moved to match."
+      "rules": "The table wrote the rules: tax {t}, floor {F}. The rules that win apply to every bank at the end."
     }
   }
 }
