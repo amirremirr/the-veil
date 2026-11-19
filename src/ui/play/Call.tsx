@@ -29,10 +29,19 @@ export function claimantsNow(v: ViewState, filter?: (value: string) => boolean):
  * UI V3 (U1): "Call it" is a tap on a claimant's speech bubble on the stage (then "Call it for 10?").
  * This registers the move screen's call with the stage and shows one line saying how, or who you call.
  */
-export function CallChips({ v, claimants, value, onPick }: { v: ViewState; claimants: string[]; value: string | null; onPick: (x: string | null) => void }) {
+export function CallChips({ v, claimants, value, onPick, short = false }: { v: ViewState; claimants: string[]; value: string | null; onPick: (x: string | null) => void; short?: boolean }) {
   useCallRegistration({ claimants, value, onPick });
   // UI V4 (V1): the first time, the line under the bubbles is the coach hint for calling.
-  const first = useFirstTime('call', claimants.length > 0);
+  // V6 (D-218): `short` (Episode 4's HireBot screen): no hint, and a three-word line while calling.
+  const first = useFirstTime('call', claimants.length > 0 && !short);
+  if (short) {
+    if (!value) return null;
+    return (
+      <p className="mt-1 text-small font-bold text-stamp" data-call aria-live="polite">
+        {t('play.cast.callingShort', { name: shortName(v, value), n: PLAY.CALL_STAKE })}
+      </p>
+    );
+  }
   // After the first time, the bubbles' own "Call it?" tags are the hint; the line shows only while calling.
   if (!claimants.length || (!value && !first)) return null;
   return (

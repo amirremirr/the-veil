@@ -1,6 +1,6 @@
 // Play Episode 4, "The Hiring Round" (v2 Section 4, D-151): train, claim, and once per episode you are HireBot.
 // One beat per screen, as Episode 3. Every number and string comes from the engine view and play.l4.*.
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import type { ViewState } from '../../engine/types';
 import type { P4Round } from '../../engine/play/ep4';
 import type { Group, Job, Policy, Priors } from '../../engine/levels/level4';
@@ -29,6 +29,7 @@ export type L4View = {
   policy: Policy;
   policyVotes?: Record<string, Policy>;
   judge: string;
+  judges?: string[];
   myCost?: number;
   myCostBase?: number;
   rounds: Array<Partial<P4Round>>;
@@ -43,14 +44,40 @@ export const groupName = (g: Group) => t(`play.l4.group.${g}`);
 const policyName = (p: Policy) => t(`levels.4.policies.${p}.name`);
 
 function GiftTile({ v, gift, setGift }: { v: ViewState; gift: Gift | null; setGift: (g: Gift | null) => void }) {
-  return <GiftBar v={v} gift={gift} onPick={setGift} />;
+  return <GiftBar v={v} gift={gift} onPick={setGift} short />;
 }
+
+/**
+ * V6 (D-218): "Why?" on an Episode 4 decision screen. The screen shows only what the choice needs; the
+ * numbers behind it (beliefs, the meter, the rule) open in place of the choice, and "Back" returns.
+ */
+function WhyButton({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  return (
+    <button type="button" aria-expanded={open} onClick={(e) => { e.stopPropagation(); onToggle(); }} className="min-h-[44px] shrink-0 rounded-xl bg-card px-3 text-small font-bold underline" data-why>
+      {t(open ? 'play.l4.why.back' : 'play.l4.why.open')}
+    </button>
+  );
+}
+
+function WhyPanel({ children }: { children: ReactNode }) {
+  return (
+    <div className="space-y-1 rounded-2xl bg-card p-3 text-small" data-why-panel>
+      {children}
+    </div>
+  );
+}
+
+const priorOf = (lv: L4View, id: string) => (lv.policy === 'B' && lv.priors.POOL !== null ? lv.priors.POOL : lv.priors[lv.groups[id]]);
+const beliefLine = (lv: L4View, id: string) =>
+  t(lv.policy === 'B' ? 'play.l4.train.beliefBlind' : 'play.l4.train.belief', { group: groupName(lv.groups[id]), p: pct(priorOf(lv, id)) });
+/** The judge's loss on a bad hire this round, from the hiring line (an event can change it): line = loss / (gain + loss). */
+const judgeLossOf = (lv: L4View) => Math.round((PLAY.L4.JUDGE_GAIN * lv.threshold) / Math.max(1e-9, 1 - lv.threshold));
 
 /** Before the first decision: your group, your childcare duty, and who judges when. */
 export function MyCards4({ v, next }: { v: ViewState; next: () => void }) {
   const lv = lv4(v);
   const me = v.viewer;
-  const order = [1, 2, 3, 4].map((r) => v.players[(r - 1) % v.players.length]);
+  const order = (lv.judges ?? [lv.judge]).map((id) => v.players.find((p) => p.id === id)!);
   return (
     <Stage v={v} onTap={next} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
       <div className="my-auto" data-mycards>
@@ -64,24 +91,35 @@ export function MyCards4({ v, next }: { v: ViewState; next: () => void }) {
   );
 }
 
-/** Worker move: train or not (private), and a gift. */
+/** Worker move (V6, D-218): one question, two tiles that say what each costs and what it changes; a gift. */
 export function TrainScreen({ v }: { v: ViewState }) {
   const lv = lv4(v);
   const act = useStore((s) => s.act);
   const [train, setTrain] = useState(false);
   const [gift, setGift] = useState<Gift | null>(null);
-  const g = lv.groups[v.viewer];
-  const prior = lv.policy === 'B' && lv.priors.POOL !== null ? lv.priors.POOL : lv.priors[g];
+  const [why, setWhy] = useState(false);
+  const cut = lv.myCostBase !== undefined && lv.myCostBase !== lv.myCost;
   return (
     <Stage v={v} footer={<BigButton onClick={() => act({ train, gift })}>{t('play.stage.lock')}</BigButton>}>
-      <p className="text-small font-bold uppercase tracking-wider text-soft">{t('play.l4.judgeIs', { name: shortName(v, lv.judge) })}</p>
-      <h1 className="h-show mt-1 text-title leading-tight">{t('play.l4.train.title')}</h1>
-      <Coach id="move" />
-      <p className="mt-1 text-small">{t(lv.policy === 'B' ? 'play.l4.train.beliefBlind' : 'play.l4.train.belief', { group: groupName(g), p: pct(prior) })}</p>
-      <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
-        <Tile on={train} title={t('play.l4.train.tile')} desc={lv.myCostBase !== undefined && lv.myCostBase !== lv.myCost ? t('play.l4.train.costCut', { c: lv.myCost ?? 0, was: lv.myCostBase, p: pct(L4.PASS_IF_SKILLED) }) : t('play.l4.train.cost', { c: lv.myCost ?? 0, p: pct(L4.PASS_IF_SKILLED) })} onClick={() => setTrain(true)} />
-        <Tile on={!train} title={t('play.l4.train.skip')} desc={t('play.l4.train.skipDesc', { p: pct(L4.PASS_IF_UNSKILLED) })} onClick={() => setTrain(false)} />
+      <div className="flex items-start gap-2">
+        <h1 className="h-show flex-1 text-title leading-tight">{t('play.l4.train.title')}</h1>
+        <WhyButton open={why} onToggle={() => setWhy(!why)} />
       </div>
+      {why ? (
+        <div className="mt-2">
+          <WhyPanel>
+            <p>{t('play.l4.judgeIs', { name: shortName(v, lv.judge) })}.</p>
+            <p>{beliefLine(lv, v.viewer)}</p>
+            <p>{t('play.l4.why.trainHow')}</p>
+            {lv.care[v.viewer] && <p>{t('play.l4.res.care', { n: L4.CHAOS_COST })}</p>}
+          </WhyPanel>
+        </div>
+      ) : (
+        <div className="mt-auto grid grid-cols-2 gap-2 pt-3">
+          <Tile on={train} title={t('play.l4.train.tile')} desc={cut ? t('play.l4.train.costCut', { c: lv.myCost ?? 0, was: lv.myCostBase, p: pct(L4.PASS_IF_SKILLED) }) : t('play.l4.train.cost', { c: lv.myCost ?? 0, p: pct(L4.PASS_IF_SKILLED) })} onClick={() => setTrain(true)} />
+          <Tile on={!train} title={t('play.l4.train.skip')} desc={t('play.l4.train.skipDesc', { p: pct(L4.PASS_IF_UNSKILLED) })} onClick={() => setTrain(false)} />
+        </div>
+      )}
       <div className="mt-2">
         <GiftTile v={v} gift={gift} setGift={setGift} />
       </div>
@@ -97,13 +135,13 @@ export function ClaimScreen4({ v }: { v: ViewState }) {
   const trained = lv.current?.train?.[v.viewer];
   return (
     <Stage v={v} footer={<BigButton disabled={!x} onClick={() => act(x)}>{t('play.claim.submit')}</BigButton>}>
-      <h1 className="h-show text-hero leading-tight">{t('play.claim.title')}</h1>
+      <h1 className="h-show text-hero leading-tight">{t('play.l4.claim.title')}</h1>
       <Coach id="claim" />
       <div className="mt-3 rounded-2xl bg-card p-3">
         <p className="h-show text-title leading-tight">{t(trained ? 'play.l4.claim.youT' : 'play.l4.claim.youU')}</p>
       </div>
       <p className="mt-2 text-small">{t('play.l4.claim.how', { name: shortName(v, lv.judge) })}</p>
-      <div className="mt-auto space-y-2 pt-3" role="group" aria-label={t('play.claim.title')}>
+      <div className="mt-auto space-y-2 pt-3" role="group" aria-label={t('play.l4.claim.title')}>
         {['TRAINED', 'SILENT'].map((o) => (
           <button key={o} type="button" aria-pressed={x === o} onClick={() => setX(o)} className={`block w-full rounded-2xl p-3 text-start ${x === o ? 'bg-spot text-onspot' : 'bg-card'}`}>
             <span className="h-show block text-lead leading-tight">{t(`play.l4.claim.opts.${o}`)}</span>
@@ -114,7 +152,20 @@ export function ClaimScreen4({ v }: { v: ViewState }) {
   );
 }
 
-/** You are HireBot: hire each worker for the complex or the simple job. */
+/** A cream stamp: the test result, "PASSED" or "FAILED". */
+function TestStamp({ pass }: { pass: boolean }) {
+  return (
+    <span className={`h-show inline-block -rotate-6 whitespace-nowrap rounded-lg border-[3px] bg-[#fff4e0] px-1.5 py-0.5 text-[14px] uppercase leading-none shadow-stamp ${pass ? 'border-[#13675a] text-[#13675a]' : 'border-[#c2341f] text-[#c2341f]'}`} data-test-stamp={pass ? 'PASSED' : 'FAILED'}>
+      {t(pass ? 'play.l4.judge.stampPass' : 'play.l4.judge.stampFail')}
+    </span>
+  );
+}
+
+/**
+ * You are HireBot (V6, D-218): for each worker, three things only: their face and claim bubble, the test as a
+ * PASSED or FAILED stamp, and HireBot's suggestion in one line. What a hire means for you, in coins, sits
+ * above the two jobs. Group, beliefs and the meter are behind "Why?".
+ */
 export function JudgeScreen({ v }: { v: ViewState }) {
   const lv = lv4(v);
   const act = useStore((s) => s.act);
@@ -123,6 +174,8 @@ export function JudgeScreen({ v }: { v: ViewState }) {
   const [hires, setHires] = useState<Record<string, Job>>(() => Object.fromEntries(workers.map((w) => [w, 'SIMPLE' as Job])));
   const [gift, setGift] = useState<Gift | null>(null);
   const [call, setCall] = useState<string | null>(null);
+  const [why, setWhy] = useState(false);
+  const [giftOpen, setGiftOpen] = useState(false);
   // UI V3 (U3): one worker card at a time; Complex or Simple moves to the next card; swipe works too.
   const [k, setK] = useState(0);
   const startX = useRef<number | null>(null);
@@ -134,12 +187,11 @@ export function JudgeScreen({ v }: { v: ViewState }) {
     if (k < workers.length - 1) setK(k + 1);
   };
   const meter = lv.meterShown && c.meter ? c.meter[w] : null;
+  const said = claims[w] === 'TRAINED';
   return (
     <Stage v={v} cast={{ focus: w }} footer={<BigButton onClick={() => act({ hires, gift, call })}>{t('play.l4.judge.submit')}</BigButton>}>
-      <h1 className="h-show text-title leading-tight">{t('play.l4.judge.ask', { name: shortName(v, w) })}</h1>
-      <p className="text-small">{t('play.l4.judge.payShort', { g: PLAY.L4.JUDGE_GAIN, l: PLAY.L4.JUDGE_LOSS })}</p>
       <div
-        className="mt-2 rounded-2xl bg-card p-3"
+        className="rounded-2xl bg-card p-2.5"
         data-judge-card={w}
         onPointerDown={(e) => (startX.current = e.clientX)}
         onPointerUp={(e) => {
@@ -150,43 +202,69 @@ export function JudgeScreen({ v }: { v: ViewState }) {
           else if (dx < -60) choose('SIMPLE');
         }}
       >
-        <div className="flex items-center gap-2">
-          <Face v={v} p={p} size={40} />
-          <span className="flex-1 text-small font-bold">{lv.policy === 'B' ? t('play.l4.judge.hidden') : groupName(lv.groups[w])}</span>
-        </div>
-        <p className="mt-1 text-small">
-          {t(c.pass?.[w] ? 'play.l4.judge.passedTest' : 'play.l4.judge.failedTest')}, {t(claims[w] === 'TRAINED' ? 'play.l4.judge.says' : 'play.l4.judge.quiet')}
-        </p>
-        {meter !== null && (
-          <div className="mt-2" aria-label={t('play.l4.meter', { p: pct(meter) })} role="img">
-            <div className="relative h-4 rounded-full bg-paper">
-              <div className={`absolute inset-y-0 left-0 rounded-full ${meter >= lv.threshold ? 'bg-good' : 'bg-stamp'}`} style={{ width: `${Math.round(meter * 100)}%` }} />
-              <div className="absolute -inset-y-1 w-1 rounded bg-spot" style={{ left: `calc(${Math.round(lv.threshold * 100)}% - 2px)` }} />
-            </div>
-            <p className="mt-1 flex justify-between text-small">
-              <span className="font-bold">{t('play.l4.judge.meterShort', { p: pct(meter) })}</span>
-              <span>{t('play.l4.judge.line', { p: pct(lv.threshold) })}</span>
-            </p>
+        <h1 className="h-show text-lead leading-tight">{t('play.l4.judge.which', { name: shortName(v, w) })}</h1>
+        {why ? (
+          <div className="mt-1 space-y-1 text-small" data-why-panel>
+            <p>{lv.policy === 'B' ? t('play.l4.why.blind') : t('play.l4.why.group', { name: shortName(v, w), group: groupName(lv.groups[w]) })}</p>
+            <p>{beliefLine(lv, w)}</p>
+            {meter !== null ? (
+              <div aria-label={t('play.l4.meter', { p: pct(meter) })} role="img">
+                <div className="relative mt-1 h-4 rounded-full bg-paper">
+                  <div className={`absolute inset-y-0 left-0 rounded-full ${meter >= lv.threshold ? 'bg-good' : 'bg-stamp'}`} style={{ width: `${Math.round(meter * 100)}%` }} />
+                  <div className="absolute -inset-y-1 w-1 rounded bg-spot" style={{ left: `calc(${Math.round(lv.threshold * 100)}% - 2px)` }} />
+                </div>
+                <p className="mt-1">{t('play.l4.why.meter', { p: pct(meter), line: pct(lv.threshold) })}</p>
+              </div>
+            ) : (
+              <p>{t('play.l4.why.noMeter')}</p>
+            )}
           </div>
+        ) : (
+          <>
+            <div className="mt-1 flex items-center gap-2">
+              <Face v={v} p={p} size={40} />
+              <p className="relative rounded-2xl rounded-bl-sm bg-paper px-3 py-1.5 text-body font-bold" data-claim-bubble>
+                {t(said ? 'play.l4.judge.bubbleT' : 'play.l4.judge.bubbleSilent')}
+              </p>
+              <span className="ms-auto">
+                <TestStamp pass={!!c.pass?.[w]} />
+              </span>
+            </div>
+            {meter !== null && (
+              <p className="mt-1.5 text-small font-semibold" data-suggest>
+                {t(meter >= lv.threshold ? 'play.l4.judge.suggestComplex' : 'play.l4.judge.suggestSimple')}
+              </p>
+            )}
+          </>
         )}
-        <div className="mt-2 grid grid-cols-2 gap-2" role="group" aria-label={t('play.l4.judge.jobFor', { name: shortName(v, w) })}>
+        <p className="mt-1 text-small" data-hire-coins>{t('play.l4.judge.coins', { g: PLAY.L4.JUDGE_GAIN, l: judgeLossOf(lv) })}</p>
+        <div className="mt-1.5 grid grid-cols-2 gap-2" role="group" aria-label={t('play.l4.judge.jobFor', { name: shortName(v, w) })}>
           {(['COMPLEX', 'SIMPLE'] as Job[]).map((job) => (
-            <button key={job} type="button" aria-pressed={hires[w] === job} onClick={() => choose(job)} className={`min-h-[48px] rounded-xl text-body font-bold ${hires[w] === job ? 'bg-spot text-onspot' : 'bg-paper'}`} data-hire={`${w}:${job}`}>
+            <button key={job} type="button" aria-pressed={hires[w] === job} onClick={() => choose(job)} className={`min-h-[44px] rounded-xl text-body font-bold ${hires[w] === job ? 'bg-spot text-onspot' : 'bg-paper'}`} data-hire={`${w}:${job}`}>
               {t(job === 'COMPLEX' ? 'play.l4.complex' : 'play.l4.simple')}
             </button>
           ))}
         </div>
       </div>
-      <div className="mt-2 flex gap-1.5" role="group" aria-label={t('play.l4.judge.label', { k: Math.min(k, workers.length - 1) + 1, n: workers.length })}>
-        {workers.map((x, i) => (
-          <button key={x} type="button" onClick={() => setK(i)} aria-current={i === k} aria-label={`${shortName(v, x)}: ${t(hires[x] === 'COMPLEX' ? 'play.l4.complex' : 'play.l4.simple')}`} className={`min-h-[44px] flex-1 rounded-xl px-1 text-small font-bold ${i === k ? 'border-2 border-spot' : ''} ${hires[x] === 'COMPLEX' ? 'bg-spot text-onspot' : 'bg-card'}`}>
-            {shortName(v, x)}
-          </button>
-        ))}
-      </div>
-      <CallChips v={v} claimants={claimantsNow(v, (x) => x === 'TRAINED')} value={call} onPick={setCall} />
-      <div className="mt-auto pt-2">
-        <GiftTile v={v} gift={gift} setGift={setGift} />
+      <CallChips v={v} claimants={claimantsNow(v, (x) => x === 'TRAINED')} value={call} onPick={setCall} short />
+      {/* V6 (D-218): the worker tabs (faces) and the gift share one row; an open gift picker takes the row. */}
+      <div className="mt-auto flex gap-1.5 pt-2">
+        {workers.length > 1 && !giftOpen && (
+          <div className="flex flex-[3] gap-1.5" role="group" aria-label={t('play.l4.judge.label', { k: Math.min(k, workers.length - 1) + 1, n: workers.length })}>
+            {workers.map((x, i) => {
+              const px = v.players.find((y) => y.id === x)!;
+              return (
+                <button key={x} type="button" onClick={() => setK(i)} aria-current={i === k} aria-label={`${shortName(v, x)}: ${t(hires[x] === 'COMPLEX' ? 'play.l4.complex' : 'play.l4.simple')}`} className={`flex min-h-[44px] flex-1 items-center justify-center rounded-xl ${i === k ? 'border-2 border-spot' : ''} ${hires[x] === 'COMPLEX' ? 'bg-spot' : 'bg-card'}`} data-worker-tab={x}>
+                  <Face v={v} p={px} size={28} ring={false} />
+                </button>
+              );
+            })}
+          </div>
+        )}
+        {!giftOpen && <WhyButton open={why} onToggle={() => setWhy(!why)} />}
+        <div className="flex-[2]" onClickCapture={() => setGiftOpen(true)}>
+          <GiftBar v={v} gift={gift} onPick={(g) => { setGift(g); setGiftOpen(false); }} short />
+        </div>
       </div>
     </Stage>
   );
@@ -195,18 +273,35 @@ export function JudgeScreen({ v }: { v: ViewState }) {
 export function PolicyScreen({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
   const [x, setX] = useState<Policy | null>(null);
+  const [why, setWhy] = useState(false);
+  const one = (lv4(v).judges?.length ?? PLAY.L4.ROUNDS) - PLAY.L4.BASELINE_ROUNDS === 1;
   return (
     <Stage v={v} footer={<BigButton disabled={!x} onClick={() => act(x)}>{t('play.l4.policy.submit')}</BigButton>}>
-      <h1 className="h-show text-title leading-tight">{t('play.l4.policy.title')}</h1>
-      <p className="mt-1 text-small">{t('play.l4.policy.how')}</p>
-      <div className="mt-auto space-y-2 pt-3" role="group" aria-label={t('play.l4.policy.title')}>
-        {POLICIES.map((p) => (
-          <button key={p} type="button" aria-pressed={x === p} onClick={() => setX(p)} className={`block w-full rounded-2xl p-2.5 text-start ${x === p ? 'bg-spot text-onspot' : 'bg-card'}`}>
-            <span className="h-show block text-lead leading-tight">{policyName(p)}</span>
-            <span className="block text-small">{t(`play.l4.policy.short.${p}`)}</span>
-          </button>
-        ))}
+      <div className="flex items-start gap-2">
+        <h1 className="h-show flex-1 text-title leading-tight">{t('play.l4.policy.title')}</h1>
+        <WhyButton open={why} onToggle={() => setWhy(!why)} />
       </div>
+      {why ? (
+        <div className="mt-2">
+          <WhyPanel>
+            <p>{t(one ? 'play.l4.policy.howOne' : 'play.l4.policy.how')}</p>
+            {POLICIES.map((p) => (
+              <p key={p}>
+                <span className="font-bold">{policyName(p)}:</span> {t(`play.l4.policy.long.${p}`)}
+              </p>
+            ))}
+          </WhyPanel>
+        </div>
+      ) : (
+        <div className="mt-auto space-y-2 pt-3" role="group" aria-label={t('play.l4.policy.title')}>
+          {POLICIES.map((p) => (
+            <button key={p} type="button" aria-pressed={x === p} onClick={() => setX(p)} className={`block w-full rounded-2xl p-2.5 text-start ${x === p ? 'bg-spot text-onspot' : 'bg-card'}`}>
+              <span className="h-show block text-lead leading-tight">{policyName(p)}</span>
+              <span className="block text-small">{t(`play.l4.policy.short.${p}`)}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </Stage>
   );
 }

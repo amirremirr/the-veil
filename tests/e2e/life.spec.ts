@@ -56,6 +56,7 @@ test('Daily Life starts a life on the day seed and reaches the result card', asy
   const seenHowto = new Set<number>();
   let didSeen = 0;
   let playedSeen = false;
+  let e4Screens = 0;
   for (let i = 0; i < 400; i++) {
     await page.waitForTimeout(30);
     const d = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, sh: document.documentElement.scrollHeight, ih: window.innerHeight }));
@@ -84,6 +85,15 @@ test('Daily Life starts a life on the day seed and reaches the result card', asy
     const contentWords = () => page.locator('[data-content]').evaluate((el) => (el as HTMLElement).innerText.trim().split(/\s+/).filter(Boolean).length);
     if (await page.locator('[data-summary]').count()) expect(await contentWords()).toBeLessThanOrEqual(50);
     if (st.level === 4 && st.kind === 'REVEAL' && (await page.locator('[data-outcome]').count())) expect(await contentWords()).toBeLessThanOrEqual(45);
+    // V6 (D-218): an Episode 4 decision screen has at most 30 words of its own (the carried result counted apart).
+    if (st.level === 4 && st.kind === 'DECIDE' && !(await page.locator('[data-beat-next]').count())) {
+      const own = await page.locator('[data-content]').evaluate((el) => {
+        const wc = (x: Element | null) => ((x as HTMLElement | null)?.innerText ?? '').trim().split(/\s+/).filter(Boolean).length;
+        return wc(el) - [...el.querySelectorAll('[data-carry]')].reduce((a, x) => a + wc(x), 0);
+      });
+      expect(own, `Ep4 ${st.step}`).toBeLessThanOrEqual(30);
+      e4Screens++;
+    }
     // UI V4 (V3): "What your choices did" adds up to the bank change it shows, to the coin.
     if (await page.locator('[data-choices-did]').count()) {
       const sums = await page.locator('[data-choices-did]').evaluate((el) => {
@@ -143,6 +153,7 @@ test('Daily Life starts a life on the day seed and reaches the result card', asy
   expect([...seenHowto].sort()).toEqual([1, 2, 3, 4, 5]);
   expect(didSeen).toBeGreaterThanOrEqual(10);
   expect(playedSeen).toBe(true);
+  expect(e4Screens).toBeGreaterThan(0);
   await expect(page.getByText('Just for fun. Not a diagnosis.')).toBeVisible();
   await expect(page.locator('[data-rival]')).toContainText('Rematch with the same seed?');
 });

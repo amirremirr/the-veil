@@ -278,7 +278,7 @@ export function MoveScreen({ v }: { v: ViewState }) {
  * UI V3 (U1): Give as one slim bar. UI V4 (V1, V2): the optional second choice of a move screen, collapsed by
  * default; a tap opens the picker in place (no sheet on top), and picking closes it again.
  */
-export function GiftBar({ v, gift, onPick }: { v: ViewState; gift: Gift | null; onPick: (g: Gift | null) => void }) {
+export function GiftBar({ v, gift, onPick, short = false }: { v: ViewState; gift: Gift | null; onPick: (g: Gift | null) => void; short?: boolean }) {
   const [open, setOpen] = useState(false);
   // UI V4 (V2): in a life, Give unlocks in Episode 4.
   if (!verbOn(v, 'give')) return null;
@@ -295,14 +295,19 @@ export function GiftBar({ v, gift, onPick }: { v: ViewState; gift: Gift | null; 
     );
   return (
     <button type="button" aria-expanded={false} onClick={(e) => { e.stopPropagation(); setOpen(true); }} className={`flex min-h-[44px] w-full items-center gap-2 rounded-2xl px-3 text-start ${gift ? 'bg-spot text-onspot' : 'bg-card'}`} data-gift-bar>
-      <span aria-hidden className="h-show text-lead">+</span>
+      {/* V6 (D-218): the short bar (Episode 4) draws its "+" in CSS so it is not read as a word. */}
+      {short ? <span aria-hidden className="h-show text-lead before:content-['+']" /> : <span aria-hidden className="h-show text-lead">+</span>}
       <span className="flex-1 text-small font-semibold leading-tight">
         {gift ? (
-          <>
-            <span className="font-bold">{t('play.gift.title')}:</span> {t('play.gift.picked', { n: gift.amount, name: shortName(v, gift.to) })}
-          </>
+          short ? (
+            t('play.gift.picked', { n: gift.amount, name: shortName(v, gift.to) })
+          ) : (
+            <>
+              <span className="font-bold">{t('play.gift.title')}:</span> {t('play.gift.picked', { n: gift.amount, name: shortName(v, gift.to) })}
+            </>
+          )
         ) : (
-          t('play.gift.row')
+          t(short ? 'play.gift.rowShort' : 'play.gift.row')
         )}
       </span>
     </button>

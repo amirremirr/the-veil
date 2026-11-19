@@ -49,7 +49,7 @@ for (let i = 0; i < 1500; i++) {
         .filter((el) => {
           const r = el.getBoundingClientRect();
           const cs = getComputedStyle(el);
-          return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && parseFloat(cs.fontSize) < 16 && !el.closest('[data-cast-stamp], .sr-only');
+          return r.width > 0 && r.height > 0 && cs.visibility !== 'hidden' && parseFloat(cs.fontSize) < 16 && !el.closest('[data-cast-stamp], [data-test-stamp], .sr-only');
         })
         .map((el) => `${parseFloat(getComputedStyle(el).fontSize)}px "${el.textContent.trim().slice(0, 30)}"`),
     );
