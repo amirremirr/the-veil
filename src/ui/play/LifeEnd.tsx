@@ -1,5 +1,6 @@
 // The end of a life (v2 Sections 3.4 and 7, D-155): the Receipts reel, then the result card v2.
 // Only public facts at this point (every card and claim is revealed); the card shows the viewer's own data only.
+import { challengeLine } from './Challenge';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { LevelId, Message, ValuesCard, ViewState } from '../../engine/types';
 import { PLAY } from '../../engine/play/params';
@@ -209,6 +210,7 @@ export function ResultCard({ v }: { v: ViewState }) {
   const eps = Object.keys(ch).map(Number);
   const best = eps.reduce((a, b) => (ch[b] > ch[a] ? b : a), eps[0]);
   const worst = eps.reduce((a, b) => (ch[b] < ch[a] ? b : a), eps[0]);
+  const challenge = challengeLine(v);
   const lines = [
     t('play.card.rank', { name: me.name || t('play.card.you'), r: rank, n: v.players.length }),
     t('play.card.best', { ep: best, name: t(`play.episodes.${best}.name`), n: `${(ch[best] ?? 0) >= 0 ? '+' : ''}${coins(ch[best] ?? 0)}` }),
@@ -216,6 +218,8 @@ export function ResultCard({ v }: { v: ViewState }) {
     t('play.card.bank', { n: coins(v.play!.banks[v.viewer]) }),
     t('play.card.playedLike', { name: BOT_NAME[playedLike(v).top] }),
     !h.made ? t('play.card.noClaims') : h.lies ? t('play.card.honesty', { lies: h.lies, made: h.made, caught: h.caught }) : t('play.card.allTrue', { made: h.made }),
+    // V6 (D-220): the challenge, done or not (it never changes the score).
+    ...(challenge ? [challenge.text] : []),
   ];
   const ref = useRef<HTMLDivElement>(null);
   const mineNow = useMemo(() => earned(v), [v]);
@@ -390,6 +394,7 @@ export function PlayedLike({ v, next }: { v: ViewState; next: () => void }) {
   const me = v.players.find((x) => x.id === v.viewer)!;
   const order: ValuesCard[] = ['RAWLSIAN', 'UTILITARIAN', 'MERITOCRAT', 'EGOIST'];
   const fair = fairLine(v);
+  const challenge = challengeLine(v);
   return (
     <Stage v={v} bar={false} cast={false} footer={<BigButton beatNext onClick={next}>{t('play.stage.tap')}</BigButton>}>
       <div className="my-auto" data-played-like={p.top}>
@@ -414,6 +419,11 @@ export function PlayedLike({ v, next }: { v: ViewState; next: () => void }) {
         {fair && (
           <p className="mt-3 text-body font-semibold" data-fair-line>
             {fair}
+          </p>
+        )}
+        {challenge && (
+          <p className={`mt-2 text-body font-bold ${challenge.done ? 'text-good' : 'text-stamp'}`} data-challenge-end={challenge.done ? 'done' : 'not'}>
+            {challenge.text}
           </p>
         )}
       </div>

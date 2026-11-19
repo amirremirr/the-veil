@@ -25,6 +25,7 @@ import { AmendReveal, AmendScreen, ClaimScreen5, FairScreen, Finale, IncomesScre
 import { LifeEnd } from './LifeEnd';
 import { PlaytestPanel } from './Playtest';
 import { onScreen, onTap, playtestOn } from '../playtest';
+import { ChallengePick, needsChallenge } from './Challenge';
 import { CardsReveal4, ClaimScreen4, HiresBeat, JudgeScreen, MyCards4, PolicyScreen, TrainScreen, summary4, type L4View } from './Episode4';
 import type { NearMiss } from '../../engine/play/types';
 
@@ -37,10 +38,14 @@ function episodeStartBank(v: ViewState): number {
 
 function EpisodeIntro({ v }: { v: ViewState }) {
   const act = useStore((s) => s.act);
+  const online = useOnline();
+  // V6 (D-220): a life starts with the optional challenge offer.
+  const [offer, setOffer] = useState(() => needsChallenge(v, online));
   // UI V3 (U2): the episode fanfare.
   useEffect(() => {
     sfx('fanfare');
   }, [v.levelIndex]);
+  if (offer) return <ChallengePick v={v} onDone={() => setOffer(false)} />;
   return (
     <Stage v={v} footer={<BigButton onClick={() => act()}>{t('play.intro.go')}</BigButton>}>
       {/* UI V4 (V2): "How this episode works", the episode's one rules card. */}

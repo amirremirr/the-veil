@@ -2522,6 +2522,65 @@
       "barred": "The pool barred {names}.",
       "barredYou": "The pool barred you.",
       "rules": "The table wrote the rules: tax {t}, floor {F}. The rules that win apply to everything earned since Episode 1."
+    },
+    "challenge": {
+      "label": "Optional challenge",
+      "title": "Pick a challenge?",
+      "how": "Just for you: it never changes your score. You see at the end if you made it.",
+      "take": "Take it",
+      "skip": "Skip",
+      "done": "Challenge: {name}. Done.",
+      "notDone": "Challenge: {name}. Not done.",
+      "list": {
+        "NO_DEBT": {
+          "name": "Stay out of debt",
+          "desc": "Never end a round in debt."
+        },
+        "CATCH_TWO": {
+          "name": "Catch two bluffs",
+          "desc": "Call it right on two lies."
+        },
+        "NO_SECOND_CHANCE": {
+          "name": "Win without help",
+          "desc": "Finish first without the Second Chance coins."
+        },
+        "FLOOR_50": {
+          "name": "Nobody goes under",
+          "desc": "Keep the poorest contestant above 50 at the end of every episode."
+        },
+        "NEVER_LIE": {
+          "name": "Honest all the way",
+          "desc": "Never lie in a claim."
+        },
+        "NEVER_PEEK": {
+          "name": "No peeking",
+          "desc": "Never peek at your income in Episode 1."
+        },
+        "NO_BAD_HIRE": {
+          "name": "Sharp HireBot",
+          "desc": "As HireBot, make no bad hire."
+        },
+        "GIVE_20": {
+          "name": "Open hand",
+          "desc": "Give away at least 20 coins in Episode 4."
+        },
+        "HUSTLE": {
+          "name": "Hustler",
+          "desc": "Win a Hustle Prize in Episode 2."
+        },
+        "NO_COVER": {
+          "name": "Go it alone",
+          "desc": "Never apply for cover in Episode 3."
+        },
+        "TOP_TWO": {
+          "name": "Podium",
+          "desc": "Finish first or second."
+        },
+        "ALWAYS_TRAIN": {
+          "name": "Always training",
+          "desc": "Train every round you work in Episode 4."
+        }
+      }
     }
   }
 }

@@ -57,6 +57,7 @@ test('Daily Life starts a life on the day seed and reaches the result card', asy
   let didSeen = 0;
   let playedSeen = false;
   let e4Screens = 0;
+  let challengeTaken = false;
   for (let i = 0; i < 400; i++) {
     await page.waitForTimeout(30);
     const d = await page.evaluate(() => ({ sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, sh: document.documentElement.scrollHeight, ih: window.innerHeight }));
@@ -107,7 +108,7 @@ test('Daily Life starts a life on the day seed and reaches the result card', asy
       expect(sums.total).toBe(sums.change);
       didSeen++;
     }
-    if (st.kind === 'INTRO' || st.kind === 'VALUES_REVEAL') {
+    if ((st.kind === 'INTRO' || st.kind === 'VALUES_REVEAL') && !(await page.locator('[data-challenge-offer]').count())) {
       seenHowto.add(st.level);
       await expect(page.locator(`[data-howto="${st.level}"]`)).toBeVisible();
     }
@@ -133,6 +134,15 @@ test('Daily Life starts a life on the day seed and reaches the result card', asy
       await expect(page.locator('[data-panel]')).toHaveCount(0);
       ledgerSeen = true;
     }
+    // V6 (D-220): the life opens with three optional challenges; take the first, and it shows at the end.
+    if (await page.locator('[data-challenge-offer]').count()) {
+      expect(await page.locator('[data-challenge]').count()).toBe(3);
+      await page.locator('[data-challenge]').first().click();
+      await page.getByRole('button', { name: 'Take it' }).click();
+      challengeTaken = true;
+      continue;
+    }
+    if (await page.locator('[data-played-like]').count()) expect(await page.locator('[data-challenge-end]').count()).toBe(1);
     if (await page.locator('[data-beat-next]').count()) {
       await page.locator('[data-beat-next]').first().click();
       continue;
@@ -154,6 +164,8 @@ test('Daily Life starts a life on the day seed and reaches the result card', asy
   expect(didSeen).toBeGreaterThanOrEqual(10);
   expect(playedSeen).toBe(true);
   expect(e4Screens).toBeGreaterThan(0);
+  expect(challengeTaken).toBe(true);
+  await expect(page.locator('[data-result-card]')).toContainText(/Challenge: .+\. (Done|Not done)\./);
   await expect(page.getByText('Just for fun. Not a diagnosis.')).toBeVisible();
   await expect(page.locator('[data-rival]')).toContainText('Rematch with the same seed?');
 });
