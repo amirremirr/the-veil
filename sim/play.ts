@@ -85,6 +85,9 @@ function playOne(seed: string): { s: GameState; w: Watch } {
 
 interface Rec {
   watch: Watch;
+  /** V6 part 3: nobody was hit in the episode; seat 1 (the human's seat in a played game) was never hit. */
+  noHit: boolean;
+  seat1NoHit: boolean;
   /** D-141: every contestant was dealt the same risk card (which one), or null. */
   allSame: 'HIGH' | 'LOW' | null;
   /** Bars: how many hit a high-risk and a low-risk contestant. */
@@ -202,7 +205,11 @@ function record(s: GameState, watch: Watch): Rec {
         if (r.bar.barred.includes(p.id)) highBarred++;
       }
   }
+  const hitAny = d.rounds.some((r) => Object.values(r.events).some(Boolean));
+  const hit1 = d.rounds.some((r) => r.events[s.players[0].id]);
   return {
+    noHit: !hitAny,
+    seat1NoHit: !hit1,
     watch,
     allSame: new Set(Object.values(d.types)).size === 1 ? Object.values(d.types)[0] : null,
     liesTold: lies.length,
@@ -411,6 +418,8 @@ lines.push(`Contested bar decisions (member's belief about an applicant between 
     lines.push(`Calibrated MISSION_SCALE (win shares closest to 25%): ${JSON.stringify(k)}; win shares then ${VALUES_CARDS.map((c) => `${c} ${(100 * shares(k)[c]).toFixed(1)}%`).join(', ')}`);
   }
 }
+lines.push(`V6 part 3: episodes where nobody is hit: ${(avg((r) => (r.noHit ? 1 : 0))(recs) * 100).toFixed(1)}% ± ${(se(avg((r) => (r.noHit ? 1 : 0))) * 100).toFixed(1)} (target at most 10%)`);
+lines.push(`V6 part 3: episodes where seat 1 (the human's seat) is never hit: ${(avg((r) => (r.seat1NoHit ? 1 : 0))(recs) * 100).toFixed(1)}% ± ${(se(avg((r) => (r.seat1NoHit ? 1 : 0))) * 100).toFixed(1)}`);
 lines.push(`At least one buyer in round 3: ${(avg((r) => (r.collapsed ? 0 : 1))(recs) * 100).toFixed(1)}% ± ${(se(avg((r) => (r.collapsed ? 0 : 1))) * 100).toFixed(1)}`);
 lines.push(`Market still open in round 3 (SafeHands offers cover): ${(avg((r) => (r.open3 ? 1 : 0))(recs) * 100).toFixed(1)}% ± ${(se(avg((r) => (r.open3 ? 1 : 0))) * 100).toFixed(1)}`);
 const gains = recs.flatMap((r) => r.lieGains).sort((a, b) => a - b);
